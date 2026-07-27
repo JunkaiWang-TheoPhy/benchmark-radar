@@ -37,6 +37,10 @@ sources:
   arxiv:
     enabled: true
     required: true
+    # 48h report window + 120h overlap = seven days. arXiv's Atom published
+    # timestamp is submission time, while announcements pause on weekends.
+    overlap_hours: 120
+    request_delay_seconds: 3
     queries:
       - 'all:"large language model" AND (all:benchmark OR all:evaluation)'
       - '(all:benchmark OR all:dataset) AND (cat:cs.AI OR cat:cs.CL OR cat:cs.CV)'
@@ -75,6 +79,12 @@ sources:
       - new AI benchmark evaluation dataset
       - new LLM benchmark leaderboard
       - AI dataset release data quality
+
+attention:
+  feeds:
+    - name: Benchmark Social Signal
+      enabled: true
+      url: "https://raw.githubusercontent.com/ktwu01/benchmark-social-signal/main/feed.json"
 
 publish:
   dashboard_url: "https://ktwu01.github.io/benchmark-radar/"

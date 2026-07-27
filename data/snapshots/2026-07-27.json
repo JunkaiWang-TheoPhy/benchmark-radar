@@ -1,39 +1,623 @@
 {
+  "attention": {
+    "observations": [
+      {
+        "authors": [],
+        "categories": [
+          "benchmark"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 1.0,
+          "points": 1.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:49068451",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://www.agentre-bench.ai/",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-27T12:07:23+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark"
+        ],
+        "source": "Hacker News",
+        "source_id": "49068451",
+        "summary": "Public Hacker News discussion linking to www.agentre-bench.ai.",
+        "supporting_observations": [],
+        "title": "AI Reverse Engineering Benchmark",
+        "url": "https://news.ycombinator.com/item?id=49068451"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "benchmark"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 0.0,
+          "points": 1.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:49064707",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://benchmarks.cekura.ai",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-27T02:56:45+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark"
+        ],
+        "source": "Hacker News",
+        "source_id": "49064707",
+        "summary": "Public Hacker News discussion linking to benchmarks.cekura.ai.",
+        "supporting_observations": [],
+        "title": "Voice Orchestration Benchmarks",
+        "url": "https://news.ycombinator.com/item?id=49064707"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "evaluation"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 0.0,
+          "points": 2.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:49055170",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://wilburhimself.github.io/blog/64-the-two-sources-of-noise-every-llm-evaluation-system-must-handle/",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-26T05:57:24+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: LLM evaluation"
+        ],
+        "source": "Hacker News",
+        "source_id": "49055170",
+        "summary": "Public Hacker News discussion linking to wilburhimself.github.io.",
+        "supporting_observations": [],
+        "title": "The Two Sources of Noise Every LLM Evaluation System Must Handle",
+        "url": "https://news.ycombinator.com/item?id=49055170"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "benchmark"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 1.0,
+          "points": 17.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:49054268",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://danluu.com/ai-coding/",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-26T03:02:17+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark"
+        ],
+        "source": "Hacker News",
+        "source_id": "49054268",
+        "summary": "Public Hacker News discussion linking to danluu.com.",
+        "supporting_observations": [],
+        "title": "Agentic test processes, LLM benchmarks, and other notes on agentic coding",
+        "url": "https://news.ycombinator.com/item?id=49054268"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "benchmark"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 0.0,
+          "points": 3.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:49044597",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://aws.amazon.com/about-aws/whats-new/2026/07/aws-bench/",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-25T04:42:35+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark"
+        ],
+        "source": "Hacker News",
+        "source_id": "49044597",
+        "summary": "Public Hacker News discussion linking to aws.amazon.com.",
+        "supporting_observations": [],
+        "title": "AWS announces AWS-bench, an open-source benchmark for AI agents on AWS",
+        "url": "https://news.ycombinator.com/item?id=49044597"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "benchmark"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 229.0,
+          "points": 373.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:49040741",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://artificialanalysis.ai/models",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-24T19:45:10+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: model leaderboard"
+        ],
+        "source": "Hacker News",
+        "source_id": "49040741",
+        "summary": "Public Hacker News discussion linking to artificialanalysis.ai.",
+        "supporting_observations": [],
+        "title": "Opus 5 is currently #1 on Artificial Analysis Intelligence Leaderboard",
+        "url": "https://news.ycombinator.com/item?id=49040741"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "benchmark"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 1.0,
+          "points": 4.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:49028771",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://dorrit.pairsys.ai/",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-23T22:14:03+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark"
+        ],
+        "source": "Hacker News",
+        "source_id": "49028771",
+        "summary": "Public Hacker News discussion linking to dorrit.pairsys.ai.",
+        "supporting_observations": [],
+        "title": "Handwritten-edit benchmark: Fable 5 is #1, Opus 4.8 regresses 55% on miscounting",
+        "url": "https://news.ycombinator.com/item?id=49028771"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "benchmark"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 0.0,
+          "points": 1.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:49024207",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://actionrail.ai/research/value-poisoning-benchmark/",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-23T16:23:50+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark"
+        ],
+        "source": "Hacker News",
+        "source_id": "49024207",
+        "summary": "Public Hacker News discussion linking to actionrail.ai.",
+        "supporting_observations": [],
+        "title": "A value-poisoning benchmark for consequential agent actions",
+        "url": "https://news.ycombinator.com/item?id=49024207"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "benchmark"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 1.0,
+          "points": 2.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:49021912",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://github.com/GiovanniGatti/cve-bench",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-23T14:10:28+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark"
+        ],
+        "source": "Hacker News",
+        "source_id": "49021912",
+        "summary": "Public Hacker News discussion linking to github.com.",
+        "supporting_observations": [],
+        "title": "Ask HN: Which CVEs should I add to my Python security benchmark for AI agents?",
+        "url": "https://news.ycombinator.com/item?id=49021912"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "benchmark"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 0.0,
+          "points": 1.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:49016753",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://apacheseatunnel.medium.com/can-ai-really-build-data-pipelines-8f8713947ad8",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-23T03:57:00+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark"
+        ],
+        "source": "Hacker News",
+        "source_id": "49016753",
+        "summary": "Public Hacker News discussion linking to apacheseatunnel.medium.com.",
+        "supporting_observations": [],
+        "title": "A 100-Task Benchmark of 7 Leading LLMs with Apache SeaTunnel AI CLI",
+        "url": "https://news.ycombinator.com/item?id=49016753"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "benchmark"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 0.0,
+          "points": 2.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:49015617",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://litco.ai/litigationbench",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-23T01:11:18+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark"
+        ],
+        "source": "Hacker News",
+        "source_id": "49015617",
+        "summary": "Public Hacker News discussion linking to litco.ai.",
+        "supporting_observations": [],
+        "title": "Show HN: LitigationBench. A Litigation Task-Based AI Benchmark",
+        "url": "https://news.ycombinator.com/item?id=49015617"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "benchmark"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 0.0,
+          "points": 1.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:49015385",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://poetiq.ai/posts/benchmarks_are_dead/",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-23T00:34:34+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark"
+        ],
+        "source": "Hacker News",
+        "source_id": "49015385",
+        "summary": "Public Hacker News discussion linking to poetiq.ai.",
+        "supporting_observations": [],
+        "title": "Benchmarks Are Dead (For Us)",
+        "url": "https://news.ycombinator.com/item?id=49015385"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "evaluation"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 78.0,
+          "points": 109.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:49008538",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://cruciblebench.ai/",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-22T15:39:01+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark",
+          "Public Hacker News story matched query: model leaderboard"
+        ],
+        "source": "Hacker News",
+        "source_id": "49008538",
+        "summary": "Public Hacker News discussion linking to cruciblebench.ai.",
+        "supporting_observations": [],
+        "title": "Can a MUD evaluate LLMs? A $99 proof of concept",
+        "url": "https://news.ycombinator.com/item?id=49008538"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "benchmark"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 0.0,
+          "points": 1.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:49005727",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://robinshields.github.io/HumanBenchmark/",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-22T12:31:21+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark"
+        ],
+        "source": "Hacker News",
+        "source_id": "49005727",
+        "summary": "Public Hacker News discussion linking to robinshields.github.io.",
+        "supporting_observations": [],
+        "title": "Show HN: Human Benchmark – Compare your reasoning skills against AI models",
+        "url": "https://news.ycombinator.com/item?id=49005727"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "benchmark"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 1.0,
+          "points": 2.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:49001394",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": null,
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-22T03:13:06+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark"
+        ],
+        "source": "Hacker News",
+        "source_id": "49001394",
+        "summary": "Public discussion submitted to Hacker News.",
+        "supporting_observations": [],
+        "title": "Ask HN: Why AI labs publish different benchmarks?",
+        "url": "https://news.ycombinator.com/item?id=49001394"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "benchmark"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 1.0,
+          "points": 2.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:48994388",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://github.com/lemoncrow-lab/lemoncrow",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-21T16:18:37+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark"
+        ],
+        "source": "Hacker News",
+        "source_id": "48994388",
+        "summary": "Public Hacker News discussion linking to github.com.",
+        "supporting_observations": [],
+        "title": "I benchmarked AI cost-saving claims instead of trusting token percentages",
+        "url": "https://news.ycombinator.com/item?id=48994388"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "benchmark"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 0.0,
+          "points": 1.0,
+          "submissions": 1.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:48991245",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://zenodo.org/records/21471816",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-21T12:14:07+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark"
+        ],
+        "source": "Hacker News",
+        "source_id": "48991245",
+        "summary": "Public Hacker News discussion linking to zenodo.org.",
+        "supporting_observations": [],
+        "title": "HugstonOne Architecture, Capability, Benchmark to Privacy Local AI Workstation",
+        "url": "https://news.ycombinator.com/item?id=48991245"
+      },
+      {
+        "authors": [],
+        "categories": [
+          "benchmark",
+          "evaluation"
+        ],
+        "discovered_at": "2026-07-27T16:17:37.834939+00:00",
+        "event_kind": "discussed",
+        "metrics": {
+          "comments": 1.0,
+          "points": 4.0,
+          "submissions": 2.0
+        },
+        "observation_id": "benchmark-social-signal:hacker-news:48989306",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00",
+        "primary_artifact_url": "https://www.i-programmer.info/news/105-artificial-intelligence/19016-deepswe-best-benchmark-for-evaluating-ai-coding-agents.html",
+        "producer": "benchmark-social-signal",
+        "published_at": "2026-07-21T07:45:59+00:00",
+        "quality_scored": false,
+        "rationale": [
+          "Attention signal only; not scientific-quality evidence",
+          "Public Hacker News story matched query: AI benchmark",
+          "Clustered 2 public submissions with the same normalized title"
+        ],
+        "source": "Hacker News",
+        "source_id": "48989306",
+        "summary": "Public Hacker News discussion linking to www.i-programmer.info.",
+        "supporting_observations": [
+          {
+            "metrics": {
+              "comments": 0.0,
+              "points": 2.0
+            },
+            "primary_artifact_url": "https://www.i-programmer.info/professional-programmer/103-i-programmer/18759-why-software-engineering-will-never-die-revisited-in-the-age-of-spec-driven-development.html",
+            "published_at": "2026-07-21T02:58:30+00:00",
+            "source": "Hacker News",
+            "source_id": "48987524",
+            "url": "https://news.ycombinator.com/item?id=48987524"
+          }
+        ],
+        "title": "DeepSWE – Best Benchmark for Evaluating AI Coding Agents?",
+        "url": "https://news.ycombinator.com/item?id=48989306"
+      }
+    ]
+  },
   "date": "2026-07-27",
-  "generated_at": "2026-07-27T17:58:20.350823+00:00",
-  "health": [
-    {
-      "error": null,
-      "item_count": 0,
-      "ok": true,
-      "source": "arxiv"
-    },
-    {
-      "error": null,
-      "item_count": 88,
-      "ok": true,
-      "source": "huggingface"
-    },
-    {
-      "error": null,
-      "item_count": 228,
-      "ok": true,
-      "source": "github"
-    },
-    {
-      "error": "RuntimeError: OPENALEX_API_KEY is not configured",
-      "item_count": 0,
-      "ok": false,
-      "source": "openalex"
-    },
-    {
-      "error": "RuntimeError: BRAVE_API_KEY is not configured",
-      "item_count": 0,
-      "ok": false,
-      "source": "brave"
+  "discovery_state": {
+    "attention": {
+      "benchmark-social-signal:hacker-news:48989306": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:48991245": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:48994388": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:49001394": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:49005727": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:49008538": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:49015385": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:49015617": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:49016753": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:49021912": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:49024207": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:49028771": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:49040741": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:49044597": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:49054268": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:49055170": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:49064707": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      },
+      "benchmark-social-signal:hacker-news:49068451": {
+        "last_seen_at": "2026-07-27T17:58:20.350823+00:00",
+        "observed_at": "2026-07-27T17:58:20.350823+00:00"
+      }
     }
-  ],
-  "items": [
+  },
+  "evidence_items": [
     {
       "adoption_score": 1.590184513879162,
       "artifact_urls": [],
@@ -43,6 +627,7 @@
         "evaluation",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -61,6 +646,7 @@
       "summary": "Motius Leaderboard Case Assets This dataset stores compact browser assets for the all-case comparison pages in the public Motius leaderboards. It is a visualization companion, not a training or evaluation dataset.",
       "title": "ZeyuLing/Motius-Leaderboard-Cases",
       "total_score": 3.01,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/ZeyuLing/Motius-Leaderboard-Cases"
     },
     {
@@ -73,6 +659,7 @@
         "dataset",
         "data_quality"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "released",
       "evidence_score": 1.5,
       "metrics": {
@@ -91,6 +678,7 @@
       "summary": "Daily evidence-first radar for AI benchmarks, evaluations, datasets, and data quality.",
       "title": "ktwu01/benchmark-radar",
       "total_score": 2.81,
+      "updated_at": null,
       "url": "https://github.com/ktwu01/benchmark-radar"
     },
     {
@@ -102,6 +690,7 @@
         "evaluation",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "released",
       "evidence_score": 1.5,
       "metrics": {
@@ -120,6 +709,7 @@
       "summary": "🛹 SkatePal Benchmark: Domain-Specific Fine-Tuning Evaluation This dataset is an open-ended benchmark created to evaluate the performance of SkatePal, a model specifically fine-tuned for Skateboarding Coaching, and to compare it against its base model and larger general-purpose models.",
       "title": "Talayhan/SkatePal-Domain-Benchmark",
       "total_score": 2.76,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/Talayhan/SkatePal-Domain-Benchmark"
     },
     {
@@ -130,6 +720,7 @@
         "benchmark",
         "evaluation"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -148,6 +739,7 @@
       "summary": "A streamlined and customizable framework for efficient large model (LLM, VLM, AIGC) evaluation and performance benchmarking.",
       "title": "modelscope/evalscope",
       "total_score": 2.72,
+      "updated_at": null,
       "url": "https://github.com/modelscope/evalscope"
     },
     {
@@ -158,6 +750,7 @@
         "benchmark",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -176,6 +769,7 @@
       "summary": "BenchHub leaderboard standings — read-only mirror Auto-generated aggregate standings for 120 public BenchHub leaderboard(s). Source of truth: https://runbenchhub.com. Submissions happen on BenchHub; this dataset is a derived, read-only mirror of public leaderboard standings (already-pooled scores + display metadata). It contains no ground-truth samples, no predictions, and no private data.",
       "title": "runbenchhub/leaderboards",
       "total_score": 2.68,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/runbenchhub/leaderboards"
     },
     {
@@ -186,6 +780,7 @@
         "benchmark",
         "evaluation"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -204,6 +799,7 @@
       "summary": "P2PCLAW Innovative Benchmark The first benchmark for AI scientific paper writing quality — multi-dimensional evaluation with formal verification.",
       "title": "Agnuxo/P2PCLAW-Innovative-Benchmark",
       "total_score": 2.58,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/Agnuxo/P2PCLAW-Innovative-Benchmark"
     },
     {
@@ -214,6 +810,7 @@
         "benchmark",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -232,6 +829,7 @@
       "summary": "Follower Leaderboard's History Dataset 🏆 This is the history dataset of Followers Leaderboard. 🗒️ This dataset contains full dataframes in a CSV file (data.csv file) for each time lapse. ⌛ This dataset is automatically updated when space restarts. (Which is approximately every 6 hours) Leaderboard Link 🔗 Followers Leaderboard",
       "title": "Weyaxi/followers-leaderboard",
       "total_score": 2.55,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/Weyaxi/followers-leaderboard"
     },
     {
@@ -242,6 +840,7 @@
         "benchmark",
         "evaluation"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -260,6 +859,7 @@
       "summary": "FinMTM: A Multi-Turn Multimodal Benchmark for Financial Reasoning and Agent Evaluation",
       "title": "HiThink-Research/FinMTM",
       "total_score": 2.51,
+      "updated_at": null,
       "url": "https://github.com/HiThink-Research/FinMTM"
     },
     {
@@ -270,6 +870,7 @@
         "benchmark",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -288,6 +889,7 @@
       "summary": "Tatar OCR Benchmark This dataset is a page-level OCR benchmark for Tatar documents. Each item contains: the original page image, structured OCR/layout annotations in JSONL, a visual control image for fast human verification (original | reconstructed). Full original page images are included. Acknowledgements We express our appreciation to Yandex LLC for support in dataset collection.",
       "title": "yasalma/tatar-ocr-benchmark",
       "total_score": 2.47,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/yasalma/tatar-ocr-benchmark"
     },
     {
@@ -298,6 +900,7 @@
         "benchmark",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -316,6 +919,7 @@
       "summary": "Dataset Card for SceneMem Dataset Summary SceneMem evaluates whether vision-language-action (VLA) models can build a memory of where objects were placed during a long-horizon video and recall that memory on demand. In each scenario, a robot performs 4–7 kitchen tasks back to back in a single continuous ~7-minute video.",
       "title": "Keh0t0/scene-mem-benchmark",
       "total_score": 2.44,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/Keh0t0/scene-mem-benchmark"
     },
     {
@@ -326,6 +930,7 @@
         "evaluation",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -344,6 +949,7 @@
       "summary": "Browser-based testbed for evaluating artificial intelligence models on relevant tasks across diverse datasets, modalities, and domains, with hosted and local options for running the platform.",
       "title": "bennettmichaeldvg2519/nist-ai-model-evaluation",
       "total_score": 2.34,
+      "updated_at": null,
       "url": "https://github.com/bennettmichaeldvg2519/nist-ai-model-evaluation"
     },
     {
@@ -354,6 +960,7 @@
         "benchmark",
         "evaluation"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "released",
       "evidence_score": 1.5,
       "metrics": {
@@ -372,6 +979,7 @@
       "summary": "This is a system that evaluates different AI models according to industry benchmarks . The purpose is to check if the models are not dialed down by the providers and the benchmarks claimed by AI companies are real or not.",
       "title": "mhsaeed786/AI-Evaluation-automation-system",
       "total_score": 2.33,
+      "updated_at": null,
       "url": "https://github.com/mhsaeed786/AI-Evaluation-automation-system"
     },
     {
@@ -382,6 +990,7 @@
         "benchmark",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "released",
       "evidence_score": 1.5,
       "metrics": {
@@ -400,6 +1009,7 @@
       "summary": "Oaysys AI Citation Board Benchmarks Benchmark dataset of 20 brand citation cases with individual scores for AI citation, GEO score, brand mention, SEO visibility, entity authority, and source quality. Built by Oaysys.com.",
       "title": "oaysys-digital/ai-citation-board-benchmarks",
       "total_score": 2.33,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/oaysys-digital/ai-citation-board-benchmarks"
     },
     {
@@ -410,6 +1020,7 @@
         "benchmark",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -428,6 +1039,7 @@
       "summary": "Harbor Results Index This Dataset contains the active canonical harbor-hf publication v1 catalog. Historical pre-cutover data remains available through immutable Dataset revisions.",
       "title": "osolmaz/benchmark-run-index",
       "total_score": 2.32,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/osolmaz/benchmark-run-index"
     },
     {
@@ -438,6 +1050,7 @@
         "benchmark",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "released",
       "evidence_score": 1.5,
       "metrics": {
@@ -456,6 +1069,7 @@
       "summary": "VLA Benchmark Prompted 1200 This is a non-destructive LeRobot v3.0 merge of six 200-episode benchmark datasets. It contains 1,200 training episodes and 615,537 frames. Every episode's task string is the assigned prompt from meta/benchmark/prompt manifest v1.csv. The Coke and Pepsi objects are canonically labeled as a crushed Coke can and a crushed Pepsi can.",
       "title": "justintiensmith/VLA_Benchmark_Prompted_1200",
       "total_score": 2.31,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/justintiensmith/VLA_Benchmark_Prompted_1200"
     },
     {
@@ -466,6 +1080,7 @@
         "benchmark",
         "evaluation"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -484,6 +1099,7 @@
       "summary": "A Django/DRF backend runs MediaPipe BlazePose pose estimation through a Keras BiLSTM-attention model that reports Monte Carlo Dropout uncertainty and Expected Gradients attribution to score cricket batting stances, served via a React/TanStack frontend, with an academic evaluation suite (leave-one-out and grouped cross-validation, ablations).",
       "title": "Kurapati-Sai-Suhas/Suhasvision",
       "total_score": 2.29,
+      "updated_at": null,
       "url": "https://github.com/Kurapati-Sai-Suhas/Suhasvision"
     },
     {
@@ -494,6 +1110,7 @@
         "benchmark",
         "evaluation"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "released",
       "evidence_score": 1.5,
       "metrics": {
@@ -512,6 +1129,7 @@
       "summary": "ESdB: Embeddings for Sequential Data Benchmark ESdB provides reproducible splits, evaluation shifts, and downstream targets for benchmarking representations of sequential data. This repository contains benchmark annotations only. It does not redistribute the original events or input features.",
       "title": "On-Point-Rnd/ESdB-Embeddings-for-Sequential-data-Benchmark",
       "total_score": 2.29,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/On-Point-Rnd/ESdB-Embeddings-for-Sequential-data-Benchmark"
     },
     {
@@ -522,6 +1140,7 @@
         "benchmark",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -540,6 +1159,7 @@
       "summary": "Xournal++ HTR Benchmark A benchmark dataset for evaluating handwritten text recognition (HTR) algorithms on Xournal++ documents (.xopp/.xoj files).",
       "title": "PellelNitram/xournalpp_htr_benchmark",
       "total_score": 2.28,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/PellelNitram/xournalpp_htr_benchmark"
     },
     {
@@ -549,6 +1169,7 @@
       "categories": [
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -567,6 +1188,7 @@
       "summary": "🤗 The largest hub of ready-to-use datasets for AI models with fast, easy-to-use and efficient data manipulation tools",
       "title": "huggingface/datasets",
       "total_score": 2.27,
+      "updated_at": null,
       "url": "https://github.com/huggingface/datasets"
     },
     {
@@ -577,6 +1199,7 @@
         "benchmark",
         "data_quality"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -595,6 +1218,7 @@
       "summary": "How contaminated would it have to be? Partial identification and sensitivity analysis for benchmark claims under unmeasured data contamination (Gamma robustness values; pre-registered OLL audit)",
       "title": "tanviranjumjoarder/contamsens",
       "total_score": 2.25,
+      "updated_at": null,
       "url": "https://github.com/tanviranjumjoarder/contamsens"
     },
     {
@@ -605,6 +1229,7 @@
         "benchmark",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "released",
       "evidence_score": 1.5,
       "metrics": {
@@ -623,6 +1248,7 @@
       "summary": "Animasyon Domaini Odaklı Büyük Dil Modelleri ve LoRA Fine-Tune Performans Karşılaştırma Raporu 1. Proje Özeti ve Giriş Bu çalışma, niş bir alan olan animasyon sektörü, film özetleri ve seslendirme kadroları özelinde üretilen verilerle optimize edilen özel bir LoRA fine-tune modelinin (Kendi FineTuned Modelim), popüler ön-eğitimli (Base) ve talimatlara göre yapılandırılmış büyük dil modelleri…",
       "title": "meldakahramann/animasyon-benchmark-dataset",
       "total_score": 2.25,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/meldakahramann/animasyon-benchmark-dataset"
     },
     {
@@ -633,6 +1259,7 @@
         "evaluation",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "released",
       "evidence_score": 1.5,
       "metrics": {
@@ -651,6 +1278,7 @@
       "summary": "blue-machines/token wise lid evaluation dataset Token-wise LID evaluation set (code mix dataset 5.csv). token types are pipe-separated word labels (LID WORD / IGNORE ENTITY).",
       "title": "blue-machines/token_wise_lid_evaluation_dataset",
       "total_score": 2.25,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/blue-machines/token_wise_lid_evaluation_dataset"
     },
     {
@@ -661,6 +1289,7 @@
         "evaluation",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "released",
       "evidence_score": 1.5,
       "metrics": {
@@ -679,6 +1308,7 @@
       "summary": "blue-machines/lsd evaluation dataset Held-out evaluation set for language-switch detection / LID (LSD final dataset.csv). Columns language switch text script type language Stats Rows: 10,048 Languages: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Oria, Tamil, Telugu Switch labels: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Oria, Tamil, Telugu, no switch…",
       "title": "blue-machines/lsd_evaluation_dataset",
       "total_score": 2.25,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/blue-machines/lsd_evaluation_dataset"
     },
     {
@@ -689,6 +1319,7 @@
         "benchmark",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -707,6 +1338,7 @@
       "summary": "No dataset card. Declared tagged: anomaly-detection, spectral-data, vacuum-systems.",
       "title": "a25578073/spectral-benchmark-bv4",
       "total_score": 2.22,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/a25578073/spectral-benchmark-bv4"
     },
     {
@@ -717,6 +1349,7 @@
         "benchmark",
         "evaluation"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "released",
       "evidence_score": 1.5,
       "metrics": {
@@ -735,6 +1368,7 @@
       "summary": "RTX 5090 LLM Benchmarks Speed and quality benchmarks for quantized LLMs on NVIDIA RTX 5090 32GB, measured with llm-bench-rig. Quality Benchmarks Generative evaluation through llama-server chat completions. Replicates standard benchmark methodology using custom evaluators — no lm-evaluation-harness dependency.",
       "title": "omegaprime669/rtx-5090-benchmarks",
       "total_score": 2.21,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/omegaprime669/rtx-5090-benchmarks"
     },
     {
@@ -745,6 +1379,7 @@
         "benchmark",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "released",
       "evidence_score": 1.5,
       "metrics": {
@@ -763,6 +1398,7 @@
       "summary": "Sport Intelligence Benchmark Ensemble V2 LightGBM meta-learner methodology and a synthetic reproduction dataset for football match outcome prediction, reported as two distinct, deliberately never-reconciled results (D-07).",
       "title": "FedCal/sport-intelligence-benchmark",
       "total_score": 2.2,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/FedCal/sport-intelligence-benchmark"
     },
     {
@@ -773,6 +1409,7 @@
         "benchmark",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "released",
       "evidence_score": 1.5,
       "metrics": {
@@ -791,6 +1428,7 @@
       "summary": "GEO Retrofit Benchmark Additive answer-first + FAQ retrofit engine and structural GEO/AEO detection gate that took a real bilingual (IT+EN) content corpus of 194 articles from 741 structural GEO/AEO findings to 0, with a synthetic before/after fixture pair and the exact command to reproduce the transform end to end (node --test test/reproduce.test.mjs).",
       "title": "FedCal/geo-retrofit-benchmark",
       "total_score": 2.19,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/FedCal/geo-retrofit-benchmark"
     },
     {
@@ -801,6 +1439,7 @@
         "benchmark",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "released",
       "evidence_score": 1.5,
       "metrics": {
@@ -819,6 +1458,7 @@
       "summary": "Hashing Benchmark Datasets This repository provides a small collection of commonly used benchmark datasets for hashing, multimedia retrieval, and cross-modal retrieval research.",
       "title": "xinxin713/hashing-benchmark-datasets",
       "total_score": 2.18,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/xinxin713/hashing-benchmark-datasets"
     },
     {
@@ -829,6 +1469,7 @@
         "evaluation",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "updated",
       "evidence_score": 1.5,
       "metrics": {
@@ -847,6 +1488,7 @@
       "summary": "Origin Data Lab — Face Anonymization Public Evaluation V58 Privacy processing for real-world video datasets Automated face anonymization combined with targeted Human QA for autonomous driving, robotics, computer vision, urban mobility, and AI data teams.",
       "title": "origindatalab/face-anonymization-public-evaluation-v58",
       "total_score": 2.17,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/origindatalab/face-anonymization-public-evaluation-v58"
     },
     {
@@ -857,6 +1499,7 @@
         "benchmark",
         "dataset"
       ],
+      "discovered_at": "2026-07-27T17:58:20.350823+00:00",
       "event_kind": "released",
       "evidence_score": 1.5,
       "metrics": {
@@ -875,9 +1518,64 @@
       "summary": "Reasoning Benchmark 800 Reasoning Benchmark 800 is an 800-episode LeRobot v3 training dataset for studying semantic and compositional generalization in vision-language-action models. It combines four completed 200-episode datasets while preserving the original observations, actions, timing, and videos. Only the training-language metadata was reassigned.",
       "title": "justintiensmith/Reasoning_Benchmark_800",
       "total_score": 2.17,
+      "updated_at": null,
       "url": "https://huggingface.co/datasets/justintiensmith/Reasoning_Benchmark_800"
     }
   ],
-  "schema_version": 1,
+  "generated_at": "2026-07-27T17:58:20.350823+00:00",
+  "ingest_health": [
+    {
+      "error": null,
+      "item_count": 0,
+      "kind": "evidence",
+      "ok": true,
+      "source": "arxiv"
+    },
+    {
+      "error": null,
+      "item_count": 88,
+      "kind": "evidence",
+      "ok": true,
+      "source": "huggingface"
+    },
+    {
+      "error": null,
+      "item_count": 228,
+      "kind": "evidence",
+      "ok": true,
+      "source": "github"
+    },
+    {
+      "error": "RuntimeError: OPENALEX_API_KEY is not configured",
+      "item_count": 0,
+      "kind": "evidence",
+      "ok": false,
+      "source": "openalex"
+    },
+    {
+      "error": "RuntimeError: BRAVE_API_KEY is not configured",
+      "item_count": 0,
+      "kind": "evidence",
+      "ok": false,
+      "source": "brave"
+    },
+    {
+      "error": null,
+      "item_count": 18,
+      "kind": "attention",
+      "ok": true,
+      "source": "Benchmark Social Signal"
+    }
+  ],
+  "producer_health": [
+    {
+      "error": null,
+      "item_count": 18,
+      "ok": true,
+      "producer": "benchmark-social-signal",
+      "source": "Hacker News"
+    }
+  ],
+  "schema_version": 2,
   "since": "2026-07-25T17:58:20.350823+00:00"
 }

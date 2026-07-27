@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import time
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -20,7 +21,16 @@ def _date(value: str | None) -> datetime:
 def fetch_arxiv(config: dict[str, Any], since: datetime, limit: int) -> list[RadarItem]:
     namespace = {"atom": "http://www.w3.org/2005/Atom"}
     found: dict[str, RadarItem] = {}
-    for query in config.get("queries", []):
+    # arXiv's Atom `published` timestamp is the v1 submission time, not the
+    # announcement time. A strict 48-hour cutoff misses papers submitted before
+    # a weekend and announced afterward, so fetch an explicit overlap and use
+    # durable discovery state in the pipeline to suppress repeats.
+    overlap_since = since - timedelta(hours=int(config.get("overlap_hours", 120)))
+    queries = config.get("queries", [])
+    request_delay = float(config.get("request_delay_seconds", 3))
+    for query_index, query in enumerate(queries):
+        if query_index and request_delay > 0:
+            time.sleep(request_delay)
         xml = get_text(
             "https://export.arxiv.org/api/query",
             params={
@@ -34,7 +44,8 @@ def fetch_arxiv(config: dict[str, Any], since: datetime, limit: int) -> list[Rad
         root = ET.fromstring(xml)
         for entry in root.findall("atom:entry", namespace):
             published = _date(entry.findtext("atom:published", namespaces=namespace))
-            if published < since:
+            updated = _date(entry.findtext("atom:updated", namespaces=namespace))
+            if max(published, updated) < overlap_since:
                 continue
             url = (entry.findtext("atom:id", namespaces=namespace) or "").replace("http:", "https:")
             source_id = url.rsplit("/", 1)[-1].split("v", 1)[0]
@@ -51,8 +62,9 @@ def fetch_arxiv(config: dict[str, Any], since: datetime, limit: int) -> list[Rad
                 title=title,
                 url=url,
                 published_at=published,
+                updated_at=updated,
                 summary=summary,
-                event_kind="released",
+                event_kind="updated" if updated > published else "released",
                 authors=authors,
             )
     return list(found.values())

@@ -4,10 +4,12 @@ import hashlib
 import math
 import re
 from collections import Counter
+from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
+from .attention import fetch_attention_feeds
 from .models import RadarItem, RadarRun, SourceHealth
 from .sources import SOURCE_FETCHERS
 
@@ -27,7 +29,11 @@ def normalized_title(title: str) -> str:
 
 def deduplicate(items: list[RadarItem]) -> list[RadarItem]:
     kept: dict[str, RadarItem] = {}
-    for item in sorted(items, key=lambda value: value.published_at, reverse=True):
+    for item in sorted(
+        items,
+        key=lambda value: value.updated_at or value.published_at,
+        reverse=True,
+    ):
         title_key = normalized_title(item.title)
         if len(title_key) >= 24:
             key = hashlib.sha256(title_key.encode()).hexdigest()
@@ -80,7 +86,8 @@ def score_item(
         evidence += 0.5
     item.evidence_score = min(evidence, 4.0)
 
-    age_hours = max(0.0, (now - item.published_at).total_seconds() / 3600)
+    activity_at = item.updated_at or item.published_at
+    age_hours = max(0.0, (now - activity_at).total_seconds() / 3600)
     item.recency_score = max(0.0, 4.0 - age_hours / 24)
 
     adoption = (
@@ -126,21 +133,69 @@ def assert_no_boilerplate_summaries(items: list[RadarItem]) -> None:
         )
 
 
-def run_pipeline(config: dict[str, Any], now: datetime | None = None) -> RadarRun:
+def _date(value: str | None, *, fallback: datetime) -> datetime:
+    if not value:
+        return fallback
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
+
+
+def _apply_arxiv_discovery_state(
+    fetched: list[RadarItem],
+    *,
+    now: datetime,
+    state: dict[str, Any],
+) -> list[RadarItem]:
+    arxiv_state = state.setdefault("arxiv", {})
+    changed: list[RadarItem] = []
+    for item in fetched:
+        previous = arxiv_state.get(item.source_id) or {}
+        activity_at = item.updated_at or item.published_at
+        item.discovered_at = _date(previous.get("discovered_at"), fallback=now)
+        previous_activity = _date(
+            previous.get("last_activity_at"),
+            fallback=datetime.min.replace(tzinfo=UTC),
+        )
+        if not previous or activity_at > previous_activity:
+            changed.append(item)
+        arxiv_state[item.source_id] = {
+            "discovered_at": item.discovered_at.astimezone(UTC).isoformat(),
+            "last_activity_at": activity_at.astimezone(UTC).isoformat(),
+        }
+    return changed
+
+
+def run_pipeline(
+    config: dict[str, Any],
+    now: datetime | None = None,
+    *,
+    previous_snapshot: dict[str, Any] | None = None,
+) -> RadarRun:
     now = now or datetime.now(UTC)
     settings = config["radar"]
     since = now - timedelta(hours=int(settings["lookback_hours"]))
     limit = int(settings["max_items_per_source"])
     items: list[RadarItem] = []
     health: list[SourceHealth] = []
+    discovery_state = deepcopy((previous_snapshot or {}).get("discovery_state") or {})
     for source_name, source_config in config["sources"].items():
         if not source_config.get("enabled", True):
             continue
         fetcher = SOURCE_FETCHERS[source_name]
         try:
             fetched = fetcher(source_config, since, limit)
-            items.extend(fetched)
             health.append(SourceHealth(source=source_name, ok=True, item_count=len(fetched)))
+            if source_name == "arxiv":
+                items.extend(
+                    _apply_arxiv_discovery_state(
+                        fetched,
+                        now=now,
+                        state=discovery_state,
+                    )
+                )
+            else:
+                for item in fetched:
+                    item.discovered_at = now
+                items.extend(fetched)
         except Exception as error:  # a partial report is preferable; health exposes the gap
             health.append(
                 SourceHealth(
@@ -154,12 +209,18 @@ def run_pipeline(config: dict[str, Any], now: datetime | None = None) -> RadarRu
         for name, source_config in config["sources"].items()
         if source_config.get("enabled", True) and source_config.get("required", False)
     }
-    healthy_required = {
-        source.source for source in health if source.ok and source.source in required
-    }
-    if required and not healthy_required:
+    required_health = {source.source: source for source in health if source.source in required}
+    unavailable_required = sorted(
+        source
+        for source in required
+        if source not in required_health
+        or not required_health[source].ok
+        or required_health[source].item_count == 0
+    )
+    if unavailable_required:
         raise RuntimeError(
-            "All required discovery sources failed; refusing to render a normal daily report"
+            "Required discovery sources failed or returned no records: "
+            + ", ".join(unavailable_required)
         )
     unique = deduplicate(items)
     scored = [score_item(item, config["taxonomy"], now) for item in unique]
@@ -171,9 +232,22 @@ def run_pipeline(config: dict[str, Any], now: datetime | None = None) -> RadarRu
     selected.sort(key=lambda item: (item.total_score, item.published_at), reverse=True)
     published = selected[: int(settings["report_limit"])]
     assert_no_boilerplate_summaries(published)
+    attention, attention_health, producer_health, attention_state = fetch_attention_feeds(
+        config.get("attention") or {},
+        observed_at=now,
+        previous_state=((previous_snapshot or {}).get("discovery_state") or {}).get("attention")
+        or {},
+    )
     return RadarRun(
         generated_at=now,
         since=since,
         items=published,
         health=health,
+        attention=attention,
+        attention_ingest_health=attention_health,
+        producer_health=producer_health,
+        discovery_state={
+            **discovery_state,
+            "attention": attention_state,
+        },
     )

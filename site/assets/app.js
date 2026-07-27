@@ -9,11 +9,11 @@ const FALLBACK_COLORS = ["#756aa8", "#397f9a", "#a4576d", "#70833d"];
 const byId = (id) => document.getElementById(id);
 const state = {
   data: null,
-  external: [],
   view: "today",
   todayDate: "",
   date: "",
   q: "",
+  kind: "",
   category: "",
   source: "",
   event: "",
@@ -75,6 +75,7 @@ function readUrl() {
     state.date = params.get("date") || "";
   }
   state.q = params.get("q") || "";
+  state.kind = params.get("kind") || "";
   state.category = params.get("category") || "";
   state.source = params.get("source") || "";
   state.event = params.get("event") || "";
@@ -88,6 +89,7 @@ function writeUrl() {
     params.set("date", activeDate);
   }
   if (state.q) params.set("q", state.q);
+  if (state.kind) params.set("kind", state.kind);
   if (state.category) params.set("category", state.category);
   if (state.source) params.set("source", state.source);
   if (state.event) params.set("event", state.event);
@@ -190,6 +192,39 @@ function signalCard(item, index) {
   ]);
 }
 
+function attentionCard(item) {
+  const details = element("button", {
+    className: "detail-button",
+    text: "View signal",
+    attrs: { type: "button" },
+  });
+  details.addEventListener("click", () =>
+    openDetails({ ...item, snapshot_date: state.todayDate, observation_kind: "attention" }),
+  );
+  return element("article", { className: "explorer-card attention-card" }, [
+    element("div", {}, [
+      element("div", { className: "signal-meta" }, [
+        element("span", { className: "attention-badge", text: "attention" }),
+        element("span", { text: `${item.source} · ${item.event_kind}` }),
+      ]),
+      element("h3", {}, [
+        element("a", {
+          text: item.title,
+          attrs: {
+            href: item.primary_artifact_url || item.url,
+            target: "_blank",
+            rel: "noopener noreferrer",
+          },
+        }),
+      ]),
+      element("p", {
+        text: `${metricLabel(item.metrics?.points, "point")} · ${metricLabel(item.metrics?.comments, "comment")} · ${metricLabel(item.metrics?.submissions ?? 1, "submission")}`,
+      }),
+    ]),
+    details,
+  ]);
+}
+
 function definition(label, value) {
   return element("div", {}, [
     element("dt", { text: label }),
@@ -203,21 +238,45 @@ function renderToday() {
   state.todayDate = day.date;
   byId("today-date").value = day.date;
 
-  byId("today-count").textContent = `${day.item_count} records`;
+  byId("today-count").textContent = `${day.evidence_count} records`;
   replaceChildren(
     byId("today-list"),
-    day.items.map((item, index) => signalCard(item, index)),
+    day.evidence_items.map((item, index) => signalCard(item, index)),
+  );
+  byId("today-attention-count").textContent =
+    `${day.attention.active_count} active · ${day.attention.new_count} new`;
+  replaceChildren(
+    byId("today-attention-list"),
+    day.attention.observations.length
+      ? day.attention.observations.map(attentionCard)
+      : [
+          element("p", {
+            className: "empty-state",
+            text: "No persisted attention observations for this snapshot.",
+          }),
+        ],
   );
 
+  const healthEntries = [
+    ...day.ingest_health.map((entry) => ({ ...entry, layer: "Radar ingest" })),
+    ...day.producer_health.map((entry) => ({ ...entry, layer: "Producer report" })),
+  ];
   replaceChildren(
     byId("health-list"),
-    day.health.map((entry) => {
+    healthEntries.map((entry) => {
       const children = [
         element("span", { className: `health-dot${entry.ok ? " ok" : ""}` }),
-        element("span", { className: "health-name", text: entry.source }),
+        element("span", {
+          className: "health-name",
+          text: `${entry.source} · ${entry.layer}`,
+        }),
         element("span", {
           className: "health-count",
-          text: entry.ok ? `${entry.item_count} found` : "failed",
+          text: entry.ok
+            ? entry.item_count
+              ? `${entry.item_count} found`
+              : "empty"
+            : "failed",
         }),
       ];
       if (entry.error) {
@@ -233,19 +292,54 @@ function renderTrends() {
   const categories = state.data.facets.categories;
   replaceChildren(
     byId("trend-legend"),
-    categories.map((category, index) => {
-      const swatch = element("span", { className: "legend-swatch" });
-      swatch.style.setProperty("--swatch", categoryColor(category, index));
-      return element("span", { className: "legend-item" }, [
-        swatch,
-        element("span", { text: category.replaceAll("_", " ") }),
-      ]);
-    }),
+    [
+      ...categories.map((category, index) => {
+        const swatch = element("span", { className: "legend-swatch" });
+        swatch.style.setProperty("--swatch", categoryColor(category, index));
+        return element("span", { className: "legend-item" }, [
+          swatch,
+          element("span", { text: `Evidence: ${category.replaceAll("_", " ")}` }),
+        ]);
+      }),
+      (() => {
+        const swatch = element("span", { className: "legend-swatch attention-swatch" });
+        return element("span", { className: "legend-item" }, [
+          swatch,
+          element("span", { text: "Attention: active" }),
+        ]);
+      })(),
+    ],
   );
+  const dayCount = state.data.days.length;
+  const trendMessage = byId("trend-message");
+  const trendChart = byId("trend-chart");
+  if (dayCount === 1) {
+    const only = state.data.days[0];
+    trendMessage.textContent =
+      `History begins ${formatDate(only.date)}. At least two daily snapshots are required to calculate a trend. ` +
+      `Baseline: ${only.evidence_count} evidence records and ${only.attention.active_count} active attention signals.`;
+    trendChart.hidden = true;
+  } else if (dayCount === 2) {
+    trendMessage.textContent =
+      "Two snapshots are available. The chart shows the first comparable daily change; broader trend language begins with three snapshots.";
+    trendChart.hidden = false;
+  } else {
+    const latest = state.data.days[dayCount - 1];
+    const previous = state.data.days[dayCount - 2];
+    const evidenceDelta = latest.evidence_count - previous.evidence_count;
+    const attentionDelta = latest.attention.active_count - previous.attention.active_count;
+    const direction = (value) => (value > 0 ? `up ${value}` : value < 0 ? `down ${Math.abs(value)}` : "flat");
+    trendMessage.textContent =
+      `Compared with ${previous.date}, surfaced evidence is ${direction(evidenceDelta)} and active attention is ${direction(attentionDelta)}.`;
+    trendChart.hidden = false;
+  }
   const maxTotal = Math.max(
     1,
     ...state.data.days.map((day) =>
-      Object.values(day.category_counts).reduce((sum, count) => sum + count, 0),
+      Math.max(
+        Object.values(day.category_counts).reduce((sum, count) => sum + count, 0),
+        day.attention.active_count,
+      ),
     ),
   );
   replaceChildren(
@@ -261,14 +355,22 @@ function renderTrends() {
         segment.style.setProperty("--bar-color", categoryColor(category, index));
         return segment;
       });
+      const attentionBar = element("span", {
+        className: "attention-volume",
+        attrs: { title: `Active attention: ${day.attention.active_count}` },
+      });
+      attentionBar.style.height = `${(day.attention.active_count / maxTotal) * 260}px`;
       const button = element("button", {
         className: "day-column",
         attrs: {
           type: "button",
-          "aria-label": `${formatDate(day.date)}: ${total} category matches across ${day.item_count} items`,
+          "aria-label": `${formatDate(day.date)}: ${total} evidence category matches across ${day.evidence_count} evidence records and ${day.attention.active_count} attention signals`,
         },
       }, [
-        element("span", { className: "bar-stack" }, segments),
+        element("span", { className: "series-bars" }, [
+          element("span", { className: "bar-stack" }, segments),
+          attentionBar,
+        ]),
         element("span", { className: "day-label", text: day.date.slice(5) }),
       ]);
       button.addEventListener("click", () => {
@@ -284,7 +386,6 @@ function renderTrends() {
   replaceChildren(
     byId("trend-table"),
     [...state.data.days].reverse().map((day) => {
-      const healthy = day.health.filter((entry) => entry.ok).length;
       const link = element("a", { text: day.date, attrs: { href: `?date=${day.date}` } });
       link.addEventListener("click", (event) => {
         event.preventDefault();
@@ -294,57 +395,22 @@ function renderTrends() {
       });
       return element("tr", {}, [
         element("td", {}, [link]),
-        element("td", { text: day.item_count }),
         element("td", {
-          text: Object.entries(day.category_counts)
-            .map(([name, count]) => `${name.replaceAll("_", " ")} ${count}`)
-            .join(" · "),
+          text: `${formatDate(day.since, { dateStyle: "short", timeStyle: "short" })} → ${formatDate(day.generated_at, { dateStyle: "short", timeStyle: "short" })}`,
         }),
-        element("td", { text: `${healthy}/${day.health.length} reporting` }),
+        element("td", { text: day.evidence_count }),
+        element("td", { text: countMapText(day.source_counts) }),
+        element("td", {
+          text: countMapText(day.category_counts),
+        }),
+        element("td", { text: countMapText(day.event_kind_counts) }),
+        element("td", {
+          text: `${day.attention.new_count} new · ${day.attention.active_count} active`,
+        }),
+        element("td", { text: healthSummary(day.ingest_health) }),
       ]);
     }),
   );
-}
-
-function normalizeExternal(observation, feed) {
-  const published = observation.published_at || observation.discovered_at || feed.generated_at;
-  return {
-    source: observation.source || feed.producer,
-    source_id: observation.source_id || observation.id,
-    title: observation.title,
-    url: observation.url,
-    published_at: published,
-    summary: observation.summary || "",
-    event_kind: observation.event_kind || "discussed",
-    authors: observation.authors || [],
-    artifact_urls: observation.primary_artifact_url ? [observation.primary_artifact_url] : [],
-    metrics: observation.metrics || {},
-    categories: observation.categories || [],
-    rationale: observation.rationale || ["Public attention signal; not quality evidence"],
-    discovered_at: observation.discovered_at || feed.generated_at,
-    snapshot_date: published.slice(0, 10),
-    supporting_observations: (observation.supporting_observations || []).filter(
-      (supporting) => supporting && safeHttpUrl(supporting.url),
-    ),
-    observation_kind: "attention",
-  };
-}
-
-function safeHttpUrl(value) {
-  try {
-    const parsed = new URL(value);
-    return ["http:", "https:"].includes(parsed.protocol);
-  } catch {
-    return false;
-  }
-}
-
-function normalizedRecordTitle(title) {
-  return title.toLowerCase().match(/[a-z0-9]+/g)?.join(" ") || title.toLowerCase().trim();
-}
-
-function attentionTotal(item) {
-  return Number(item.metrics?.points || 0) + Number(item.metrics?.comments || 0);
 }
 
 function metricLabel(value, singular, plural = `${singular}s`) {
@@ -352,112 +418,39 @@ function metricLabel(value, singular, plural = `${singular}s`) {
   return `${count.toLocaleString()} ${count === 1 ? singular : plural}`;
 }
 
-function supportingRecord(item) {
-  return {
-    source_id: item.source_id,
-    url: item.url,
-    published_at: item.published_at,
-    metrics: item.metrics || {},
-    ...(item.artifact_urls?.[0] ? { primary_artifact_url: item.artifact_urls[0] } : {}),
-  };
+function countMapText(values) {
+  const entries = Object.entries(values || {});
+  return entries.length
+    ? entries
+        .map(([name, count]) => `${name.replaceAll("_", " ")} ${count}`)
+        .join(" · ")
+    : "none";
 }
 
-function clusterAttentionRecords(items) {
-  const groups = new Map();
-  items.forEach((item) => {
-    const key = `${item.source}\u0000${normalizedRecordTitle(item.title)}`;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(item);
-  });
-  return [...groups.values()].map((group) => {
-    if (group.length === 1) return group[0];
-    const primary = [...group].sort(
-      (left, right) =>
-        attentionTotal(right) - attentionTotal(left) ||
-        String(right.published_at).localeCompare(String(left.published_at)),
-    )[0];
-    const supporting = [
-      ...(primary.supporting_observations || []),
-      ...group
-        .filter((item) => item.source_id !== primary.source_id)
-        .flatMap((item) => [supportingRecord(item), ...(item.supporting_observations || [])]),
-    ];
-    const uniqueSupporting = [
-      ...new Map(
-        supporting
-          .filter((item) => item.source_id !== primary.source_id && safeHttpUrl(item.url))
-          .map((item) => [item.source_id, item]),
-      ).values(),
-    ];
-    return {
-      ...primary,
-      categories: [...new Set(group.flatMap((item) => item.categories || []))].sort(),
-      metrics: {
-        points: group.reduce((sum, item) => sum + Number(item.metrics?.points || 0), 0),
-        comments: group.reduce((sum, item) => sum + Number(item.metrics?.comments || 0), 0),
-        submissions: group.reduce(
-          (sum, item) => sum + Number(item.metrics?.submissions || 1),
-          0,
-        ),
-      },
-      rationale: [
-        ...new Set([
-          ...group.flatMap((item) => item.rationale || []),
-          `Clustered ${group.length} public submissions with the same normalized title`,
-        ]),
-      ],
-      supporting_observations: uniqueSupporting,
-    };
-  });
-}
-
-async function loadExternalFeeds() {
-  try {
-    const configResponse = await fetch("data/feeds.json", { cache: "no-store" });
-    if (!configResponse.ok) throw new Error("feed configuration unavailable");
-    const config = await configResponse.json();
-    const settled = await Promise.allSettled(
-      (config.feeds || []).map(async (entry) => {
-        const response = await fetch(entry.url, { cache: "no-store" });
-        if (!response.ok) throw new Error(`${entry.name}: HTTP ${response.status}`);
-        const feed = await response.json();
-        if (feed.schema_version !== 1 || !Array.isArray(feed.observations)) {
-          throw new Error(`${entry.name}: incompatible public feed`);
-        }
-        return feed.observations
-          .filter(
-            (observation) =>
-              observation &&
-              typeof observation.title === "string" &&
-              safeHttpUrl(observation.url),
-          )
-          .map((observation) => normalizeExternal(observation, feed));
-      }),
-    );
-    state.external = clusterAttentionRecords(
-      settled
-        .filter((result) => result.status === "fulfilled")
-        .flatMap((result) => result.value),
-    );
-    const failures = settled.filter((result) => result.status === "rejected").length;
-    byId("feed-status").textContent = failures
-      ? `${state.external.length} public signals · ${failures} feed unavailable`
-      : `${state.external.length} public attention signals loaded`;
-  } catch {
-    state.external = [];
-    byId("feed-status").textContent = "Public attention feeds unavailable";
-  }
+function healthSummary(entries) {
+  const nonempty = entries.filter((entry) => entry.ok && entry.item_count > 0).length;
+  const empty = entries.filter((entry) => entry.ok && entry.item_count === 0).length;
+  const failed = entries.filter((entry) => !entry.ok).length;
+  return `${nonempty} nonempty · ${empty} empty · ${failed} failed`;
 }
 
 function allObservations() {
-  const primary = state.data.days.flatMap((day) =>
-    day.items.map((item) => ({
+  const evidence = state.data.days.flatMap((day) =>
+    day.evidence_items.map((item) => ({
       ...item,
       snapshot_date: day.date,
-      observation_kind: "primary",
+      observation_kind: "evidence",
     })),
   );
-  return [...primary, ...state.external].sort((a, b) => {
+  const attention = state.data.days.flatMap((day) =>
+    day.attention.observations.map((item) => ({
+      ...item,
+      snapshot_date: day.date,
+      artifact_urls: item.primary_artifact_url ? [item.primary_artifact_url] : [],
+      observation_kind: "attention",
+    })),
+  );
+  return [...evidence, ...attention].sort((a, b) => {
     const dateOrder = String(b.snapshot_date).localeCompare(String(a.snapshot_date));
     return dateOrder || Number(b.total_score || 0) - Number(a.total_score || 0);
   });
@@ -472,6 +465,12 @@ function populateSelect(target, values, label, selected) {
 
 function syncFilters() {
   const observations = allObservations();
+  populateSelect(
+    byId("kind-filter"),
+    state.data.facets.kinds,
+    "kinds",
+    state.kind,
+  );
   populateSelect(
     byId("date-filter"),
     [...new Set(observations.map((item) => item.snapshot_date))].sort().reverse(),
@@ -505,6 +504,7 @@ function filteredObservations() {
     const haystack = `${item.title} ${item.summary} ${item.source}`.toLowerCase();
     return (
       (!state.date || item.snapshot_date === state.date) &&
+      (!state.kind || item.observation_kind === state.kind) &&
       (!state.category || (item.categories || []).includes(state.category)) &&
       (!state.source || item.source === state.source) &&
       (!state.event || item.event_kind === state.event) &&
@@ -515,11 +515,15 @@ function filteredObservations() {
 
 function openDetails(item) {
   const isAttention = item.observation_kind === "attention";
+  const primaryArtifact = item.primary_artifact_url || item.artifact_urls?.[0];
   const scoreEntries = isAttention
     ? [
-        ["HN points", Number(item.metrics?.points || 0).toLocaleString()],
+        [
+          item.source === "Hacker News" ? "HN points" : "Activity points",
+          Number(item.metrics?.points || 0).toLocaleString(),
+        ],
         ["Comments", Number(item.metrics?.comments || 0).toLocaleString()],
-        ["Submissions", Number(item.metrics?.submissions || 1).toLocaleString()],
+        ["Submissions", Number(item.metrics?.submissions ?? 1).toLocaleString()],
         ["Published", formatDate(item.published_at, { dateStyle: "medium" })],
       ]
     : [
@@ -551,7 +555,7 @@ function openDetails(item) {
             item.supporting_observations.map((record) =>
               element("li", {}, [
                 element("a", {
-                  text: `Hacker News #${record.source_id}`,
+                  text: `${record.source || item.source} #${record.source_id}`,
                   attrs: {
                     href: record.url,
                     target: "_blank",
@@ -567,13 +571,13 @@ function openDetails(item) {
         ])
       : null;
   const links = element("div", { className: "detail-links" }, [
-    ...(isAttention && item.artifact_urls?.[0]
+    ...(isAttention && primaryArtifact
       ? [
           element("a", {
             className: "primary-link",
             text: "Open primary artifact ↗",
             attrs: {
-              href: item.artifact_urls[0],
+              href: primaryArtifact,
               target: "_blank",
               rel: "noopener noreferrer",
             },
@@ -608,7 +612,9 @@ function openDetails(item) {
     isAttention
       ? element("p", {
           className: "discovery-note",
-          text: `Discovered by the radar ${formatDate(item.discovered_at, { dateStyle: "medium", timeStyle: "short" })} UTC`,
+          text:
+            `Producer discovered ${formatDate(item.discovered_at, { dateStyle: "medium", timeStyle: "short" })} UTC · ` +
+            `Radar first observed ${formatDate(item.observed_at, { dateStyle: "medium", timeStyle: "short" })} UTC`,
         })
       : null,
     links,
@@ -640,7 +646,10 @@ function explorerCard(item) {
         element("a", {
           text: item.title,
           attrs: {
-            href: isAttention && item.artifact_urls?.[0] ? item.artifact_urls[0] : item.url,
+            href:
+              isAttention && (item.primary_artifact_url || item.artifact_urls?.[0])
+                ? item.primary_artifact_url || item.artifact_urls[0]
+                : item.url,
             target: "_blank",
             rel: "noopener noreferrer",
           },
@@ -659,7 +668,13 @@ function explorerCard(item) {
 function renderExplorer() {
   syncFilters();
   const observations = filteredObservations();
-  byId("explorer-count").textContent = `${observations.length} result${observations.length === 1 ? "" : "s"}`;
+  const evidenceCount = observations.filter(
+    (item) => item.observation_kind === "evidence",
+  ).length;
+  const attentionCount = observations.length - evidenceCount;
+  byId("explorer-count").textContent =
+    `${observations.length} result${observations.length === 1 ? "" : "s"} · ` +
+    `${evidenceCount} evidence · ${attentionCount} attention`;
   replaceChildren(
     byId("explorer-list"),
     observations.length
@@ -687,6 +702,7 @@ function bindEvents() {
   });
   byId("filters").addEventListener("input", () => {
     state.q = byId("search-filter").value;
+    state.kind = byId("kind-filter").value;
     state.date = byId("date-filter").value;
     state.category = byId("category-filter").value;
     state.source = byId("source-filter").value;
@@ -695,6 +711,7 @@ function bindEvents() {
   });
   byId("clear-filters").addEventListener("click", () => {
     state.q = "";
+    state.kind = "";
     state.date = "";
     state.category = "";
     state.source = "";
@@ -715,7 +732,7 @@ async function initialize() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     state.data = await response.json();
     if (
-      state.data.schema_version !== 1 ||
+      state.data.schema_version !== 2 ||
       !Array.isArray(state.data.days) ||
       !state.data.days.length
     ) {
@@ -732,17 +749,24 @@ async function initialize() {
           option(date, formatDate(date, { dateStyle: "medium" }), date === state.todayDate),
         ),
     );
-    await loadExternalFeeds();
     renderToday();
     renderTrends();
     renderExplorer();
     setView(state.view, false);
     const latest = dailySnapshot(state.data.latest_date);
-    const healthy = latest.health.filter((entry) => entry.ok).length;
+    const nonempty = latest.ingest_health.filter(
+      (entry) => entry.ok && entry.item_count > 0,
+    ).length;
+    const empty = latest.ingest_health.filter(
+      (entry) => entry.ok && entry.item_count === 0,
+    ).length;
+    const failed = latest.ingest_health.filter((entry) => !entry.ok).length;
     byId("status-copy").textContent =
-      `Latest ${latest.date} · ${healthy}/${latest.health.length} sources reporting`;
+      `Latest ${latest.date} · ${nonempty} nonempty · ${empty} empty · ${failed} failed`;
+    byId("feed-status").textContent =
+      `${latest.evidence_count} ranked evidence · ${latest.attention.active_count} persisted attention`;
     byId("run-status").querySelector(".status-light").classList.add(
-      healthy === latest.health.length ? "ok" : "warning",
+      empty === 0 && failed === 0 ? "ok" : "warning",
     );
     byId("build-meta").textContent =
       `Schema ${state.data.schema_version} · Build ${formatDate(state.data.generated_at, {
