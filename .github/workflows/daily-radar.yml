@@ -67,11 +67,11 @@ jobs:
       - name: Create idempotent daily issue
         env:
           GH_TOKEN: ${{ github.token }}
-          ISSUE_DATE: ${{ github.run_started_at }}
+          GH_REPO: ${{ github.repository }}
         shell: bash
         run: |
           set -euo pipefail
-          date_key="${ISSUE_DATE:0:10}"
+          date_key="$(date -u +%Y-%m-%d)"
           title="📡 AI Benchmark & Data Radar — ${date_key}"
           existing="$(gh issue list --state all --search "\"${title}\" in:title" \
             --json number,title --jq ".[] | select(.title == \"${title}\") | .number" | head -1)"
