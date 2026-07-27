@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from .describe import github_summary, huggingface_summary
 from .http import get_json, get_text
 from .models import RadarItem
 
@@ -84,11 +85,10 @@ def fetch_huggingface(config: dict[str, Any], since: datetime, limit: int) -> li
                     title=item_id,
                     url=f"https://huggingface.co/{kind}/{item_id}",
                     published_at=changed,
-                    summary=(
-                        f"{kind[:-1].title()} repository "
-                        f"{'created' if _date(row.get('createdAt')) >= since else 'updated'} "
-                        "on Hugging Face."
-                    ),
+                    # Never synthesize prose here: `score_item` reads `summary`,
+                    # so a template would let the pipeline score itself on its
+                    # own words. "" means the repo shipped no card.
+                    summary=huggingface_summary(row, item_id),
                     event_kind=("released" if _date(row.get("createdAt")) >= since else "updated"),
                     metrics={
                         "downloads": float(row.get("downloads") or 0),
@@ -126,7 +126,7 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
                 title=full_name,
                 url=row["html_url"],
                 published_at=changed,
-                summary=row.get("description") or "AI benchmark or data repository.",
+                summary=github_summary(row),
                 event_kind=("released" if _date(row.get("created_at")) >= since else "updated"),
                 metrics={
                     "stars": float(row.get("stargazers_count") or 0),
