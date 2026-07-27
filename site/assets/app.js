@@ -156,11 +156,20 @@ function signalCard(item, index) {
     text: item.title,
     attrs: { href: item.url, target: "_blank", rel: "noopener noreferrer" },
   });
-  const body = [
-    pillBar(item),
-    element("h3", {}, [title]),
-    element("p", { text: shorten(item.summary) }),
-  ];
+  const body = [pillBar(item), element("h3", {}, [title])];
+  // An absent description is reported as absent. Filling the gap with a
+  // generated sentence would restate the pills above and tell the reader
+  // nothing about the artifact.
+  if ((item.summary || "").trim()) {
+    body.push(element("p", { text: shorten(item.summary) }));
+  } else {
+    body.push(
+      element("p", {
+        className: "signal-nodesc",
+        text: "No description published at the source.",
+      }),
+    );
+  }
   // The pill bar already states source and categories, so drop the rationale
   // entries that only restate them.
   const rationale = (item.rationale || [])
@@ -583,7 +592,10 @@ function openDetails(item) {
       text: `${item.source} · ${item.event_kind} · ${item.snapshot_date}`,
     }),
     element("h2", { className: "detail-title", text: item.title, attrs: { id: "detail-title" } }),
-    element("p", { className: "detail-summary", text: item.summary || "No summary provided." }),
+    element("p", {
+      className: item.summary ? "detail-summary" : "detail-summary signal-nodesc",
+      text: item.summary || "No description published at the source.",
+    }),
     attentionNotice,
     element(
       "dl",

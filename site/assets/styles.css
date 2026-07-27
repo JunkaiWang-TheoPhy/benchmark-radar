@@ -410,6 +410,13 @@ input {
   font-style: italic;
 }
 
+/* Marked as an absence, not styled like real description text. */
+.signal-nodesc {
+  color: var(--muted);
+  font-style: italic;
+  opacity: 0.75;
+}
+
 .score {
   align-self: center;
   justify-self: end;

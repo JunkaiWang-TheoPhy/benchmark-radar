@@ -27,6 +27,10 @@ def _item_block(index: int, item: RadarItem) -> str:
     if item.summary:
         summary = _escape(item.summary)
         lines.extend([summary[:700] + ("…" if len(summary) > 700 else ""), ""])
+    else:
+        # Stated as an absence. A generated stand-in sentence would only
+        # restate the source and event line directly above.
+        lines.extend(["_No description published at the source._", ""])
     details = [
         f"Published/updated: `{item.published_at.date().isoformat()}`",
         f"Evidence: `{item.evidence_score:.2f}`",
