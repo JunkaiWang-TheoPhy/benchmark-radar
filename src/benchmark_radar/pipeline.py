@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import math
 import re
+from collections import Counter
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
@@ -54,6 +55,9 @@ def score_item(
     now: datetime | None = None,
 ) -> RadarItem:
     now = now or datetime.now(UTC)
+    # Only match against text a human actually wrote about the artifact. If a
+    # fetcher ever reintroduces a generated summary, the words in it must not
+    # earn relevance -- otherwise the pipeline scores itself on its own prose.
     haystack = f"{item.title} {item.summary}".lower()
     categories = []
     matched_terms: list[str] = []
@@ -99,6 +103,29 @@ def score_item(
     return item
 
 
+BOILERPLATE_THRESHOLD = 3
+
+
+def assert_no_boilerplate_summaries(items: list[RadarItem]) -> None:
+    """Fail the run when a fetcher emits one summary for many different records.
+
+    A summary repeated across unrelated artifacts is templated text, not a
+    description. It misleads the reader and, because `score_item` reads
+    `summary`, it also inflates relevance for every record from that source.
+    This is a hard error rather than a warning: a silently boilerplated report
+    looks successful, which is how the defect survived unnoticed before.
+    """
+    counts = Counter(item.summary.strip().lower() for item in items if item.summary.strip())
+    repeated = {text: n for text, n in counts.items() if n >= BOILERPLATE_THRESHOLD}
+    if repeated:
+        worst = max(repeated.items(), key=lambda pair: pair[1])
+        raise RuntimeError(
+            f"Refusing to publish templated descriptions: {worst[1]} records share the "
+            f"summary {worst[0]!r}. Derive summaries from source metadata (see describe.py) "
+            "and leave them empty when the source publishes none."
+        )
+
+
 def run_pipeline(config: dict[str, Any], now: datetime | None = None) -> RadarRun:
     now = now or datetime.now(UTC)
     settings = config["radar"]
@@ -142,9 +169,11 @@ def run_pipeline(config: dict[str, Any], now: datetime | None = None) -> RadarRu
         if item.total_score >= float(settings["minimum_score"]) and item.categories
     ]
     selected.sort(key=lambda item: (item.total_score, item.published_at), reverse=True)
+    published = selected[: int(settings["report_limit"])]
+    assert_no_boilerplate_summaries(published)
     return RadarRun(
         generated_at=now,
         since=since,
-        items=selected[: int(settings["report_limit"])],
+        items=published,
         health=health,
     )
