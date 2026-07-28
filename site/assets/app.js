@@ -304,9 +304,12 @@ function deltaText(value) {
 function domainCard(category, trend, index) {
   const swatch = element("span", { className: "legend-swatch" });
   swatch.style.setProperty("--swatch", categoryColor(category, index));
-  const delta = Number(trend.delta || 0);
+  // A null delta means the previous scan used a different report limit, so the
+  // two counts are not comparable and no change is claimed.
+  const comparable = trend.delta !== null && trend.delta !== undefined;
+  const delta = comparable ? Number(trend.delta) : 0;
   const rows = [
-    ["vs previous scan", deltaText(delta)],
+    ["vs previous scan", comparable ? deltaText(delta) : "not comparable"],
     [
       "recent daily average",
       trend.baseline === null || trend.baseline === undefined
@@ -322,7 +325,7 @@ function domainCard(category, trend, index) {
   return element(
     "article",
     {
-      className: `domain-card${delta > 0 ? " is-up" : delta < 0 ? " is-down" : ""}`,
+      className: `domain-card${!comparable ? "" : delta > 0 ? " is-up" : delta < 0 ? " is-down" : ""}`,
     },
     [
       element("div", { className: "domain-head" }, [
@@ -861,17 +864,20 @@ async function initialize() {
     renderExplorer();
     setView(state.view, false);
     const latest = dailySnapshot(state.data.latest_date);
-    const degraded = latest.ingest_health.filter(
-      (entry) => !entry.ok || entry.item_count === 0,
+    // A source that succeeded with zero records is not down: empty and failed
+    // are distinct states everywhere else, so only failures are called out.
+    const failed = latest.ingest_health.filter((entry) => !entry.ok).length;
+    const empty = latest.ingest_health.filter(
+      (entry) => entry.ok && entry.item_count === 0,
     ).length;
     // Report what the reader gets, and mention plumbing only when it broke.
     byId("status-copy").textContent =
       `${formatDate(latest.date, { dateStyle: "medium" })} · ${latest.evidence_count} records` +
-      (degraded ? ` · ${degraded} source${degraded === 1 ? "" : "s"} down` : "");
+      (failed ? ` · ${failed} source${failed === 1 ? "" : "s"} failed` : "");
     byId("feed-status").textContent =
       `${latest.evidence_count} ranked evidence · ${latest.attention.active_count} persisted attention`;
     byId("run-status").querySelector(".status-light").classList.add(
-      degraded === 0 ? "ok" : "warning",
+      failed === 0 && empty === 0 ? "ok" : "warning",
     );
     byId("build-meta").textContent = `Updated ${formatDate(state.data.generated_at, {
       dateStyle: "medium",

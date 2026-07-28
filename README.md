@@ -99,6 +99,15 @@ Every run records its own drop-off (`fetched → deduplicated → qualified → 
 the snapshot and at the top of the Issue, so the gap between what a source returned and
 what was published is always auditable.
 
+GitHub search is rate-limited to 10 requests per minute without a token and 30 with one,
+so pagination is bounded by `sources.github.max_requests` and spaced by
+`request_delay_seconds`. Both default by whether `GITHUB_TOKEN` is present; raising
+`max_items_per_source` well beyond the defaults on a tokenless run risks a 403.
+
+Trend comparisons only run between snapshots collected under the same `report_limit`.
+Changing the cap lifts every count at once, and reporting that as domain momentum would
+present a change in collection policy as a change in the field.
+
 The `watchlist` block pins named artifacts, matched on title and source id by word
 boundary. A hit is routed to the top and labelled with a one-line note; it never changes
 a score, so the ranking stays explainable.

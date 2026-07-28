@@ -109,14 +109,24 @@ def render_markdown(
     )
     if run.selection:
         selection = run.selection
+        watchlisted = int(selection.get("watchlisted") or 0)
+        # Watchlist hits bypass the threshold on purpose, so they are named
+        # separately rather than folded into the "scored at or above" claim.
+        qualified = (
+            f"**{selection.get('qualified', 0)}** qualified "
+            f"(at or above {selection.get('minimum_score', 0):g}"
+            + (f", plus {watchlisted} by watchlist" if watchlisted else "")
+            + ")"
+        )
+        suppressed = int(selection.get("suppressed_as_seen") or 0)
         lines.extend(
             [
                 "- Selection: "
                 f"**{selection.get('fetched', 0)}** fetched → "
-                f"**{selection.get('deduplicated', 0)}** after dedupe → "
-                f"**{selection.get('qualified', 0)}** scored at or above "
-                f"{selection.get('minimum_score', 0):g} → "
-                f"**{selection.get('published', 0)}** published",
+                + (f"**{suppressed}** already seen → " if suppressed else "")
+                + f"**{selection.get('deduplicated', 0)}** after dedupe → "
+                + qualified
+                + f" → **{selection.get('published', 0)}** published",
                 "",
             ]
         )

@@ -229,8 +229,21 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
     # until the query is exhausted or the per-source limit is reached.
     page_size = 100
     max_pages = max(1, -(-limit // page_size))
-    for query in config.get("queries", []):
+    # Search is rate-limited to 10 requests/minute unauthenticated and 30
+    # authenticated. Paging every query to exhaustion can exceed that and
+    # trip a 403, which fails a required source and aborts the whole run, so
+    # bound the total requests and space them out when running tokenless.
+    queries = list(config.get("queries", []))
+    budget = int(config.get("max_requests", 30 if token else 8))
+    delay = float(config.get("request_delay_seconds", 0 if token else 6.5))
+    requests_made = 0
+    for query in queries:
         for page in range(1, max_pages + 1):
+            if requests_made >= budget:
+                break
+            if requests_made and delay > 0:
+                time.sleep(delay)
+            requests_made += 1
             payload = get_json(
                 "https://api.github.com/search/repositories",
                 params={
@@ -262,8 +275,10 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
                     },
                     raw=row,
                 )
-            if len(rows) < min(limit, page_size):
+            if len(rows) < min(limit, page_size) or len(found) >= limit:
                 break
+        if requests_made >= budget or len(found) >= limit:
+            break
     return list(found.values())
 
 

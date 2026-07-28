@@ -215,6 +215,10 @@ def run_pipeline(
     limit = int(settings["max_items_per_source"])
     items: list[RadarItem] = []
     health: list[SourceHealth] = []
+    # Counted before arXiv overlap suppression, so this always agrees with the
+    # per-source health table rather than silently excluding repeat records.
+    fetched_count = 0
+    suppressed_count = 0
     discovery_state = deepcopy((previous_snapshot or {}).get("discovery_state") or {})
     for source_name, source_config in config["sources"].items():
         if not source_config.get("enabled", True):
@@ -222,15 +226,16 @@ def run_pipeline(
         fetcher = SOURCE_FETCHERS[source_name]
         try:
             fetched = fetcher(source_config, since, limit)
+            fetched_count += len(fetched)
             health.append(SourceHealth(source=source_name, ok=True, item_count=len(fetched)))
             if source_name == "arxiv":
-                items.extend(
-                    _apply_arxiv_discovery_state(
-                        fetched,
-                        now=now,
-                        state=discovery_state,
-                    )
+                changed = _apply_arxiv_discovery_state(
+                    fetched,
+                    now=now,
+                    state=discovery_state,
                 )
+                suppressed_count += len(fetched) - len(changed)
+                items.extend(changed)
             else:
                 for item in fetched:
                     item.discovered_at = now
@@ -265,7 +270,6 @@ def run_pipeline(
             "Required discovery sources failed or returned no records: "
             + ", ".join(unavailable_required)
         )
-    fetched_count = len(items)
     unique = deduplicate(items)
     scored = apply_watchlist(
         [score_item(item, config["taxonomy"], now) for item in unique],
@@ -290,9 +294,19 @@ def run_pipeline(
     # auditable rather than looking like lost data.
     selection = {
         "fetched": fetched_count,
+        # arXiv records already seen in a previous run, dropped before dedupe.
+        "suppressed_as_seen": suppressed_count,
         "deduplicated": len(unique),
         "scored": len(scored),
         "qualified": len(selected),
+        # Qualified purely by a watchlist match, so the threshold wording in
+        # the report stays true for the records that did clear the bar.
+        "watchlisted": sum(
+            1
+            for item in selected
+            if item.watchlist
+            and not (item.total_score >= float(settings["minimum_score"]) and item.categories)
+        ),
         "published": len(published),
         "minimum_score": float(settings["minimum_score"]),
         "report_limit": int(settings["report_limit"]),

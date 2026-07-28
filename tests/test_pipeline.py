@@ -197,6 +197,69 @@ def test_selection_counts_expose_the_published_gap(monkeypatch):
     assert len(run.items) == 2
 
 
+def test_funnel_counts_suppressed_arxiv_records_as_fetched(monkeypatch):
+    # Source health counts these as fetched, so the funnel must agree rather
+    # than reporting zero for a source that plainly returned records.
+    seen = item(source_id="2607.12345", updated_at=datetime(2026, 7, 26, 18, tzinfo=UTC))
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "arxiv",
+        lambda config, since, limit: [seen],
+    )
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 0,
+        },
+        "taxonomy": {"benchmark": ["benchmark"]},
+        "sources": {"arxiv": {"enabled": True, "required": True}},
+    }
+    previous = {
+        "discovery_state": {
+            "arxiv": {
+                "2607.12345": {
+                    "discovered_at": "2026-07-26T19:00:00+00:00",
+                    "last_activity_at": "2026-07-26T18:00:00+00:00",
+                }
+            }
+        }
+    }
+
+    run = run_pipeline(config, datetime(2026, 7, 27, tzinfo=UTC), previous_snapshot=previous)
+
+    assert run.items == []
+    assert run.health[0].item_count == 1
+    assert run.selection["fetched"] == 1
+    assert run.selection["suppressed_as_seen"] == 1
+
+
+def test_funnel_names_watchlist_bypasses_separately(monkeypatch):
+    tracked = item(title="mlebench release", summary="", source="GitHub", source_id="o/mlebench")
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "github",
+        lambda config, since, limit: [tracked],
+    )
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 99,
+        },
+        "taxonomy": {"benchmark": ["benchmark"]},
+        "sources": {"github": {"enabled": True, "required": True}},
+        "watchlist": WATCHLIST,
+    }
+
+    run = run_pipeline(config, datetime(2026, 7, 27, tzinfo=UTC))
+
+    assert run.selection["qualified"] == 1
+    assert run.selection["watchlisted"] == 1
+
+
 def test_every_required_source_must_return_records(monkeypatch):
     def empty_fetcher(config, since, limit):
         return []
