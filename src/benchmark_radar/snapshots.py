@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .attention import fetch_attention_feeds
+from .corpus import build_corpus, organizations_for_item
 from .models import RadarRun
 from .rubric import (
     SCORING_VERSION,
@@ -299,6 +300,13 @@ def load_snapshots(snapshot_dir: Path) -> list[dict[str, Any]]:
 TREND_BASELINE_DAYS = 7
 
 
+def _collection_context(day: dict[str, Any]) -> tuple[Any, tuple[str, ...]]:
+    return (
+        (day.get("selection") or {}).get("report_limit"),
+        tuple(day.get("coverage_signature") or []),
+    )
+
+
 def _attach_category_trends(days: list[dict[str, Any]]) -> None:
     """Add per-category deltas, baselines and cumulative totals to each day.
 
@@ -325,17 +333,14 @@ def _attach_category_trends(days: list[dict[str, Any]]) -> None:
             for category in record["categories"]:
                 seen.setdefault(category, set()).add(identity)
         cumulative = Counter({category: len(ids) for category, ids in seen.items()})
-        limit = (day.get("selection") or {}).get("report_limit")
+        context = _collection_context(day)
         comparable = [
             entry
             for entry in days[max(0, index - TREND_BASELINE_DAYS) : index]
-            if (entry.get("selection") or {}).get("report_limit") == limit
+            if _collection_context(entry) == context
         ]
         prior_day = days[index - 1] if index else None
-        if (
-            prior_day is not None
-            and (prior_day.get("selection") or {}).get("report_limit") != limit
-        ):
+        if prior_day is not None and _collection_context(prior_day) != context:
             prior_day = None
         previous = prior_day["category_counts"] if prior_day else {}
         trends = {}
@@ -368,6 +373,7 @@ def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
     days: list[dict[str, Any]] = []
     categories: set[str] = set()
     sources: set[str] = set()
+    organizations: set[str] = set()
     event_kinds: set[str] = set()
     for snapshot in snapshots:
         # Snapshot schema v2 predates scoring-version metadata. Preserve those
@@ -378,6 +384,7 @@ def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
                 **item,
                 "score_version": int(item.get("score_version") or 1),
                 "score_max": float(item.get("score_max") or 4.0),
+                "organizations": organizations_for_item(item),
             }
             for item in snapshot["evidence_items"]
         ]
@@ -398,8 +405,22 @@ def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
         )
         sources.update(source_counts)
         sources.update(attention_source_counts)
+        organizations.update(
+            organization
+            for item in evidence_items
+            for organization in item.get("organizations") or []
+        )
         event_kinds.update(event_counts)
         event_kinds.update(attention_event_counts)
+        evidence_health = [
+            entry
+            for entry in snapshot["ingest_health"]
+            if entry.get("kind", "evidence") == "evidence"
+        ]
+        coverage_signature = sorted(
+            f"{entry['source']}:{'ok' if entry['ok'] else 'failed'}" for entry in evidence_health
+        )
+        coverage_gaps = sorted(entry["source"] for entry in evidence_health if not entry["ok"])
         days.append(
             {
                 "date": snapshot["date"],
@@ -421,9 +442,13 @@ def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
                 "ingest_health": snapshot["ingest_health"],
                 "producer_health": snapshot["producer_health"],
                 "selection": snapshot.get("selection") or {},
+                "coverage_complete": not coverage_gaps,
+                "coverage_gaps": coverage_gaps,
+                "coverage_signature": coverage_signature,
             }
         )
     _attach_category_trends(days)
+    corpus = build_corpus(snapshots)
     return {
         "schema_version": SCHEMA_VERSION,
         "latest_date": days[-1]["date"] if days else None,
@@ -433,10 +458,12 @@ def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
             "dates": [day["date"] for day in days],
             "categories": sorted(categories),
             "sources": sorted(sources),
+            "organizations": sorted(organizations),
             "event_kinds": sorted(event_kinds),
             "kinds": ["evidence", "attention"],
         },
         "days": days,
+        "corpus": corpus,
         # Keep every rubric required by the history. The browser selects by
         # each record's score_version, so a v1 score is never explained using
         # v2 arithmetic.

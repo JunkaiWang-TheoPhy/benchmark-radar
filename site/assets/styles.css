@@ -1048,7 +1048,7 @@ td a {
 
 .filter-panel {
   display: grid;
-  grid-template-columns: 2fr repeat(5, minmax(115px, 1fr)) auto;
+  grid-template-columns: 2fr repeat(6, minmax(105px, 1fr)) auto;
   gap: 1rem;
   align-items: end;
   margin-bottom: 3rem;
@@ -1088,6 +1088,119 @@ td a {
   border-bottom: 1px solid var(--line);
   color: var(--muted);
   text-align: center;
+}
+
+.map-summary {
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.map-canvas {
+  max-height: 720px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.map-canvas svg {
+  display: block;
+  min-width: 900px;
+}
+
+.map-edge {
+  stroke: #9baab1;
+  stroke-opacity: 0.38;
+  stroke-width: 1;
+}
+
+.map-column-label {
+  fill: var(--muted);
+  font-family: var(--utility);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.map-node {
+  cursor: pointer;
+}
+
+.map-node circle {
+  fill: var(--panel);
+  stroke: var(--blue-deep);
+  stroke-width: 1.5;
+}
+
+.map-node-artifact circle {
+  fill: #fff7ee;
+  stroke: var(--orange);
+}
+
+.map-node-topic circle {
+  fill: #e5f2ef;
+  stroke: var(--sea);
+}
+
+.map-node-organization circle {
+  fill: #f1eafa;
+  stroke: #756aa8;
+}
+
+.map-node text {
+  fill: var(--ink);
+  font-family: var(--utility);
+  font-size: 11px;
+}
+
+.map-node:focus circle,
+.map-node:hover circle {
+  stroke-width: 4;
+}
+
+.map-detail {
+  position: sticky;
+  top: 1rem;
+  padding: 1.5rem;
+  border: 1px solid var(--ink);
+  background: var(--panel);
+}
+
+.map-detail h2 {
+  overflow-wrap: anywhere;
+}
+
+.map-detail dl {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.map-detail dt {
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+}
+
+.map-detail dd {
+  margin: 0.15rem 0 0;
+}
+
+.map-detail .primary-link {
+  display: inline-block;
+  margin-top: 1rem;
 }
 
 dialog {
@@ -1369,6 +1482,14 @@ footer {
 
   .trend-grid {
     grid-template-columns: 1fr;
+  }
+
+  .map-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .map-detail {
+    position: static;
   }
 
   .filter-panel {

@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ktwu01.github.io/benchmark-radar/cumulative-corpus.schema.json",
+  "title": "Benchmark Radar cumulative corpus",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "entity_count",
+    "observation_count",
+    "edge_count",
+    "entities",
+    "observations",
+    "edges",
+    "aggregates"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "entity_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "observation_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "edge_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "label",
+          "first_seen_at",
+          "last_seen_at",
+          "seen_days",
+          "sources",
+          "categories",
+          "metrics",
+          "metric_deltas"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "enum": [
+              "artifact",
+              "topic",
+              "organization",
+              "person",
+              "source"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "first_seen_at": {
+            "type": "string",
+            "format": "date"
+          },
+          "last_seen_at": {
+            "type": "string",
+            "format": "date"
+          },
+          "seen_days": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            },
+            "uniqueItems": true
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "metrics": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "metric_deltas": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "entity_id",
+          "snapshot_date",
+          "source",
+          "source_id",
+          "event_kind",
+          "url",
+          "published_at",
+          "categories",
+          "organizations",
+          "metrics"
+        ]
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "source",
+          "target",
+          "first_seen_at",
+          "last_seen_at",
+          "seen_days"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "AUTHORED_BY",
+              "RELEASED_BY",
+              "HAS_TOPIC",
+              "FOUND_VIA"
+            ]
+          }
+        }
+      }
+    },
+    "aggregates": {
+      "type": "object",
+      "required": [
+        "window_days",
+        "topics",
+        "entity_types",
+        "sources",
+        "organizations",
+        "provenance"
+      ]
+    }
+  }
+}

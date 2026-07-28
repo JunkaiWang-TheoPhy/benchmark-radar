@@ -67,6 +67,7 @@
     <nav class="view-nav" aria-label="Dashboard views">
       <button type="button" data-view="today" aria-controls="today-view">Today</button>
       <button type="button" data-view="trends" aria-controls="trends-view">Trends</button>
+      <button type="button" data-view="map" aria-controls="map-view">Trend map</button>
       <button type="button" id="rubric-nav" aria-haspopup="dialog">Rubric</button>
     </nav>
 
@@ -99,6 +100,10 @@
             <select id="source-filter" name="source"></select>
           </label>
           <label>
+            Organization
+            <select id="organization-filter" name="organization"></select>
+          </label>
+          <label>
             Event
             <select id="event-filter" name="event"></select>
           </label>
@@ -118,6 +123,37 @@
               <h2 id="health-heading">Sources</h2>
             </div>
             <ul id="health-list"></ul>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="map-view" aria-labelledby="map-heading" hidden>
+        <header class="view-heading">
+          <div>
+            <p class="eyebrow">Cumulative corpus</p>
+            <h1 id="map-heading">Artifacts and their context</h1>
+          </div>
+          <p class="heading-note">
+            Exact identifiers connect artifacts to topics, publishers, and discovery sources.
+            Select a node to carry it into the Today filters.
+          </p>
+        </header>
+        <p class="map-summary" id="map-summary"></p>
+        <div class="map-layout">
+          <div
+            class="map-canvas"
+            id="map-canvas"
+            role="region"
+            aria-label="Interactive artifact relationship map"
+            tabindex="0"
+          ></div>
+          <aside class="map-detail" id="map-detail" aria-live="polite">
+            <p class="eyebrow">Select a node</p>
+            <h2>Inspect a relationship</h2>
+            <p>
+              Topic, source, and organization nodes set the corresponding Today filter.
+              Artifact nodes set the date and title search.
+            </p>
           </aside>
         </div>
       </section>

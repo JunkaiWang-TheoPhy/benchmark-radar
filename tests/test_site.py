@@ -1,5 +1,6 @@
 from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 class SiteParser(HTMLParser):
@@ -9,6 +10,7 @@ class SiteParser(HTMLParser):
         self.ids: set[str] = set()
         self.html_lang = ""
         self.viewport = False
+        self.local_refs: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
@@ -19,6 +21,9 @@ class SiteParser(HTMLParser):
             self.html_lang = str(values.get("lang", ""))
         if tag == "meta" and values.get("name") == "viewport":
             self.viewport = True
+        reference = values.get("href") or values.get("src")
+        if reference and not urlsplit(reference).scheme and not reference.startswith(("#", "//")):
+            self.local_refs.append(reference)
 
 
 def test_site_has_accessible_landmarks_and_views():
@@ -28,7 +33,7 @@ def test_site_has_accessible_landmarks_and_views():
     assert parser.html_lang == "en"
     assert parser.viewport
     assert {"header", "nav", "main", "footer", "dialog"} <= set(parser.tags)
-    assert {"today-view", "trends-view", "main-content"} <= parser.ids
+    assert {"today-view", "trends-view", "map-view", "main-content"} <= parser.ids
     assert "explorer-view" not in parser.ids
 
 
@@ -153,6 +158,43 @@ def test_hugging_face_expansion_links_to_the_full_card():
 
     assert 'item.source === "Hugging Face"' in script
     assert '"Read full card ↗"' in script
+
+
+def test_trend_map_is_keyboard_accessible_and_coordinates_today_filters():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'data-view="map"' in html
+    assert 'id="map-canvas"' in html
+    assert "state.data.corpus" in script
+    assert "HAS_TOPIC" in script
+    assert '"aria-label": `${entity.type}: ${entity.label}`' in script
+    assert 'event.key === "Enter" || event.key === " "' in script
+    assert "mapFilterFor(entity)" in script
+    assert 'id="organization-filter"' in html
+    assert "state.organization" in script
+
+
+def test_trends_gate_comparisons_on_connector_coverage():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert "sameCollectionContext" in script
+    assert "coverage_signature" in script
+    assert "Coverage is incomplete:" in script
+
+
+def test_static_html_references_existing_local_assets():
+    parser = SiteParser()
+    parser.feed(Path("site/index.html").read_text(encoding="utf-8"))
+
+    missing = []
+    for reference in parser.local_refs:
+        path = urlsplit(reference).path
+        target = Path("site") if path in {"", ".", "./"} else Path("site") / path
+        if not target.exists():
+            missing.append(reference)
+
+    assert not missing
 
 
 def test_one_snapshot_trend_explains_history_requirement():

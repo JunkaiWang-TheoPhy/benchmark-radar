@@ -1,0 +1,413 @@
+"""Deterministic cumulative entity graph built from validated daily snapshots."""
+
+from __future__ import annotations
+
+import hashlib
+import re
+from collections import Counter, defaultdict
+from datetime import UTC, datetime
+from typing import Any
+from urllib.parse import parse_qs, urlsplit
+
+CORPUS_SCHEMA_VERSION = 1
+AGGREGATE_WINDOW_DAYS = 7
+PRIMARY_SOURCE_RANK = {
+    "arXiv": 1,
+    "OpenReview": 1,
+    "GitHub Release": 1,
+    "GitHub": 1,
+    "Hugging Face": 1,
+    "Semantic Scholar": 2,
+    "OpenAlex": 2,
+    "Brave Search": 3,
+}
+PRIMARY_OR_STRUCTURED_SOURCES = {
+    "arXiv",
+    "OpenReview",
+    "GitHub Release",
+    "GitHub",
+    "Hugging Face",
+}
+
+
+class CorpusError(ValueError):
+    """Raised when generated cumulative data violates the public schema."""
+
+
+def _stable_id(prefix: str, value: str) -> str:
+    digest = hashlib.sha256(value.encode()).hexdigest()[:20]
+    return f"{prefix}:{digest}"
+
+
+def _arxiv_id(path: str) -> str | None:
+    match = re.search(r"/(?:abs|pdf)/([^/?#]+)", path, flags=re.IGNORECASE)
+    if not match:
+        return None
+    return re.sub(r"v\d+$", "", match.group(1), flags=re.IGNORECASE).lower()
+
+
+def exact_artifact_key(item: dict[str, Any]) -> str:
+    """Resolve an artifact using exact public identifiers only.
+
+    URL identifiers take priority so a Semantic Scholar/OpenReview observation
+    carrying an arXiv, DOI, GitHub, or Hugging Face link joins that primary
+    entity. Ambiguous title similarity is deliberately not used.
+    """
+    urls = [str(item.get("url") or ""), *map(str, item.get("artifact_urls") or [])]
+    candidates: dict[int, str] = {}
+    for url in urls:
+        parsed = urlsplit(url)
+        host = parsed.netloc.casefold().removeprefix("www.")
+        segments = [segment for segment in parsed.path.split("/") if segment]
+        if host in {"doi.org", "dx.doi.org"} and segments:
+            candidates[1] = f"artifact:doi:{'/'.join(segments).casefold()}"
+        arxiv = _arxiv_id(parsed.path) if host.endswith("arxiv.org") else None
+        if arxiv:
+            candidates[2] = f"artifact:arxiv:{arxiv}"
+        if host == "openreview.net":
+            forum = (parse_qs(parsed.query).get("id") or [None])[0]
+            if forum:
+                candidates[3] = f"artifact:openreview:{str(forum).casefold()}"
+        if host == "github.com" and len(segments) >= 2:
+            candidates[4] = f"artifact:github:{segments[0].casefold()}/{segments[1].casefold()}"
+        if host == "huggingface.co" and len(segments) >= 2:
+            kind = segments[0].casefold()
+            if kind in {"datasets", "spaces", "models"} and len(segments) >= 3:
+                candidates[5] = (
+                    f"artifact:huggingface:{kind}:{segments[1].casefold()}/{segments[2].casefold()}"
+                )
+            elif kind not in {"datasets", "spaces"}:
+                candidates[5] = (
+                    f"artifact:huggingface:models:{segments[0].casefold()}/{segments[1].casefold()}"
+                )
+    if candidates:
+        return candidates[min(candidates)]
+
+    source = str(item.get("source") or "").casefold()
+    source_id = str(item.get("source_id") or "").strip().casefold()
+    if source == "arxiv":
+        base_id = re.sub(r"v\d+$", "", source_id)
+        return f"artifact:arxiv:{base_id}"
+    if source == "openreview":
+        return f"artifact:openreview:{source_id}"
+    if source in {"github", "github release"}:
+        return f"artifact:github:{source_id.split('@', 1)[0]}"
+    if source == "hugging face":
+        return f"artifact:huggingface:datasets:{source_id}"
+    return _stable_id("artifact:url", str(item.get("url") or source_id).casefold())
+
+
+def organizations_for_item(item: dict[str, Any]) -> list[str]:
+    """Return exact publisher/owner names available in structured source IDs."""
+    source = str(item.get("source") or "").casefold()
+    source_id = str(item.get("source_id") or "")
+    if source in {"github", "github release", "hugging face"} and "/" in source_id:
+        return [source_id.split("/", 1)[0]]
+    return [str(value) for value in item.get("organizations") or [] if str(value).strip()]
+
+
+def _edge_id(kind: str, source: str, target: str) -> str:
+    return _stable_id("edge", f"{kind}\0{source}\0{target}")
+
+
+def _observation_id(date: str, entity_id: str, item: dict[str, Any]) -> str:
+    return _stable_id(
+        "observation",
+        f"{date}\0{entity_id}\0{item.get('source')}\0{item.get('source_id')}",
+    )
+
+
+def _entity(
+    entity_id: str,
+    entity_type: str,
+    label: str,
+    *,
+    url: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "id": entity_id,
+        "type": entity_type,
+        "label": label,
+        "url": url,
+        "first_seen_at": None,
+        "last_seen_at": None,
+        "seen_days": set(),
+        "sources": set(),
+        "categories": set(),
+        "metrics_first": {},
+        "metrics_latest": {},
+        "latest_score": None,
+        "_primary_rank": 99,
+    }
+
+
+def build_corpus(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
+    """Merge snapshot observations into a deterministic public entity graph."""
+    entities: dict[str, dict[str, Any]] = {}
+    edges: dict[str, dict[str, Any]] = {}
+    observations: list[dict[str, Any]] = []
+
+    def touch(entity: dict[str, Any], *, date: str, source: str = "") -> None:
+        entity["first_seen_at"] = min(entity["first_seen_at"] or date, date)
+        entity["last_seen_at"] = max(entity["last_seen_at"] or date, date)
+        entity["seen_days"].add(date)
+        if source:
+            entity["sources"].add(source)
+
+    def connect(kind: str, source_id: str, target_id: str, date: str) -> None:
+        edge_id = _edge_id(kind, source_id, target_id)
+        edge = edges.setdefault(
+            edge_id,
+            {
+                "id": edge_id,
+                "type": kind,
+                "source": source_id,
+                "target": target_id,
+                "first_seen_at": date,
+                "last_seen_at": date,
+                "seen_days": set(),
+            },
+        )
+        edge["first_seen_at"] = min(edge["first_seen_at"], date)
+        edge["last_seen_at"] = max(edge["last_seen_at"], date)
+        edge["seen_days"].add(date)
+
+    for snapshot in snapshots:
+        date = str(snapshot["date"])
+        for item in snapshot["evidence_items"]:
+            entity_id = exact_artifact_key(item)
+            artifact = entities.setdefault(
+                entity_id,
+                _entity(entity_id, "artifact", str(item["title"]), url=str(item["url"])),
+            )
+            touch(artifact, date=date, source=str(item["source"]))
+            source_rank = PRIMARY_SOURCE_RANK.get(str(item["source"]), 4)
+            # A secondary metadata observation must not replace an exact
+            # primary artifact as the entity's public label/link.
+            if source_rank <= artifact["_primary_rank"]:
+                artifact["label"] = str(item["title"])
+                artifact["url"] = str(item["url"])
+                artifact["_primary_rank"] = source_rank
+            artifact["categories"].update(map(str, item.get("categories") or []))
+            metrics = {
+                str(key): float(value)
+                for key, value in (item.get("metrics") or {}).items()
+                if isinstance(value, (int, float))
+            }
+            if not artifact["metrics_first"]:
+                artifact["metrics_first"] = metrics
+            artifact["metrics_latest"] = metrics
+            artifact["latest_score"] = item.get("total_score")
+
+            observation = {
+                "id": _observation_id(date, entity_id, item),
+                "entity_id": entity_id,
+                "snapshot_date": date,
+                "source": str(item["source"]),
+                "source_id": str(item["source_id"]),
+                "event_kind": str(item["event_kind"]),
+                "url": str(item["url"]),
+                "published_at": str(item["published_at"]),
+                "updated_at": item.get("updated_at"),
+                "categories": sorted(map(str, item.get("categories") or [])),
+                "organizations": sorted(organizations_for_item(item)),
+                "metrics": metrics,
+                "total_score": item.get("total_score"),
+                "score_version": int(item.get("score_version") or 1),
+            }
+            observations.append(observation)
+
+            source_name = str(item["source"])
+            source_id = f"source:{source_name.casefold().replace(' ', '-')}"
+            source_entity = entities.setdefault(
+                source_id,
+                _entity(source_id, "source", source_name),
+            )
+            touch(source_entity, date=date, source=source_name)
+            connect("FOUND_VIA", entity_id, source_id, date)
+
+            for category in observation["categories"]:
+                topic_id = f"topic:{category}"
+                topic = entities.setdefault(
+                    topic_id,
+                    _entity(topic_id, "topic", category.replace("_", " ")),
+                )
+                touch(topic, date=date, source=source_name)
+                connect("HAS_TOPIC", entity_id, topic_id, date)
+
+            for organization in observation["organizations"]:
+                organization_id = _stable_id("organization", organization.casefold())
+                owner = entities.setdefault(
+                    organization_id,
+                    _entity(organization_id, "organization", organization),
+                )
+                touch(owner, date=date, source=source_name)
+                connect("RELEASED_BY", entity_id, organization_id, date)
+
+            for author in map(str, item.get("authors") or []):
+                person_id = _stable_id("person", author.casefold())
+                person = entities.setdefault(
+                    person_id,
+                    _entity(person_id, "person", author),
+                )
+                touch(person, date=date, source=source_name)
+                connect("AUTHORED_BY", entity_id, person_id, date)
+
+    entity_observation_counts = Counter(observation["entity_id"] for observation in observations)
+    public_entities = []
+    for entity in entities.values():
+        entity.pop("_primary_rank")
+        metrics_first = entity.pop("metrics_first")
+        metrics_latest = entity.pop("metrics_latest")
+        metric_deltas = {
+            key: round(metrics_latest.get(key, 0) - metrics_first.get(key, 0), 4)
+            for key in sorted({*metrics_first, *metrics_latest})
+        }
+        public_entities.append(
+            {
+                **entity,
+                "seen_days": sorted(entity["seen_days"]),
+                "sources": sorted(entity["sources"]),
+                "categories": sorted(entity["categories"]),
+                "metrics": metrics_latest,
+                "metric_deltas": metric_deltas,
+                "observation_count": (
+                    entity_observation_counts[entity["id"]]
+                    if entity["type"] == "artifact"
+                    else len(entity["seen_days"])
+                ),
+            }
+        )
+    public_edges = [{**edge, "seen_days": sorted(edge["seen_days"])} for edge in edges.values()]
+    observations.sort(key=lambda value: (value["snapshot_date"], value["id"]))
+    public_entities.sort(key=lambda value: value["id"])
+    public_edges.sort(key=lambda value: value["id"])
+
+    aggregates = _aggregate_corpus(public_entities, observations)
+    corpus = {
+        "schema_version": CORPUS_SCHEMA_VERSION,
+        "entity_count": len(public_entities),
+        "observation_count": len(observations),
+        "edge_count": len(public_edges),
+        "entities": public_entities,
+        "observations": observations,
+        "edges": public_edges,
+        "aggregates": aggregates,
+    }
+    validate_corpus(corpus)
+    return corpus
+
+
+def _aggregate_corpus(
+    entities: list[dict[str, Any]],
+    observations: list[dict[str, Any]],
+) -> dict[str, Any]:
+    dates = sorted({observation["snapshot_date"] for observation in observations})
+    recent_dates = set(dates[-AGGREGATE_WINDOW_DAYS:])
+    baseline_dates = set(dates[-2 * AGGREGATE_WINDOW_DAYS : -AGGREGATE_WINDOW_DAYS])
+    topic_entities: dict[str, set[str]] = defaultdict(set)
+    topic_days: dict[str, set[str]] = defaultdict(set)
+    topic_sources: dict[str, set[str]] = defaultdict(set)
+    recent = Counter()
+    baseline = Counter()
+    for observation in observations:
+        for topic in observation["categories"]:
+            topic_entities[topic].add(observation["entity_id"])
+            topic_days[topic].add(observation["snapshot_date"])
+            topic_sources[topic].add(observation["source"])
+            if observation["snapshot_date"] in recent_dates:
+                recent[topic] += 1
+            if observation["snapshot_date"] in baseline_dates:
+                baseline[topic] += 1
+    topics = []
+    for topic in sorted(topic_entities):
+        recent_average = recent[topic] / len(recent_dates) if recent_dates else 0
+        baseline_average = baseline[topic] / len(baseline_dates) if baseline_dates else None
+        topics.append(
+            {
+                "topic": topic,
+                "entity_count": len(topic_entities[topic]),
+                "persistence_days": len(topic_days[topic]),
+                "source_breadth": len(topic_sources[topic]),
+                "recent_daily_average": round(recent_average, 3),
+                "baseline_daily_average": (
+                    round(baseline_average, 3) if baseline_average is not None else None
+                ),
+                "velocity": (
+                    round(recent_average - baseline_average, 3)
+                    if baseline_average is not None
+                    else None
+                ),
+            }
+        )
+    return {
+        "window_days": AGGREGATE_WINDOW_DAYS,
+        "topics": topics,
+        "entity_types": dict(sorted(Counter(entity["type"] for entity in entities).items())),
+        "sources": dict(
+            sorted(Counter(observation["source"] for observation in observations).items())
+        ),
+        "organizations": dict(
+            sorted(
+                Counter(
+                    organization
+                    for observation in observations
+                    for organization in observation["organizations"]
+                ).items()
+            )
+        ),
+        "provenance": {
+            "primary_or_structured_observations": sum(
+                observation["source"] in PRIMARY_OR_STRUCTURED_SOURCES
+                for observation in observations
+            ),
+            "primary_source_rate": round(
+                (
+                    sum(
+                        observation["source"] in PRIMARY_OR_STRUCTURED_SOURCES
+                        for observation in observations
+                    )
+                    / len(observations)
+                ),
+                4,
+            )
+            if observations
+            else None,
+        },
+    }
+
+
+def validate_corpus(corpus: dict[str, Any]) -> None:
+    if corpus.get("schema_version") != CORPUS_SCHEMA_VERSION:
+        raise CorpusError("unsupported corpus schema_version")
+    for field in ("entities", "observations", "edges"):
+        if not isinstance(corpus.get(field), list):
+            raise CorpusError(f"{field} must be an array")
+    entities = corpus["entities"]
+    entity_ids = {entity.get("id") for entity in entities}
+    if None in entity_ids or len(entity_ids) != len(entities):
+        raise CorpusError("entity IDs must be present and unique")
+    for entity in entities:
+        if entity.get("url") and not str(entity["url"]).startswith(("https://", "http://")):
+            raise CorpusError(f"{entity['id']}: entity URL must be HTTP(S)")
+        if "raw" in entity:
+            raise CorpusError(f"{entity['id']}: raw payloads are not public corpus fields")
+    observation_ids: set[str] = set()
+    for observation in corpus["observations"]:
+        if observation.get("id") in observation_ids:
+            raise CorpusError("observation IDs must be unique")
+        observation_ids.add(observation.get("id"))
+        if observation.get("entity_id") not in entity_ids:
+            raise CorpusError("observation references an unknown entity")
+        if not str(observation.get("url") or "").startswith(("https://", "http://")):
+            raise CorpusError("observation URL must be HTTP(S)")
+        datetime.fromisoformat(str(observation["published_at"]).replace("Z", "+00:00")).astimezone(
+            UTC
+        )
+    edge_ids: set[str] = set()
+    for edge in corpus["edges"]:
+        if edge.get("id") in edge_ids:
+            raise CorpusError("edge IDs must be unique")
+        edge_ids.add(edge.get("id"))
+        if edge.get("source") not in entity_ids or edge.get("target") not in entity_ids:
+            raise CorpusError("edge references an unknown entity")

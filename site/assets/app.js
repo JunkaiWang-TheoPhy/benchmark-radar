@@ -15,7 +15,9 @@ const state = {
   kind: "",
   category: "",
   source: "",
+  organization: "",
   event: "",
+  entity: "",
 };
 
 function element(tag, options = {}, children = []) {
@@ -28,6 +30,13 @@ function element(tag, options = {}, children = []) {
     });
   }
   children.filter(Boolean).forEach((child) => node.append(child));
+  return node;
+}
+
+function svgElement(tag, attrs = {}, text = null) {
+  const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, String(value)));
+  if (text !== null) node.textContent = String(text);
   return node;
 }
 
@@ -66,30 +75,30 @@ function readUrl() {
   const params = new URLSearchParams(window.location.search);
   const requestedView = params.get("view");
   // Legacy Explorer permalinks resolve to the filterable Today list.
-  state.view = requestedView === "trends" ? "trends" : "today";
+  state.view = ["trends", "map"].includes(requestedView) ? requestedView : "today";
   state.todayDate = params.get("date") || "";
   state.q = params.get("q") || "";
   state.kind = params.get("kind") || "";
   state.category = params.get("category") || "";
   state.source = params.get("source") || "";
+  state.organization = params.get("organization") || "";
   state.event = params.get("event") || "";
+  state.entity = params.get("entity") || "";
 }
 
 function writeUrl() {
   const params = new URLSearchParams();
   if (state.view !== "today") params.set("view", state.view);
-  if (
-    state.view === "today" &&
-    state.todayDate &&
-    state.todayDate !== state.data?.latest_date
-  ) {
+  if (state.todayDate && state.todayDate !== state.data?.latest_date) {
     params.set("date", state.todayDate);
   }
   if (state.q) params.set("q", state.q);
   if (state.kind) params.set("kind", state.kind);
   if (state.category) params.set("category", state.category);
   if (state.source) params.set("source", state.source);
+  if (state.organization) params.set("organization", state.organization);
   if (state.event) params.set("event", state.event);
+  if (state.view === "map" && state.entity) params.set("entity", state.entity);
   const query = params.toString();
   window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
 }
@@ -318,8 +327,17 @@ function renderDomainMetrics(day) {
   );
 }
 
-function sameReportLimit(a, b) {
-  return (a.selection || {}).report_limit === (b.selection || {}).report_limit;
+function sameCollectionContext(a, b) {
+  return (
+    (a.selection || {}).report_limit === (b.selection || {}).report_limit &&
+    JSON.stringify(a.coverage_signature || []) === JSON.stringify(b.coverage_signature || [])
+  );
+}
+
+function coverageNote(day) {
+  return (day.coverage_gaps || []).length
+    ? ` Coverage is incomplete: ${day.coverage_gaps.join(", ")} failed.`
+    : "";
 }
 
 function renderTrends() {
@@ -355,12 +373,13 @@ function renderTrends() {
       `Baseline: ${only.evidence_count} evidence records and ${only.attention.active_count} active attention signals.`;
     trendChart.hidden = true;
   } else if (dayCount === 2) {
-    trendMessage.textContent = sameReportLimit(
+    trendMessage.textContent = sameCollectionContext(
       state.data.days[1],
       state.data.days[0],
     )
-      ? "Two snapshots are available. The chart shows the first comparable daily change; broader trend language begins with three snapshots."
-      : "Two snapshots are available, but they used different report limits, so the change between them is not comparable.";
+      ? "Two snapshots are available. The chart shows the first comparable daily change; broader trend language begins with three snapshots." +
+        coverageNote(state.data.days[1])
+      : "Two snapshots are available, but their connector coverage or report limit differs, so the change between them is not comparable.";
     trendChart.hidden = false;
   } else {
     const latest = state.data.days[dayCount - 1];
@@ -368,7 +387,7 @@ function renderTrends() {
     // Raising the report limit lifts every count at once. Announcing that as
     // movement would report a collection-policy change as a change in field,
     // so the same gate the domain cards use applies to this sentence.
-    const comparable = sameReportLimit(latest, previous);
+    const comparable = sameCollectionContext(latest, previous);
     if (comparable) {
       const evidenceDelta = latest.evidence_count - previous.evidence_count;
       const attentionDelta = latest.attention.active_count - previous.attention.active_count;
@@ -380,10 +399,11 @@ function renderTrends() {
         .map(([category, trend]) => `${category.replaceAll("_", " ")} ${deltaText(trend.delta)}`);
       trendMessage.textContent =
         `Compared with ${previous.date}, surfaced evidence is ${direction(evidenceDelta)} and active attention is ${direction(attentionDelta)}.` +
-        (movers.length ? ` Biggest domain moves: ${movers.join(", ")}.` : "");
+        (movers.length ? ` Biggest domain moves: ${movers.join(", ")}.` : "") +
+        coverageNote(latest);
     } else {
       trendMessage.textContent =
-        `${latest.date} used a different report limit than ${previous.date}, so the two scans ` +
+        `${latest.date} used different connector coverage or a different report limit than ${previous.date}, so the two scans ` +
         "are not directly comparable. Counts are shown without a change figure.";
     }
     trendChart.hidden = false;
@@ -505,6 +525,7 @@ function allObservations() {
       ...item,
       snapshot_date: day.date,
       artifact_urls: item.primary_artifact_url ? [item.primary_artifact_url] : [],
+      organizations: item.producer ? [item.producer] : [],
       observation_kind: "attention",
     })),
   );
@@ -542,6 +563,16 @@ function syncFilters() {
     state.source,
   );
   populateSelect(
+    byId("organization-filter"),
+    [
+      ...new Set(
+        observations.flatMap((item) => item.organizations || []),
+      ),
+    ].sort(),
+    "organizations",
+    state.organization,
+  );
+  populateSelect(
     byId("event-filter"),
     [...new Set(observations.map((item) => item.event_kind))].sort(),
     "events",
@@ -559,6 +590,7 @@ function filteredObservations() {
       (!state.kind || item.observation_kind === state.kind) &&
       (!state.category || (item.categories || []).includes(state.category)) &&
       (!state.source || item.source === state.source) &&
+      (!state.organization || (item.organizations || []).includes(state.organization)) &&
       (!state.event || item.event_kind === state.event) &&
       (!query || haystack.includes(query))
     );
@@ -795,6 +827,240 @@ function expandedRecord(item) {
   ]);
 }
 
+function mapFilterFor(entity) {
+  state.q = "";
+  state.kind = "evidence";
+  state.category = "";
+  state.source = "";
+  state.organization = "";
+  state.event = "";
+  if (entity.type === "artifact") {
+    state.q = entity.label;
+    state.todayDate = entity.last_seen_at;
+  } else if (entity.type === "topic") {
+    state.category = entity.id.replace(/^topic:/, "");
+  } else if (entity.type === "source") {
+    state.source = entity.label;
+  } else if (entity.type === "organization") {
+    state.organization = entity.label;
+  }
+}
+
+function selectMapNode(entity, relatedEntities) {
+  state.entity = entity.id;
+  mapFilterFor(entity);
+  const topicAggregate = (state.data.corpus.aggregates.topics || []).find(
+    (entry) => `topic:${entry.topic}` === entity.id,
+  );
+  const stats = [
+    definition("Type", entity.type),
+    definition("First seen", formatDate(entity.first_seen_at, { dateStyle: "medium" })),
+    definition("Last seen", formatDate(entity.last_seen_at, { dateStyle: "medium" })),
+    definition("Observed days", Number(entity.seen_days?.length || 0).toLocaleString()),
+    ...(entity.type === "artifact"
+      ? [
+          definition("Observations", Number(entity.observation_count || 0).toLocaleString()),
+          definition(
+            "Latest priority",
+            entity.latest_score === null || entity.latest_score === undefined
+              ? "not scored"
+              : Number(entity.latest_score).toFixed(2),
+          ),
+        ]
+      : []),
+    ...(topicAggregate
+      ? [
+          definition("Artifact count", topicAggregate.entity_count),
+          definition("Source breadth", topicAggregate.source_breadth),
+          definition(
+            `${state.data.corpus.aggregates.window_days}-day velocity`,
+            topicAggregate.velocity === null
+              ? "needs a prior window"
+              : `${topicAggregate.velocity >= 0 ? "+" : ""}${topicAggregate.velocity}/day`,
+          ),
+        ]
+      : []),
+  ];
+  replaceChildren(byId("map-detail"), [
+    element("p", { className: "eyebrow", text: "Selected node" }),
+    element("h2", { text: entity.label }),
+    element("p", {
+      text:
+        entity.type === "artifact"
+          ? "The corresponding date and exact title search are now set for Today."
+          : `The ${entity.type} filter is now set for Today.`,
+    }),
+    element("dl", {}, stats),
+    relatedEntities.length
+      ? element("p", {
+          className: "discovery-note",
+          text: `Connected to ${relatedEntities
+            .slice(0, 8)
+            .map((related) => related.label)
+            .join(", ")}${relatedEntities.length > 8 ? "…" : ""}`,
+        })
+      : null,
+    entity.url
+      ? element("a", {
+          className: "primary-link",
+          text: "Open primary source ↗",
+          attrs: {
+            href: entity.url,
+            target: "_blank",
+            rel: "noopener noreferrer",
+          },
+        })
+      : null,
+  ]);
+  writeUrl();
+}
+
+function renderTrendMap() {
+  const corpus = state.data.corpus;
+  if (!corpus) return;
+  const entityById = new Map(corpus.entities.map((entity) => [entity.id, entity]));
+  const selectedFromUrl = entityById.get(state.entity);
+  let artifacts = corpus.entities
+    .filter((entity) => entity.type === "artifact")
+    .sort(
+      (a, b) =>
+        Number(b.latest_score || 0) - Number(a.latest_score || 0) ||
+        Number(b.observation_count || 0) - Number(a.observation_count || 0) ||
+        a.label.localeCompare(b.label),
+    )
+    .slice(0, 16);
+  if (
+    selectedFromUrl?.type === "artifact" &&
+    !artifacts.some((entity) => entity.id === selectedFromUrl.id)
+  ) {
+    artifacts = [selectedFromUrl, ...artifacts.slice(0, 15)];
+  }
+  const artifactIds = new Set(artifacts.map((entity) => entity.id));
+  const visibleEdges = corpus.edges.filter(
+    (edge) =>
+      artifactIds.has(edge.source) &&
+      ["HAS_TOPIC", "RELEASED_BY", "FOUND_VIA"].includes(edge.type),
+  );
+  const visibleIds = new Set([
+    ...artifactIds,
+    ...visibleEdges.flatMap((edge) => [edge.source, edge.target]),
+  ]);
+  if (
+    selectedFromUrl &&
+    ["topic", "organization", "source"].includes(selectedFromUrl.type)
+  ) {
+    visibleIds.add(selectedFromUrl.id);
+  }
+  const visibleEntities = [...visibleIds]
+    .map((id) => entityById.get(id))
+    .filter(Boolean);
+  const typeOrder = ["source", "organization", "artifact", "topic"];
+  const xByType = { source: 110, organization: 350, artifact: 650, topic: 1010 };
+  const groups = Object.fromEntries(
+    typeOrder.map((type) => [
+      type,
+      visibleEntities
+        .filter((entity) => entity.type === type)
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    ]),
+  );
+  const height = Math.max(
+    560,
+    ...typeOrder.map((type) => groups[type].length * 52 + 90),
+  );
+  const positions = new Map();
+  typeOrder.forEach((type) => {
+    groups[type].forEach((entity, index) => {
+      positions.set(entity.id, { x: xByType[type], y: 70 + index * 52 });
+    });
+  });
+
+  const svg = svgElement("svg", {
+    viewBox: `0 0 1200 ${height}`,
+    width: "1200",
+    height,
+    role: "img",
+    "aria-label": "Artifact nodes connected to topics, organizations, and discovery sources",
+  });
+  typeOrder.forEach((type) => {
+    svg.append(
+      svgElement(
+        "text",
+        {
+          x: xByType[type],
+          y: 30,
+          "text-anchor": "middle",
+          class: "map-column-label",
+        },
+        `${type}s`,
+      ),
+    );
+  });
+  visibleEdges.forEach((edge) => {
+    const source = positions.get(edge.source);
+    const target = positions.get(edge.target);
+    if (!source || !target) return;
+    svg.append(
+      svgElement("line", {
+        x1: source.x,
+        y1: source.y,
+        x2: target.x,
+        y2: target.y,
+        class: "map-edge",
+      }),
+    );
+  });
+  visibleEntities.forEach((entity) => {
+    const position = positions.get(entity.id);
+    if (!position) return;
+    const group = svgElement("g", {
+      class: `map-node map-node-${entity.type}`,
+      transform: `translate(${position.x} ${position.y})`,
+      tabindex: "0",
+      role: "button",
+      "aria-label": `${entity.type}: ${entity.label}`,
+    });
+    group.append(svgElement("circle", { r: entity.type === "artifact" ? 8 : 6 }));
+    group.append(
+      svgElement(
+        "text",
+        { x: 14, y: 4 },
+        shorten(entity.label, entity.type === "artifact" ? 38 : 24),
+      ),
+    );
+    const related = visibleEdges
+      .filter((edge) => edge.source === entity.id || edge.target === entity.id)
+      .map((edge) => entityById.get(edge.source === entity.id ? edge.target : edge.source))
+      .filter(Boolean);
+    const select = () => selectMapNode(entity, related);
+    group.addEventListener("click", select);
+    group.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        select();
+      }
+    });
+    svg.append(group);
+  });
+  replaceChildren(byId("map-canvas"), [svg]);
+  byId("map-summary").textContent =
+    `${corpus.entity_count} cumulative entities · ${corpus.observation_count} observations · ` +
+    `${corpus.edge_count} relationships · showing ${artifacts.length} ranked artifacts`;
+  if (selectedFromUrl) {
+    const related = corpus.edges
+      .filter(
+        (edge) => edge.source === selectedFromUrl.id || edge.target === selectedFromUrl.id,
+      )
+      .map((edge) =>
+        entityById.get(
+          edge.source === selectedFromUrl.id ? edge.target : edge.source,
+        ),
+      )
+      .filter(Boolean);
+    selectMapNode(selectedFromUrl, related);
+  }
+}
+
 function attentionActivity(item) {
   return element("div", { className: "attention-activity" }, [
     element("strong", { text: metricLabel(item.metrics?.points, "point") }),
@@ -847,6 +1113,9 @@ function bindEvents() {
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.addEventListener("click", () => {
       setView(button.dataset.view);
+      if (button.dataset.view === "today") renderToday();
+      if (button.dataset.view === "trends") renderTrends();
+      if (button.dataset.view === "map") renderTrendMap();
     });
   });
   byId("today-date").addEventListener("change", (event) => {
@@ -858,6 +1127,7 @@ function bindEvents() {
     state.kind = byId("kind-filter").value;
     state.category = byId("category-filter").value;
     state.source = byId("source-filter").value;
+    state.organization = byId("organization-filter").value;
     state.event = byId("event-filter").value;
     renderToday();
   });
@@ -866,6 +1136,7 @@ function bindEvents() {
     state.kind = "";
     state.category = "";
     state.source = "";
+    state.organization = "";
     state.event = "";
     renderToday();
   });
@@ -943,6 +1214,7 @@ async function initialize() {
     );
     renderToday();
     renderTrends();
+    renderTrendMap();
     setView(state.view, false);
     const latest = dailySnapshot(state.data.latest_date);
     // A source that succeeded with zero records is not down: empty and failed

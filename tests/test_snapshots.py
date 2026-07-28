@@ -141,6 +141,34 @@ def test_rebuild_is_deterministic(tmp_path):
     assert first["days"][0]["attention"]["active_count"] == 1
 
 
+def test_thirty_snapshots_replay_into_one_deterministic_cumulative_entity(tmp_path):
+    snapshot_dir = tmp_path / "snapshots"
+    for day in range(1, 31):
+        run = radar_run(day)
+        run.items[0].source_id = "2607.0001"
+        run.items[0].url = "https://arxiv.org/abs/2607.0001"
+        write_snapshot(run, snapshot_dir)
+    output = tmp_path / "radar.json"
+
+    first = rebuild_dashboard(snapshot_dir, output)
+    first_bytes = output.read_bytes()
+    second = rebuild_dashboard(snapshot_dir, output)
+    artifacts = [entity for entity in first["corpus"]["entities"] if entity["type"] == "artifact"]
+    benchmark = next(
+        topic for topic in first["corpus"]["aggregates"]["topics"] if topic["topic"] == "benchmark"
+    )
+
+    assert first == second
+    assert first_bytes == output.read_bytes()
+    assert first["snapshot_count"] == 30
+    assert len(artifacts) == 1
+    assert artifacts[0]["observation_count"] == 30
+    assert len(artifacts[0]["seen_days"]) == 30
+    assert benchmark["persistence_days"] == 30
+    assert benchmark["velocity"] == 0
+    assert first["corpus"]["aggregates"]["provenance"]["primary_source_rate"] >= 0.9
+
+
 def test_dashboard_publishes_the_rubric_that_scored_its_records(tmp_path):
     snapshot_dir = tmp_path / "snapshots"
     run = radar_run(27)
@@ -264,6 +292,25 @@ def test_trends_compare_snapshots_sharing_a_report_limit(tmp_path):
     after = data["days"][1]["category_trends"]["benchmark"]
     assert after["delta"] == 0
     assert after["comparable"] is True
+
+
+def test_trends_do_not_compare_when_connector_coverage_changes(tmp_path):
+    snapshot_dir = tmp_path / "snapshots"
+    first = radar_run(26)
+    first.selection = {"report_limit": 300}
+    second = radar_run(27)
+    second.selection = {"report_limit": 300}
+    second.health[1] = SourceHealth(source="brave", ok=True, item_count=1)
+    write_snapshot(first, snapshot_dir)
+    write_snapshot(second, snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    before, after = data["days"]
+    assert before["coverage_complete"] is False
+    assert before["coverage_gaps"] == ["brave"]
+    assert after["coverage_complete"] is True
+    assert after["category_trends"]["benchmark"]["comparable"] is False
 
 
 def test_selection_counts_round_trip_through_the_snapshot(tmp_path):

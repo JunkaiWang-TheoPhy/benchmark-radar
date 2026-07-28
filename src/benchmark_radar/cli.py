@@ -26,9 +26,12 @@ def main() -> None:
     parser.add_argument(
         "command",
         nargs="?",
-        choices=("run", "rebuild", "migrate"),
+        choices=("run", "rebuild", "backfill", "migrate"),
         default="run",
-        help="Collect a daily run or rebuild dashboard data from saved snapshots.",
+        help=(
+            "Collect a daily run, rebuild/backfill cumulative data from saved snapshots, "
+            "or migrate snapshot schemas."
+        ),
     )
     parser.add_argument("--config", type=Path, default=Path("config.yml"))
     parser.add_argument("--output", type=Path, default=Path("out/report.md"))
@@ -37,9 +40,10 @@ def main() -> None:
     parser.add_argument("--dashboard-output", type=Path, default=Path("site/data/radar.json"))
     args = parser.parse_args()
 
-    if args.command == "rebuild":
+    if args.command in {"rebuild", "backfill"}:
         data = rebuild_dashboard(args.snapshot_dir, args.dashboard_output)
-        print(f"Rebuilt {args.dashboard_output} from {data['snapshot_count']} daily snapshots")
+        action = "Backfilled" if args.command == "backfill" else "Rebuilt"
+        print(f"{action} {args.dashboard_output} from {data['snapshot_count']} daily snapshots")
         return
 
     config = load_config(args.config)
