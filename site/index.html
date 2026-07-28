@@ -49,10 +49,18 @@
         <div class="content-grid">
           <div>
             <div class="section-title">
-              <h2>Ranked signals</h2>
+              <h2>Ranked evidence</h2>
               <span id="today-count"></span>
             </div>
             <div class="signal-list" id="today-list"></div>
+            <div class="section-title attention-section-title">
+              <h2>Attention signals</h2>
+              <span id="today-attention-count"></span>
+            </div>
+            <p class="section-note">
+              Public activity is persisted with this UTC snapshot and is never quality-scored.
+            </p>
+            <div class="explorer-list" id="today-attention-list"></div>
           </div>
           <aside class="health-panel" aria-labelledby="health-heading">
             <div class="section-title">
@@ -74,9 +82,10 @@
 
         <div class="trend-panel">
           <div class="section-title">
-            <h2>Daily category volume</h2>
+            <h2>Daily evidence and attention volume</h2>
             <div class="legend" id="trend-legend" aria-label="Category legend"></div>
           </div>
+          <p class="trend-message" id="trend-message" role="status"></p>
           <div class="trend-chart" id="trend-chart" role="img" aria-label="Daily category counts"></div>
         </div>
 
@@ -91,9 +100,13 @@
                 <thead>
                   <tr>
                     <th>Date</th>
-                    <th>Items</th>
+                    <th>Coverage (UTC)</th>
+                    <th>Evidence</th>
+                    <th>Source mix</th>
                     <th>Categories</th>
-                    <th>Sources reporting</th>
+                    <th>Events</th>
+                    <th>Attention</th>
+                    <th>Fetch health</th>
                   </tr>
                 </thead>
                 <tbody id="trend-table"></tbody>
@@ -106,6 +119,11 @@
             <p>
               Each column is one validated UTC snapshot. A taller band means more records matched
               that category on the day; it does not imply better work or stronger evidence.
+            </p>
+            <p>
+              Source mix counts ranked evidence after scoring and the report cap. Fetch health
+              counts raw records returned before scoring; an empty source succeeded but returned
+              zero records.
             </p>
           </aside>
         </div>
@@ -124,6 +142,10 @@
           <label class="search-field">
             Search
             <input id="search-filter" name="q" type="search" placeholder="Title, summary, or source">
+          </label>
+          <label>
+            Kind
+            <select id="kind-filter" name="kind"></select>
           </label>
           <label>
             Date

@@ -61,11 +61,12 @@ Outputs:
 - `out/report.md`: the exact GitHub Issue body
 - `out/items.json`: machine-readable evidence and source-health snapshot
 - `data/snapshots/YYYY-MM-DD.json`: versioned, idempotent UTC snapshot
-- `site/data/radar.json`: deterministic browser-ready history
+- `site/data/radar.json`: deterministic browser-ready history generated for deployment
 
-Automation keeps the growing corpus on the public `radar-data` branch so the protected
-`main` branch remains pull-request-only. Dashboard builds restore that history before
-validation and deployment.
+Validated snapshots are the canonical corpus and live on `main` beside the code and
+schema that interpret them. A dedicated snapshot-writer GitHub App may append only
+validated daily snapshots through the protected-branch bypass; human changes remain
+pull-request-only. Dashboard builds derive `site/data/radar.json` without tracking it.
 
 Rebuild the dashboard data without collecting again:
 
@@ -92,7 +93,17 @@ OPENALEX_API_KEY
 BRAVE_API_KEY
 ```
 
-The built-in `GITHUB_TOKEN` is used automatically in Actions.
+Daily snapshot persistence also requires a private GitHub App with **Contents: read and
+write** access to this repository. Add the App to the `main-protect` ruleset's bypass
+list with **Always allow**, then configure:
+
+```text
+Repository variable: RADAR_APP_ID
+Actions secret:      RADAR_APP_PRIVATE_KEY
+```
+
+The built-in `GITHUB_TOKEN` continues to authenticate discovery and Issue publishing;
+the snapshot push uses the App token so its `main` push can trigger deployment.
 
 ## Daily publishing
 
@@ -100,9 +111,9 @@ The built-in `GITHUB_TOKEN` is used automatically in Actions.
 It:
 
 1. collects and renders with read-only repository permission;
-2. validates and persists one snapshot for that UTC date;
+2. validates and uses the snapshot-writer App to persist one snapshot on `main`;
 3. creates or updates the date-filtered daily Issue;
-4. rebuilds and deploys the static GitHub Pages dashboard;
+4. lets that App-authenticated push trigger the standalone Pages workflow;
 5. prevents duplicate snapshots and daily Issues on reruns.
 
 The workflow needs repository Issues enabled. The labels `daily-radar` and `automated`
@@ -121,11 +132,13 @@ must exist; they are created during initial repository setup.
 
 ## Public observation feeds
 
-The Explorer can load compatible public attention observations from separate, read-only
-repositories. Feed producers must follow
+The collector ingests compatible public attention observations from separate, read-only
+repositories before persisting the daily snapshot. Feed producers must follow
 [`docs/public-observation-feed.schema.json`](docs/public-observation-feed.schema.json).
-The dashboard validates the feed version and HTTP(S) links, renders all source text as
-plain text, and labels these records as attention rather than primary evidence.
+The collector validates the feed version and HTTP(S) links, records producer health
+separately from radar ingest health, and stamps publication, producer discovery, and
+first radar observation independently. The dashboard renders source text as plain text
+and labels these records as unranked attention rather than evidence.
 
 ## License
 

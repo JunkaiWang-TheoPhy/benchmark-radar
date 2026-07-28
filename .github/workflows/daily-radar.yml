@@ -29,10 +29,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Restore snapshot history
-        run: |
-          git fetch --depth=1 origin radar-data:refs/remotes/origin/radar-data
-          git archive origin/radar-data data/snapshots | tar -x
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
@@ -58,13 +54,23 @@ jobs:
   persist-snapshot:
     needs: build-report
     permissions:
-      contents: write
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Create snapshot-writer token
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        with:
+          app-id: ${{ vars.RADAR_APP_ID }}
+          private-key: ${{ secrets.RADAR_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: benchmark-radar
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: radar-data
+          ref: main
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
       - name: Download validated snapshot
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -74,18 +80,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p data/snapshots site/data
+          mkdir -p data/snapshots
           cp generated/data/snapshots/*.json data/snapshots/
-          cp generated/site/data/radar.json site/data/radar.json
           git config user.name "benchmark-radar[bot]"
           git config user.email "benchmark-radar[bot]@users.noreply.github.com"
-          git add data/snapshots site/data/radar.json
+          git add data/snapshots
+          if git diff --cached --name-only |
+            grep -Ev '^data/snapshots/[0-9]{4}-[0-9]{2}-[0-9]{2}\.json$'
+          then
+            echo "::error::Snapshot writer attempted to modify an unexpected path"
+            exit 1
+          fi
           if git diff --cached --quiet; then
             echo "UTC snapshot is already current"
             exit 0
           fi
-          git commit -m "Record daily radar snapshot [skip ci]"
-          git push origin HEAD:radar-data
+          git commit -m "Record daily radar snapshot"
+          git push origin HEAD:main
 
   publish-issue:
     needs: [build-report, persist-snapshot]
@@ -121,52 +132,3 @@ jobs:
             gh issue create --title "${title}" --body-file generated/out/report.md \
               --label daily-radar --label automated
           fi
-
-  build-pages:
-    needs: persist-snapshot
-    permissions:
-      contents: read
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    concurrency:
-      group: github-pages
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: main
-          persist-credentials: false
-      - name: Restore snapshot history
-        run: |
-          git fetch --depth=1 origin radar-data:refs/remotes/origin/radar-data
-          git archive origin/radar-data data/snapshots | tar -x
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.12"
-          cache: pip
-      - name: Build validated dashboard data
-        run: |
-          python -m pip install -e '.[dev]'
-          benchmark-radar rebuild
-          pytest -q
-      - name: Configure Pages
-        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
-        with:
-          path: site/
-
-  deploy-pages:
-    needs: build-pages
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Deploy GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5

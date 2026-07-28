@@ -18,6 +18,10 @@
   --shadow: 0 16px 50px rgb(27 48 56 / 8%);
 }
 
+[hidden] {
+  display: none !important;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -340,6 +344,25 @@ input {
   border-bottom: 1px solid var(--line);
 }
 
+.attention-section-title {
+  margin-top: 3rem;
+}
+
+.section-note,
+.trend-message {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.section-note {
+  margin: 0.8rem 0 0;
+}
+
+.attention-card {
+  padding-inline: 0.8rem;
+  background: color-mix(in srgb, #e9dfff 28%, transparent);
+}
+
 .signal-rank {
   color: var(--orange);
   font-family: var(--utility);
@@ -560,6 +583,18 @@ input {
   background: var(--swatch);
 }
 
+.attention-swatch,
+.attention-volume {
+  background: #756aa8;
+}
+
+.trend-message {
+  margin: 1.25rem 0 0;
+  padding: 0.9rem 1rem;
+  border-left: 3px solid var(--orange);
+  background: var(--paper);
+}
+
 .trend-chart {
   display: flex;
   gap: clamp(0.4rem, 1.5vw, 1.2rem);
@@ -584,6 +619,26 @@ input {
   justify-content: flex-start;
   height: 260px;
   border-bottom: 1px solid var(--ink);
+}
+
+.series-bars {
+  display: flex;
+  gap: 5px;
+  align-items: end;
+  justify-content: center;
+  height: 260px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.series-bars .bar-stack {
+  width: min(22px, 60%);
+  border-bottom: 0;
+}
+
+.attention-volume {
+  width: min(10px, 30%);
+  min-height: 2px;
+  transition: filter 180ms ease;
 }
 
 .bar-segment {
@@ -620,6 +675,7 @@ input {
 
 table {
   width: 100%;
+  min-width: 1100px;
   border-collapse: collapse;
 }
 
@@ -663,7 +719,7 @@ td a {
 
 .filter-panel {
   display: grid;
-  grid-template-columns: 2fr repeat(4, minmax(125px, 1fr)) auto;
+  grid-template-columns: 2fr repeat(5, minmax(115px, 1fr)) auto;
   gap: 1rem;
   align-items: end;
   margin-bottom: 3rem;

@@ -8,6 +8,7 @@ build/
 *.egg-info/
 .env
 out/
+/site/data/radar.json
 
 .gstack/
 .DS_Store

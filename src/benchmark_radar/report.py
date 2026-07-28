@@ -56,6 +56,8 @@ def render_markdown(run: RadarRun, dashboard_url: str | None = None) -> str:
     category_counts = Counter(category for item in run.items for category in item.categories)
     source_counts = Counter(item.source for item in run.items)
     failed = [health for health in run.health if not health.ok]
+    empty = [health for health in run.health if health.ok and health.item_count == 0]
+    nonempty = [health for health in run.health if health.ok and health.item_count > 0]
     lines = [
         f"<!-- benchmark-radar:daily:{date} -->",
         f"<!-- generator: benchmark-radar/{__version__} -->",
@@ -81,7 +83,8 @@ def render_markdown(run: RadarRun, dashboard_url: str | None = None) -> str:
         [
             "## At a glance",
             "",
-            f"- **{len(run.items)}** ranked items",
+            f"- **{len(run.items)}** ranked evidence items",
+            f"- **{len(run.attention)}** unranked attention observations",
             "- Categories: "
             + (
                 ", ".join(
@@ -91,7 +94,8 @@ def render_markdown(run: RadarRun, dashboard_url: str | None = None) -> str:
             ),
             "- Sources represented: "
             + (", ".join(f"{key} ({value})" for key, value in source_counts.items()) or "none"),
-            f"- Source health: **{len(run.health) - len(failed)}/{len(run.health)} healthy**",
+            f"- Evidence ingest: **{len(nonempty)} nonempty · {len(empty)} empty · "
+            f"{len(failed)} failed**",
             "",
         ]
     )
@@ -121,6 +125,28 @@ def render_markdown(run: RadarRun, dashboard_url: str | None = None) -> str:
         lines.append(
             f"| {health.source} | {'✅' if health.ok else '⚠️'} | {health.item_count} | {detail} |"
         )
+    if run.attention_ingest_health or run.producer_health:
+        lines.extend(
+            [
+                "",
+                "## Attention-feed health",
+                "",
+                "| Layer | Source | Status | Records | Detail |",
+                "|---|---|---:|---:|---|",
+            ]
+        )
+        for health in run.attention_ingest_health:
+            detail = _escape(health.error or "")
+            lines.append(
+                f"| Radar ingest | {health.source} | {'✅' if health.ok else '⚠️'} | "
+                f"{health.item_count} | {detail} |"
+            )
+        for health in run.producer_health:
+            detail = _escape(health.error or "")
+            lines.append(
+                f"| Producer report | {health.source} | {'✅' if health.ok else '⚠️'} | "
+                f"{health.item_count} | {detail} |"
+            )
     lines.extend(
         [
             "",

@@ -8,7 +8,12 @@ import yaml
 
 from .pipeline import run_pipeline
 from .report import render_markdown
-from .snapshots import rebuild_dashboard, write_snapshot
+from .snapshots import (
+    load_snapshots,
+    migrate_snapshot_history,
+    rebuild_dashboard,
+    write_snapshot,
+)
 
 
 def load_config(path: Path) -> dict:
@@ -21,7 +26,7 @@ def main() -> None:
     parser.add_argument(
         "command",
         nargs="?",
-        choices=("run", "rebuild"),
+        choices=("run", "rebuild", "migrate"),
         default="run",
         help="Collect a daily run or rebuild dashboard data from saved snapshots.",
     )
@@ -38,7 +43,20 @@ def main() -> None:
         return
 
     config = load_config(args.config)
-    run = run_pipeline(config)
+    if args.command == "migrate":
+        snapshots = migrate_snapshot_history(config, args.snapshot_dir)
+        dashboard = rebuild_dashboard(args.snapshot_dir, args.dashboard_output)
+        print(
+            f"Migrated {len(snapshots)} snapshots to schema {dashboard['schema_version']} "
+            f"and rebuilt {args.dashboard_output}"
+        )
+        return
+
+    snapshots = load_snapshots(args.snapshot_dir)
+    run = run_pipeline(
+        config,
+        previous_snapshot=snapshots[-1] if snapshots else None,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.json_output.parent.mkdir(parents=True, exist_ok=True)
     dashboard_url = config.get("publish", {}).get("dashboard_url")
@@ -51,16 +69,14 @@ def main() -> None:
             {
                 "generated_at": run.generated_at.isoformat(),
                 "since": run.since.isoformat(),
-                "items": [item.to_dict() for item in run.items],
-                "health": [
-                    {
-                        "source": health.source,
-                        "ok": health.ok,
-                        "item_count": health.item_count,
-                        "error": health.error,
-                    }
-                    for health in run.health
+                "evidence_items": [item.to_dict() for item in run.items],
+                "attention": {
+                    "observations": [item.to_dict() for item in run.attention],
+                },
+                "ingest_health": [
+                    health.to_dict() for health in [*run.health, *run.attention_ingest_health]
                 ],
+                "producer_health": [health.to_dict() for health in run.producer_health],
             },
             indent=2,
             ensure_ascii=False,

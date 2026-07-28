@@ -1,4 +1,3 @@
-import json
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -36,7 +35,8 @@ def test_today_view_keeps_one_signal_summary_and_one_source_status():
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
-    assert html.count("Ranked signals") == 1
+    assert html.count("Ranked evidence") == 1
+    assert html.count("Attention signals") == 1
     assert "Daily field note" not in html
     assert "What entered the field?" not in html
     assert "today-overview" not in html
@@ -60,28 +60,40 @@ def test_site_does_not_render_source_content_as_html():
     assert " eval(" not in script
 
 
-def test_public_feed_configuration_is_versioned_and_https():
-    config = json.loads(Path("site/data/feeds.json").read_text(encoding="utf-8"))
-
-    assert config["schema_version"] == 1
-    assert config["feeds"]
-    assert all(feed["url"].startswith("https://") for feed in config["feeds"])
-
-
 def test_attention_signals_use_activity_metrics_not_quality_scores():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     assert 'text: "Not quality-scored"' in script
-    assert '["Submissions", Number(item.metrics?.submissions || 1).toLocaleString()]' in script
+    assert '["Submissions", Number(item.metrics?.submissions ?? 1).toLocaleString()]' in script
     assert '["Published", formatDate(item.published_at' in script
     assert "supporting_observations" in script
     assert "total_score: 0" not in script
     assert "evidence_score: 0" not in script
 
 
-def test_explorer_clusters_attention_by_normalized_title():
+def test_explorer_uses_persisted_attention_and_snapshot_dates():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    html = Path("site/index.html").read_text(encoding="utf-8")
+
+    assert "loadExternalFeeds" not in script
+    assert "state.external" not in script
+    assert "day.attention.observations.map" in script
+    assert "snapshot_date: day.date" in script
+    assert 'id="kind-filter"' in html
+
+
+def test_one_snapshot_trend_explains_history_requirement():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    assert "At least two daily snapshots are required to calculate a trend." in script
+    assert "dayCount === 1" in script
+    assert "[hidden]" in styles
+    assert "display: none !important" in styles
+
+
+def test_supporting_attention_provider_is_not_hard_coded():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
-    assert "function clusterAttentionRecords(items)" in script
-    assert "normalizedRecordTitle(item.title)" in script
-    assert "state.external = clusterAttentionRecords(" in script
+    assert "`${record.source || item.source} #${record.source_id}`" in script
+    assert "Hacker News #${record.source_id}" not in script

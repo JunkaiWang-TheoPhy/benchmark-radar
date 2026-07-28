@@ -22,4 +22,3 @@ jobs:
       - run: ruff format --check .
       - run: pytest -q
       - run: benchmark-radar rebuild
-      - run: git diff --exit-code -- site/data/radar.json

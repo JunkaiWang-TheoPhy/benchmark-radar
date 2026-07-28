@@ -8,6 +8,7 @@ from benchmark_radar.pipeline import (
     canonical_url,
     deduplicate,
     normalized_title,
+    run_pipeline,
     score_item,
 )
 
@@ -85,3 +86,71 @@ def test_boilerplate_summary_cannot_earn_relevance():
         datetime(2026, 7, 27, 1, tzinfo=UTC),
     )
     assert "dataset" not in bare.categories
+
+
+def test_every_required_source_must_return_records(monkeypatch):
+    def empty_fetcher(config, since, limit):
+        return []
+
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "required_fixture",
+        empty_fetcher,
+    )
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 0,
+        },
+        "taxonomy": {"benchmark": ["benchmark"]},
+        "sources": {"required_fixture": {"enabled": True, "required": True}},
+    }
+
+    with pytest.raises(RuntimeError, match="required_fixture"):
+        run_pipeline(config, datetime(2026, 7, 27, tzinfo=UTC))
+
+
+def test_arxiv_discovery_state_suppresses_unchanged_overlap(monkeypatch):
+    unchanged = item(
+        source_id="2607.12345",
+        updated_at=datetime(2026, 7, 26, 18, tzinfo=UTC),
+    )
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "arxiv",
+        lambda config, since, limit: [unchanged],
+    )
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 0,
+        },
+        "taxonomy": {"benchmark": ["benchmark"]},
+        "sources": {"arxiv": {"enabled": True, "required": True}},
+    }
+    previous = {
+        "discovery_state": {
+            "arxiv": {
+                "2607.12345": {
+                    "discovered_at": "2026-07-26T19:00:00+00:00",
+                    "last_activity_at": "2026-07-26T18:00:00+00:00",
+                }
+            }
+        }
+    }
+
+    run = run_pipeline(
+        config,
+        datetime(2026, 7, 27, tzinfo=UTC),
+        previous_snapshot=previous,
+    )
+
+    assert run.items == []
+    assert run.health[0].item_count == 1
+    assert run.discovery_state["arxiv"]["2607.12345"]["discovered_at"] == (
+        "2026-07-26T19:00:00+00:00"
+    )
