@@ -1,7 +1,13 @@
 radar:
   lookback_hours: 48
-  max_items_per_source: 60
-  report_limit: 30
+  # Sources routinely return several hundred rows a day. The previous 60/30
+  # pair discarded most of them before anyone could see them, so the dashboard
+  # claimed "228 found" while publishing 8 GitHub records.
+  max_items_per_source: 300
+  # Cap the daily Issue, not the corpus: the snapshot and dashboard keep every
+  # scored record, and only the Markdown digest is truncated to this many.
+  report_limit: 300
+  issue_item_limit: 40
   minimum_score: 2.0
 
 taxonomy:
@@ -32,6 +38,28 @@ taxonomy:
     - data provenance
     - annotation quality
     - benchmark leakage
+
+# Named artifacts worth surfacing whenever they move, regardless of where the
+# generic score places them. A watchlist hit is a routing decision, not a
+# quality claim: it pins the record to the top of the digest and labels why.
+watchlist:
+  - name: PaperBench
+    aliases: [paperbench, "paper bench"]
+    note: OpenAI benchmark for replicating ML research papers end to end.
+  - name: MLE-bench
+    aliases: [mlebench, "mle-bench", "mle bench"]
+    note: OpenAI benchmark scoring agents on Kaggle-style ML engineering tasks.
+  - name: MLE-Marathon
+    aliases: ["mle-marathon", "mle marathon", mlemarathon]
+    note: Long-running variant of the MLE engineering benchmark family.
+  - name: PostRainBench
+    aliases: [postrainbench, "postrain bench", "post-rain bench"]
+    note: Benchmark for post-processing precipitation and rainfall prediction.
+  # "long horizon" alone appears in the abstract of most agent papers, so the
+  # aliases require the benchmark noun to keep this from matching everything.
+  - name: Long-Horizon Bench
+    aliases: ["long horizon bench", "long horizon benchmark", longhorizonbench]
+    note: Evaluations targeting extended multi-step agent execution.
 
 sources:
   arxiv:

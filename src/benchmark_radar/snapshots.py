@@ -36,6 +36,7 @@ def snapshot_for_run(run: RadarRun) -> dict[str, Any]:
             health.to_dict() for health in [*run.health, *run.attention_ingest_health]
         ],
         "producer_health": [health.to_dict() for health in run.producer_health],
+        "selection": run.selection,
         "discovery_state": run.discovery_state,
     }
 
@@ -230,6 +231,9 @@ def validate_snapshot(snapshot: dict[str, Any], *, source: str = "snapshot") -> 
     _validate_health(snapshot["producer_health"], source=source, field="producer_health")
     if not isinstance(snapshot["discovery_state"], dict):
         raise SnapshotError(f"{source}: discovery_state must be an object")
+    # Optional: snapshots written before per-stage counts were tracked stay valid.
+    if "selection" in snapshot and not isinstance(snapshot["selection"], dict):
+        raise SnapshotError(f"{source}: selection must be an object")
 
 
 def normalize_snapshot(snapshot: dict[str, Any], *, source: str = "snapshot") -> dict[str, Any]:
@@ -287,6 +291,47 @@ def load_snapshots(snapshot_dir: Path) -> list[dict[str, Any]]:
     return snapshots
 
 
+TREND_BASELINE_DAYS = 7
+
+
+def _attach_category_trends(days: list[dict[str, Any]]) -> None:
+    """Add per-category deltas, baselines and cumulative totals to each day.
+
+    "How many benchmarks landed today" is only half the question; the other
+    half is which domain moved and by how much. Every figure here is a count of
+    surfaced records, never a quality judgement.
+    """
+    cumulative: Counter[str] = Counter()
+    for index, day in enumerate(days):
+        counts = day["category_counts"]
+        previous = days[index - 1]["category_counts"] if index else {}
+        window = days[max(0, index - TREND_BASELINE_DAYS) : index]
+        trends = {}
+        for category in sorted({*counts, *previous}):
+            count = counts.get(category, 0)
+            prior = previous.get(category, 0)
+            history = [entry["category_counts"].get(category, 0) for entry in window]
+            baseline = round(sum(history) / len(history), 2) if history else None
+            trends[category] = {
+                "count": count,
+                "previous": prior,
+                "delta": count - prior,
+                "baseline": baseline,
+                # Momentum compares today with its own recent average, so a
+                # category is judged against its normal volume, not the corpus.
+                "momentum": (
+                    round((count - baseline) / baseline, 2) if baseline not in (None, 0) else None
+                ),
+                "cumulative": cumulative[category] + count,
+            }
+        cumulative.update(counts)
+        day["category_trends"] = trends
+        day["cumulative_category_counts"] = dict(sorted(cumulative.items()))
+        day["cumulative_evidence_count"] = sum(
+            entry["evidence_count"] for entry in days[: index + 1]
+        )
+
+
 def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
     days: list[dict[str, Any]] = []
     categories: set[str] = set()
@@ -333,8 +378,10 @@ def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
                 },
                 "ingest_health": snapshot["ingest_health"],
                 "producer_health": snapshot["producer_health"],
+                "selection": snapshot.get("selection") or {},
             }
         )
+    _attach_category_trends(days)
     return {
         "schema_version": SCHEMA_VERSION,
         "latest_date": days[-1]["date"] if days else None,

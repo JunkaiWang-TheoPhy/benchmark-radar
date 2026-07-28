@@ -141,6 +141,43 @@ def test_rebuild_is_deterministic(tmp_path):
     assert first["days"][0]["attention"]["active_count"] == 1
 
 
+def test_dashboard_reports_per_category_deltas_and_cumulative(tmp_path):
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(26), snapshot_dir)
+    write_snapshot(radar_run(27), snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    first, second = data["days"]
+    assert first["category_trends"]["benchmark"]["count"] == 1
+    assert first["category_trends"]["benchmark"]["delta"] == 1
+    assert first["category_trends"]["benchmark"]["baseline"] is None
+    # Day two matches day one, so the domain is flat but the total accumulates.
+    assert second["category_trends"]["benchmark"]["delta"] == 0
+    assert second["category_trends"]["benchmark"]["baseline"] == 1.0
+    assert second["category_trends"]["benchmark"]["cumulative"] == 2
+    assert second["cumulative_evidence_count"] == 2
+
+
+def test_selection_counts_round_trip_through_the_snapshot(tmp_path):
+    run = radar_run(27)
+    run.selection = {"fetched": 300, "published": 30, "minimum_score": 2.0}
+
+    snapshot = snapshot_for_run(run)
+    validate_snapshot(snapshot)
+
+    write_snapshot(run, tmp_path / "snapshots")
+    data = rebuild_dashboard(tmp_path / "snapshots", tmp_path / "radar.json")
+    assert data["days"][-1]["selection"]["fetched"] == 300
+
+
+def test_snapshots_without_selection_stay_valid():
+    snapshot = snapshot_for_run(radar_run())
+    snapshot.pop("selection")
+
+    validate_snapshot(snapshot)
+
+
 def test_validation_rejects_missing_item_fields():
     snapshot = snapshot_for_run(radar_run())
     del snapshot["evidence_items"][0]["event_kind"]

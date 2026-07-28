@@ -110,6 +110,45 @@ def score_item(
     return item
 
 
+def apply_watchlist(
+    items: list[RadarItem],
+    watchlist: list[dict[str, Any]],
+) -> list[RadarItem]:
+    """Tag records naming an artifact the reader always wants to see.
+
+    Only the title and source id are matched. A watchlisted name mentioned in
+    passing inside an abstract describes related work, not a release of that
+    artifact, so including the summary pinned unrelated papers to the top.
+    Matching is on word boundaries for the same reason: a bare substring made
+    "long horizon" swallow every agent paper that used the phrase.
+
+    This marks and routes the record only; it never edits a score, so the
+    published ranking stays explainable.
+    """
+    if not watchlist:
+        return items
+    for item in items:
+        haystack = f"{item.title} {item.source_id}".casefold()
+        for entry in watchlist:
+            name = str(entry.get("name") or "").strip()
+            aliases = [str(alias).casefold() for alias in entry.get("aliases") or []]
+            terms = [alias for alias in [*aliases, name.casefold()] if alias]
+            # Hyphens, spaces and underscores are interchangeable separators
+            # so "mle-bench", "mle bench" and "mle_bench" all match one alias.
+            patterns = [
+                r"(?<![0-9a-z])"
+                + r"[\s_-]*".join(re.escape(part) for part in re.split(r"[\s_-]+", term) if part)
+                + r"(?![0-9a-z])"
+                for term in terms
+            ]
+            if any(re.search(pattern, haystack) for pattern in patterns):
+                item.watchlist = name or terms[0]
+                item.watchlist_note = str(entry.get("note") or "").strip()
+                item.rationale.append(f"Watchlist: {item.watchlist}")
+                break
+    return items
+
+
 BOILERPLATE_THRESHOLD = 3
 
 
@@ -226,16 +265,38 @@ def run_pipeline(
             "Required discovery sources failed or returned no records: "
             + ", ".join(unavailable_required)
         )
+    fetched_count = len(items)
     unique = deduplicate(items)
-    scored = [score_item(item, config["taxonomy"], now) for item in unique]
+    scored = apply_watchlist(
+        [score_item(item, config["taxonomy"], now) for item in unique],
+        config.get("watchlist") or [],
+    )
     selected = [
         item
         for item in scored
-        if item.total_score >= float(settings["minimum_score"]) and item.categories
+        # A watchlist hit is published even when the generic score or taxonomy
+        # would have dropped it: the reader asked for these by name.
+        if item.watchlist
+        or (item.total_score >= float(settings["minimum_score"]) and item.categories)
     ]
-    selected.sort(key=lambda item: (item.total_score, item.published_at), reverse=True)
+    selected.sort(
+        key=lambda item: (bool(item.watchlist), item.total_score, item.published_at),
+        reverse=True,
+    )
     published = selected[: int(settings["report_limit"])]
     assert_no_boilerplate_summaries(published)
+    # The dashboard previously showed "228 found" beside 8 published records
+    # with nothing to explain the gap. Persist each stage so the drop-off is
+    # auditable rather than looking like lost data.
+    selection = {
+        "fetched": fetched_count,
+        "deduplicated": len(unique),
+        "scored": len(scored),
+        "qualified": len(selected),
+        "published": len(published),
+        "minimum_score": float(settings["minimum_score"]),
+        "report_limit": int(settings["report_limit"]),
+    }
     attention, attention_health, producer_health, attention_state = fetch_attention_feeds(
         config.get("attention") or {},
         observed_at=now,
@@ -250,6 +311,7 @@ def run_pipeline(
         attention=attention,
         attention_ingest_health=attention_health,
         producer_health=producer_health,
+        selection=selection,
         discovery_state={
             **discovery_state,
             "attention": attention_state,

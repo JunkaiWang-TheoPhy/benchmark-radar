@@ -27,6 +27,10 @@ class RadarItem:
     adoption_score: float = 0.0
     total_score: float = 0.0
     rationale: list[str] = field(default_factory=list)
+    # Set when the record matches a named artifact on the configured
+    # watchlist. Routing metadata only: it never alters a score.
+    watchlist: str | None = None
+    watchlist_note: str = ""
 
     @property
     def canonical_key(self) -> str:
@@ -107,3 +111,6 @@ class RadarRun:
     attention_ingest_health: list[SourceHealth] = field(default_factory=list)
     producer_health: list[ProducerHealth] = field(default_factory=list)
     discovery_state: dict[str, Any] = field(default_factory=dict)
+    # Per-stage record counts (fetched → deduplicated → scored → qualified →
+    # published) so the gap between "228 found" and what ships is visible.
+    selection: dict[str, Any] = field(default_factory=dict)
