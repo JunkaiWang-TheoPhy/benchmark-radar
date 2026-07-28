@@ -1,7 +1,17 @@
 from datetime import UTC, datetime
 from urllib.error import HTTPError
 
-from benchmark_radar.sources import fetch_arxiv, fetch_github
+import pytest
+
+from benchmark_radar.http import RequestError
+from benchmark_radar.sources import (
+    ConnectorPayloadError,
+    fetch_arxiv,
+    fetch_github,
+    fetch_github_releases,
+    fetch_openreview,
+    fetch_semantic_scholar,
+)
 
 ARXIV_XML = """\
 <feed xmlns="http://www.w3.org/2005/Atom">
@@ -257,3 +267,218 @@ def test_github_respects_the_per_source_limit_after_round_robin(monkeypatch):
     )
 
     assert len(items) == 150
+
+
+def test_openreview_success_uses_only_upstream_abstract(monkeypatch):
+    timestamp = int(datetime(2026, 7, 27, 12, tzinfo=UTC).timestamp() * 1000)
+    payload = {
+        "notes": [
+            {
+                "id": "note-revision",
+                "forum": "stable-forum",
+                "cdate": timestamp,
+                "mdate": timestamp + 1000,
+                "content": {
+                    "title": {"value": "A Conference Benchmark"},
+                    "abstract": {"value": "The upstream abstract."},
+                    "authors": {"value": ["Ada Radar"]},
+                    "code": {"value": "https://github.com/example/benchmark"},
+                },
+            }
+        ]
+    }
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, **kwargs: payload,
+    )
+
+    items = fetch_openreview(
+        {"venues": ["ICLR.cc/2026/Conference"], "max_requests": 1},
+        datetime(2026, 7, 26, tzinfo=UTC),
+        10,
+    )
+
+    assert [item.source_id for item in items] == ["stable-forum"]
+    assert items[0].summary == "The upstream abstract."
+    assert items[0].authors == ["Ada Radar"]
+    assert items[0].parser_version == "openreview-api-v2/1"
+    assert items[0].raw is payload["notes"][0]
+
+
+def test_semantic_scholar_success_preserves_external_ids(monkeypatch):
+    payload = {
+        "data": [
+            {
+                "paperId": "s2-paper",
+                "externalIds": {"DOI": "10.1000/radar", "ArXiv": "2607.12345"},
+                "url": "https://www.semanticscholar.org/paper/s2-paper",
+                "title": "A Structured Benchmark",
+                "abstract": "The upstream scholarly abstract.",
+                "publicationDate": "2026-07-27",
+                "authors": [{"name": "Grace Evidence"}],
+                "citationCount": 2,
+                "influentialCitationCount": 1,
+                "openAccessPdf": {"url": "https://example.test/paper.pdf"},
+            }
+        ],
+        "next": None,
+    }
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, **kwargs: payload,
+    )
+
+    items = fetch_semantic_scholar(
+        {"searches": ["benchmark"], "max_requests": 1},
+        datetime(2026, 7, 26, tzinfo=UTC),
+        10,
+    )
+
+    assert [item.source_id for item in items] == ["s2-paper"]
+    assert items[0].summary == "The upstream scholarly abstract."
+    assert "https://doi.org/10.1000/radar" in items[0].artifact_urls
+    assert "https://arxiv.org/abs/2607.12345" in items[0].artifact_urls
+    assert items[0].parser_version == "semantic-scholar-graph/1"
+
+
+def test_github_releases_success_uses_release_notes(monkeypatch):
+    payload = [
+        {
+            "tag_name": "v2.0.0",
+            "name": "Benchmark 2.0",
+            "html_url": "https://github.com/example/benchmark/releases/tag/v2.0.0",
+            "published_at": "2026-07-27T12:00:00Z",
+            "created_at": "2026-07-27T11:00:00Z",
+            "body": "The upstream release notes.",
+            "draft": False,
+            "prerelease": False,
+            "author": {"login": "maintainer"},
+            "assets": [{"download_count": 7}],
+        }
+    ]
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, **kwargs: payload,
+    )
+
+    items = fetch_github_releases(
+        {"repositories": ["example/benchmark"], "max_requests": 1},
+        datetime(2026, 7, 26, tzinfo=UTC),
+        10,
+    )
+
+    assert [item.source_id for item in items] == ["example/benchmark@v2.0.0"]
+    assert items[0].summary == "The upstream release notes."
+    assert items[0].metrics["downloads"] == 7
+    assert items[0].parser_version == "github-releases/1"
+
+
+@pytest.mark.parametrize(
+    ("fetcher", "config", "empty_payload"),
+    [
+        (fetch_openreview, {"venues": ["venue"]}, {"notes": []}),
+        (fetch_semantic_scholar, {"searches": ["benchmark"]}, {"data": []}),
+        (fetch_github_releases, {"repositories": ["example/benchmark"]}, []),
+    ],
+)
+def test_new_connectors_accept_empty_upstream_results(monkeypatch, fetcher, config, empty_payload):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, **kwargs: empty_payload,
+    )
+
+    assert fetcher(config, datetime(2026, 7, 26, tzinfo=UTC), 10) == []
+
+
+@pytest.mark.parametrize(
+    ("fetcher", "config", "malformed_payload"),
+    [
+        (fetch_openreview, {"venues": ["venue"]}, {"notes": "wrong"}),
+        (fetch_semantic_scholar, {"searches": ["benchmark"]}, {"data": "wrong"}),
+        (fetch_github_releases, {"repositories": ["example/benchmark"]}, {}),
+    ],
+)
+def test_new_connectors_reject_malformed_payloads(monkeypatch, fetcher, config, malformed_payload):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, **kwargs: malformed_payload,
+    )
+
+    with pytest.raises(ConnectorPayloadError):
+        fetcher(config, datetime(2026, 7, 26, tzinfo=UTC), 10)
+
+
+@pytest.mark.parametrize(
+    ("fetcher", "config"),
+    [
+        (fetch_openreview, {"venues": ["venue"]}),
+        (fetch_semantic_scholar, {"searches": ["benchmark"]}),
+        (fetch_github_releases, {"repositories": ["example/benchmark"]}),
+    ],
+)
+def test_new_connectors_surface_http_failures(monkeypatch, fetcher, config):
+    def fail(url, **kwargs):
+        raise RequestError("HTTP 500 from source after 3 attempts")
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fail)
+
+    with pytest.raises(RequestError, match="HTTP 500"):
+        fetcher(config, datetime(2026, 7, 26, tzinfo=UTC), 10)
+
+
+@pytest.mark.parametrize(
+    ("fetcher", "config", "payload"),
+    [
+        (
+            fetch_openreview,
+            {"venues": ["venue"]},
+            {
+                "notes": [
+                    {
+                        "id": "note",
+                        "forum": "forum",
+                        "cdate": 1785153600000,
+                        "mdate": 1785153600000,
+                        "content": {"title": {"value": "No abstract"}},
+                    }
+                ]
+            },
+        ),
+        (
+            fetch_semantic_scholar,
+            {"searches": ["benchmark"]},
+            {
+                "data": [
+                    {
+                        "paperId": "paper",
+                        "title": "No abstract",
+                        "publicationDate": "2026-07-27",
+                        "authors": [],
+                    }
+                ]
+            },
+        ),
+        (
+            fetch_github_releases,
+            {"repositories": ["example/benchmark"]},
+            [
+                {
+                    "tag_name": "v1",
+                    "html_url": "https://github.com/example/benchmark/releases/tag/v1",
+                    "published_at": "2026-07-27T12:00:00Z",
+                    "draft": False,
+                    "assets": [],
+                }
+            ],
+        ),
+    ],
+)
+def test_new_connectors_never_synthesize_missing_summary(monkeypatch, fetcher, config, payload):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, **kwargs: payload,
+    )
+
+    items = fetcher(config, datetime(2026, 7, 26, tzinfo=UTC), 10)
+
+    assert items and items[0].summary == ""

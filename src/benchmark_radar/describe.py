@@ -36,7 +36,9 @@ _MARKDOWN_NOISE = re.compile(
 # YAML front matter in a dataset card is metadata, not description prose.
 _FRONT_MATTER = re.compile(r"\A\s*---.*?\n---\s*", re.DOTALL)
 
-MAX_SUMMARY_CHARS = 400
+# Keep enough upstream prose for useful inline expansion while bounding the
+# static payload. The UI links to the full source/card for anything beyond it.
+MAX_SUMMARY_CHARS = 2_000
 
 
 def clean_card_text(text: str | None) -> str:
@@ -79,36 +81,14 @@ def strip_title_echo(text: str, title: str) -> str:
 def huggingface_summary(row: dict[str, Any], title: str) -> str:
     """Describe a Hugging Face repo using only what its maintainer published.
 
-    Returns "" when the repo has no card and no descriptive tags, which is itself
-    a signal: an unlabelled repo is usually a scratch upload, not a release.
+    Returns "" when the repo has no prose. Structured tags remain available in
+    the raw payload for future typed fields, but must not be rewritten into a
+    sentence that can influence relevance scoring.
     """
     prose = strip_title_echo(clean_card_text(row.get("description")), title)
     if prose:
         return prose
-    # No card. Fall back to curator-authored metadata, which is still real
-    # evidence, unlike a generated sentence.
-    card = row.get("cardData") or {}
-    facets: list[str] = []
-    tasks = card.get("task_categories") or card.get("task_ids") or []
-    if isinstance(tasks, list) and tasks:
-        facets.append("tasks: " + ", ".join(str(value) for value in tasks[:3]))
-    sizes = card.get("size_categories")
-    if sizes:
-        size = sizes[0] if isinstance(sizes, list) and sizes else sizes
-        facets.append(f"size: {size}")
-    languages = card.get("language") or []
-    if isinstance(languages, list) and languages:
-        facets.append("language: " + ", ".join(str(value) for value in languages[:3]))
-    # Author-supplied tags exclude the machine-generated `license:`/`region:`
-    # namespaces that every repo carries.
-    free_tags = [
-        tag
-        for tag in (row.get("tags") or [])
-        if isinstance(tag, str) and ":" not in tag and tag.lower() not in {"benchmark", "dataset"}
-    ]
-    if free_tags:
-        facets.append("tagged: " + ", ".join(free_tags[:4]))
-    return "No dataset card. Declared " + "; ".join(facets) + "." if facets else ""
+    return ""
 
 
 def github_summary(row: dict[str, Any]) -> str:

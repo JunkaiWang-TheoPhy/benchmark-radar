@@ -12,10 +12,19 @@ def test_card_text_is_stripped_of_markdown_and_front_matter():
 
 
 def test_card_text_truncates_on_a_sentence_boundary():
-    body = "First sentence is meaningful. " + "padding word " * 60
+    body = "First sentence is meaningful. " + "padding word " * 300
     result = clean_card_text(body)
     assert result.startswith("First sentence is meaningful.")
-    assert len(result) <= 401
+    assert len(result) <= 2_000
+
+
+def test_card_text_preserves_prose_for_inline_expansion():
+    body = " ".join(f"source-word-{index}" for index in range(100))
+
+    result = clean_card_text(body)
+
+    assert len(result) > 400
+    assert "source-word-99" in result
 
 
 def test_empty_card_text_stays_empty():
@@ -39,7 +48,7 @@ def test_huggingface_uses_real_card_prose():
     )
 
 
-def test_huggingface_falls_back_to_declared_metadata():
+def test_huggingface_does_not_rewrite_declared_metadata_as_prose():
     row = {
         "description": "",
         "cardData": {
@@ -49,12 +58,7 @@ def test_huggingface_falls_back_to_declared_metadata():
         },
         "tags": ["license:mit", "region:us", "benchmark", "medical"],
     }
-    result = huggingface_summary(row, "org/thing")
-    assert "tasks: question-answering" in result
-    assert "size: 1K<n<10K" in result
-    # Machine-generated namespaces and words the pills already show are excluded.
-    assert "license:mit" not in result
-    assert "region:us" not in result
+    assert huggingface_summary(row, "org/thing") == ""
 
 
 def test_huggingface_returns_empty_when_source_published_nothing():

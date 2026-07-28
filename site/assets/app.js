@@ -11,12 +11,13 @@ const state = {
   data: null,
   view: "today",
   todayDate: "",
-  date: "",
   q: "",
   kind: "",
   category: "",
   source: "",
+  organization: "",
   event: "",
+  entity: "",
 };
 
 function element(tag, options = {}, children = []) {
@@ -29,6 +30,13 @@ function element(tag, options = {}, children = []) {
     });
   }
   children.filter(Boolean).forEach((child) => node.append(child));
+  return node;
+}
+
+function svgElement(tag, attrs = {}, text = null) {
+  const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, String(value)));
+  if (text !== null) node.textContent = String(text);
   return node;
 }
 
@@ -66,33 +74,31 @@ function option(value, label, selected = false) {
 function readUrl() {
   const params = new URLSearchParams(window.location.search);
   const requestedView = params.get("view");
-  state.view = ["today", "trends", "explorer"].includes(requestedView)
-    ? requestedView
-    : "today";
-  if (state.view === "today") {
-    state.todayDate = params.get("date") || "";
-  } else {
-    state.date = params.get("date") || "";
-  }
+  // Legacy Explorer permalinks resolve to the filterable Today list.
+  state.view = ["trends", "map"].includes(requestedView) ? requestedView : "today";
+  state.todayDate = params.get("date") || "";
   state.q = params.get("q") || "";
   state.kind = params.get("kind") || "";
   state.category = params.get("category") || "";
   state.source = params.get("source") || "";
+  state.organization = params.get("organization") || "";
   state.event = params.get("event") || "";
+  state.entity = params.get("entity") || "";
 }
 
 function writeUrl() {
   const params = new URLSearchParams();
   if (state.view !== "today") params.set("view", state.view);
-  const activeDate = state.view === "today" ? state.todayDate : state.date;
-  if (activeDate && (state.view !== "today" || activeDate !== state.data?.latest_date)) {
-    params.set("date", activeDate);
+  if (state.todayDate && state.todayDate !== state.data?.latest_date) {
+    params.set("date", state.todayDate);
   }
   if (state.q) params.set("q", state.q);
   if (state.kind) params.set("kind", state.kind);
   if (state.category) params.set("category", state.category);
   if (state.source) params.set("source", state.source);
+  if (state.organization) params.set("organization", state.organization);
   if (state.event) params.set("event", state.event);
+  if (state.view === "map" && state.entity) params.set("entity", state.entity);
   const query = params.toString();
   window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
 }
@@ -123,13 +129,18 @@ function dailySnapshot(date = state.todayDate) {
   );
 }
 
-function scoreMax() {
-  return Number(state.data?.rubric?.score_max) || 4;
+function rubricFor(item = null) {
+  const version = String(item?.score_version || state.data?.rubric?.scoring_version || 1);
+  return state.data?.rubrics?.[version] || state.data?.rubric;
+}
+
+function scoreMax(item = null) {
+  return Number(item?.score_max || rubricFor(item)?.score_max) || 4;
 }
 
 function scoreBlock(item) {
   const score = Number(item.total_score || 0);
-  const max = scoreMax();
+  const max = scoreMax(item);
   const width = Math.max(0, Math.min(100, (score / max) * 100));
   const trackFill = element("span", {});
   const track = element("div", { className: "score-track" }, [trackFill]);
@@ -147,7 +158,13 @@ function scoreBlock(item) {
     element("span", { text: "Priority score" }),
     element("span", { className: "info-mark", text: "i", attrs: { "aria-hidden": "true" } }),
   ]);
-  explain.addEventListener("click", () => openRubric(item));
+  explain.addEventListener("click", (event) => {
+    // The control lives inside a native <summary>; keep rubric access from
+    // also toggling the row.
+    event.preventDefault();
+    event.stopPropagation();
+    openRubric(item);
+  });
   return element("div", { className: "score" }, [
     element("div", { className: "score-value" }, [
       element("strong", { text: score.toFixed(2) }),
@@ -175,83 +192,6 @@ function pillBar(item) {
   return element("div", { className: "pill-bar" }, pills);
 }
 
-function signalCard(item, index) {
-  const title = element("a", {
-    text: item.title,
-    attrs: { href: item.url, target: "_blank", rel: "noopener noreferrer" },
-  });
-  const body = [pillBar(item), element("h3", {}, [title])];
-  // The watchlist note is the one line explaining why this artifact is
-  // tracked by name, so it leads ahead of the upstream description.
-  if (item.watchlist && item.watchlist_note) {
-    body.push(element("p", { className: "signal-tldr", text: item.watchlist_note }));
-  }
-  // An absent description is reported as absent. Filling the gap with a
-  // generated sentence would restate the pills above and tell the reader
-  // nothing about the artifact.
-  if ((item.summary || "").trim()) {
-    body.push(element("p", { text: shorten(item.summary) }));
-  } else {
-    body.push(
-      element("p", {
-        className: "signal-nodesc",
-        text: "No description published at the source.",
-      }),
-    );
-  }
-  // The pill bar already states source and categories, so drop the rationale
-  // entries that only restate them.
-  const rationale = (item.rationale || [])
-    .filter(Boolean)
-    .filter((reason) => !/^(Matched|Primary record):/.test(reason));
-  if (rationale.length) {
-    body.push(
-      element("p", {
-        className: "signal-why",
-        text: `Why surfaced: ${rationale.join("; ")}`,
-      }),
-    );
-  }
-  return element("article", { className: "signal-card" }, [
-    element("div", { className: "signal-rank", text: String(index + 1).padStart(2, "0") }),
-    element("div", {}, body),
-    scoreBlock(item),
-  ]);
-}
-
-function attentionCard(item) {
-  const details = element("button", {
-    className: "detail-button",
-    text: "View signal",
-    attrs: { type: "button" },
-  });
-  details.addEventListener("click", () =>
-    openDetails({ ...item, snapshot_date: state.todayDate, observation_kind: "attention" }),
-  );
-  return element("article", { className: "explorer-card attention-card" }, [
-    element("div", {}, [
-      element("div", { className: "signal-meta" }, [
-        element("span", { className: "attention-badge", text: "attention" }),
-        element("span", { text: `${item.source} · ${item.event_kind}` }),
-      ]),
-      element("h3", {}, [
-        element("a", {
-          text: item.title,
-          attrs: {
-            href: item.primary_artifact_url || item.url,
-            target: "_blank",
-            rel: "noopener noreferrer",
-          },
-        }),
-      ]),
-      element("p", {
-        text: `${metricLabel(item.metrics?.points, "point")} · ${metricLabel(item.metrics?.comments, "comment")} · ${metricLabel(item.metrics?.submissions ?? 1, "submission")}`,
-      }),
-    ]),
-    details,
-  ]);
-}
-
 function definition(label, value) {
   return element("div", {}, [
     element("dt", { text: label }),
@@ -265,21 +205,23 @@ function renderToday() {
   state.todayDate = day.date;
   byId("today-date").value = day.date;
 
-  byId("today-count").textContent = `${day.evidence_count} records`;
+  syncFilters();
+  const observations = filteredObservations();
+  const evidenceCount = observations.filter(
+    (item) => item.observation_kind === "evidence",
+  ).length;
+  const attentionCount = observations.length - evidenceCount;
+  byId("today-count").textContent =
+    `${observations.length} result${observations.length === 1 ? "" : "s"} · ` +
+    `${evidenceCount} evidence · ${attentionCount} attention`;
   replaceChildren(
     byId("today-list"),
-    day.evidence_items.map((item, index) => signalCard(item, index)),
-  );
-  byId("today-attention-count").textContent =
-    `${day.attention.active_count} active · ${day.attention.new_count} new`;
-  replaceChildren(
-    byId("today-attention-list"),
-    day.attention.observations.length
-      ? day.attention.observations.map(attentionCard)
+    observations.length
+      ? observations.map(observationCard)
       : [
           element("p", {
             className: "empty-state",
-            text: "No persisted attention observations for this snapshot.",
+            text: "No observations match these filters. Clear one or more filters to widen the view.",
           }),
         ],
   );
@@ -385,8 +327,17 @@ function renderDomainMetrics(day) {
   );
 }
 
-function sameReportLimit(a, b) {
-  return (a.selection || {}).report_limit === (b.selection || {}).report_limit;
+function sameCollectionContext(a, b) {
+  return (
+    (a.selection || {}).report_limit === (b.selection || {}).report_limit &&
+    JSON.stringify(a.coverage_signature || []) === JSON.stringify(b.coverage_signature || [])
+  );
+}
+
+function coverageNote(day) {
+  return (day.coverage_gaps || []).length
+    ? ` Coverage is incomplete: ${day.coverage_gaps.join(", ")} failed.`
+    : "";
 }
 
 function renderTrends() {
@@ -422,12 +373,13 @@ function renderTrends() {
       `Baseline: ${only.evidence_count} evidence records and ${only.attention.active_count} active attention signals.`;
     trendChart.hidden = true;
   } else if (dayCount === 2) {
-    trendMessage.textContent = sameReportLimit(
+    trendMessage.textContent = sameCollectionContext(
       state.data.days[1],
       state.data.days[0],
     )
-      ? "Two snapshots are available. The chart shows the first comparable daily change; broader trend language begins with three snapshots."
-      : "Two snapshots are available, but they used different report limits, so the change between them is not comparable.";
+      ? "Two snapshots are available. The chart shows the first comparable daily change; broader trend language begins with three snapshots." +
+        coverageNote(state.data.days[1])
+      : "Two snapshots are available, but their connector coverage or report limit differs, so the change between them is not comparable.";
     trendChart.hidden = false;
   } else {
     const latest = state.data.days[dayCount - 1];
@@ -435,7 +387,7 @@ function renderTrends() {
     // Raising the report limit lifts every count at once. Announcing that as
     // movement would report a collection-policy change as a change in field,
     // so the same gate the domain cards use applies to this sentence.
-    const comparable = sameReportLimit(latest, previous);
+    const comparable = sameCollectionContext(latest, previous);
     if (comparable) {
       const evidenceDelta = latest.evidence_count - previous.evidence_count;
       const attentionDelta = latest.attention.active_count - previous.attention.active_count;
@@ -447,10 +399,11 @@ function renderTrends() {
         .map(([category, trend]) => `${category.replaceAll("_", " ")} ${deltaText(trend.delta)}`);
       trendMessage.textContent =
         `Compared with ${previous.date}, surfaced evidence is ${direction(evidenceDelta)} and active attention is ${direction(attentionDelta)}.` +
-        (movers.length ? ` Biggest domain moves: ${movers.join(", ")}.` : "");
+        (movers.length ? ` Biggest domain moves: ${movers.join(", ")}.` : "") +
+        coverageNote(latest);
     } else {
       trendMessage.textContent =
-        `${latest.date} used a different report limit than ${previous.date}, so the two scans ` +
+        `${latest.date} used different connector coverage or a different report limit than ${previous.date}, so the two scans ` +
         "are not directly comparable. Counts are shown without a change figure.";
     }
     trendChart.hidden = false;
@@ -572,6 +525,7 @@ function allObservations() {
       ...item,
       snapshot_date: day.date,
       artifact_urls: item.primary_artifact_url ? [item.primary_artifact_url] : [],
+      organizations: item.producer ? [item.producer] : [],
       observation_kind: "attention",
     })),
   );
@@ -597,12 +551,6 @@ function syncFilters() {
     state.kind,
   );
   populateSelect(
-    byId("date-filter"),
-    [...new Set(observations.map((item) => item.snapshot_date))].sort().reverse(),
-    "dates",
-    state.date,
-  );
-  populateSelect(
     byId("category-filter"),
     [...new Set(observations.flatMap((item) => item.categories || []))].sort(),
     "categories",
@@ -613,6 +561,16 @@ function syncFilters() {
     [...new Set(observations.map((item) => item.source))].sort(),
     "sources",
     state.source,
+  );
+  populateSelect(
+    byId("organization-filter"),
+    [
+      ...new Set(
+        observations.flatMap((item) => item.organizations || []),
+      ),
+    ].sort(),
+    "organizations",
+    state.organization,
   );
   populateSelect(
     byId("event-filter"),
@@ -628,10 +586,11 @@ function filteredObservations() {
   return allObservations().filter((item) => {
     const haystack = `${item.title} ${item.summary} ${item.source}`.toLowerCase();
     return (
-      (!state.date || item.snapshot_date === state.date) &&
+      item.snapshot_date === state.todayDate &&
       (!state.kind || item.observation_kind === state.kind) &&
       (!state.category || (item.categories || []).includes(state.category)) &&
       (!state.source || item.source === state.source) &&
+      (!state.organization || (item.organizations || []).includes(state.organization)) &&
       (!state.event || item.event_kind === state.event) &&
       (!query || haystack.includes(query))
     );
@@ -642,7 +601,7 @@ function filteredObservations() {
 // component scores beside each weight, so the reader can see the arithmetic
 // that produced the total rather than a generic description of it.
 function openRubric(item = null) {
-  const data = state.data?.rubric;
+  const data = rubricFor(item);
   const dialog = byId("rubric-dialog");
   if (!data) return;
   const max = Number(data.score_max) || 4;
@@ -754,7 +713,7 @@ function openRubric(item = null) {
   dialog.showModal();
 }
 
-function openDetails(item) {
+function expandedRecord(item) {
   const isAttention = item.observation_kind === "attention";
   const primaryArtifact = item.primary_artifact_url || item.artifact_urls?.[0];
   const scoreEntries = isAttention
@@ -830,34 +789,19 @@ function openDetails(item) {
       : []),
     element("a", {
       className: isAttention ? "secondary-link" : "primary-link",
-      text: isAttention ? "Open public discussion ↗" : "Open primary source ↗",
+      text: isAttention
+        ? "Open public discussion ↗"
+        : item.source === "Hugging Face"
+          ? "Read full card ↗"
+          : "Open primary source ↗",
       attrs: { href: item.url, target: "_blank", rel: "noopener noreferrer" },
     }),
   ]);
-  // Attention signals are not scored, so the rubric would describe a
-  // calculation that was never applied to them.
-  let rubricLink = null;
-  if (!isAttention && state.data?.rubric) {
-    const button = element("button", {
-      className: "rubric-link",
-      attrs: { type: "button" },
-    }, [
-      element("span", { text: "How is this scored?" }),
-      element("span", { className: "info-mark", text: "i", attrs: { "aria-hidden": "true" } }),
-    ]);
-    // One dialog at a time: showModal() throws on an already-open dialog.
-    button.addEventListener("click", () => {
-      byId("detail-dialog").close();
-      openRubric(item);
-    });
-    rubricLink = button;
-  }
-  replaceChildren(byId("detail-content"), [
+  return element("div", { className: "record-detail" }, [
     element("p", {
       className: "detail-source",
       text: `${item.source} · ${item.event_kind} · ${item.snapshot_date}`,
     }),
-    element("h2", { className: "detail-title", text: item.title, attrs: { id: "detail-title" } }),
     element("p", {
       className: item.summary ? "detail-summary" : "detail-summary signal-nodesc",
       text: item.summary || "No description published at the source.",
@@ -868,7 +812,6 @@ function openDetails(item) {
       { className: "detail-grid" },
       scoreEntries.map(([label, value]) => definition(label, value)),
     ),
-    rubricLink,
     element("h3", { text: "Why surfaced" }),
     rationale,
     supporting,
@@ -882,81 +825,297 @@ function openDetails(item) {
       : null,
     links,
   ]);
-  byId("detail-dialog").showModal();
 }
 
-function explorerCard(item) {
-  const isAttention = item.observation_kind === "attention";
-  const badge =
-    isAttention
-      ? element("span", { className: "attention-badge", text: "attention" })
-      : null;
-  const details = element("button", {
-    className: "detail-button",
-    text: isAttention ? "View signal" : "View evidence",
-    attrs: { type: "button" },
-  });
-  details.addEventListener("click", () => openDetails(item));
-  return element("article", { className: "explorer-card" }, [
-    element("div", {}, [
-      element("div", { className: "signal-meta" }, [
-        badge,
-        element("span", {
-          text: `${item.snapshot_date} · ${item.source} · ${item.event_kind}`,
-        }),
-      ]),
-      element("h3", {}, [
-        element("a", {
-          text: item.title,
+function mapFilterFor(entity) {
+  state.q = "";
+  state.kind = "evidence";
+  state.category = "";
+  state.source = "";
+  state.organization = "";
+  state.event = "";
+  if (entity.type === "artifact") {
+    state.q = entity.label;
+    state.todayDate = entity.last_seen_at;
+  } else if (entity.type === "topic") {
+    state.category = entity.id.replace(/^topic:/, "");
+  } else if (entity.type === "source") {
+    state.source = entity.label;
+  } else if (entity.type === "organization") {
+    state.organization = entity.label;
+  }
+}
+
+function selectMapNode(entity, relatedEntities) {
+  state.entity = entity.id;
+  mapFilterFor(entity);
+  const topicAggregate = (state.data.corpus.aggregates.topics || []).find(
+    (entry) => `topic:${entry.topic}` === entity.id,
+  );
+  const stats = [
+    definition("Type", entity.type),
+    definition("First seen", formatDate(entity.first_seen_at, { dateStyle: "medium" })),
+    definition("Last seen", formatDate(entity.last_seen_at, { dateStyle: "medium" })),
+    definition("Observed days", Number(entity.seen_days?.length || 0).toLocaleString()),
+    ...(entity.type === "artifact"
+      ? [
+          definition("Observations", Number(entity.observation_count || 0).toLocaleString()),
+          definition(
+            "Latest priority",
+            entity.latest_score === null || entity.latest_score === undefined
+              ? "not scored"
+              : Number(entity.latest_score).toFixed(2),
+          ),
+        ]
+      : []),
+    ...(topicAggregate
+      ? [
+          definition("Artifact count", topicAggregate.entity_count),
+          definition("Source breadth", topicAggregate.source_breadth),
+          definition(
+            `${state.data.corpus.aggregates.window_days}-day velocity`,
+            topicAggregate.velocity === null
+              ? "needs a prior window"
+              : `${topicAggregate.velocity >= 0 ? "+" : ""}${topicAggregate.velocity}/day`,
+          ),
+        ]
+      : []),
+  ];
+  replaceChildren(byId("map-detail"), [
+    element("p", { className: "eyebrow", text: "Selected node" }),
+    element("h2", { text: entity.label }),
+    element("p", {
+      text:
+        entity.type === "artifact"
+          ? "The corresponding date and exact title search are now set for Today."
+          : `The ${entity.type} filter is now set for Today.`,
+    }),
+    element("dl", {}, stats),
+    relatedEntities.length
+      ? element("p", {
+          className: "discovery-note",
+          text: `Connected to ${relatedEntities
+            .slice(0, 8)
+            .map((related) => related.label)
+            .join(", ")}${relatedEntities.length > 8 ? "…" : ""}`,
+        })
+      : null,
+    entity.url
+      ? element("a", {
+          className: "primary-link",
+          text: "Open primary source ↗",
           attrs: {
-            href:
-              isAttention && (item.primary_artifact_url || item.artifact_urls?.[0])
-                ? item.primary_artifact_url || item.artifact_urls[0]
-                : item.url,
+            href: entity.url,
             target: "_blank",
             rel: "noopener noreferrer",
           },
-        }),
-      ]),
-      element("p", {
-        text: isAttention
-          ? `${(item.categories || []).join(" · ") || "uncategorized"} · ${metricLabel(item.metrics?.points, "point")} · ${metricLabel(item.metrics?.comments, "comment")} · ${metricLabel(item.metrics?.submissions || 1, "submission")}`
-          : `${(item.categories || []).join(" · ") || "uncategorized"} · ${shorten(item.summary, 140)}`,
-      }),
+        })
+      : null,
+  ]);
+  writeUrl();
+}
+
+function renderTrendMap() {
+  const corpus = state.data.corpus;
+  if (!corpus) return;
+  const entityById = new Map(corpus.entities.map((entity) => [entity.id, entity]));
+  const selectedFromUrl = entityById.get(state.entity);
+  let artifacts = corpus.entities
+    .filter((entity) => entity.type === "artifact")
+    .sort(
+      (a, b) =>
+        Number(b.latest_score || 0) - Number(a.latest_score || 0) ||
+        Number(b.observation_count || 0) - Number(a.observation_count || 0) ||
+        a.label.localeCompare(b.label),
+    )
+    .slice(0, 16);
+  if (
+    selectedFromUrl?.type === "artifact" &&
+    !artifacts.some((entity) => entity.id === selectedFromUrl.id)
+  ) {
+    artifacts = [selectedFromUrl, ...artifacts.slice(0, 15)];
+  }
+  const artifactIds = new Set(artifacts.map((entity) => entity.id));
+  const visibleEdges = corpus.edges.filter(
+    (edge) =>
+      artifactIds.has(edge.source) &&
+      ["HAS_TOPIC", "RELEASED_BY", "FOUND_VIA"].includes(edge.type),
+  );
+  const visibleIds = new Set([
+    ...artifactIds,
+    ...visibleEdges.flatMap((edge) => [edge.source, edge.target]),
+  ]);
+  if (
+    selectedFromUrl &&
+    ["topic", "organization", "source"].includes(selectedFromUrl.type)
+  ) {
+    visibleIds.add(selectedFromUrl.id);
+  }
+  const visibleEntities = [...visibleIds]
+    .map((id) => entityById.get(id))
+    .filter(Boolean);
+  const typeOrder = ["source", "organization", "artifact", "topic"];
+  const xByType = { source: 110, organization: 350, artifact: 650, topic: 1010 };
+  const groups = Object.fromEntries(
+    typeOrder.map((type) => [
+      type,
+      visibleEntities
+        .filter((entity) => entity.type === type)
+        .sort((a, b) => a.label.localeCompare(b.label)),
     ]),
-    details,
+  );
+  const height = Math.max(
+    560,
+    ...typeOrder.map((type) => groups[type].length * 52 + 90),
+  );
+  const positions = new Map();
+  typeOrder.forEach((type) => {
+    groups[type].forEach((entity, index) => {
+      positions.set(entity.id, { x: xByType[type], y: 70 + index * 52 });
+    });
+  });
+
+  const svg = svgElement("svg", {
+    viewBox: `0 0 1200 ${height}`,
+    width: "1200",
+    height,
+    role: "img",
+    "aria-label": "Artifact nodes connected to topics, organizations, and discovery sources",
+  });
+  typeOrder.forEach((type) => {
+    svg.append(
+      svgElement(
+        "text",
+        {
+          x: xByType[type],
+          y: 30,
+          "text-anchor": "middle",
+          class: "map-column-label",
+        },
+        `${type}s`,
+      ),
+    );
+  });
+  visibleEdges.forEach((edge) => {
+    const source = positions.get(edge.source);
+    const target = positions.get(edge.target);
+    if (!source || !target) return;
+    svg.append(
+      svgElement("line", {
+        x1: source.x,
+        y1: source.y,
+        x2: target.x,
+        y2: target.y,
+        class: "map-edge",
+      }),
+    );
+  });
+  visibleEntities.forEach((entity) => {
+    const position = positions.get(entity.id);
+    if (!position) return;
+    const group = svgElement("g", {
+      class: `map-node map-node-${entity.type}`,
+      transform: `translate(${position.x} ${position.y})`,
+      tabindex: "0",
+      role: "button",
+      "aria-label": `${entity.type}: ${entity.label}`,
+    });
+    group.append(svgElement("circle", { r: entity.type === "artifact" ? 8 : 6 }));
+    group.append(
+      svgElement(
+        "text",
+        { x: 14, y: 4 },
+        shorten(entity.label, entity.type === "artifact" ? 38 : 24),
+      ),
+    );
+    const related = visibleEdges
+      .filter((edge) => edge.source === entity.id || edge.target === entity.id)
+      .map((edge) => entityById.get(edge.source === entity.id ? edge.target : edge.source))
+      .filter(Boolean);
+    const select = () => selectMapNode(entity, related);
+    group.addEventListener("click", select);
+    group.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        select();
+      }
+    });
+    svg.append(group);
+  });
+  replaceChildren(byId("map-canvas"), [svg]);
+  byId("map-summary").textContent =
+    `${corpus.entity_count} cumulative entities · ${corpus.observation_count} observations · ` +
+    `${corpus.edge_count} relationships · showing ${artifacts.length} ranked artifacts`;
+  if (selectedFromUrl) {
+    const related = corpus.edges
+      .filter(
+        (edge) => edge.source === selectedFromUrl.id || edge.target === selectedFromUrl.id,
+      )
+      .map((edge) =>
+        entityById.get(
+          edge.source === selectedFromUrl.id ? edge.target : edge.source,
+        ),
+      )
+      .filter(Boolean);
+    selectMapNode(selectedFromUrl, related);
+  }
+}
+
+function attentionActivity(item) {
+  return element("div", { className: "attention-activity" }, [
+    element("strong", { text: metricLabel(item.metrics?.points, "point") }),
+    element("span", { text: metricLabel(item.metrics?.comments, "comment") }),
+    element("span", { text: metricLabel(item.metrics?.submissions ?? 1, "submission") }),
   ]);
 }
 
-function renderExplorer() {
-  syncFilters();
-  const observations = filteredObservations();
-  const evidenceCount = observations.filter(
-    (item) => item.observation_kind === "evidence",
-  ).length;
-  const attentionCount = observations.length - evidenceCount;
-  byId("explorer-count").textContent =
-    `${observations.length} result${observations.length === 1 ? "" : "s"} · ` +
-    `${evidenceCount} evidence · ${attentionCount} attention`;
-  replaceChildren(
-    byId("explorer-list"),
-    observations.length
-      ? observations.map(explorerCard)
-      : [
-          element("p", {
-            className: "empty-state",
-            text: "No observations match these filters. Clear one or more filters to widen the view.",
-          }),
-        ],
+function observationCard(item, index) {
+  const isAttention = item.observation_kind === "attention";
+  const metadata = isAttention
+    ? element("div", { className: "signal-meta" }, [
+        element("span", { className: "attention-badge", text: "attention" }),
+        element("span", { text: `${item.source} · ${item.event_kind}` }),
+      ])
+    : pillBar(item);
+  const summary = (item.summary || "").trim()
+    ? shorten(item.summary)
+    : "No description published at the source.";
+  const header = element("summary", { className: "record-summary" }, [
+    element("span", {
+      className: "signal-rank",
+      text: String(index + 1).padStart(2, "0"),
+    }),
+    element("div", { className: "record-heading" }, [
+      metadata,
+      element("h3", { text: item.title }),
+      ...(item.watchlist && item.watchlist_note
+        ? [element("p", { className: "signal-tldr", text: item.watchlist_note })]
+        : []),
+      element("p", {
+        className: item.summary ? "" : "signal-nodesc",
+        text: isAttention
+          ? `${summary} · ${metricLabel(item.metrics?.points, "point")}`
+          : summary,
+      }),
+    ]),
+    isAttention ? attentionActivity(item) : scoreBlock(item),
+  ]);
+  return element(
+    "details",
+    {
+      className: `record-card${isAttention ? " attention-card" : ""}`,
+    },
+    [header, expandedRecord(item)],
   );
-  writeUrl();
 }
 
 function bindEvents() {
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.addEventListener("click", () => {
       setView(button.dataset.view);
-      if (button.dataset.view === "explorer") renderExplorer();
+      if (button.dataset.view === "today") renderToday();
+      if (button.dataset.view === "trends") renderTrends();
+      if (button.dataset.view === "map") renderTrendMap();
     });
   });
   byId("today-date").addEventListener("change", (event) => {
@@ -966,24 +1125,20 @@ function bindEvents() {
   byId("filters").addEventListener("input", () => {
     state.q = byId("search-filter").value;
     state.kind = byId("kind-filter").value;
-    state.date = byId("date-filter").value;
     state.category = byId("category-filter").value;
     state.source = byId("source-filter").value;
+    state.organization = byId("organization-filter").value;
     state.event = byId("event-filter").value;
-    renderExplorer();
+    renderToday();
   });
   byId("clear-filters").addEventListener("click", () => {
     state.q = "";
     state.kind = "";
-    state.date = "";
     state.category = "";
     state.source = "";
+    state.organization = "";
     state.event = "";
-    renderExplorer();
-  });
-  byId("dialog-close").addEventListener("click", () => byId("detail-dialog").close());
-  byId("detail-dialog").addEventListener("click", (event) => {
-    if (event.target === byId("detail-dialog")) byId("detail-dialog").close();
+    renderToday();
   });
   byId("rubric-close").addEventListener("click", () => byId("rubric-dialog").close());
   byId("rubric-dialog").addEventListener("click", (event) => {
@@ -1059,7 +1214,7 @@ async function initialize() {
     );
     renderToday();
     renderTrends();
-    renderExplorer();
+    renderTrendMap();
     setView(state.view, false);
     const latest = dailySnapshot(state.data.latest_date);
     // A source that succeeded with zero records is not down: empty and failed
@@ -1072,8 +1227,6 @@ async function initialize() {
     byId("status-copy").textContent =
       `${formatDate(latest.date, { dateStyle: "medium" })} · ${latest.evidence_count} records` +
       (failed ? ` · ${failed} source${failed === 1 ? "" : "s"} failed` : "");
-    byId("feed-status").textContent =
-      `${latest.evidence_count} ranked evidence · ${latest.attention.active_count} persisted attention`;
     byId("run-status").querySelector(".status-light").classList.add(
       failed === 0 && empty === 0 ? "ok" : "warning",
     );

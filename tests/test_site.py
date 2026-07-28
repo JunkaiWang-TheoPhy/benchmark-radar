@@ -1,5 +1,6 @@
 from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import urlsplit
 
 
 class SiteParser(HTMLParser):
@@ -9,6 +10,7 @@ class SiteParser(HTMLParser):
         self.ids: set[str] = set()
         self.html_lang = ""
         self.viewport = False
+        self.local_refs: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
@@ -19,6 +21,9 @@ class SiteParser(HTMLParser):
             self.html_lang = str(values.get("lang", ""))
         if tag == "meta" and values.get("name") == "viewport":
             self.viewport = True
+        reference = values.get("href") or values.get("src")
+        if reference and not urlsplit(reference).scheme and not reference.startswith(("#", "//")):
+            self.local_refs.append(reference)
 
 
 def test_site_has_accessible_landmarks_and_views():
@@ -28,7 +33,8 @@ def test_site_has_accessible_landmarks_and_views():
     assert parser.html_lang == "en"
     assert parser.viewport
     assert {"header", "nav", "main", "footer", "dialog"} <= set(parser.tags)
-    assert {"today-view", "trends-view", "explorer-view", "main-content"} <= parser.ids
+    assert {"today-view", "trends-view", "map-view", "main-content"} <= parser.ids
+    assert "explorer-view" not in parser.ids
 
 
 def test_priority_score_is_reachably_explained():
@@ -50,7 +56,7 @@ def test_rubric_is_read_from_published_data_not_restated_in_the_browser():
 
     # A second hardcoded copy of the weights in the browser is exactly the
     # drift this rubric exists to prevent.
-    assert "state.data?.rubric" in script
+    assert "state.data?.rubrics" in script
     assert "0.40 relevance" not in script
     assert "0.25 evidence" not in script
     for weight in ("0.4 *", "0.25 *", "0.2 *", "0.15 *"):
@@ -61,7 +67,8 @@ def test_rubric_is_read_from_published_data_not_restated_in_the_browser():
 def test_attention_signals_are_not_offered_the_evidence_rubric():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
-    assert "if (!isAttention && state.data?.rubric)" in script
+    assert "isAttention ? attentionActivity(item) : scoreBlock(item)" in script
+    assert "openRubric(item)" not in script[script.index("function attentionActivity") :]
 
 
 def test_detail_grid_shows_every_component_that_moves_the_total():
@@ -71,15 +78,19 @@ def test_detail_grid_shows_every_component_that_moves_the_total():
         assert f'["{component}", Number(item.' in script
 
 
-def test_today_view_keeps_one_signal_summary_and_one_source_status():
+def test_today_view_has_one_filterable_observation_list_and_one_source_status():
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
-    assert html.count("Ranked evidence") == 1
-    assert html.count("Attention signals") == 1
+    assert html.count("Matching observations") == 1
+    assert 'id="today-list"' in html
+    assert 'id="filters"' in html
+    assert 'id="kind-filter"' in html
+    assert "observations.map(observationCard)" in script
     assert "Daily field note" not in html
     assert "What entered the field?" not in html
     assert "today-overview" not in html
+    assert "today-attention-list" not in html
     assert "Sources in results" not in script
     assert "health-summary" not in html
 
@@ -89,6 +100,10 @@ def test_summaries_truncate_at_a_word_boundary():
 
     assert 'const lastSpace = candidate.lastIndexOf(" ");' in script
     assert "candidate.slice(0, lastSpace)" in script
+    # The collapsed row is abbreviated, while the expanded region receives
+    # the retained upstream text rather than the abbreviation.
+    assert "shorten(item.summary)" in script
+    assert 'text: item.summary || "No description published at the source."' in script
 
 
 def test_site_does_not_render_source_content_as_html():
@@ -111,7 +126,7 @@ def test_attention_signals_use_activity_metrics_not_quality_scores():
     assert "evidence_score: 0" not in script
 
 
-def test_explorer_uses_persisted_attention_and_snapshot_dates():
+def test_main_filters_use_persisted_attention_and_snapshot_dates():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
     html = Path("site/index.html").read_text(encoding="utf-8")
 
@@ -120,6 +135,66 @@ def test_explorer_uses_persisted_attention_and_snapshot_dates():
     assert "day.attention.observations.map" in script
     assert "snapshot_date: day.date" in script
     assert 'id="kind-filter"' in html
+    assert "renderExplorer" not in script
+    assert "explorer-view" not in html
+
+
+def test_records_expand_inline_without_an_exclusive_accordion_or_record_modal():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    html = Path("site/index.html").read_text(encoding="utf-8")
+
+    assert '"details"' in script
+    assert '"summary"' in script
+    assert "record-detail" in script
+    assert "detail-dialog" not in html
+    assert "detail-dialog" not in script
+    # A shared details[name] would force one row closed when another opens.
+    assert "attrs: { name:" not in script
+    assert script.count(".showModal()") == 1
+
+
+def test_hugging_face_expansion_links_to_the_full_card():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'item.source === "Hugging Face"' in script
+    assert '"Read full card ↗"' in script
+
+
+def test_trend_map_is_keyboard_accessible_and_coordinates_today_filters():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'data-view="map"' in html
+    assert 'id="map-canvas"' in html
+    assert "state.data.corpus" in script
+    assert "HAS_TOPIC" in script
+    assert '"aria-label": `${entity.type}: ${entity.label}`' in script
+    assert 'event.key === "Enter" || event.key === " "' in script
+    assert "mapFilterFor(entity)" in script
+    assert 'id="organization-filter"' in html
+    assert "state.organization" in script
+
+
+def test_trends_gate_comparisons_on_connector_coverage():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert "sameCollectionContext" in script
+    assert "coverage_signature" in script
+    assert "Coverage is incomplete:" in script
+
+
+def test_static_html_references_existing_local_assets():
+    parser = SiteParser()
+    parser.feed(Path("site/index.html").read_text(encoding="utf-8"))
+
+    missing = []
+    for reference in parser.local_refs:
+        path = urlsplit(reference).path
+        target = Path("site") if path in {"", ".", "./"} else Path("site") / path
+        if not target.exists():
+            missing.append(reference)
+
+    assert not missing
 
 
 def test_one_snapshot_trend_explains_history_requirement():

@@ -22,8 +22,11 @@ Default sources:
 | Source | Required secret | Role |
 |---|---|---|
 | arXiv | No | Primary paper discovery |
+| OpenReview | No | Primary conference and workshop submissions |
 | Hugging Face Hub | No | Dataset repository discovery |
 | GitHub | No in Actions | Code and artifact discovery |
+| GitHub Releases | No in Actions | Curated first-party release discovery |
+| Semantic Scholar | Optional `SEMANTIC_SCHOLAR_API_KEY` | Structured scholarly discovery |
 | OpenAlex | `OPENALEX_API_KEY` | Scholarly metadata enrichment |
 | Brave Search | `BRAVE_API_KEY` | Web and lab-blog discovery |
 
@@ -39,10 +42,10 @@ Each item receives four visible scores:
 - **Recency**: time since publication or material update
 - **Adoption**: logarithmically scaled stars, downloads, likes, or citations
 
-The default priority is:
+The default priority is reported on a 0–100 scale:
 
 ```text
-0.40 relevance + 0.25 evidence + 0.20 recency + 0.15 adoption
+0.35 relevance + 0.20 evidence + 0.20 recency + 0.25 adoption
 ```
 
 The weights, per-component bands, and stated limits live in
@@ -50,6 +53,10 @@ The weights, per-component bands, and stated limits live in
 `site/data/radar.json`, so the rubric the dashboard shows is read from the same definition
 the pipeline applies. Every priority score on the dashboard is clickable: it opens the
 rubric with that record's own component scores worked through the weighted sum.
+Recency uses the full configured lookback window, and narrowly defined negative
+signals demote follower-count leaderboards, result indexes, submission placeholders,
+and visualization-only companions. The latter three are suppressed from the daily list;
+the selection funnel reports the count, and every scored deduction remains auditable.
 
 This is triage, not scientific quality adjudication or endorsement.
 
@@ -67,7 +74,8 @@ Outputs:
 - `out/report.md`: the exact GitHub Issue body
 - `out/items.json`: machine-readable evidence and source-health snapshot
 - `data/snapshots/YYYY-MM-DD.json`: versioned, idempotent UTC snapshot
-- `site/data/radar.json`: deterministic browser-ready history generated for deployment
+- `site/data/radar.json`: deterministic browser-ready history, cumulative entity graph,
+  observations, edges, and precomputed aggregates generated for deployment
 
 Validated snapshots are the canonical corpus and live on `main` beside the code and
 schema that interpret them. A dedicated snapshot-writer GitHub App may append only
@@ -79,6 +87,19 @@ Rebuild the dashboard data without collecting again:
 ```bash
 benchmark-radar rebuild
 ```
+
+`benchmark-radar backfill` is the explicit corpus-replay alias. It validates every
+snapshot, resolves entities from exact identifiers (DOI, arXiv, OpenReview, GitHub,
+and Hugging Face), and deterministically regenerates the same entity/observation/edge
+graph and aggregates under the
+[versioned public schema](docs/cumulative-corpus.schema.json). No fuzzy match silently
+merges similarly titled artifacts.
+
+The dashboard exposes one filterable Today list, inline multi-record expansion, Trends,
+and a keyboard-accessible Trend Map. Selecting a map node carries its exact topic,
+source, organization, or artifact into the Today filters. Trend comparisons require
+both the same report limit and the same connector-coverage signature; incomplete days
+remain visible and are explicitly annotated.
 
 Run checks:
 
@@ -121,6 +142,7 @@ a score, so the ranking stays explainable.
 Optional repository secrets:
 
 ```text
+SEMANTIC_SCHOLAR_API_KEY
 OPENALEX_API_KEY
 BRAVE_API_KEY
 ```
@@ -154,6 +176,10 @@ must exist; they are created during initial repository setup.
 ## Provenance and limitations
 
 - Every entry links to its discovered primary or structured record.
+- Connector summaries quote upstream abstracts, cards, descriptions, or release
+  notes; a missing upstream description stays empty rather than being synthesized.
+- Evidence records persist retrieval time, parser version, and a SHA-256 raw-payload
+  fingerprint while omitting the raw response itself from public snapshots.
 - Optional-source failures are visible.
 - Persisted snapshots omit raw API payloads and credentials.
 - Public attention feeds are displayed separately and never contribute to quality scores.

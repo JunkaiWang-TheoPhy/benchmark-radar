@@ -1,169 +1,237 @@
-"""The published scoring rubric, in one place.
+"""Versioned, published definitions for Benchmark Radar priority scores.
 
-`score_item` in `pipeline.py` computes priority from these weights, and
-`dashboard_data` copies this module's description into `site/data/radar.json`
-so the dashboard can show a reader exactly the rubric that ranked the records
-in front of them. Keeping the numbers here rather than restating them in the
-browser is deliberate: a rubric the UI describes from its own hardcoded copy
-drifts silently the first time a weight changes, and a rubric that says
-something the pipeline does not do is worse than no rubric at all.
+The pipeline and dashboard both consume this module.  A score is useful only
+when the arithmetic shown to a reader is the arithmetic that produced it, so
+historical scoring versions remain available instead of being relabelled when
+the current rubric changes.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-SCORE_MAX = 4.0
+SCORING_VERSION = 2
+SCORE_MAX = 100.0
+DEFAULT_LOOKBACK_HOURS = 48.0
 
-# Priority is the weighted mean of the four components below. The weights sum
-# to 1.0, so priority shares the components' 0-4 range.
+# The v1 rubric placed 60% of the total on evidence and recency, which barely
+# varied inside the 48-hour collection window.  Adoption now has enough weight
+# to distinguish established artifacts while relevance remains the largest
+# input.
 WEIGHTS: dict[str, float] = {
-    "relevance": 0.40,
-    "evidence": 0.25,
+    "relevance": 0.35,
+    "evidence": 0.20,
     "recency": 0.20,
-    "adoption": 0.15,
+    "adoption": 0.25,
 }
 
-# Evidence credit per source. `score_item` tests each tier independently and
-# adds every credit that applies, so these two source tuples must stay
-# disjoint: a source listed in both would collect 2.5 rather than the 1.5 or
-# 1.0 the published bands promise. `test_source_tiers_stay_disjoint` enforces
-# that, because the drift would show up as an inflated score with a rubric
-# beside it that no longer explains the number.
-EVIDENCE_BASE = 0.5
-EVIDENCE_PRIMARY_SOURCES = ("arXiv", "OpenAlex")
-EVIDENCE_PRIMARY_CREDIT = 1.5
-EVIDENCE_ARTIFACT_SOURCES = ("GitHub", "Hugging Face")
-EVIDENCE_ARTIFACT_CREDIT = 1.0
-EVIDENCE_AUTHORSHIP_CREDIT = 0.5
-EVIDENCE_CROSS_LINK_CREDIT = 0.5
+# Evidence is explicit and additive on a 0-100 scale.
+EVIDENCE_BASE = 10.0
+EVIDENCE_PRIMARY_SOURCES = ("arXiv", "OpenAlex", "OpenReview", "Semantic Scholar")
+EVIDENCE_PRIMARY_CREDIT = 40.0
+EVIDENCE_ARTIFACT_SOURCES = ("GitHub", "GitHub Release", "Hugging Face")
+EVIDENCE_ARTIFACT_CREDIT = 30.0
+EVIDENCE_AUTHORSHIP_CREDIT = 20.0
+EVIDENCE_CROSS_LINK_CREDIT = 20.0
 
-# Relevance credit for taxonomy matches.
-RELEVANCE_PER_CATEGORY = 1.25
-RELEVANCE_PER_TERM = 0.2
+# Relevance credit for taxonomy matches.  A single incidental term cannot
+# produce a high score; multiple independent category matches can.
+RELEVANCE_PER_CATEGORY = 20.0
+RELEVANCE_PER_TERM = 5.0
 RELEVANCE_TERMS_COUNTED_PER_CATEGORY = 2
 
-# Recency decays linearly from the full score to zero across this many hours.
-RECENCY_HALF_LIFE_HOURS = 24.0
-RECENCY_ZERO_AT_HOURS = SCORE_MAX * RECENCY_HALF_LIFE_HOURS
+# Deterministic negative signals address artifacts that are technically
+# on-topic but do not represent a benchmark/data release worth occupying the
+# daily radar.  Patterns require specific phrases rather than generic words so
+# a legitimate leaderboard or anonymous conference paper is not penalized.
+LOW_VALUE_SIGNALS: tuple[dict[str, Any], ...] = (
+    {
+        "label": "follower-count leaderboard",
+        "pattern": (
+            r"\bfollowers?[\s_-]*(?:count[\s_-]*)?leaderboard\b"
+            r"|\bfollower leaderboard(?:'s)? history\b"
+        ),
+        "deduction": 50.0,
+        "action": "demote",
+    },
+    {
+        "label": "results dump or per-run index",
+        "pattern": (
+            r"\bresults?[\s_-]*(?:dump|index)\b"
+            r"|\bper[\s_-]*run[\s_-]*results?\b"
+        ),
+        "deduction": 30.0,
+        "action": "suppress",
+    },
+    {
+        "label": "submission placeholder",
+        "pattern": (
+            r"\b(?:anonymous|anonymized)[\s_-]*(?:review[\s_-]*)?submission\b"
+            r"|\breview[\s_-]*process[\s_-]*(?:stub|placeholder)\b"
+            r"|\bsubmission[\s_-]*(?:stub|placeholder)\b"
+        ),
+        "deduction": 30.0,
+        "action": "suppress",
+    },
+    {
+        "label": "visualization-only companion",
+        "pattern": (
+            r"\bvisuali[sz]ation companion\b"
+            r"|\bcompact browser assets\b"
+            r"|\bleaderboard case assets\b"
+        ),
+        "deduction": 25.0,
+        "action": "suppress",
+    },
+)
+MAX_LOW_VALUE_DEDUCTION = 60.0
 
-# Adoption weights for log10-scaled public counters.
-ADOPTION_METRIC_WEIGHTS: dict[str, float] = {
-    "stars": 0.8,
-    "citations": 0.7,
-    "downloads": 0.6,
-    "likes": 0.5,
+# Adoption reaches the top of its scale at a documented, source-appropriate
+# public counter.  The strongest available counter is used because adding
+# incomparable counters (stars + downloads + citations) rewards sources merely
+# for exposing more metric types.
+ADOPTION_METRIC_SATURATION: dict[str, float] = {
+    "stars": 10_000.0,
+    "citations": 1_000.0,
+    "downloads": 100_000.0,
+    "likes": 1_000.0,
 }
 
-COMPONENTS: list[dict[str, Any]] = [
-    {
-        "key": "relevance",
-        "label": "Relevance",
-        "weight": WEIGHTS["relevance"],
-        "summary": (
-            "How squarely the title and the source's own description land inside the "
-            "benchmark, evaluation, dataset, and data-quality taxonomy."
-        ),
-        "bands": [
-            f"{RELEVANCE_PER_CATEGORY:.2f} per taxonomy category matched",
-            f"{RELEVANCE_PER_TERM:.2f} per matched term, counting up to "
-            f"{RELEVANCE_TERMS_COUNTED_PER_CATEGORY} terms per category",
-            f"Capped at {SCORE_MAX:.2f}",
-        ],
-    },
-    {
-        "key": "evidence",
-        "label": "Evidence",
-        "weight": WEIGHTS["evidence"],
-        "summary": (
-            "How directly the record is attested: a primary or structured record "
-            "outranks a secondary mention, and named authors and linked artifacts "
-            "add attestation."
-        ),
-        "bands": [
-            f"{EVIDENCE_BASE:.2f} baseline for any record that passed ingest",
-            f"+{EVIDENCE_PRIMARY_CREDIT:.2f} from a primary scholarly record "
-            f"({', '.join(EVIDENCE_PRIMARY_SOURCES)})",
-            f"+{EVIDENCE_ARTIFACT_CREDIT:.2f} from a structured artifact registry "
-            f"({', '.join(EVIDENCE_ARTIFACT_SOURCES)})",
-            f"+{EVIDENCE_AUTHORSHIP_CREDIT:.2f} when the source names authors",
-            f"+{EVIDENCE_CROSS_LINK_CREDIT:.2f} when a second artifact URL corroborates it",
-            f"Capped at {SCORE_MAX:.2f}",
-        ],
-    },
-    {
-        "key": "recency",
-        "label": "Recency",
-        "weight": WEIGHTS["recency"],
-        "summary": (
-            "Hours since publication or the last material update, so a revised "
-            "record re-enters the day's view."
-        ),
-        "bands": [
-            f"{SCORE_MAX:.2f} at the moment of publication or update",
-            f"Decays linearly by 1.00 every {RECENCY_HALF_LIFE_HOURS:g} hours",
-            f"Reaches 0.00 at {RECENCY_ZERO_AT_HOURS:g} hours",
-        ],
-    },
-    {
-        "key": "adoption",
-        "label": "Adoption",
-        "weight": WEIGHTS["adoption"],
-        "summary": (
-            "Public uptake counters on a log10 scale, so the first hundred stars "
-            "move the score far more than the ten-thousandth."
-        ),
-        "bands": [
-            f"{weight:.2f} x log10(1 + {metric})"
-            for metric, weight in ADOPTION_METRIC_WEIGHTS.items()
-        ]
-        + [f"Capped at {SCORE_MAX:.2f}"],
-    },
-]
 
-LIMITS: list[str] = [
-    "This is triage for a reader deciding what to open next. It is not peer "
-    "review, a quality verdict, or an endorsement.",
-    "Relevance reads only the title and the description the source itself "
-    "published. Nothing this project writes about a record can earn it points.",
-    "Adoption measures attention, not correctness. A widely starred repository "
-    "and a careful one are not the same claim.",
-    "Attention signals are shown separately and are never scored on this rubric.",
-    "Watchlisted artifacts are published whatever they score, and sort above "
-    "everything else. Their rank reflects that request, not a higher score.",
-]
+def _components(*, lookback_hours: float) -> list[dict[str, Any]]:
+    return [
+        {
+            "key": "relevance",
+            "label": "Relevance",
+            "weight": WEIGHTS["relevance"],
+            "summary": (
+                "How squarely the title and the source's own description land inside the "
+                "benchmark, evaluation, dataset, and data-quality taxonomy, after explicit "
+                "low-value deductions."
+            ),
+            "bands": [
+                f"{RELEVANCE_PER_CATEGORY:.0f} per taxonomy category matched",
+                f"+{RELEVANCE_PER_TERM:.0f} per matched term, counting up to "
+                f"{RELEVANCE_TERMS_COUNTED_PER_CATEGORY} terms per category",
+                *[
+                    f"-{signal['deduction']:.0f} for {signal['label']}"
+                    + ("; suppressed" if signal["action"] == "suppress" else "")
+                    for signal in LOW_VALUE_SIGNALS
+                ],
+                f"Total deductions capped at {MAX_LOW_VALUE_DEDUCTION:.0f}",
+                f"Clamped to 0-{SCORE_MAX:.0f}",
+            ],
+        },
+        {
+            "key": "evidence",
+            "label": "Evidence",
+            "weight": WEIGHTS["evidence"],
+            "summary": (
+                "How directly the record is attested: a primary or structured record "
+                "outranks a secondary mention, and named authors and linked artifacts "
+                "add corroboration."
+            ),
+            "bands": [
+                f"{EVIDENCE_BASE:.0f} baseline for any record that passed ingest",
+                f"+{EVIDENCE_PRIMARY_CREDIT:.0f} from a primary scholarly record "
+                f"({', '.join(EVIDENCE_PRIMARY_SOURCES)})",
+                f"+{EVIDENCE_ARTIFACT_CREDIT:.0f} from a structured artifact registry "
+                f"({', '.join(EVIDENCE_ARTIFACT_SOURCES)})",
+                f"+{EVIDENCE_AUTHORSHIP_CREDIT:.0f} when the source names authors",
+                f"+{EVIDENCE_CROSS_LINK_CREDIT:.0f} when another artifact URL corroborates it",
+                f"Capped at {SCORE_MAX:.0f}",
+            ],
+        },
+        {
+            "key": "recency",
+            "label": "Recency",
+            "weight": WEIGHTS["recency"],
+            "summary": (
+                "How recently the artifact was published or materially updated within "
+                "this scan's configured collection window."
+            ),
+            "bands": [
+                f"{SCORE_MAX:.0f} at publication or update time",
+                f"Decays linearly across the configured {lookback_hours:g}-hour lookback",
+                f"Reaches 0 at {lookback_hours:g} hours",
+            ],
+        },
+        {
+            "key": "adoption",
+            "label": "Adoption",
+            "weight": WEIGHTS["adoption"],
+            "summary": (
+                "The strongest available public uptake counter on a log scale. "
+                "This measures attention, not scientific quality."
+            ),
+            "bands": [
+                f"{metric} reaches 100 at {saturation:g}"
+                for metric, saturation in ADOPTION_METRIC_SATURATION.items()
+            ]
+            + ["Uses the strongest available normalized counter", "Clamped to 0-100"],
+        },
+    ]
 
 
 def priority_formula() -> str:
-    """Render the weighted sum the way the README states it."""
-    return " + ".join(
-        f"{weight:.2f} {component}"
-        for component, weight in ((entry["key"], entry["weight"]) for entry in COMPONENTS)
-    )
+    """Render the weighted sum the way the README and dashboard state it."""
+    return " + ".join(f"{weight:.2f} {component}" for component, weight in WEIGHTS.items())
 
 
-def rubric_reference(*, minimum_score: float | None = None) -> dict[str, Any]:
-    """The rubric as published to the dashboard.
-
-    `minimum_score` is the configured cutoff a record must clear to be reported
-    at all. It is part of what the reader is looking at, so it travels with the
-    rubric rather than being described separately.
-    """
+def rubric_reference(
+    *,
+    minimum_score: float | None = None,
+    lookback_hours: float = DEFAULT_LOOKBACK_HOURS,
+) -> dict[str, Any]:
+    """Return the current rubric as a browser-safe published reference."""
     value: dict[str, Any] = {
+        "scoring_version": SCORING_VERSION,
         "score_max": SCORE_MAX,
         "formula": priority_formula(),
-        "components": [
-            {
-                "key": entry["key"],
-                "label": entry["label"],
-                "weight": entry["weight"],
-                "summary": entry["summary"],
-                "bands": list(entry["bands"]),
-            }
-            for entry in COMPONENTS
+        "components": _components(lookback_hours=lookback_hours),
+        "limits": [
+            "This is triage for a reader deciding what to open next. It is not peer "
+            "review, a quality verdict, or an endorsement.",
+            "Relevance reads only the title and source-published description. Nothing "
+            "this project writes about a record can earn it points.",
+            "Negative signals demote only named artifact patterns. Result indexes, "
+            "submission placeholders, and visualization-only companions are suppressed; "
+            "the selection funnel reports how many were removed.",
+            "Adoption measures attention, not correctness.",
+            "Attention observations are shown separately and are never quality-scored.",
+            "Watchlisted artifacts publish whatever they score and sort first. Their "
+            "rank reflects that request, not a higher score.",
         ],
-        "limits": list(LIMITS),
+        "lookback_hours": float(lookback_hours),
     }
     if minimum_score is not None:
         value["minimum_score"] = float(minimum_score)
     return value
+
+
+def legacy_rubric_reference() -> dict[str, Any]:
+    """Describe v1 records without pretending the current formula produced them."""
+    return {
+        "scoring_version": 1,
+        "score_max": 4.0,
+        "formula": "0.40 relevance + 0.25 evidence + 0.20 recency + 0.15 adoption",
+        "components": [
+            {
+                "key": key,
+                "label": key.title(),
+                "weight": weight,
+                "summary": "Legacy 0-4 component retained for historical audit.",
+                "bands": ["Historical scoring version; superseded by rubric v2."],
+            }
+            for key, weight in {
+                "relevance": 0.40,
+                "evidence": 0.25,
+                "recency": 0.20,
+                "adoption": 0.15,
+            }.items()
+        ],
+        "limits": [
+            "This historical score used the original 0-4 rubric and is not directly "
+            "comparable with current 0-100 scores."
+        ],
+    }

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -14,18 +16,24 @@ class RadarItem:
     published_at: datetime
     updated_at: datetime | None = None
     discovered_at: datetime | None = None
+    retrieved_at: datetime | None = None
     summary: str = ""
     event_kind: str = "discovered"
     authors: list[str] = field(default_factory=list)
     artifact_urls: list[str] = field(default_factory=list)
     metrics: dict[str, float] = field(default_factory=dict)
     raw: dict[str, Any] = field(default_factory=dict, repr=False)
+    parser_version: str = "radar-item/1"
+    raw_payload_hash: str = ""
     categories: list[str] = field(default_factory=list)
     evidence_score: float = 0.0
     relevance_score: float = 0.0
     recency_score: float = 0.0
     adoption_score: float = 0.0
     total_score: float = 0.0
+    score_version: int = 2
+    score_max: float = 100.0
+    suppression_reasons: list[str] = field(default_factory=list)
     rationale: list[str] = field(default_factory=list)
     # Set when the record matches a named artifact on the configured
     # watchlist. Routing metadata only: it never alters a score.
@@ -37,6 +45,26 @@ class RadarItem:
         return f"{self.source}:{self.source_id}".lower()
 
     def to_dict(self) -> dict[str, Any]:
+        if not self.raw_payload_hash:
+            payload = self.raw or {
+                "source": self.source,
+                "source_id": self.source_id,
+                "title": self.title,
+                "url": self.url,
+                "published_at": self.published_at.isoformat(),
+                "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+                "summary": self.summary,
+                "authors": self.authors,
+                "metrics": self.metrics,
+            }
+            encoded = json.dumps(
+                payload,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+                default=str,
+            ).encode()
+            self.raw_payload_hash = f"sha256:{hashlib.sha256(encoded).hexdigest()}"
         value = asdict(self)
         value["published_at"] = self.published_at.astimezone(UTC).isoformat()
         value["updated_at"] = (
@@ -44,6 +72,9 @@ class RadarItem:
         )
         value["discovered_at"] = (
             self.discovered_at.astimezone(UTC).isoformat() if self.discovered_at else None
+        )
+        value["retrieved_at"] = (
+            self.retrieved_at.astimezone(UTC).isoformat() if self.retrieved_at else None
         )
         value.pop("raw", None)
         return value

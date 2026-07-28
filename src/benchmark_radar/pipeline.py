@@ -60,6 +60,8 @@ def score_item(
     item: RadarItem,
     taxonomy: dict[str, list[str]],
     now: datetime | None = None,
+    *,
+    lookback_hours: float = rubric.DEFAULT_LOOKBACK_HOURS,
 ) -> RadarItem:
     now = now or datetime.now(UTC)
     # Only match against text a human actually wrote about the artifact. If a
@@ -74,11 +76,24 @@ def score_item(
             categories.append(category)
             matched_terms.extend(matches[:2])
     item.categories = categories
-    item.relevance_score = min(
+    relevance = min(
         rubric.SCORE_MAX,
         rubric.RELEVANCE_PER_CATEGORY * len(categories)
         + rubric.RELEVANCE_PER_TERM * len(matched_terms),
     )
+    deductions = [
+        signal
+        for signal in rubric.LOW_VALUE_SIGNALS
+        if re.search(str(signal["pattern"]), haystack, flags=re.IGNORECASE)
+    ]
+    deduction = min(
+        rubric.MAX_LOW_VALUE_DEDUCTION,
+        sum(float(signal["deduction"]) for signal in deductions),
+    )
+    item.relevance_score = max(0.0, relevance - deduction)
+    item.suppression_reasons = [
+        str(signal["label"]) for signal in deductions if signal["action"] == "suppress"
+    ]
 
     evidence = rubric.EVIDENCE_BASE
     if item.source in rubric.EVIDENCE_PRIMARY_SOURCES:
@@ -93,14 +108,22 @@ def score_item(
 
     activity_at = item.updated_at or item.published_at
     age_hours = max(0.0, (now - activity_at).total_seconds() / 3600)
+    if lookback_hours <= 0:
+        raise ValueError("lookback_hours must be positive")
     item.recency_score = max(
         0.0,
-        rubric.SCORE_MAX - age_hours / rubric.RECENCY_HALF_LIFE_HOURS,
+        rubric.SCORE_MAX * (1.0 - age_hours / lookback_hours),
     )
 
-    adoption = sum(
-        math.log10(1 + item.metrics.get(metric, 0)) * weight
-        for metric, weight in rubric.ADOPTION_METRIC_WEIGHTS.items()
+    adoption = max(
+        (
+            rubric.SCORE_MAX
+            * math.log10(1 + max(0.0, float(item.metrics.get(metric, 0))))
+            / math.log10(1 + saturation)
+            for metric, saturation in rubric.ADOPTION_METRIC_SATURATION.items()
+            if item.metrics.get(metric, 0)
+        ),
+        default=0.0,
     )
     item.adoption_score = min(adoption, rubric.SCORE_MAX)
     item.total_score = round(
@@ -110,8 +133,19 @@ def score_item(
         ),
         2,
     )
+    item.score_version = rubric.SCORING_VERSION
+    item.score_max = rubric.SCORE_MAX
+    item.rationale = [
+        reason
+        for reason in item.rationale
+        if not reason.startswith(("Matched:", "Demoted:", "Primary record:"))
+    ]
     if matched_terms:
         item.rationale.append(f"Matched: {', '.join(sorted(set(matched_terms)))}")
+    for signal in deductions:
+        item.rationale.append(
+            f"Demoted: {signal['label']} (-{float(signal['deduction']):g} relevance)"
+        )
     item.rationale.append(f"Primary record: {item.source}")
     return item
 
@@ -234,6 +268,8 @@ def run_pipeline(
             fetched = fetcher(source_config, since, limit)
             fetched_count += len(fetched)
             health.append(SourceHealth(source=source_name, ok=True, item_count=len(fetched)))
+            for item in fetched:
+                item.retrieved_at = item.retrieved_at or now
             if source_name == "arxiv":
                 changed = _apply_arxiv_discovery_state(
                     fetched,
@@ -278,7 +314,15 @@ def run_pipeline(
         )
     unique = deduplicate(items)
     scored = apply_watchlist(
-        [score_item(item, config["taxonomy"], now) for item in unique],
+        [
+            score_item(
+                item,
+                config["taxonomy"],
+                now,
+                lookback_hours=float(settings["lookback_hours"]),
+            )
+            for item in unique
+        ],
         config.get("watchlist") or [],
     )
     selected = [
@@ -287,7 +331,11 @@ def run_pipeline(
         # A watchlist hit is published even when the generic score or taxonomy
         # would have dropped it: the reader asked for these by name.
         if item.watchlist
-        or (item.total_score >= float(settings["minimum_score"]) and item.categories)
+        or (
+            not item.suppression_reasons
+            and item.total_score >= float(settings["minimum_score"])
+            and item.categories
+        )
     ]
     selected.sort(
         key=lambda item: (bool(item.watchlist), item.total_score, item.published_at),
@@ -311,11 +359,21 @@ def run_pipeline(
             1
             for item in selected
             if item.watchlist
-            and not (item.total_score >= float(settings["minimum_score"]) and item.categories)
+            and not (
+                not item.suppression_reasons
+                and item.total_score >= float(settings["minimum_score"])
+                and item.categories
+            )
+        ),
+        "suppressed_low_value": sum(
+            1 for item in scored if item.suppression_reasons and not item.watchlist
         ),
         "published": len(published),
         "minimum_score": float(settings["minimum_score"]),
         "report_limit": int(settings["report_limit"]),
+        "lookback_hours": float(settings["lookback_hours"]),
+        "score_version": rubric.SCORING_VERSION,
+        "score_max": rubric.SCORE_MAX,
     }
     attention, attention_health, producer_health, attention_state = fetch_attention_feeds(
         config.get("attention") or {},

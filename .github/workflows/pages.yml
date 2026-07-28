@@ -7,6 +7,7 @@ on:
       - "data/snapshots/**"
       - "site/**"
       - "src/benchmark_radar/snapshots.py"
+      - "src/benchmark_radar/corpus.py"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
