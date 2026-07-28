@@ -717,9 +717,11 @@ input {
   line-height: 1.65;
 }
 
+/* Fetch plumbing is secondary to the results beside it, so it scrolls away
+   with the rest of the page rather than sticking to the viewport. Pinning it
+   would give the least important panel the one position that never yields. */
 .health-panel {
-  position: sticky;
-  top: 1rem;
+  align-self: start;
   padding: 0.9rem 1.4rem;
   border: 1px solid var(--ink);
   background: var(--panel);
