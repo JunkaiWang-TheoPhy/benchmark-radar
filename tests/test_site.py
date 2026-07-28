@@ -31,6 +31,46 @@ def test_site_has_accessible_landmarks_and_views():
     assert {"today-view", "trends-view", "explorer-view", "main-content"} <= parser.ids
 
 
+def test_priority_score_is_reachably_explained():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # The score label itself is the affordance, so a reader looking at the
+    # number does not have to hunt elsewhere for its definition.
+    assert 'id="rubric-dialog"' in html
+    assert 'id="rubric-content"' in html
+    assert 'id="rubric-nav"' in html
+    assert "score-explain" in script
+    assert "openRubric" in script
+    assert "How is this scored?" in script
+
+
+def test_rubric_is_read_from_published_data_not_restated_in_the_browser():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # A second hardcoded copy of the weights in the browser is exactly the
+    # drift this rubric exists to prevent.
+    assert "state.data?.rubric" in script
+    assert "0.40 relevance" not in script
+    assert "0.25 evidence" not in script
+    for weight in ("0.4 *", "0.25 *", "0.2 *", "0.15 *"):
+        assert weight not in script
+    assert 'text: "/ 4.00"' not in script
+
+
+def test_attention_signals_are_not_offered_the_evidence_rubric():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert "if (!isAttention && state.data?.rubric)" in script
+
+
+def test_detail_grid_shows_every_component_that_moves_the_total():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    for component in ("Priority", "Relevance", "Evidence", "Recency", "Adoption"):
+        assert f'["{component}", Number(item.' in script
+
+
 def test_today_view_keeps_one_signal_summary_and_one_source_status():
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")

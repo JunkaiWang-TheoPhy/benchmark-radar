@@ -9,6 +9,7 @@ from typing import Any
 
 from .attention import fetch_attention_feeds
 from .models import RadarRun
+from .rubric import rubric_reference
 
 SCHEMA_VERSION = 2
 SUPPORTED_SCHEMA_VERSIONS = {1, SCHEMA_VERSION}
@@ -422,6 +423,12 @@ def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
             "kinds": ["evidence", "attention"],
         },
         "days": days,
+        # The rubric travels with the data it explains. A reader asking "why is
+        # this 2.94 out of 4.00?" gets the weights that produced that number,
+        # not a second copy maintained by hand in the browser.
+        "rubric": rubric_reference(
+            minimum_score=(days[-1].get("selection") or {}).get("minimum_score") if days else None
+        ),
     }
 
 

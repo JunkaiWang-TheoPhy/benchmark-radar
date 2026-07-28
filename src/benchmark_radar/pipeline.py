@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
+from . import rubric
 from .attention import fetch_attention_feeds
 from .models import RadarItem, RadarRun, SourceHealth
 from .sources import SOURCE_FETCHERS
@@ -73,35 +74,40 @@ def score_item(
             categories.append(category)
             matched_terms.extend(matches[:2])
     item.categories = categories
-    item.relevance_score = min(4.0, 1.25 * len(categories) + 0.2 * len(matched_terms))
+    item.relevance_score = min(
+        rubric.SCORE_MAX,
+        rubric.RELEVANCE_PER_CATEGORY * len(categories)
+        + rubric.RELEVANCE_PER_TERM * len(matched_terms),
+    )
 
-    evidence = 0.5
-    if item.source in {"arXiv", "OpenAlex"}:
-        evidence += 1.5
-    if item.source in {"GitHub", "Hugging Face"}:
-        evidence += 1.0
+    evidence = rubric.EVIDENCE_BASE
+    if item.source in rubric.EVIDENCE_PRIMARY_SOURCES:
+        evidence += rubric.EVIDENCE_PRIMARY_CREDIT
+    if item.source in rubric.EVIDENCE_ARTIFACT_SOURCES:
+        evidence += rubric.EVIDENCE_ARTIFACT_CREDIT
     if item.authors:
-        evidence += 0.5
+        evidence += rubric.EVIDENCE_AUTHORSHIP_CREDIT
     if item.artifact_urls:
-        evidence += 0.5
-    item.evidence_score = min(evidence, 4.0)
+        evidence += rubric.EVIDENCE_CROSS_LINK_CREDIT
+    item.evidence_score = min(evidence, rubric.SCORE_MAX)
 
     activity_at = item.updated_at or item.published_at
     age_hours = max(0.0, (now - activity_at).total_seconds() / 3600)
-    item.recency_score = max(0.0, 4.0 - age_hours / 24)
-
-    adoption = (
-        math.log10(1 + item.metrics.get("stars", 0)) * 0.8
-        + math.log10(1 + item.metrics.get("downloads", 0)) * 0.6
-        + math.log10(1 + item.metrics.get("likes", 0)) * 0.5
-        + math.log10(1 + item.metrics.get("citations", 0)) * 0.7
+    item.recency_score = max(
+        0.0,
+        rubric.SCORE_MAX - age_hours / rubric.RECENCY_HALF_LIFE_HOURS,
     )
-    item.adoption_score = min(adoption, 4.0)
+
+    adoption = sum(
+        math.log10(1 + item.metrics.get(metric, 0)) * weight
+        for metric, weight in rubric.ADOPTION_METRIC_WEIGHTS.items()
+    )
+    item.adoption_score = min(adoption, rubric.SCORE_MAX)
     item.total_score = round(
-        0.4 * item.relevance_score
-        + 0.25 * item.evidence_score
-        + 0.2 * item.recency_score
-        + 0.15 * item.adoption_score,
+        sum(
+            weight * getattr(item, f"{component}_score")
+            for component, weight in rubric.WEIGHTS.items()
+        ),
         2,
     )
     if matched_terms:

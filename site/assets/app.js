@@ -123,19 +123,38 @@ function dailySnapshot(date = state.todayDate) {
   );
 }
 
+function scoreMax() {
+  return Number(state.data?.rubric?.score_max) || 4;
+}
+
 function scoreBlock(item) {
   const score = Number(item.total_score || 0);
-  const width = Math.max(0, Math.min(100, (score / 4) * 100));
+  const max = scoreMax();
+  const width = Math.max(0, Math.min(100, (score / max) * 100));
   const trackFill = element("span", {});
   const track = element("div", { className: "score-track" }, [trackFill]);
   trackFill.style.width = `${width}%`;
+  // The label doubles as the way into the rubric. A number presented without
+  // a reachable definition of how it was produced asks the reader to trust it
+  // on faith, which is the opposite of what an evidence log is for.
+  const explain = element("button", {
+    className: "score-label score-explain",
+    attrs: {
+      type: "button",
+      "aria-label": `Priority score ${score.toFixed(2)} of ${max.toFixed(2)}. How is this scored?`,
+    },
+  }, [
+    element("span", { text: "Priority score" }),
+    element("span", { className: "info-mark", text: "i", attrs: { "aria-hidden": "true" } }),
+  ]);
+  explain.addEventListener("click", () => openRubric(item));
   return element("div", { className: "score" }, [
     element("div", { className: "score-value" }, [
       element("strong", { text: score.toFixed(2) }),
-      element("span", { text: "/ 4.00" }),
+      element("span", { text: `/ ${max.toFixed(2)}` }),
     ]),
     track,
-    element("div", { className: "score-label", text: "Priority score" }),
+    explain,
   ]);
 }
 
@@ -619,6 +638,121 @@ function filteredObservations() {
   });
 }
 
+// When a record is supplied, the rubric is rendered with that record's own
+// component scores beside each weight, so the reader can see the arithmetic
+// that produced the total rather than a generic description of it.
+function openRubric(item = null) {
+  const data = state.data?.rubric;
+  const dialog = byId("rubric-dialog");
+  if (!data) return;
+  const max = Number(data.score_max) || 4;
+  const components = data.components || [];
+  const contribution = (component) =>
+    Number(item?.[`${component.key}_score`] || 0) * Number(component.weight || 0);
+
+  const header = [
+    element("p", { className: "detail-source", text: "Scoring rubric" }),
+    element("h2", {
+      className: "detail-title rubric-title",
+      text: "How priority is scored",
+      attrs: { id: "rubric-title" },
+    }),
+    element("p", {
+      className: "detail-summary",
+      text:
+        `Priority is the weighted mean of four components, each measured on a 0 to ${max.toFixed(2)} ` +
+        "scale. Every number below is read from the same definition the pipeline applies.",
+    }),
+    element("p", { className: "rubric-formula", text: data.formula }),
+  ];
+
+  if (item) {
+    header.push(
+      element("div", { className: "rubric-worked" }, [
+        element("strong", { text: `This record scores ${Number(item.total_score || 0).toFixed(2)}` }),
+        element("p", {
+          text: components
+            .map(
+              (component) =>
+                `${component.weight.toFixed(2)} x ${Number(
+                  item[`${component.key}_score`] || 0,
+                ).toFixed(2)} ${component.label.toLowerCase()}`,
+            )
+            .join("  +  "),
+        }),
+      ]),
+    );
+  }
+
+  const componentSections = components.map((component) =>
+    element("section", { className: "rubric-component" }, [
+      element("div", { className: "rubric-component-head" }, [
+        element("h3", { text: component.label }),
+        element("span", {
+          className: "rubric-weight",
+          text: `weight ${component.weight.toFixed(2)}`,
+        }),
+      ]),
+      element("p", { text: component.summary }),
+      element(
+        "ul",
+        { className: "rubric-bands" },
+        (component.bands || []).map((band) => element("li", { text: band })),
+      ),
+      item
+        ? element("p", { className: "rubric-contribution" }, [
+            element("span", {
+              text:
+                `Scored ${Number(item[`${component.key}_score`] || 0).toFixed(2)}` +
+                ` · contributes ${contribution(component).toFixed(2)} to the total`,
+            }),
+          ])
+        : null,
+    ]),
+  );
+
+  const limits =
+    (data.limits || []).length
+      ? element("section", { className: "rubric-limits" }, [
+          element("h3", { text: "What this score does not claim" }),
+          element(
+            "ul",
+            {},
+            data.limits.map((limit) => element("li", { text: limit })),
+          ),
+        ])
+      : null;
+
+  const cutoff =
+    data.minimum_score !== undefined && data.minimum_score !== null
+      ? element("p", {
+          className: "discovery-note",
+          text:
+            `Records scoring below ${Number(data.minimum_score).toFixed(2)} are not reported ` +
+            "unless they name a watchlisted artifact.",
+        })
+      : null;
+
+  replaceChildren(byId("rubric-content"), [
+    ...header,
+    ...componentSections,
+    limits,
+    cutoff,
+    element("div", { className: "detail-links" }, [
+      element("a", {
+        className: "secondary-link",
+        text: "Read the scoring code ↗",
+        attrs: {
+          href: "https://github.com/ktwu01/benchmark-radar/blob/main/src/benchmark_radar/rubric.py",
+          target: "_blank",
+          rel: "noopener noreferrer",
+        },
+      }),
+    ]),
+  ]);
+  dialog.showModal();
+}
+
 function openDetails(item) {
   const isAttention = item.observation_kind === "attention";
   const primaryArtifact = item.primary_artifact_url || item.artifact_urls?.[0];
@@ -634,9 +768,12 @@ function openDetails(item) {
       ]
     : [
         ["Priority", Number(item.total_score || 0).toFixed(2)],
-        ["Evidence", Number(item.evidence_score || 0).toFixed(2)],
         ["Relevance", Number(item.relevance_score || 0).toFixed(2)],
+        ["Evidence", Number(item.evidence_score || 0).toFixed(2)],
         ["Recency", Number(item.recency_score || 0).toFixed(2)],
+        // Adoption is weighted into the total, so hiding it here left the
+        // four shown components unable to explain the priority above them.
+        ["Adoption", Number(item.adoption_score || 0).toFixed(2)],
       ];
   const rationale = element(
     "ul",
@@ -696,6 +833,24 @@ function openDetails(item) {
       attrs: { href: item.url, target: "_blank", rel: "noopener noreferrer" },
     }),
   ]);
+  // Attention signals are not scored, so the rubric would describe a
+  // calculation that was never applied to them.
+  let rubricLink = null;
+  if (!isAttention && state.data?.rubric) {
+    const button = element("button", {
+      className: "rubric-link",
+      attrs: { type: "button" },
+    }, [
+      element("span", { text: "How is this scored?" }),
+      element("span", { className: "info-mark", text: "i", attrs: { "aria-hidden": "true" } }),
+    ]);
+    // One dialog at a time: showModal() throws on an already-open dialog.
+    button.addEventListener("click", () => {
+      byId("detail-dialog").close();
+      openRubric(item);
+    });
+    rubricLink = button;
+  }
   replaceChildren(byId("detail-content"), [
     element("p", {
       className: "detail-source",
@@ -712,6 +867,7 @@ function openDetails(item) {
       { className: "detail-grid" },
       scoreEntries.map(([label, value]) => definition(label, value)),
     ),
+    rubricLink,
     element("h3", { text: "Why surfaced" }),
     rationale,
     supporting,
@@ -828,6 +984,13 @@ function bindEvents() {
   byId("detail-dialog").addEventListener("click", (event) => {
     if (event.target === byId("detail-dialog")) byId("detail-dialog").close();
   });
+  byId("rubric-close").addEventListener("click", () => byId("rubric-dialog").close());
+  byId("rubric-dialog").addEventListener("click", (event) => {
+    if (event.target === byId("rubric-dialog")) byId("rubric-dialog").close();
+  });
+  // Reachable without a record in hand, for a reader who wants the method
+  // before they trust any single row.
+  byId("rubric-nav").addEventListener("click", () => openRubric());
 }
 
 const REPO_SLUG = "ktwu01/benchmark-radar";

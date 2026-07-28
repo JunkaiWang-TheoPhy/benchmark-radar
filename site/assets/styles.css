@@ -260,10 +260,18 @@ th {
   color: white;
 }
 
-.view-nav a {
-  margin-left: auto;
-  border-right: 0;
-  border-left: 1px solid var(--line);
+/* Opens a dialog rather than switching views, so it never carries the
+   aria-current treatment the view tabs use. */
+#rubric-nav {
+  color: var(--blue-deep);
+}
+
+#rubric-nav::after {
+  content: " ⓘ";
+}
+
+#rubric-nav:hover {
+  background: var(--panel);
 }
 
 main {
@@ -538,6 +546,173 @@ input {
 .score-label {
   margin-top: 0.3rem;
   color: var(--muted);
+}
+
+/* The label is a button, but it keeps the label's typography: the affordance
+   is the info mark and the underline on hover, not a boxed control competing
+   with the score it annotates. */
+.score-explain {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.score-explain:hover span:first-child,
+.rubric-link:hover span:first-child {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.score-explain:hover .info-mark,
+.rubric-link:hover .info-mark {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: white;
+}
+
+.info-mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--blue-deep);
+  font-family: var(--display);
+  font-size: 0.62rem;
+  line-height: 1;
+  text-transform: none;
+}
+
+.rubric-link {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin: -1rem 0 2rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--blue-deep);
+  font-family: var(--utility);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.rubric-title {
+  font-size: clamp(1.9rem, 4.5vw, 3rem);
+}
+
+.rubric-formula {
+  padding: 0.85rem 1rem;
+  border-left: 3px solid var(--blue);
+  background: white;
+  color: var(--ink);
+  font-family: var(--utility);
+  font-size: 0.78rem;
+}
+
+.rubric-worked {
+  margin: 1.25rem 0 0;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  background: white;
+}
+
+.rubric-worked strong {
+  font-family: var(--utility);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rubric-worked p {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.75rem;
+}
+
+.rubric-component {
+  padding: 1.4rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.rubric-component:first-of-type {
+  border-top: 1px solid var(--ink);
+  margin-top: 2rem;
+}
+
+.rubric-component-head {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.rubric-component h3 {
+  margin: 0;
+}
+
+.rubric-weight {
+  flex: none;
+  color: var(--blue-deep);
+  font-family: var(--utility);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rubric-component p {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.rubric-bands {
+  margin: 0.7rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.72rem;
+  line-height: 1.8;
+}
+
+.rubric-contribution {
+  margin-top: 0.7rem !important;
+  color: var(--ink) !important;
+  font-family: var(--utility);
+  font-size: 0.72rem !important;
+}
+
+.rubric-limits {
+  margin: 2rem 0;
+  padding: 1.2rem;
+  border-left: 3px solid var(--orange);
+  background: #fbf0ec;
+}
+
+.rubric-limits h3 {
+  margin: 0 0 0.6rem;
+  font-family: var(--utility);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rubric-limits ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.65;
 }
 
 .health-panel {

@@ -45,6 +45,12 @@ The default priority is:
 0.40 relevance + 0.25 evidence + 0.20 recency + 0.15 adoption
 ```
 
+The weights, per-component bands, and stated limits live in
+[`src/benchmark_radar/rubric.py`](src/benchmark_radar/rubric.py) and are published into
+`site/data/radar.json`, so the rubric the dashboard shows is read from the same definition
+the pipeline applies. Every priority score on the dashboard is clickable: it opens the
+rubric with that record's own component scores worked through the weighted sum.
+
 This is triage, not scientific quality adjudication or endorsement.
 
 ## Run locally

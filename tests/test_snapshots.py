@@ -141,6 +141,35 @@ def test_rebuild_is_deterministic(tmp_path):
     assert first["days"][0]["attention"]["active_count"] == 1
 
 
+def test_dashboard_publishes_the_rubric_that_scored_its_records(tmp_path):
+    snapshot_dir = tmp_path / "snapshots"
+    run = radar_run(27)
+    run.selection = {"minimum_score": 2.0, "report_limit": 30}
+    write_snapshot(run, snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    published = data["rubric"]
+    assert published["score_max"] == 4.0
+    assert [component["key"] for component in published["components"]] == [
+        "relevance",
+        "evidence",
+        "recency",
+        "adoption",
+    ]
+    # The reader is looking at a filtered corpus, so the cutoff that filtered it
+    # belongs with the rubric that scored it.
+    assert published["minimum_score"] == 2.0
+    assert published["limits"]
+
+
+def test_dashboard_without_snapshots_publishes_no_cutoff(tmp_path):
+    data = rebuild_dashboard(tmp_path / "empty", tmp_path / "radar.json")
+
+    assert "minimum_score" not in data["rubric"]
+    assert data["rubric"]["components"]
+
+
 def test_dashboard_reports_per_category_deltas_and_cumulative(tmp_path):
     snapshot_dir = tmp_path / "snapshots"
     write_snapshot(radar_run(26), snapshot_dir)
