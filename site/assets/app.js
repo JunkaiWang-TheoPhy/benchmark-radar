@@ -123,13 +123,18 @@ function dailySnapshot(date = state.todayDate) {
   );
 }
 
-function scoreMax() {
-  return Number(state.data?.rubric?.score_max) || 4;
+function rubricFor(item = null) {
+  const version = String(item?.score_version || state.data?.rubric?.scoring_version || 1);
+  return state.data?.rubrics?.[version] || state.data?.rubric;
+}
+
+function scoreMax(item = null) {
+  return Number(item?.score_max || rubricFor(item)?.score_max) || 4;
 }
 
 function scoreBlock(item) {
   const score = Number(item.total_score || 0);
-  const max = scoreMax();
+  const max = scoreMax(item);
   const width = Math.max(0, Math.min(100, (score / max) * 100));
   const trackFill = element("span", {});
   const track = element("div", { className: "score-track" }, [trackFill]);
@@ -642,7 +647,7 @@ function filteredObservations() {
 // component scores beside each weight, so the reader can see the arithmetic
 // that produced the total rather than a generic description of it.
 function openRubric(item = null) {
-  const data = state.data?.rubric;
+  const data = rubricFor(item);
   const dialog = byId("rubric-dialog");
   if (!data) return;
   const max = Number(data.score_max) || 4;

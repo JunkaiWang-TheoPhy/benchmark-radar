@@ -50,7 +50,7 @@ def test_rubric_is_read_from_published_data_not_restated_in_the_browser():
 
     # A second hardcoded copy of the weights in the browser is exactly the
     # drift this rubric exists to prevent.
-    assert "state.data?.rubric" in script
+    assert "state.data?.rubrics" in script
     assert "0.40 relevance" not in script
     assert "0.25 evidence" not in script
     for weight in ("0.4 *", "0.25 *", "0.2 *", "0.15 *"):

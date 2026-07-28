@@ -26,7 +26,7 @@ def item(**overrides) -> RadarItem:
 def test_weights_are_a_normalized_mean_over_the_published_scale():
     assert set(rubric.WEIGHTS) == {"relevance", "evidence", "recency", "adoption"}
     assert sum(rubric.WEIGHTS.values()) == 1.0
-    # Priority is presented as "x / 4.00". That only reads as a mean if a record
+    # Priority is presented as "x / 100". That only reads as a mean if a record
     # scoring the maximum on every component reaches exactly the maximum.
     assert sum(rubric.SCORE_MAX * weight for weight in rubric.WEIGHTS.values()) == rubric.SCORE_MAX
 
@@ -36,7 +36,8 @@ def test_published_rubric_describes_every_scored_component():
     keys = [component["key"] for component in reference["components"]]
 
     assert keys == list(rubric.WEIGHTS)
-    assert reference["score_max"] == rubric.SCORE_MAX
+    assert reference["score_max"] == 100
+    assert reference["scoring_version"] == 2
     for component in reference["components"]:
         assert component["weight"] == rubric.WEIGHTS[component["key"]]
         assert component["summary"].strip()
@@ -85,28 +86,30 @@ def test_source_tiers_stay_disjoint():
     assert not overlap, f"sources in two evidence tiers collect both credits: {overlap}"
 
 
-def test_recency_reaches_zero_exactly_where_the_rubric_says_it_does():
+def test_recency_reaches_zero_at_the_configured_lookback():
     published = datetime(2026, 7, 28, 12, 0, tzinfo=UTC)
     at_publication = score_item(item(published_at=published), TAXONOMY, published)
     at_zero = score_item(
         item(published_at=published),
         TAXONOMY,
-        published + timedelta(hours=rubric.RECENCY_ZERO_AT_HOURS),
+        published + timedelta(hours=72),
+        lookback_hours=72,
     )
-    one_step = score_item(
+    halfway = score_item(
         item(published_at=published),
         TAXONOMY,
-        published + timedelta(hours=rubric.RECENCY_HALF_LIFE_HOURS),
+        published + timedelta(hours=36),
+        lookback_hours=72,
     )
 
     assert at_publication.recency_score == rubric.SCORE_MAX
     assert at_zero.recency_score == 0.0
-    assert one_step.recency_score == rubric.SCORE_MAX - 1.0
+    assert halfway.recency_score == 50.0
 
 
 def test_adoption_counts_every_metric_the_rubric_lists():
     now = datetime(2026, 7, 28, 12, 0, tzinfo=UTC)
-    for metric in rubric.ADOPTION_METRIC_WEIGHTS:
+    for metric in rubric.ADOPTION_METRIC_SATURATION:
         scored = score_item(item(metrics={metric: 999}), TAXONOMY, now)
         assert scored.adoption_score > 0, f"{metric} earned no adoption credit"
 
@@ -119,7 +122,7 @@ def test_no_component_can_exceed_the_published_maximum():
             title=f"{every_term} benchmark leaderboard",
             authors=["A"],
             artifact_urls=["https://example.com/a"],
-            metrics={metric: 10**9 for metric in rubric.ADOPTION_METRIC_WEIGHTS},
+            metrics={metric: 10**9 for metric in rubric.ADOPTION_METRIC_SATURATION},
         ),
         TAXONOMY,
         now,

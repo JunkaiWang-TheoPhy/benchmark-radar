@@ -26,6 +26,9 @@ class RadarItem:
     recency_score: float = 0.0
     adoption_score: float = 0.0
     total_score: float = 0.0
+    score_version: int = 2
+    score_max: float = 100.0
+    suppression_reasons: list[str] = field(default_factory=list)
     rationale: list[str] = field(default_factory=list)
     # Set when the record matches a named artifact on the configured
     # watchlist. Routing metadata only: it never alters a score.

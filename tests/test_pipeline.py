@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -59,7 +59,7 @@ def test_scoring_is_explainable_and_bounded():
     }
     scored = score_item(item(), taxonomy, datetime(2026, 7, 27, 1, tzinfo=UTC))
     assert scored.categories == ["benchmark", "evaluation", "dataset"]
-    assert 0 <= scored.total_score <= 4
+    assert 0 <= scored.total_score <= 100
     assert any("Matched:" in reason for reason in scored.rationale)
 
 
@@ -92,6 +92,92 @@ def test_boilerplate_summary_cannot_earn_relevance():
         datetime(2026, 7, 27, 1, tzinfo=UTC),
     )
     assert "dataset" not in bare.categories
+
+
+def test_low_value_follower_leaderboard_is_explicitly_demoted():
+    taxonomy = {"benchmark": ["leaderboard"], "dataset": ["dataset"]}
+    low_value = score_item(
+        item(
+            source="Hugging Face",
+            source_id="Weyaxi/followers-leaderboard",
+            title="Weyaxi/followers-leaderboard",
+            summary="Follower Leaderboard's History Dataset.",
+        ),
+        taxonomy,
+        datetime(2026, 7, 27, 1, tzinfo=UTC),
+    )
+    real_release = score_item(
+        item(
+            source="Hugging Face",
+            source_id="org/model-eval",
+            title="Model Evaluation Leaderboard",
+            summary="Dataset of verified model evaluation results.",
+        ),
+        taxonomy,
+        datetime(2026, 7, 27, 1, tzinfo=UTC),
+    )
+
+    assert low_value.relevance_score == 0
+    assert real_release.relevance_score == 50
+    assert real_release.total_score > low_value.total_score
+    assert any("Demoted: follower-count leaderboard" in reason for reason in low_value.rationale)
+
+
+def test_recency_uses_the_configured_collection_window():
+    taxonomy = {"benchmark": ["benchmark"]}
+    published = datetime(2026, 7, 27, tzinfo=UTC)
+
+    halfway = score_item(
+        item(published_at=published),
+        taxonomy,
+        published + timedelta(hours=24),
+        lookback_hours=48,
+    )
+    expired = score_item(
+        item(published_at=published),
+        taxonomy,
+        published + timedelta(hours=48),
+        lookback_hours=48,
+    )
+
+    assert halfway.recency_score == 50
+    assert expired.recency_score == 0
+
+
+def test_visualization_companion_is_suppressed_from_pipeline(monkeypatch):
+    companion = item(
+        source="Hugging Face",
+        source_id="org/leaderboard-cases",
+        title="Leaderboard Case Assets",
+        summary=(
+            "This dataset stores compact browser assets and is a visualization "
+            "companion, not an evaluation dataset."
+        ),
+    )
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "huggingface",
+        lambda config, since, limit: [companion],
+    )
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 0,
+        },
+        "taxonomy": {
+            "benchmark": ["leaderboard"],
+            "evaluation": ["evaluation"],
+            "dataset": ["dataset"],
+        },
+        "sources": {"huggingface": {"enabled": True, "required": True}},
+    }
+
+    run = run_pipeline(config, datetime(2026, 7, 27, tzinfo=UTC))
+
+    assert run.items == []
+    assert run.selection["suppressed_low_value"] == 1
 
 
 def test_watchlist_matches_aliases_across_fields():

@@ -8,7 +8,9 @@ radar:
   # scored record, and only the Markdown digest is truncated to this many.
   report_limit: 300
   issue_item_limit: 40
-  minimum_score: 2.0
+  # Rubric v2 uses an explainable 0-100 scale. Forty keeps multi-signal
+  # releases while explicit low-value patterns fall below the cutoff.
+  minimum_score: 40
 
 taxonomy:
   benchmark:

@@ -9,7 +9,11 @@ from typing import Any
 
 from .attention import fetch_attention_feeds
 from .models import RadarRun
-from .rubric import rubric_reference
+from .rubric import (
+    SCORING_VERSION,
+    legacy_rubric_reference,
+    rubric_reference,
+)
 
 SCHEMA_VERSION = 2
 SUPPORTED_SCHEMA_VERSIONS = {1, SCHEMA_VERSION}
@@ -366,7 +370,17 @@ def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
     sources: set[str] = set()
     event_kinds: set[str] = set()
     for snapshot in snapshots:
-        evidence_items = snapshot["evidence_items"]
+        # Snapshot schema v2 predates scoring-version metadata. Preserve those
+        # historical 0-4 values explicitly so a current 0-100 label and formula
+        # can never be shown beside arithmetic they did not produce.
+        evidence_items = [
+            {
+                **item,
+                "score_version": int(item.get("score_version") or 1),
+                "score_max": float(item.get("score_max") or 4.0),
+            }
+            for item in snapshot["evidence_items"]
+        ]
         observations = snapshot["attention"]["observations"]
         category_counts = Counter(
             category for item in evidence_items for category in item["categories"]
@@ -423,11 +437,34 @@ def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
             "kinds": ["evidence", "attention"],
         },
         "days": days,
-        # The rubric travels with the data it explains. A reader asking "why is
-        # this 2.94 out of 4.00?" gets the weights that produced that number,
-        # not a second copy maintained by hand in the browser.
+        # Keep every rubric required by the history. The browser selects by
+        # each record's score_version, so a v1 score is never explained using
+        # v2 arithmetic.
+        "rubrics": {
+            "1": legacy_rubric_reference(),
+            str(SCORING_VERSION): rubric_reference(
+                minimum_score=(
+                    (days[-1].get("selection") or {}).get("minimum_score")
+                    if days
+                    and (days[-1].get("selection") or {}).get("score_version") == SCORING_VERSION
+                    else None
+                ),
+                lookback_hours=(
+                    (days[-1].get("selection") or {}).get("lookback_hours") or 48 if days else 48
+                ),
+            ),
+        },
+        # Backward-compatible alias for the global information button.
         "rubric": rubric_reference(
-            minimum_score=(days[-1].get("selection") or {}).get("minimum_score") if days else None
+            minimum_score=(
+                (days[-1].get("selection") or {}).get("minimum_score")
+                if days
+                and (days[-1].get("selection") or {}).get("score_version") == SCORING_VERSION
+                else None
+            ),
+            lookback_hours=(
+                (days[-1].get("selection") or {}).get("lookback_hours") or 48 if days else 48
+            ),
         ),
     }
 

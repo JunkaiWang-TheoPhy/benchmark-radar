@@ -22,7 +22,7 @@ def _item_block(index: int, item: RadarItem) -> str:
         f"### {index}. [{_escape(item.title)}]({item.url})",
         "",
         f"**{marker}{item.source} · {item.event_kind} · {category} · "
-        f"priority {item.total_score:.2f}/4.00**",
+        f"priority {item.total_score:.1f}/{item.score_max:.0f}**",
         "",
     ]
     if item.watchlist and item.watchlist_note:
@@ -121,12 +121,18 @@ def render_markdown(
             + ")"
         )
         suppressed = int(selection.get("suppressed_as_seen") or 0)
+        suppressed_low_value = int(selection.get("suppressed_low_value") or 0)
         lines.extend(
             [
                 "- Selection: "
                 f"**{selection.get('fetched', 0)}** fetched → "
                 + (f"**{suppressed}** already seen → " if suppressed else "")
                 + f"**{selection.get('deduplicated', 0)}** after dedupe → "
+                + (
+                    f"**{suppressed_low_value}** low-value artifacts suppressed → "
+                    if suppressed_low_value
+                    else ""
+                )
                 + qualified
                 + f" → **{selection.get('published', 0)}** published",
                 "",

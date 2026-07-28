@@ -39,10 +39,10 @@ Each item receives four visible scores:
 - **Recency**: time since publication or material update
 - **Adoption**: logarithmically scaled stars, downloads, likes, or citations
 
-The default priority is:
+The default priority is reported on a 0–100 scale:
 
 ```text
-0.40 relevance + 0.25 evidence + 0.20 recency + 0.15 adoption
+0.35 relevance + 0.20 evidence + 0.20 recency + 0.25 adoption
 ```
 
 The weights, per-component bands, and stated limits live in
@@ -50,6 +50,10 @@ The weights, per-component bands, and stated limits live in
 `site/data/radar.json`, so the rubric the dashboard shows is read from the same definition
 the pipeline applies. Every priority score on the dashboard is clickable: it opens the
 rubric with that record's own component scores worked through the weighted sum.
+Recency uses the full configured lookback window, and narrowly defined negative
+signals demote follower-count leaderboards, result indexes, submission placeholders,
+and visualization-only companions. The latter three are suppressed from the daily list;
+the selection funnel reports the count, and every scored deduction remains auditable.
 
 This is triage, not scientific quality adjudication or endorsement.
 

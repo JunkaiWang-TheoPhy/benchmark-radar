@@ -144,13 +144,19 @@ def test_rebuild_is_deterministic(tmp_path):
 def test_dashboard_publishes_the_rubric_that_scored_its_records(tmp_path):
     snapshot_dir = tmp_path / "snapshots"
     run = radar_run(27)
-    run.selection = {"minimum_score": 2.0, "report_limit": 30}
+    run.selection = {
+        "minimum_score": 40.0,
+        "report_limit": 30,
+        "score_version": 2,
+        "score_max": 100,
+        "lookback_hours": 48,
+    }
     write_snapshot(run, snapshot_dir)
 
     data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
 
     published = data["rubric"]
-    assert published["score_max"] == 4.0
+    assert published["score_max"] == 100.0
     assert [component["key"] for component in published["components"]] == [
         "relevance",
         "evidence",
@@ -159,8 +165,25 @@ def test_dashboard_publishes_the_rubric_that_scored_its_records(tmp_path):
     ]
     # The reader is looking at a filtered corpus, so the cutoff that filtered it
     # belongs with the rubric that scored it.
-    assert published["minimum_score"] == 2.0
+    assert published["minimum_score"] == 40.0
     assert published["limits"]
+
+
+def test_dashboard_keeps_legacy_scores_on_their_original_rubric(tmp_path):
+    snapshot_dir = tmp_path / "snapshots"
+    run = radar_run(27)
+    # The fixture models a snapshot written before score_version was persisted.
+    run.items[0].score_version = 1
+    run.items[0].score_max = 4
+    write_snapshot(run, snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+    published = data["days"][0]["evidence_items"][0]
+
+    assert published["score_version"] == 1
+    assert published["score_max"] == 4
+    assert data["rubrics"]["1"]["score_max"] == 4
+    assert data["rubrics"]["2"]["score_max"] == 100
 
 
 def test_dashboard_without_snapshots_publishes_no_cutoff(tmp_path):
