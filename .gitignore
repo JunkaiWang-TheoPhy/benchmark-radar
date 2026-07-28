@@ -12,3 +12,4 @@ out/
 
 .gstack/
 .DS_Store
+.worktrees/
