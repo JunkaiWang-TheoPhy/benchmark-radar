@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from urllib.error import HTTPError
 
-from benchmark_radar.sources import fetch_arxiv
+from benchmark_radar.sources import fetch_arxiv, fetch_github
 
 ARXIV_XML = """\
 <feed xmlns="http://www.w3.org/2005/Atom">
@@ -109,3 +109,58 @@ def test_arxiv_can_use_official_rss_as_primary(monkeypatch):
     )
 
     assert [item.source_id for item in items] == ["2607.54321"]
+
+
+def _github_row(index: int) -> dict:
+    return {
+        "full_name": f"org/repo{index}",
+        "html_url": f"https://github.com/org/repo{index}",
+        "pushed_at": "2026-07-27T00:00:00Z",
+        "created_at": "2026-07-27T00:00:00Z",
+        "description": f"Benchmark suite {index}",
+        "stargazers_count": index,
+        "forks_count": 0,
+    }
+
+
+def test_github_pages_past_the_hundred_row_search_limit(monkeypatch):
+    # The search API caps a response at 100 rows, so a single request silently
+    # dropped everything beyond it whenever a query matched more.
+    requested_pages = []
+
+    def fake_get_json(url, params=None, headers=None):
+        requested_pages.append(params["page"])
+        start = (params["page"] - 1) * 100
+        if start >= 150:
+            return {"items": []}
+        return {"items": [_github_row(start + offset) for offset in range(min(100, 150 - start))]}
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+
+    items = fetch_github(
+        {"queries": ["benchmark"]},
+        datetime(2026, 7, 25, 12, tzinfo=UTC),
+        300,
+    )
+
+    assert requested_pages == [1, 2]
+    assert len(items) == 150
+
+
+def test_github_stops_paging_once_a_page_is_short(monkeypatch):
+    calls = []
+
+    def fake_get_json(url, params=None, headers=None):
+        calls.append(params["page"])
+        return {"items": [_github_row(0)]}
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+
+    items = fetch_github(
+        {"queries": ["benchmark"]},
+        datetime(2026, 7, 25, 12, tzinfo=UTC),
+        300,
+    )
+
+    assert calls == [1]
+    assert len(items) == 1
