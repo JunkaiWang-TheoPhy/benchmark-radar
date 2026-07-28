@@ -366,6 +366,10 @@ function renderDomainMetrics(day) {
   );
 }
 
+function sameReportLimit(a, b) {
+  return (a.selection || {}).report_limit === (b.selection || {}).report_limit;
+}
+
 function renderTrends() {
   const categories = state.data.facets.categories;
   replaceChildren(
@@ -399,8 +403,12 @@ function renderTrends() {
       `Baseline: ${only.evidence_count} evidence records and ${only.attention.active_count} active attention signals.`;
     trendChart.hidden = true;
   } else if (dayCount === 2) {
-    trendMessage.textContent =
-      "Two snapshots are available. The chart shows the first comparable daily change; broader trend language begins with three snapshots.";
+    trendMessage.textContent = sameReportLimit(
+      state.data.days[1],
+      state.data.days[0],
+    )
+      ? "Two snapshots are available. The chart shows the first comparable daily change; broader trend language begins with three snapshots."
+      : "Two snapshots are available, but they used different report limits, so the change between them is not comparable.";
     trendChart.hidden = false;
   } else {
     const latest = state.data.days[dayCount - 1];
@@ -408,8 +416,7 @@ function renderTrends() {
     // Raising the report limit lifts every count at once. Announcing that as
     // movement would report a collection-policy change as a change in field,
     // so the same gate the domain cards use applies to this sentence.
-    const comparable =
-      (latest.selection || {}).report_limit === (previous.selection || {}).report_limit;
+    const comparable = sameReportLimit(latest, previous);
     if (comparable) {
       const evidenceDelta = latest.evidence_count - previous.evidence_count;
       const attentionDelta = latest.attention.active_count - previous.attention.active_count;

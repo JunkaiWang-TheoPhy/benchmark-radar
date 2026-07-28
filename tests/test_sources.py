@@ -210,3 +210,25 @@ def test_github_spaces_unauthenticated_requests(monkeypatch):
     )
 
     assert delays and all(delay > 0 for delay in delays)
+
+
+def test_github_pages_round_robin_so_no_query_is_skipped(monkeypatch):
+    # Draining the first query to the source limit spent the whole budget on
+    # it and never issued the other configured searches, dropping whole topics.
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.setattr("benchmark_radar.sources.time.sleep", lambda seconds: None)
+    queried = []
+
+    def fake_get_json(url, params=None, headers=None):
+        queried.append(params["q"].split(" pushed")[0])
+        return {"items": [_github_row(offset) for offset in range(100)]}
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+
+    fetch_github(
+        {"queries": ["alpha", "beta", "gamma"], "max_requests": 3},
+        datetime(2026, 7, 25, 12, tzinfo=UTC),
+        300,
+    )
+
+    assert sorted(queried) == ["alpha", "beta", "gamma"]

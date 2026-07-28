@@ -304,10 +304,22 @@ def _attach_category_trends(days: list[dict[str, Any]]) -> None:
     Only snapshots collected under the same report limit are compared. Raising
     the cap lifts every count at once, and presenting that as domain momentum
     would report a change in collection policy as a change in the field.
+
+    Cumulative figures count distinct artifacts, not sightings. The scan window
+    overlaps by design and only arXiv suppresses repeats, so summing daily
+    counts would re-count the same repository every day it stayed in range and
+    grow steadily while nothing new was found.
     """
-    cumulative: Counter[str] = Counter()
+    seen: dict[str, set[str]] = {}
+    seen_any: set[str] = set()
     for index, day in enumerate(days):
         counts = day["category_counts"]
+        for record in day["evidence_items"]:
+            identity = f"{record['source']}:{record['source_id']}".lower()
+            seen_any.add(identity)
+            for category in record["categories"]:
+                seen.setdefault(category, set()).add(identity)
+        cumulative = Counter({category: len(ids) for category, ids in seen.items()})
         limit = (day.get("selection") or {}).get("report_limit")
         comparable = [
             entry
@@ -337,15 +349,14 @@ def _attach_category_trends(days: list[dict[str, Any]]) -> None:
                 "momentum": (
                     round((count - baseline) / baseline, 2) if baseline not in (None, 0) else None
                 ),
-                "cumulative": cumulative[category] + count,
+                # Distinct artifacts seen in this category up to and including
+                # today, so a repository lingering in the window counts once.
+                "cumulative": cumulative[category],
                 "comparable": prior_day is not None,
             }
-        cumulative.update(counts)
         day["category_trends"] = trends
         day["cumulative_category_counts"] = dict(sorted(cumulative.items()))
-        day["cumulative_evidence_count"] = sum(
-            entry["evidence_count"] for entry in days[: index + 1]
-        )
+        day["cumulative_evidence_count"] = len(seen_any)
 
 
 def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:

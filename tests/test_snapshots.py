@@ -160,6 +160,25 @@ def test_dashboard_reports_per_category_deltas_and_cumulative(tmp_path):
     assert second["cumulative_evidence_count"] == 2
 
 
+def test_cumulative_counts_artifacts_once_across_overlapping_windows(tmp_path):
+    # The scan window overlaps by design, so the same repository appears on
+    # adjacent days. Summing daily counts would grow the total while nothing
+    # new was actually discovered.
+    snapshot_dir = tmp_path / "snapshots"
+    for day in (26, 27):
+        run = radar_run(day)
+        # Same artifact identity on both days.
+        run.items[0].source_id = "2607.0001"
+        run.items[0].url = "https://arxiv.org/abs/2607.0001"
+        write_snapshot(run, snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    second = data["days"][1]
+    assert second["category_trends"]["benchmark"]["cumulative"] == 1
+    assert second["cumulative_evidence_count"] == 1
+
+
 def test_trends_do_not_compare_across_a_report_limit_change(tmp_path):
     # Raising the cap lifts every count at once. Reporting that as domain
     # momentum would present a collection-policy change as a change in field.

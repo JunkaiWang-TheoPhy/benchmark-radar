@@ -237,10 +237,17 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
     budget = int(config.get("max_requests", 30 if token else 8))
     delay = float(config.get("request_delay_seconds", 0 if token else 6.5))
     requests_made = 0
-    for query in queries:
-        for page in range(1, max_pages + 1):
-            if requests_made >= budget:
-                break
+    # Page round-robin rather than query-by-query. Draining the first query to
+    # the source limit would spend the whole budget on it and never issue the
+    # evaluation, dataset and contamination searches at all, quietly dropping
+    # entire topics from the scan.
+    exhausted: set[int] = set()
+    for page in range(1, max_pages + 1):
+        if len(exhausted) == len(queries):
+            break
+        for index, query in enumerate(queries):
+            if index in exhausted or requests_made >= budget:
+                continue
             if requests_made and delay > 0:
                 time.sleep(delay)
             requests_made += 1
@@ -275,9 +282,9 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
                     },
                     raw=row,
                 )
-            if len(rows) < min(limit, page_size) or len(found) >= limit:
-                break
-        if requests_made >= budget or len(found) >= limit:
+            if len(rows) < min(limit, page_size):
+                exhausted.add(index)
+        if requests_made >= budget:
             break
     return list(found.values())
 
