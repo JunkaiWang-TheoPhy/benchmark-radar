@@ -24,8 +24,12 @@ WEIGHTS: dict[str, float] = {
     "adoption": 0.15,
 }
 
-# Evidence credit per source. A record scores the strongest tier its source
-# qualifies for; the tiers are not additive across source families.
+# Evidence credit per source. `score_item` tests each tier independently and
+# adds every credit that applies, so these two source tuples must stay
+# disjoint: a source listed in both would collect 2.5 rather than the 1.5 or
+# 1.0 the published bands promise. `test_source_tiers_stay_disjoint` enforces
+# that, because the drift would show up as an inflated score with a rubric
+# beside it that no longer explains the number.
 EVIDENCE_BASE = 0.5
 EVIDENCE_PRIMARY_SOURCES = ("arXiv", "OpenAlex")
 EVIDENCE_PRIMARY_CREDIT = 1.5
@@ -125,6 +129,8 @@ LIMITS: list[str] = [
     "Adoption measures attention, not correctness. A widely starred repository "
     "and a careful one are not the same claim.",
     "Attention signals are shown separately and are never scored on this rubric.",
+    "Watchlisted artifacts are published whatever they score, and sort above "
+    "everything else. Their rank reflects that request, not a higher score.",
 ]
 
 

@@ -76,6 +76,15 @@ def test_evidence_bands_match_the_credit_the_pipeline_grants():
         assert credited.evidence_score > baseline.evidence_score
 
 
+def test_source_tiers_stay_disjoint():
+    """score_item adds every tier that matches rather than taking the best one.
+    A source in both tuples would earn both credits, so the published bands
+    would understate the score they are supposed to explain."""
+    overlap = set(rubric.EVIDENCE_PRIMARY_SOURCES) & set(rubric.EVIDENCE_ARTIFACT_SOURCES)
+
+    assert not overlap, f"sources in two evidence tiers collect both credits: {overlap}"
+
+
 def test_recency_reaches_zero_exactly_where_the_rubric_says_it_does():
     published = datetime(2026, 7, 28, 12, 0, tzinfo=UTC)
     at_publication = score_item(item(published_at=published), TAXONOMY, published)

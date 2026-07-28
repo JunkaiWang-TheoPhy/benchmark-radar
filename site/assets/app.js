@@ -728,8 +728,9 @@ function openRubric(item = null) {
       ? element("p", {
           className: "discovery-note",
           text:
-            `Records scoring below ${Number(data.minimum_score).toFixed(2)} are not reported ` +
-            "unless they name a watchlisted artifact.",
+            `A record is reported only if it matches at least one taxonomy category and ` +
+            `scores ${Number(data.minimum_score).toFixed(2)} or above, or if it names a ` +
+            "watchlisted artifact, which is published regardless of score.",
         })
       : null;
 
