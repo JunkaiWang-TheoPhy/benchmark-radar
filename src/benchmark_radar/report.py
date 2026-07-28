@@ -110,12 +110,14 @@ def render_markdown(
     if run.selection:
         selection = run.selection
         watchlisted = int(selection.get("watchlisted") or 0)
-        # Watchlist hits bypass the threshold on purpose, so they are named
-        # separately rather than folded into the "scored at or above" claim.
+        # Watchlist hits bypass the threshold on purpose and are already inside
+        # `qualified`, so subtract them before claiming how many cleared the
+        # bar. Otherwise a lone bypass reads as "1 qualified (at or above 99)".
+        by_threshold = int(selection.get("qualified", 0)) - watchlisted
         qualified = (
             f"**{selection.get('qualified', 0)}** qualified "
-            f"(at or above {selection.get('minimum_score', 0):g}"
-            + (f", plus {watchlisted} by watchlist" if watchlisted else "")
+            f"({by_threshold} at or above {selection.get('minimum_score', 0):g}"
+            + (f", {watchlisted} by watchlist" if watchlisted else "")
             + ")"
         )
         suppressed = int(selection.get("suppressed_as_seen") or 0)

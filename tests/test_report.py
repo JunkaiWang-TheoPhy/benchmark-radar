@@ -90,6 +90,17 @@ def test_report_shows_the_selection_funnel():
     assert "**30** published" in report
 
 
+def test_funnel_excludes_watchlist_bypasses_from_the_threshold_count():
+    # A lone bypass must not read as "1 qualified (at or above 99)": nothing
+    # met the threshold, so the two counts are reported separately.
+    run = _run([_record(1, watchlist="MLE-bench")])
+    run.selection = {"fetched": 5, "qualified": 1, "watchlisted": 1, "minimum_score": 99}
+
+    report = render_markdown(run)
+
+    assert "**1** qualified (0 at or above 99, 1 by watchlist)" in report
+
+
 def test_report_links_to_date_filtered_dashboard():
     run = RadarRun(
         generated_at=datetime(2026, 7, 27, tzinfo=UTC),

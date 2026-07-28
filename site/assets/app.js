@@ -405,17 +405,28 @@ function renderTrends() {
   } else {
     const latest = state.data.days[dayCount - 1];
     const previous = state.data.days[dayCount - 2];
-    const evidenceDelta = latest.evidence_count - previous.evidence_count;
-    const attentionDelta = latest.attention.active_count - previous.attention.active_count;
-    const direction = (value) => (value > 0 ? `up ${value}` : value < 0 ? `down ${Math.abs(value)}` : "flat");
-    const movers = Object.entries(latest.category_trends || {})
-      .filter(([, trend]) => trend.delta)
-      .sort((a, b) => Math.abs(b[1].delta) - Math.abs(a[1].delta))
-      .slice(0, 2)
-      .map(([category, trend]) => `${category.replaceAll("_", " ")} ${deltaText(trend.delta)}`);
-    trendMessage.textContent =
-      `Compared with ${previous.date}, surfaced evidence is ${direction(evidenceDelta)} and active attention is ${direction(attentionDelta)}.` +
-      (movers.length ? ` Biggest domain moves: ${movers.join(", ")}.` : "");
+    // Raising the report limit lifts every count at once. Announcing that as
+    // movement would report a collection-policy change as a change in field,
+    // so the same gate the domain cards use applies to this sentence.
+    const comparable =
+      (latest.selection || {}).report_limit === (previous.selection || {}).report_limit;
+    if (comparable) {
+      const evidenceDelta = latest.evidence_count - previous.evidence_count;
+      const attentionDelta = latest.attention.active_count - previous.attention.active_count;
+      const direction = (value) => (value > 0 ? `up ${value}` : value < 0 ? `down ${Math.abs(value)}` : "flat");
+      const movers = Object.entries(latest.category_trends || {})
+        .filter(([, trend]) => trend.delta)
+        .sort((a, b) => Math.abs(b[1].delta) - Math.abs(a[1].delta))
+        .slice(0, 2)
+        .map(([category, trend]) => `${category.replaceAll("_", " ")} ${deltaText(trend.delta)}`);
+      trendMessage.textContent =
+        `Compared with ${previous.date}, surfaced evidence is ${direction(evidenceDelta)} and active attention is ${direction(attentionDelta)}.` +
+        (movers.length ? ` Biggest domain moves: ${movers.join(", ")}.` : "");
+    } else {
+      trendMessage.textContent =
+        `${latest.date} used a different report limit than ${previous.date}, so the two scans ` +
+        "are not directly comparable. Counts are shown without a change figure.";
+    }
     trendChart.hidden = false;
   }
   const maxTotal = Math.max(
@@ -513,9 +524,13 @@ function countMapText(values) {
 }
 
 function healthSummary(entries) {
+  // A source that returned nothing still succeeded. Only a failure is not ok,
+  // and an empty run is reported alongside rather than counted as a fault.
   const total = entries.length;
-  const healthy = entries.filter((entry) => entry.ok && entry.item_count > 0).length;
-  return healthy === total ? "all ok" : `${healthy}/${total} ok`;
+  const ok = entries.filter((entry) => entry.ok).length;
+  const empty = entries.filter((entry) => entry.ok && entry.item_count === 0).length;
+  const base = ok === total ? "all ok" : `${ok}/${total} ok`;
+  return empty ? `${base} · ${empty} empty` : base;
 }
 
 function allObservations() {
@@ -826,7 +841,19 @@ async function renderRepoBadges() {
     const repo = await response.json();
     setBadgeCount("badge-stars", repo.stargazers_count);
     setBadgeCount("badge-forks", repo.forks_count);
-    setBadgeCount("badge-issues", repo.open_issues_count);
+    // open_issues_count includes pull requests, so a badge labelled "Issues"
+    // built from it overstates the count and disagrees with the page it links
+    // to. Ask search for issues only, and leave the badge blank if that fails
+    // rather than showing the inflated number.
+    const issues = await fetch(
+      `https://api.github.com/search/issues?q=${encodeURIComponent(
+        `repo:${REPO_SLUG} is:issue is:open`,
+      )}&per_page=1`,
+      { headers: { Accept: "application/vnd.github+json" } },
+    );
+    if (issues.ok) {
+      setBadgeCount("badge-issues", (await issues.json()).total_count);
+    }
   } catch (error) {
     console.debug("Repository badge counts unavailable", error);
   }
