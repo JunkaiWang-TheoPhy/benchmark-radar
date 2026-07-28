@@ -12,10 +12,19 @@ def test_card_text_is_stripped_of_markdown_and_front_matter():
 
 
 def test_card_text_truncates_on_a_sentence_boundary():
-    body = "First sentence is meaningful. " + "padding word " * 60
+    body = "First sentence is meaningful. " + "padding word " * 300
     result = clean_card_text(body)
     assert result.startswith("First sentence is meaningful.")
-    assert len(result) <= 401
+    assert len(result) <= 2_000
+
+
+def test_card_text_preserves_prose_for_inline_expansion():
+    body = " ".join(f"source-word-{index}" for index in range(100))
+
+    result = clean_card_text(body)
+
+    assert len(result) > 400
+    assert "source-word-99" in result
 
 
 def test_empty_card_text_stays_empty():

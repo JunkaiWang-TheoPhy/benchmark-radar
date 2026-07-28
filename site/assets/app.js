@@ -11,7 +11,6 @@ const state = {
   data: null,
   view: "today",
   todayDate: "",
-  date: "",
   q: "",
   kind: "",
   category: "",
@@ -66,14 +65,9 @@ function option(value, label, selected = false) {
 function readUrl() {
   const params = new URLSearchParams(window.location.search);
   const requestedView = params.get("view");
-  state.view = ["today", "trends", "explorer"].includes(requestedView)
-    ? requestedView
-    : "today";
-  if (state.view === "today") {
-    state.todayDate = params.get("date") || "";
-  } else {
-    state.date = params.get("date") || "";
-  }
+  // Legacy Explorer permalinks resolve to the filterable Today list.
+  state.view = requestedView === "trends" ? "trends" : "today";
+  state.todayDate = params.get("date") || "";
   state.q = params.get("q") || "";
   state.kind = params.get("kind") || "";
   state.category = params.get("category") || "";
@@ -84,9 +78,12 @@ function readUrl() {
 function writeUrl() {
   const params = new URLSearchParams();
   if (state.view !== "today") params.set("view", state.view);
-  const activeDate = state.view === "today" ? state.todayDate : state.date;
-  if (activeDate && (state.view !== "today" || activeDate !== state.data?.latest_date)) {
-    params.set("date", activeDate);
+  if (
+    state.view === "today" &&
+    state.todayDate &&
+    state.todayDate !== state.data?.latest_date
+  ) {
+    params.set("date", state.todayDate);
   }
   if (state.q) params.set("q", state.q);
   if (state.kind) params.set("kind", state.kind);
@@ -152,7 +149,13 @@ function scoreBlock(item) {
     element("span", { text: "Priority score" }),
     element("span", { className: "info-mark", text: "i", attrs: { "aria-hidden": "true" } }),
   ]);
-  explain.addEventListener("click", () => openRubric(item));
+  explain.addEventListener("click", (event) => {
+    // The control lives inside a native <summary>; keep rubric access from
+    // also toggling the row.
+    event.preventDefault();
+    event.stopPropagation();
+    openRubric(item);
+  });
   return element("div", { className: "score" }, [
     element("div", { className: "score-value" }, [
       element("strong", { text: score.toFixed(2) }),
@@ -180,83 +183,6 @@ function pillBar(item) {
   return element("div", { className: "pill-bar" }, pills);
 }
 
-function signalCard(item, index) {
-  const title = element("a", {
-    text: item.title,
-    attrs: { href: item.url, target: "_blank", rel: "noopener noreferrer" },
-  });
-  const body = [pillBar(item), element("h3", {}, [title])];
-  // The watchlist note is the one line explaining why this artifact is
-  // tracked by name, so it leads ahead of the upstream description.
-  if (item.watchlist && item.watchlist_note) {
-    body.push(element("p", { className: "signal-tldr", text: item.watchlist_note }));
-  }
-  // An absent description is reported as absent. Filling the gap with a
-  // generated sentence would restate the pills above and tell the reader
-  // nothing about the artifact.
-  if ((item.summary || "").trim()) {
-    body.push(element("p", { text: shorten(item.summary) }));
-  } else {
-    body.push(
-      element("p", {
-        className: "signal-nodesc",
-        text: "No description published at the source.",
-      }),
-    );
-  }
-  // The pill bar already states source and categories, so drop the rationale
-  // entries that only restate them.
-  const rationale = (item.rationale || [])
-    .filter(Boolean)
-    .filter((reason) => !/^(Matched|Primary record):/.test(reason));
-  if (rationale.length) {
-    body.push(
-      element("p", {
-        className: "signal-why",
-        text: `Why surfaced: ${rationale.join("; ")}`,
-      }),
-    );
-  }
-  return element("article", { className: "signal-card" }, [
-    element("div", { className: "signal-rank", text: String(index + 1).padStart(2, "0") }),
-    element("div", {}, body),
-    scoreBlock(item),
-  ]);
-}
-
-function attentionCard(item) {
-  const details = element("button", {
-    className: "detail-button",
-    text: "View signal",
-    attrs: { type: "button" },
-  });
-  details.addEventListener("click", () =>
-    openDetails({ ...item, snapshot_date: state.todayDate, observation_kind: "attention" }),
-  );
-  return element("article", { className: "explorer-card attention-card" }, [
-    element("div", {}, [
-      element("div", { className: "signal-meta" }, [
-        element("span", { className: "attention-badge", text: "attention" }),
-        element("span", { text: `${item.source} · ${item.event_kind}` }),
-      ]),
-      element("h3", {}, [
-        element("a", {
-          text: item.title,
-          attrs: {
-            href: item.primary_artifact_url || item.url,
-            target: "_blank",
-            rel: "noopener noreferrer",
-          },
-        }),
-      ]),
-      element("p", {
-        text: `${metricLabel(item.metrics?.points, "point")} · ${metricLabel(item.metrics?.comments, "comment")} · ${metricLabel(item.metrics?.submissions ?? 1, "submission")}`,
-      }),
-    ]),
-    details,
-  ]);
-}
-
 function definition(label, value) {
   return element("div", {}, [
     element("dt", { text: label }),
@@ -270,21 +196,23 @@ function renderToday() {
   state.todayDate = day.date;
   byId("today-date").value = day.date;
 
-  byId("today-count").textContent = `${day.evidence_count} records`;
+  syncFilters();
+  const observations = filteredObservations();
+  const evidenceCount = observations.filter(
+    (item) => item.observation_kind === "evidence",
+  ).length;
+  const attentionCount = observations.length - evidenceCount;
+  byId("today-count").textContent =
+    `${observations.length} result${observations.length === 1 ? "" : "s"} · ` +
+    `${evidenceCount} evidence · ${attentionCount} attention`;
   replaceChildren(
     byId("today-list"),
-    day.evidence_items.map((item, index) => signalCard(item, index)),
-  );
-  byId("today-attention-count").textContent =
-    `${day.attention.active_count} active · ${day.attention.new_count} new`;
-  replaceChildren(
-    byId("today-attention-list"),
-    day.attention.observations.length
-      ? day.attention.observations.map(attentionCard)
+    observations.length
+      ? observations.map(observationCard)
       : [
           element("p", {
             className: "empty-state",
-            text: "No persisted attention observations for this snapshot.",
+            text: "No observations match these filters. Clear one or more filters to widen the view.",
           }),
         ],
   );
@@ -602,12 +530,6 @@ function syncFilters() {
     state.kind,
   );
   populateSelect(
-    byId("date-filter"),
-    [...new Set(observations.map((item) => item.snapshot_date))].sort().reverse(),
-    "dates",
-    state.date,
-  );
-  populateSelect(
     byId("category-filter"),
     [...new Set(observations.flatMap((item) => item.categories || []))].sort(),
     "categories",
@@ -633,7 +555,7 @@ function filteredObservations() {
   return allObservations().filter((item) => {
     const haystack = `${item.title} ${item.summary} ${item.source}`.toLowerCase();
     return (
-      (!state.date || item.snapshot_date === state.date) &&
+      item.snapshot_date === state.todayDate &&
       (!state.kind || item.observation_kind === state.kind) &&
       (!state.category || (item.categories || []).includes(state.category)) &&
       (!state.source || item.source === state.source) &&
@@ -759,7 +681,7 @@ function openRubric(item = null) {
   dialog.showModal();
 }
 
-function openDetails(item) {
+function expandedRecord(item) {
   const isAttention = item.observation_kind === "attention";
   const primaryArtifact = item.primary_artifact_url || item.artifact_urls?.[0];
   const scoreEntries = isAttention
@@ -835,34 +757,19 @@ function openDetails(item) {
       : []),
     element("a", {
       className: isAttention ? "secondary-link" : "primary-link",
-      text: isAttention ? "Open public discussion ↗" : "Open primary source ↗",
+      text: isAttention
+        ? "Open public discussion ↗"
+        : item.source === "Hugging Face"
+          ? "Read full card ↗"
+          : "Open primary source ↗",
       attrs: { href: item.url, target: "_blank", rel: "noopener noreferrer" },
     }),
   ]);
-  // Attention signals are not scored, so the rubric would describe a
-  // calculation that was never applied to them.
-  let rubricLink = null;
-  if (!isAttention && state.data?.rubric) {
-    const button = element("button", {
-      className: "rubric-link",
-      attrs: { type: "button" },
-    }, [
-      element("span", { text: "How is this scored?" }),
-      element("span", { className: "info-mark", text: "i", attrs: { "aria-hidden": "true" } }),
-    ]);
-    // One dialog at a time: showModal() throws on an already-open dialog.
-    button.addEventListener("click", () => {
-      byId("detail-dialog").close();
-      openRubric(item);
-    });
-    rubricLink = button;
-  }
-  replaceChildren(byId("detail-content"), [
+  return element("div", { className: "record-detail" }, [
     element("p", {
       className: "detail-source",
       text: `${item.source} · ${item.event_kind} · ${item.snapshot_date}`,
     }),
-    element("h2", { className: "detail-title", text: item.title, attrs: { id: "detail-title" } }),
     element("p", {
       className: item.summary ? "detail-summary" : "detail-summary signal-nodesc",
       text: item.summary || "No description published at the source.",
@@ -873,7 +780,6 @@ function openDetails(item) {
       { className: "detail-grid" },
       scoreEntries.map(([label, value]) => definition(label, value)),
     ),
-    rubricLink,
     element("h3", { text: "Why surfaced" }),
     rationale,
     supporting,
@@ -887,81 +793,60 @@ function openDetails(item) {
       : null,
     links,
   ]);
-  byId("detail-dialog").showModal();
 }
 
-function explorerCard(item) {
-  const isAttention = item.observation_kind === "attention";
-  const badge =
-    isAttention
-      ? element("span", { className: "attention-badge", text: "attention" })
-      : null;
-  const details = element("button", {
-    className: "detail-button",
-    text: isAttention ? "View signal" : "View evidence",
-    attrs: { type: "button" },
-  });
-  details.addEventListener("click", () => openDetails(item));
-  return element("article", { className: "explorer-card" }, [
-    element("div", {}, [
-      element("div", { className: "signal-meta" }, [
-        badge,
-        element("span", {
-          text: `${item.snapshot_date} · ${item.source} · ${item.event_kind}`,
-        }),
-      ]),
-      element("h3", {}, [
-        element("a", {
-          text: item.title,
-          attrs: {
-            href:
-              isAttention && (item.primary_artifact_url || item.artifact_urls?.[0])
-                ? item.primary_artifact_url || item.artifact_urls[0]
-                : item.url,
-            target: "_blank",
-            rel: "noopener noreferrer",
-          },
-        }),
-      ]),
-      element("p", {
-        text: isAttention
-          ? `${(item.categories || []).join(" · ") || "uncategorized"} · ${metricLabel(item.metrics?.points, "point")} · ${metricLabel(item.metrics?.comments, "comment")} · ${metricLabel(item.metrics?.submissions || 1, "submission")}`
-          : `${(item.categories || []).join(" · ") || "uncategorized"} · ${shorten(item.summary, 140)}`,
-      }),
-    ]),
-    details,
+function attentionActivity(item) {
+  return element("div", { className: "attention-activity" }, [
+    element("strong", { text: metricLabel(item.metrics?.points, "point") }),
+    element("span", { text: metricLabel(item.metrics?.comments, "comment") }),
+    element("span", { text: metricLabel(item.metrics?.submissions ?? 1, "submission") }),
   ]);
 }
 
-function renderExplorer() {
-  syncFilters();
-  const observations = filteredObservations();
-  const evidenceCount = observations.filter(
-    (item) => item.observation_kind === "evidence",
-  ).length;
-  const attentionCount = observations.length - evidenceCount;
-  byId("explorer-count").textContent =
-    `${observations.length} result${observations.length === 1 ? "" : "s"} · ` +
-    `${evidenceCount} evidence · ${attentionCount} attention`;
-  replaceChildren(
-    byId("explorer-list"),
-    observations.length
-      ? observations.map(explorerCard)
-      : [
-          element("p", {
-            className: "empty-state",
-            text: "No observations match these filters. Clear one or more filters to widen the view.",
-          }),
-        ],
+function observationCard(item, index) {
+  const isAttention = item.observation_kind === "attention";
+  const metadata = isAttention
+    ? element("div", { className: "signal-meta" }, [
+        element("span", { className: "attention-badge", text: "attention" }),
+        element("span", { text: `${item.source} · ${item.event_kind}` }),
+      ])
+    : pillBar(item);
+  const summary = (item.summary || "").trim()
+    ? shorten(item.summary)
+    : "No description published at the source.";
+  const header = element("summary", { className: "record-summary" }, [
+    element("span", {
+      className: "signal-rank",
+      text: String(index + 1).padStart(2, "0"),
+    }),
+    element("div", { className: "record-heading" }, [
+      metadata,
+      element("h3", { text: item.title }),
+      ...(item.watchlist && item.watchlist_note
+        ? [element("p", { className: "signal-tldr", text: item.watchlist_note })]
+        : []),
+      element("p", {
+        className: item.summary ? "" : "signal-nodesc",
+        text: isAttention
+          ? `${summary} · ${metricLabel(item.metrics?.points, "point")}`
+          : summary,
+      }),
+    ]),
+    isAttention ? attentionActivity(item) : scoreBlock(item),
+  ]);
+  return element(
+    "details",
+    {
+      className: `record-card${isAttention ? " attention-card" : ""}`,
+    },
+    [header, expandedRecord(item)],
   );
-  writeUrl();
 }
 
 function bindEvents() {
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.addEventListener("click", () => {
       setView(button.dataset.view);
-      if (button.dataset.view === "explorer") renderExplorer();
     });
   });
   byId("today-date").addEventListener("change", (event) => {
@@ -971,24 +856,18 @@ function bindEvents() {
   byId("filters").addEventListener("input", () => {
     state.q = byId("search-filter").value;
     state.kind = byId("kind-filter").value;
-    state.date = byId("date-filter").value;
     state.category = byId("category-filter").value;
     state.source = byId("source-filter").value;
     state.event = byId("event-filter").value;
-    renderExplorer();
+    renderToday();
   });
   byId("clear-filters").addEventListener("click", () => {
     state.q = "";
     state.kind = "";
-    state.date = "";
     state.category = "";
     state.source = "";
     state.event = "";
-    renderExplorer();
-  });
-  byId("dialog-close").addEventListener("click", () => byId("detail-dialog").close());
-  byId("detail-dialog").addEventListener("click", (event) => {
-    if (event.target === byId("detail-dialog")) byId("detail-dialog").close();
+    renderToday();
   });
   byId("rubric-close").addEventListener("click", () => byId("rubric-dialog").close());
   byId("rubric-dialog").addEventListener("click", (event) => {
@@ -1064,7 +943,6 @@ async function initialize() {
     );
     renderToday();
     renderTrends();
-    renderExplorer();
     setView(state.view, false);
     const latest = dailySnapshot(state.data.latest_date);
     // A source that succeeded with zero records is not down: empty and failed
@@ -1077,8 +955,6 @@ async function initialize() {
     byId("status-copy").textContent =
       `${formatDate(latest.date, { dateStyle: "medium" })} · ${latest.evidence_count} records` +
       (failed ? ` · ${failed} source${failed === 1 ? "" : "s"} failed` : "");
-    byId("feed-status").textContent =
-      `${latest.evidence_count} ranked evidence · ${latest.attention.active_count} persisted attention`;
     byId("run-status").querySelector(".status-light").classList.add(
       failed === 0 && empty === 0 ? "ok" : "warning",
     );

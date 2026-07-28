@@ -36,7 +36,9 @@ _MARKDOWN_NOISE = re.compile(
 # YAML front matter in a dataset card is metadata, not description prose.
 _FRONT_MATTER = re.compile(r"\A\s*---.*?\n---\s*", re.DOTALL)
 
-MAX_SUMMARY_CHARS = 400
+# Keep enough upstream prose for useful inline expansion while bounding the
+# static payload. The UI links to the full source/card for anything beyond it.
+MAX_SUMMARY_CHARS = 2_000
 
 
 def clean_card_text(text: str | None) -> str:

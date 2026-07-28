@@ -385,16 +385,43 @@ input {
   color: var(--muted);
 }
 
-.signal-card {
-  display: grid;
-  grid-template-columns: 54px minmax(0, 1fr) 170px;
-  gap: 1.25rem;
-  padding: 1.5rem 0;
+.record-card {
   border-bottom: 1px solid var(--line);
 }
 
-.attention-section-title {
-  margin-top: 3rem;
+.record-summary {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) 170px;
+  gap: 1.25rem;
+  align-items: start;
+  padding: 1.5rem 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.record-summary::-webkit-details-marker {
+  display: none;
+}
+
+.record-card[open] {
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+}
+
+.record-card[open] .record-summary {
+  border-bottom: 1px dashed var(--line);
+}
+
+.record-detail {
+  margin: 0 190px 0 79px;
+  padding: 1.25rem 0 1.75rem;
+}
+
+.record-detail > h3 {
+  margin-top: 1.5rem;
+}
+
+.record-detail .detail-summary {
+  white-space: pre-line;
 }
 
 .section-note,
@@ -408,8 +435,17 @@ input {
 }
 
 .attention-card {
-  padding-inline: 0.8rem;
   background: color-mix(in srgb, #e9dfff 28%, transparent);
+}
+
+.attention-activity {
+  display: grid;
+  gap: 0.25rem;
+  color: #51477f;
+  font-family: var(--utility);
+  font-size: 0.68rem;
+  text-align: right;
+  text-transform: uppercase;
 }
 
 .signal-rank {
@@ -418,8 +454,7 @@ input {
   font-size: 0.78rem;
 }
 
-.signal-card h3,
-.explorer-card h3 {
+.record-card h3 {
   overflow-wrap: anywhere;
   margin: 0.2rem 0 0.55rem;
   font-family: var(--display);
@@ -427,15 +462,7 @@ input {
   line-height: 1.05;
 }
 
-.signal-card h3 a,
-.explorer-card h3 a {
-  color: inherit;
-  text-decoration-thickness: 1px;
-  text-decoration-color: var(--line);
-  text-underline-offset: 4px;
-}
-
-.signal-card p {
+.record-heading p {
   margin-bottom: 0.8rem;
   color: var(--muted);
   font-size: 0.9rem;
@@ -1048,35 +1075,6 @@ td a {
   color: white;
 }
 
-.explorer-title {
-  margin-bottom: 0;
-}
-
-.explorer-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 1.5rem;
-  align-items: center;
-  padding: 1.3rem 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.explorer-card p {
-  margin-bottom: 0;
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-.detail-button {
-  padding: 0.55rem 0.8rem;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--blue-deep);
-  font-family: var(--utility);
-  font-size: 0.67rem;
-  text-transform: uppercase;
-}
-
 .attention-badge {
   display: inline-block;
   margin-right: 0.5rem;
@@ -1352,14 +1350,21 @@ footer {
     font-size: clamp(1.7rem, 7vw, 2.3rem);
   }
 
-  .signal-card {
+  .record-summary {
     grid-template-columns: 36px minmax(0, 1fr);
   }
 
-  .score {
+  .record-summary .score,
+  .record-summary .attention-activity {
     grid-column: 2;
     justify-self: start;
     max-width: 180px;
+    text-align: left;
+  }
+
+  .record-detail {
+    margin: 0 0 0 51px;
+    padding-right: 1rem;
   }
 
   .trend-grid {
@@ -1372,10 +1377,6 @@ footer {
 
   .search-field {
     grid-column: auto;
-  }
-
-  .explorer-card {
-    grid-template-columns: 1fr;
   }
 
   footer {
