@@ -232,3 +232,28 @@ def test_github_pages_round_robin_so_no_query_is_skipped(monkeypatch):
     )
 
     assert sorted(queried) == ["alpha", "beta", "gamma"]
+
+
+def test_github_respects_the_per_source_limit_after_round_robin(monkeypatch):
+    # Every query contributes before the running total is known, so the final
+    # sweep can overshoot; the cap must still hold for the returned records.
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.setattr("benchmark_radar.sources.time.sleep", lambda seconds: None)
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, params=None, headers=None: {
+            "items": [
+                # Unique across query and page so nothing dedupes away.
+                _github_row(ord(params["q"][0]) * 100_000 + params["page"] * 1000 + offset)
+                for offset in range(100)
+            ]
+        },
+    )
+
+    items = fetch_github(
+        {"queries": ["alpha", "beta", "gamma"], "max_requests": 9},
+        datetime(2026, 7, 25, 12, tzinfo=UTC),
+        150,
+    )
+
+    assert len(items) == 150

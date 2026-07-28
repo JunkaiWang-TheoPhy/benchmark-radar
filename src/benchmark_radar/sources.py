@@ -286,7 +286,10 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
                 exhausted.add(index)
         if requests_made >= budget:
             break
-    return list(found.values())
+    # Round-robin can overshoot the per-source cap on its final sweep, since
+    # every query contributes before the total is known. Trim to the most
+    # recently active repositories so `max_items_per_source` stays honest.
+    return sorted(found.values(), key=lambda item: item.published_at, reverse=True)[:limit]
 
 
 def fetch_openalex(config: dict[str, Any], since: datetime, limit: int) -> list[RadarItem]:
