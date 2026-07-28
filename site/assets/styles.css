@@ -192,6 +192,47 @@ th {
   box-shadow: 0 0 0 4px rgb(220 99 63 / 14%);
 }
 
+.masthead-end {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.repo-badges {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.repo-badge {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.32rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  font-family: var(--utility);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.repo-badge:hover,
+.repo-badge:focus-visible {
+  border-color: var(--ink);
+  background: var(--panel);
+}
+
+.repo-badge-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
 .view-nav {
   display: flex;
   align-items: stretch;
@@ -426,6 +467,19 @@ input {
   color: var(--blue-deep);
 }
 
+.pill-watchlist {
+  border-color: var(--gold);
+  background: rgb(201 147 39 / 12%);
+  color: #7d5c14;
+  font-weight: 700;
+}
+
+/* The one line saying why a tracked artifact matters, ahead of upstream prose. */
+.signal-tldr {
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+
 .signal-why {
   margin-bottom: 0;
   color: var(--muted);
@@ -547,6 +601,7 @@ input {
 }
 
 .trend-panel,
+.domain-panel,
 .ledger,
 .method-note,
 .filter-panel {
@@ -556,8 +611,80 @@ input {
 }
 
 .trend-panel,
+.domain-panel,
 .ledger {
   padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.domain-panel {
+  margin-bottom: clamp(1.25rem, 3vw, 2rem);
+}
+
+.domain-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  margin-top: 1rem;
+}
+
+.domain-card {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--line);
+  background: var(--canvas);
+}
+
+.domain-card.is-up {
+  border-top-color: var(--sea);
+}
+
+.domain-card.is-down {
+  border-top-color: var(--orange);
+}
+
+.domain-head {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.domain-head h3 {
+  margin: 0;
+  font-family: var(--utility);
+  font-size: 0.72rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.domain-count {
+  margin: 0.35rem 0 0.65rem;
+  font-family: var(--display);
+  font-size: 2.4rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.domain-stats {
+  display: grid;
+  gap: 0.15rem 0.75rem;
+  grid-template-columns: 1fr auto;
+  margin: 0;
+}
+
+.domain-stats dt {
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.domain-stats dd {
+  margin: 0;
+  font-family: var(--utility);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .legend {
@@ -1000,6 +1127,21 @@ footer {
 
   .run-status {
     display: none;
+  }
+
+  /* Keep the badges reachable on narrow screens, but drop the word so the
+     icon and count still fit beside the wordmark. */
+  .repo-badge-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .repo-badge {
+    padding-inline: 0.5rem;
   }
 
   .view-nav {
