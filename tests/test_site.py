@@ -212,3 +212,36 @@ def test_supporting_attention_provider_is_not_hard_coded():
 
     assert "`${record.source || item.source} #${record.source_id}`" in script
     assert "Hacker News #${record.source_id}" not in script
+
+
+def test_repo_badges_invite_an_action_rather_than_listing_a_roster():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+
+    # Each badge sends the reader somewhere they can act. Linking to
+    # /stargazers, /forks, or the issue list showed them a roster instead.
+    assert 'href="https://github.com/ktwu01/benchmark-radar/fork"' in html
+    assert 'href="https://github.com/ktwu01/benchmark-radar/issues/new"' in html
+    assert 'href="https://github.com/ktwu01/benchmark-radar"' in html
+    assert "/stargazers" not in html
+    assert "benchmark-radar/forks" not in html
+
+    for label in (">Star<", ">Fork<", ">Report<"):
+        assert label in html
+
+    # Starring has no GET endpoint, so the star badge opens the repository and
+    # the reader clicks Star there. Asserting the absence of a fabricated
+    # /star URL keeps a future edit from inventing one that 404s.
+    assert "benchmark-radar/star" not in html
+
+
+def test_badge_accessible_names_state_the_action():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert "BADGE_ACTIONS" in script
+    for fragment in (
+        "Star this repository on GitHub",
+        "Fork this repository on GitHub",
+        "Open a new issue on GitHub",
+    ):
+        assert fragment in script
+    assert 'badge.setAttribute("aria-label"' in script

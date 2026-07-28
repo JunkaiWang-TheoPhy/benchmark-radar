@@ -1182,9 +1182,22 @@ function bindEvents() {
 
 const REPO_SLUG = "ktwu01/benchmark-radar";
 
+// The visible badge reads "★ Star 12", which a screen reader would announce as
+// a bare statistic. The accessible name states the action and keeps the count
+// as context, so the control sounds like the invitation it is.
+const BADGE_ACTIONS = {
+  "badge-stars": (count) => `Star this repository on GitHub. ${count} stars`,
+  "badge-forks": (count) => `Fork this repository on GitHub. ${count} forks`,
+  "badge-issues": (count) => `Open a new issue on GitHub. ${count} issues open`,
+};
+
 function setBadgeCount(id, value) {
-  const node = byId(id)?.querySelector("[data-count]");
-  if (node) node.textContent = Number(value || 0).toLocaleString();
+  const badge = byId(id);
+  const node = badge?.querySelector("[data-count]");
+  if (!node) return;
+  const count = Number(value || 0).toLocaleString();
+  node.textContent = count;
+  badge.setAttribute("aria-label", BADGE_ACTIONS[id](count));
 }
 
 async function renderRepoBadges() {
@@ -1198,10 +1211,10 @@ async function renderRepoBadges() {
     const repo = await response.json();
     setBadgeCount("badge-stars", repo.stargazers_count);
     setBadgeCount("badge-forks", repo.forks_count);
-    // open_issues_count includes pull requests, so a badge labelled "Issues"
-    // built from it overstates the count and disagrees with the page it links
-    // to. Ask search for issues only, and leave the badge blank if that fails
-    // rather than showing the inflated number.
+    // open_issues_count includes pull requests, so building the count from it
+    // overstates how many issues are actually open. Ask search for issues only,
+    // and leave the badge blank if that fails rather than showing the inflated
+    // number.
     const issues = await fetch(
       `https://api.github.com/search/issues?q=${encodeURIComponent(
         `repo:${REPO_SLUG} is:issue is:open`,

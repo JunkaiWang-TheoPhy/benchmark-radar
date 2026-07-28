@@ -22,38 +22,47 @@
         <strong>Benchmark Radar</strong>
       </a>
       <div class="masthead-end">
-        <div class="repo-badges" id="repo-badges" aria-label="Repository activity">
+        <!--
+          Each badge is a call to action, not a link to a roster. Starring has no
+          GET endpoint (GitHub requires an authenticated POST with a CSRF token,
+          so no third-party page can star on a visitor's behalf), so the star
+          badge opens the repo itself, where the Star control is one click away.
+        -->
+        <div class="repo-badges" id="repo-badges" aria-label="Support this repository">
           <a
             class="repo-badge"
             id="badge-stars"
-            href="https://github.com/ktwu01/benchmark-radar/stargazers"
+            href="https://github.com/ktwu01/benchmark-radar"
             target="_blank"
             rel="noopener noreferrer"
+            title="Open the repository and star it"
           >
             <span aria-hidden="true">★</span>
-            <span class="repo-badge-label">Stars</span>
+            <span class="repo-badge-label">Star</span>
             <span class="repo-badge-count" data-count>—</span>
           </a>
           <a
             class="repo-badge"
             id="badge-forks"
-            href="https://github.com/ktwu01/benchmark-radar/forks"
+            href="https://github.com/ktwu01/benchmark-radar/fork"
             target="_blank"
             rel="noopener noreferrer"
+            title="Fork this repository"
           >
             <span aria-hidden="true">⑂</span>
-            <span class="repo-badge-label">Forks</span>
+            <span class="repo-badge-label">Fork</span>
             <span class="repo-badge-count" data-count>—</span>
           </a>
           <a
             class="repo-badge"
             id="badge-issues"
-            href="https://github.com/ktwu01/benchmark-radar/issues"
+            href="https://github.com/ktwu01/benchmark-radar/issues/new"
             target="_blank"
             rel="noopener noreferrer"
+            title="Open a new issue"
           >
             <span aria-hidden="true">◎</span>
-            <span class="repo-badge-label">Issues</span>
+            <span class="repo-badge-label">Report</span>
             <span class="repo-badge-count" data-count>—</span>
           </a>
         </div>
