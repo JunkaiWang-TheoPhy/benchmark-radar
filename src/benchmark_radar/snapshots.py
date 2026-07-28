@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter
 from copy import deepcopy
 from datetime import UTC, datetime
@@ -107,6 +108,16 @@ def _validate_evidence_items(items: Any, *, source: str) -> None:
                     source=source,
                     field=f"evidence item {index} {field}",
                 )
+        if item.get("retrieved_at"):
+            _validate_time(
+                item["retrieved_at"],
+                source=source,
+                field=f"evidence item {index} retrieved_at",
+            )
+        if item.get("raw_payload_hash") and not re.fullmatch(
+            r"sha256:[0-9a-f]{64}", str(item["raw_payload_hash"])
+        ):
+            raise SnapshotError(f"{source}: evidence item {index} raw_payload_hash must use sha256")
 
 
 def _validate_health(values: Any, *, source: str, field: str) -> None:

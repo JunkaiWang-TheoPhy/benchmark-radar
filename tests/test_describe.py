@@ -48,7 +48,7 @@ def test_huggingface_uses_real_card_prose():
     )
 
 
-def test_huggingface_falls_back_to_declared_metadata():
+def test_huggingface_does_not_rewrite_declared_metadata_as_prose():
     row = {
         "description": "",
         "cardData": {
@@ -58,12 +58,7 @@ def test_huggingface_falls_back_to_declared_metadata():
         },
         "tags": ["license:mit", "region:us", "benchmark", "medical"],
     }
-    result = huggingface_summary(row, "org/thing")
-    assert "tasks: question-answering" in result
-    assert "size: 1K<n<10K" in result
-    # Machine-generated namespaces and words the pills already show are excluded.
-    assert "license:mit" not in result
-    assert "region:us" not in result
+    assert huggingface_summary(row, "org/thing") == ""
 
 
 def test_huggingface_returns_empty_when_source_published_nothing():

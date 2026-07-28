@@ -8,9 +8,52 @@ from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from typing import Any
 
-from .describe import github_summary, huggingface_summary
+from .describe import clean_card_text, github_summary, huggingface_summary
 from .http import get_json, get_text
 from .models import RadarItem
+
+
+class ConnectorPayloadError(ValueError):
+    """Raised when a source returns a successful but incompatible payload."""
+
+
+def _payload_dict(payload: Any, source: str) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        raise ConnectorPayloadError(f"{source} returned a non-object payload")
+    return payload
+
+
+def _payload_rows(payload: Any, key: str, source: str) -> list[dict[str, Any]]:
+    parsed = _payload_dict(payload, source)
+    if key not in parsed:
+        raise ConnectorPayloadError(f"{source} response is missing {key}")
+    value = parsed[key]
+    if not isinstance(value, list) or not all(isinstance(row, dict) for row in value):
+        raise ConnectorPayloadError(f"{source} returned invalid {key}")
+    return value
+
+
+def _request_options(config: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "attempts": int(config.get("attempts", 3)),
+        "timeout": float(config.get("timeout_seconds", 30)),
+    }
+
+
+def _openreview_value(content: dict[str, Any], key: str, default: Any = None) -> Any:
+    value = content.get(key, default)
+    if isinstance(value, dict) and "value" in value:
+        return value["value"]
+    return value
+
+
+def _milliseconds(value: Any) -> datetime | None:
+    if value in (None, ""):
+        return None
+    try:
+        return datetime.fromtimestamp(float(value) / 1000, tz=UTC)
+    except (TypeError, ValueError, OSError):
+        return None
 
 
 def _date(value: str | None) -> datetime:
@@ -90,6 +133,8 @@ def _fetch_arxiv_rss(
                 summary=summary,
                 event_kind="updated" if announce_type == "replace" else "released",
                 authors=[author.strip() for author in creators.split(",") if author.strip()],
+                raw={"xml": ET.tostring(entry, encoding="unicode")},
+                parser_version="arxiv-rss/1",
             )
     return sorted(
         found.values(),
@@ -155,6 +200,8 @@ def fetch_arxiv(config: dict[str, Any], since: datetime, limit: int) -> list[Rad
                         summary=summary,
                         event_kind="updated" if updated > published else "released",
                         authors=authors,
+                        raw={"xml": ET.tostring(entry, encoding="unicode")},
+                        parser_version="arxiv-atom/1",
                     )
         except Exception as error:
             atom_error = error
@@ -190,8 +237,8 @@ def fetch_huggingface(config: dict[str, Any], since: datetime, limit: int) -> li
                     "full": "true",
                 },
             )
-            if not isinstance(rows, list):
-                continue
+            if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows):
+                raise ConnectorPayloadError("Hugging Face Hub returned a non-array payload")
             for row in rows:
                 changed = _date(row.get("lastModified") or row.get("createdAt"))
                 if changed < since:
@@ -215,6 +262,7 @@ def fetch_huggingface(config: dict[str, Any], since: datetime, limit: int) -> li
                         "likes": float(row.get("likes") or 0),
                     },
                     raw=row,
+                    parser_version="huggingface-hub/1",
                 )
     return list(found.values())
 
@@ -262,7 +310,7 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
                 },
                 headers=headers,
             )
-            rows = payload.get("items", [])
+            rows = _payload_rows(payload, "items", "GitHub Search")
             for row in rows:
                 changed = _date(row.get("pushed_at") or row.get("updated_at"))
                 if changed < since:
@@ -281,6 +329,7 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
                         "forks": float(row.get("forks_count") or 0),
                     },
                     raw=row,
+                    parser_version="github-search/1",
                 )
             if len(rows) < min(limit, page_size):
                 exhausted.add(index)
@@ -289,6 +338,282 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
     # Round-robin can overshoot the per-source cap on its final sweep, since
     # every query contributes before the total is known. Trim to the most
     # recently active repositories so `max_items_per_source` stays honest.
+    return sorted(found.values(), key=lambda item: item.published_at, reverse=True)[:limit]
+
+
+def fetch_openreview(
+    config: dict[str, Any],
+    since: datetime,
+    limit: int,
+) -> list[RadarItem]:
+    """Fetch recent public conference/workshop submissions from API v2."""
+    found: dict[str, RadarItem] = {}
+    venues = [str(value) for value in config.get("venues", []) if str(value).strip()]
+    page_size = min(1000, max(1, int(config.get("page_size", 250))))
+    budget = max(1, int(config.get("max_requests", len(venues) or 1)))
+    requests_made = 0
+    for venue in venues:
+        offset = 0
+        while requests_made < budget and len(found) < limit:
+            payload = get_json(
+                "https://api2.openreview.net/notes",
+                params={
+                    "venueid": venue,
+                    "limit": min(page_size, limit - len(found)),
+                    "offset": offset,
+                    "sort": "mdate:desc",
+                },
+                **_request_options(config),
+            )
+            requests_made += 1
+            rows = _payload_rows(payload, "notes", "OpenReview")
+            if not rows:
+                break
+            oldest: datetime | None = None
+            for row in rows:
+                content = row.get("content")
+                if not isinstance(content, dict):
+                    raise ConnectorPayloadError("OpenReview note content must be an object")
+                note_id = str(row.get("forum") or row.get("id") or "").strip()
+                title = str(_openreview_value(content, "title", "") or "").strip()
+                created = _milliseconds(row.get("cdate") or row.get("pdate"))
+                modified = _milliseconds(row.get("mdate")) or created
+                activity = modified or created
+                if not note_id or not title or not created or not activity:
+                    continue
+                oldest = min(oldest or activity, activity)
+                if activity < since:
+                    continue
+                abstract = str(_openreview_value(content, "abstract", "") or "").strip()
+                authors = _openreview_value(content, "authors", []) or []
+                if isinstance(authors, str):
+                    authors = [authors]
+                if not isinstance(authors, list):
+                    raise ConnectorPayloadError("OpenReview authors must be an array")
+                artifact_urls = []
+                for key in ("code", "dataset", "project", "supplementary_material"):
+                    value = _openreview_value(content, key)
+                    values = value if isinstance(value, list) else [value]
+                    artifact_urls.extend(
+                        str(url)
+                        for url in values
+                        if isinstance(url, str) and url.startswith(("https://", "http://"))
+                    )
+                found[note_id] = RadarItem(
+                    source="OpenReview",
+                    source_id=note_id,
+                    title=title,
+                    url=f"https://openreview.net/forum?id={note_id}",
+                    published_at=created,
+                    updated_at=modified,
+                    summary=abstract,
+                    event_kind="updated" if modified and modified > created else "released",
+                    authors=[str(author) for author in authors if str(author).strip()],
+                    artifact_urls=sorted(set(artifact_urls)),
+                    raw=row,
+                    parser_version="openreview-api-v2/1",
+                )
+            offset += len(rows)
+            if len(rows) < min(page_size, limit - len(found)) or (
+                oldest is not None and oldest < since
+            ):
+                break
+        if requests_made >= budget or len(found) >= limit:
+            break
+    return sorted(
+        found.values(),
+        key=lambda item: (item.updated_at or item.published_at, item.source_id),
+        reverse=True,
+    )[:limit]
+
+
+def fetch_semantic_scholar(
+    config: dict[str, Any],
+    since: datetime,
+    limit: int,
+) -> list[RadarItem]:
+    """Fetch structured scholarly records with exact external identifiers."""
+    api_key = os.getenv("SEMANTIC_SCHOLAR_API_KEY")
+    headers = {"x-api-key": api_key} if api_key else {}
+    found: dict[str, RadarItem] = {}
+    searches = [str(value) for value in config.get("searches", []) if str(value).strip()]
+    budget = max(1, int(config.get("max_requests", len(searches) or 1)))
+    page_size = min(100, max(1, int(config.get("page_size", 100))))
+    requests_made = 0
+    for search in searches:
+        offset = 0
+        while requests_made < budget and len(found) < limit:
+            payload = get_json(
+                "https://api.semanticscholar.org/graph/v1/paper/search",
+                params={
+                    "query": search,
+                    "publicationDateOrYear": f"{since.date().isoformat()}:",
+                    "offset": offset,
+                    "limit": min(page_size, limit - len(found)),
+                    "fields": (
+                        "paperId,externalIds,url,title,abstract,publicationDate,"
+                        "authors,citationCount,influentialCitationCount,openAccessPdf"
+                    ),
+                },
+                headers=headers,
+                **_request_options(config),
+            )
+            requests_made += 1
+            rows = _payload_rows(payload, "data", "Semantic Scholar")
+            if not rows:
+                break
+            for row in rows:
+                paper_id = str(row.get("paperId") or "").strip()
+                title = str(row.get("title") or "").strip()
+                published_text = row.get("publicationDate")
+                if not paper_id or not title or not published_text:
+                    continue
+                published = _date(str(published_text))
+                if published < since:
+                    continue
+                external = row.get("externalIds") or {}
+                if not isinstance(external, dict):
+                    raise ConnectorPayloadError("Semantic Scholar externalIds must be an object")
+                artifact_urls = []
+                if external.get("DOI"):
+                    artifact_urls.append(f"https://doi.org/{external['DOI']}")
+                if external.get("ArXiv"):
+                    artifact_urls.append(f"https://arxiv.org/abs/{external['ArXiv']}")
+                open_access = row.get("openAccessPdf") or {}
+                if not isinstance(open_access, dict):
+                    raise ConnectorPayloadError("Semantic Scholar openAccessPdf must be an object")
+                if str(open_access.get("url") or "").startswith(("https://", "http://")):
+                    artifact_urls.append(str(open_access["url"]))
+                authors = row.get("authors") or []
+                if not isinstance(authors, list):
+                    raise ConnectorPayloadError("Semantic Scholar authors must be an array")
+                found[paper_id] = RadarItem(
+                    source="Semantic Scholar",
+                    source_id=paper_id,
+                    title=title,
+                    url=str(row.get("url") or f"https://www.semanticscholar.org/paper/{paper_id}"),
+                    published_at=published,
+                    updated_at=published,
+                    summary=str(row.get("abstract") or "").strip(),
+                    event_kind="released",
+                    authors=[
+                        str(author.get("name"))
+                        for author in authors
+                        if isinstance(author, dict) and author.get("name")
+                    ],
+                    artifact_urls=sorted(set(artifact_urls)),
+                    metrics={
+                        "citations": float(row.get("citationCount") or 0),
+                        "influential_citations": float(row.get("influentialCitationCount") or 0),
+                    },
+                    raw=row,
+                    parser_version="semantic-scholar-graph/1",
+                )
+            next_offset = _payload_dict(payload, "Semantic Scholar").get("next")
+            if next_offset is None or len(rows) < min(page_size, limit - len(found)):
+                break
+            try:
+                offset = int(next_offset)
+            except (TypeError, ValueError) as error:
+                raise ConnectorPayloadError(
+                    "Semantic Scholar returned an invalid next offset"
+                ) from error
+        if requests_made >= budget or len(found) >= limit:
+            break
+    return sorted(found.values(), key=lambda item: item.published_at, reverse=True)[:limit]
+
+
+def fetch_github_releases(
+    config: dict[str, Any],
+    since: datetime,
+    limit: int,
+) -> list[RadarItem]:
+    """Fetch published releases from a bounded first-party repository allowlist."""
+    token = os.getenv("GITHUB_TOKEN")
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        **({"Authorization": f"Bearer {token}"} if token else {}),
+    }
+    repositories = [
+        str(value).strip()
+        for value in config.get("repositories", [])
+        if re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", str(value).strip())
+    ]
+    page_size = min(100, max(1, int(config.get("page_size", 30))))
+    max_pages = max(1, int(config.get("max_pages_per_repository", 2)))
+    budget = max(1, int(config.get("max_requests", len(repositories) or 1)))
+    requests_made = 0
+    found: dict[str, RadarItem] = {}
+    for repository in repositories:
+        for page in range(1, max_pages + 1):
+            if requests_made >= budget or len(found) >= limit:
+                break
+            payload = get_json(
+                f"https://api.github.com/repos/{repository}/releases",
+                params={"per_page": min(page_size, limit - len(found)), "page": page},
+                headers=headers,
+                **_request_options(config),
+            )
+            requests_made += 1
+            if not isinstance(payload, list) or not all(isinstance(row, dict) for row in payload):
+                raise ConnectorPayloadError("GitHub Releases returned a non-array payload")
+            if not payload:
+                break
+            oldest: datetime | None = None
+            for row in payload:
+                if row.get("draft"):
+                    continue
+                published_text = row.get("published_at") or row.get("created_at")
+                if not published_text:
+                    continue
+                published = _date(str(published_text))
+                oldest = min(oldest or published, published)
+                if published < since:
+                    continue
+                tag = str(row.get("tag_name") or "").strip()
+                url = str(row.get("html_url") or "").strip()
+                if not tag or not url:
+                    continue
+                author = row.get("author") or {}
+                assets = row.get("assets") or []
+                if not isinstance(assets, list) or not all(
+                    isinstance(asset, dict) for asset in assets
+                ):
+                    raise ConnectorPayloadError("GitHub release assets must be an array")
+                found[f"{repository}@{tag}"] = RadarItem(
+                    source="GitHub Release",
+                    source_id=f"{repository}@{tag}",
+                    title=str(row.get("name") or f"{repository} {tag}").strip(),
+                    url=url,
+                    published_at=published,
+                    updated_at=published,
+                    summary=clean_card_text(row.get("body")),
+                    event_kind="prereleased" if row.get("prerelease") else "released",
+                    authors=(
+                        [str(author["login"])]
+                        if isinstance(author, dict) and author.get("login")
+                        else []
+                    ),
+                    artifact_urls=[f"https://github.com/{repository}"],
+                    metrics={
+                        "downloads": float(
+                            sum(
+                                int(asset.get("download_count") or 0)
+                                for asset in assets
+                                if isinstance(asset, dict)
+                            )
+                        )
+                    },
+                    raw=row,
+                    parser_version="github-releases/1",
+                )
+            if len(payload) < min(page_size, limit - len(found)) or (
+                oldest is not None and oldest < since
+            ):
+                break
+        if requests_made >= budget or len(found) >= limit:
+            break
     return sorted(found.values(), key=lambda item: item.published_at, reverse=True)[:limit]
 
 
@@ -328,6 +653,7 @@ def fetch_openalex(config: dict[str, Any], since: datetime, limit: int) -> list[
                 authors=[author for author in authors if author],
                 metrics={"citations": float(row.get("cited_by_count") or 0)},
                 raw=row,
+                parser_version="openalex-works/1",
             )
     return list(found.values())
 
@@ -362,6 +688,7 @@ def fetch_brave(config: dict[str, Any], since: datetime, limit: int) -> list[Rad
                 summary=" ".join([row.get("description") or "", *row.get("extra_snippets", [])]),
                 event_kind="discovered",
                 raw=row,
+                parser_version="brave-web-search/1",
             )
     return list(found.values())
 
@@ -370,6 +697,9 @@ SOURCE_FETCHERS = {
     "arxiv": fetch_arxiv,
     "huggingface": fetch_huggingface,
     "github": fetch_github,
+    "openreview": fetch_openreview,
+    "semantic_scholar": fetch_semantic_scholar,
+    "github_releases": fetch_github_releases,
     "openalex": fetch_openalex,
     "brave": fetch_brave,
 }

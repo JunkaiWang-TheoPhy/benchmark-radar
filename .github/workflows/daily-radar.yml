@@ -38,6 +38,7 @@ jobs:
       - name: Collect and render
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          SEMANTIC_SCHOLAR_API_KEY: ${{ secrets.SEMANTIC_SCHOLAR_API_KEY }}
           OPENALEX_API_KEY: ${{ secrets.OPENALEX_API_KEY }}
           BRAVE_API_KEY: ${{ secrets.BRAVE_API_KEY }}
         run: benchmark-radar

@@ -22,8 +22,11 @@ Default sources:
 | Source | Required secret | Role |
 |---|---|---|
 | arXiv | No | Primary paper discovery |
+| OpenReview | No | Primary conference and workshop submissions |
 | Hugging Face Hub | No | Dataset repository discovery |
 | GitHub | No in Actions | Code and artifact discovery |
+| GitHub Releases | No in Actions | Curated first-party release discovery |
+| Semantic Scholar | Optional `SEMANTIC_SCHOLAR_API_KEY` | Structured scholarly discovery |
 | OpenAlex | `OPENALEX_API_KEY` | Scholarly metadata enrichment |
 | Brave Search | `BRAVE_API_KEY` | Web and lab-blog discovery |
 
@@ -139,6 +142,7 @@ a score, so the ranking stays explainable.
 Optional repository secrets:
 
 ```text
+SEMANTIC_SCHOLAR_API_KEY
 OPENALEX_API_KEY
 BRAVE_API_KEY
 ```
@@ -172,6 +176,10 @@ must exist; they are created during initial repository setup.
 ## Provenance and limitations
 
 - Every entry links to its discovered primary or structured record.
+- Connector summaries quote upstream abstracts, cards, descriptions, or release
+  notes; a missing upstream description stays empty rather than being synthesized.
+- Evidence records persist retrieval time, parser version, and a SHA-256 raw-payload
+  fingerprint while omitting the raw response itself from public snapshots.
 - Optional-source failures are visible.
 - Persisted snapshots omit raw API payloads and credentials.
 - Public attention feeds are displayed separately and never contribute to quality scores.

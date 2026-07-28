@@ -43,7 +43,9 @@
           "sources",
           "categories",
           "metrics",
-          "metric_deltas"
+          "metric_deltas",
+          "parser_versions",
+          "raw_payload_hashes"
         ],
         "properties": {
           "id": {
@@ -110,6 +112,21 @@
             "additionalProperties": {
               "type": "number"
             }
+          },
+          "parser_versions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "raw_payload_hashes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "uniqueItems": true
           }
         }
       }
@@ -127,6 +144,9 @@
           "event_kind",
           "url",
           "published_at",
+          "retrieved_at",
+          "parser_version",
+          "raw_payload_hash",
           "categories",
           "organizations",
           "metrics"

@@ -103,6 +103,8 @@ def test_snapshot_has_version_and_public_evidence_fields():
     assert snapshot["date"] == "2026-07-27"
     assert snapshot["evidence_items"][0]["event_kind"] == "released"
     assert "raw" not in snapshot["evidence_items"][0]
+    assert snapshot["evidence_items"][0]["parser_version"] == "radar-item/1"
+    assert snapshot["evidence_items"][0]["raw_payload_hash"].startswith("sha256:")
     assert snapshot["attention"]["observations"][0]["quality_scored"] is False
     assert (
         snapshot["attention"]["observations"][0]["supporting_observations"][0]["source"]
@@ -167,6 +169,16 @@ def test_thirty_snapshots_replay_into_one_deterministic_cumulative_entity(tmp_pa
     assert benchmark["persistence_days"] == 30
     assert benchmark["velocity"] == 0
     assert first["corpus"]["aggregates"]["provenance"]["primary_source_rate"] >= 0.9
+    assert all(
+        entity["parser_versions"] and entity["raw_payload_hashes"]
+        for entity in first["corpus"]["entities"]
+    )
+    assert all(
+        observation["retrieved_at"]
+        and observation["parser_version"]
+        and observation["raw_payload_hash"].startswith("sha256:")
+        for observation in first["corpus"]["observations"]
+    )
 
 
 def test_dashboard_publishes_the_rubric_that_scored_its_records(tmp_path):

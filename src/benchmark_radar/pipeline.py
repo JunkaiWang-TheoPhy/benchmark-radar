@@ -268,6 +268,8 @@ def run_pipeline(
             fetched = fetcher(source_config, since, limit)
             fetched_count += len(fetched)
             health.append(SourceHealth(source=source_name, ok=True, item_count=len(fetched)))
+            for item in fetched:
+                item.retrieved_at = item.retrieved_at or now
             if source_name == "arxiv":
                 changed = _apply_arxiv_discovery_state(
                     fetched,

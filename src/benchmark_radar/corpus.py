@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from collections import Counter, defaultdict
 from datetime import UTC, datetime
@@ -117,6 +118,18 @@ def _observation_id(date: str, entity_id: str, item: dict[str, Any]) -> str:
     )
 
 
+def _legacy_payload_hash(item: dict[str, Any]) -> str:
+    """Fingerprint the persisted public projection when the raw hash predates v2."""
+    encoded = json.dumps(
+        item,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    ).encode()
+    return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
+
+
 def _entity(
     entity_id: str,
     entity_type: str,
@@ -138,6 +151,8 @@ def _entity(
         "metrics_latest": {},
         "latest_score": None,
         "_primary_rank": 99,
+        "_parser_versions": set(),
+        "_raw_payload_hashes": set(),
     }
 
 
@@ -153,6 +168,15 @@ def build_corpus(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
         entity["seen_days"].add(date)
         if source:
             entity["sources"].add(source)
+
+    def record_provenance(
+        entity: dict[str, Any],
+        *,
+        parser_version: str,
+        raw_payload_hash: str,
+    ) -> None:
+        entity["_parser_versions"].add(parser_version)
+        entity["_raw_payload_hashes"].add(raw_payload_hash)
 
     def connect(kind: str, source_id: str, target_id: str, date: str) -> None:
         edge_id = _edge_id(kind, source_id, target_id)
@@ -175,12 +199,22 @@ def build_corpus(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
     for snapshot in snapshots:
         date = str(snapshot["date"])
         for item in snapshot["evidence_items"]:
+            parser_version = str(item.get("parser_version") or "legacy-public-projection/1")
+            raw_payload_hash = str(item.get("raw_payload_hash") or _legacy_payload_hash(item))
+            retrieved_at = (
+                item.get("retrieved_at") or snapshot.get("generated_at") or f"{date}T00:00:00+00:00"
+            )
             entity_id = exact_artifact_key(item)
             artifact = entities.setdefault(
                 entity_id,
                 _entity(entity_id, "artifact", str(item["title"]), url=str(item["url"])),
             )
             touch(artifact, date=date, source=str(item["source"]))
+            record_provenance(
+                artifact,
+                parser_version=parser_version,
+                raw_payload_hash=raw_payload_hash,
+            )
             source_rank = PRIMARY_SOURCE_RANK.get(str(item["source"]), 4)
             # A secondary metadata observation must not replace an exact
             # primary artifact as the entity's public label/link.
@@ -209,6 +243,10 @@ def build_corpus(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
                 "url": str(item["url"]),
                 "published_at": str(item["published_at"]),
                 "updated_at": item.get("updated_at"),
+                "discovered_at": item.get("discovered_at"),
+                "retrieved_at": retrieved_at,
+                "parser_version": parser_version,
+                "raw_payload_hash": raw_payload_hash,
                 "categories": sorted(map(str, item.get("categories") or [])),
                 "organizations": sorted(organizations_for_item(item)),
                 "metrics": metrics,
@@ -224,6 +262,11 @@ def build_corpus(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
                 _entity(source_id, "source", source_name),
             )
             touch(source_entity, date=date, source=source_name)
+            record_provenance(
+                source_entity,
+                parser_version=parser_version,
+                raw_payload_hash=raw_payload_hash,
+            )
             connect("FOUND_VIA", entity_id, source_id, date)
 
             for category in observation["categories"]:
@@ -233,6 +276,11 @@ def build_corpus(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
                     _entity(topic_id, "topic", category.replace("_", " ")),
                 )
                 touch(topic, date=date, source=source_name)
+                record_provenance(
+                    topic,
+                    parser_version=parser_version,
+                    raw_payload_hash=raw_payload_hash,
+                )
                 connect("HAS_TOPIC", entity_id, topic_id, date)
 
             for organization in observation["organizations"]:
@@ -242,6 +290,11 @@ def build_corpus(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
                     _entity(organization_id, "organization", organization),
                 )
                 touch(owner, date=date, source=source_name)
+                record_provenance(
+                    owner,
+                    parser_version=parser_version,
+                    raw_payload_hash=raw_payload_hash,
+                )
                 connect("RELEASED_BY", entity_id, organization_id, date)
 
             for author in map(str, item.get("authors") or []):
@@ -251,12 +304,19 @@ def build_corpus(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
                     _entity(person_id, "person", author),
                 )
                 touch(person, date=date, source=source_name)
+                record_provenance(
+                    person,
+                    parser_version=parser_version,
+                    raw_payload_hash=raw_payload_hash,
+                )
                 connect("AUTHORED_BY", entity_id, person_id, date)
 
     entity_observation_counts = Counter(observation["entity_id"] for observation in observations)
     public_entities = []
     for entity in entities.values():
         entity.pop("_primary_rank")
+        parser_versions = sorted(entity.pop("_parser_versions"))
+        raw_payload_hashes = sorted(entity.pop("_raw_payload_hashes"))
         metrics_first = entity.pop("metrics_first")
         metrics_latest = entity.pop("metrics_latest")
         metric_deltas = {
@@ -276,6 +336,8 @@ def build_corpus(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
                     if entity["type"] == "artifact"
                     else len(entity["seen_days"])
                 ),
+                "parser_versions": parser_versions,
+                "raw_payload_hashes": raw_payload_hashes,
             }
         )
     public_edges = [{**edge, "seen_days": sorted(edge["seen_days"])} for edge in edges.values()]
@@ -392,6 +454,13 @@ def validate_corpus(corpus: dict[str, Any]) -> None:
             raise CorpusError(f"{entity['id']}: entity URL must be HTTP(S)")
         if "raw" in entity:
             raise CorpusError(f"{entity['id']}: raw payloads are not public corpus fields")
+        if not entity.get("parser_versions") or not entity.get("raw_payload_hashes"):
+            raise CorpusError(f"{entity['id']}: provenance must be present")
+        if any(
+            not re.fullmatch(r"sha256:[0-9a-f]{64}", str(value))
+            for value in entity["raw_payload_hashes"]
+        ):
+            raise CorpusError(f"{entity['id']}: raw payload hash must use sha256")
     observation_ids: set[str] = set()
     for observation in corpus["observations"]:
         if observation.get("id") in observation_ids:
@@ -404,6 +473,13 @@ def validate_corpus(corpus: dict[str, Any]) -> None:
         datetime.fromisoformat(str(observation["published_at"]).replace("Z", "+00:00")).astimezone(
             UTC
         )
+        datetime.fromisoformat(str(observation["retrieved_at"]).replace("Z", "+00:00")).astimezone(
+            UTC
+        )
+        if not observation.get("parser_version") or not re.fullmatch(
+            r"sha256:[0-9a-f]{64}", str(observation.get("raw_payload_hash") or "")
+        ):
+            raise CorpusError("observation provenance must be present")
     edge_ids: set[str] = set()
     for edge in corpus["edges"]:
         if edge.get("id") in edge_ids:

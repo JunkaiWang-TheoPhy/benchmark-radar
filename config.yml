@@ -111,6 +111,46 @@ sources:
       - '"benchmark dataset" in:name,description,readme'
       - '"data contamination" in:name,description,readme'
 
+  openreview:
+    enabled: true
+    venues:
+      - ICLR.cc/2026/Conference
+      - NeurIPS.cc/2026/Conference
+      - ICML.cc/2026/Conference
+      - ACLweb.org/ACL/2026/Conference
+    page_size: 250
+    max_requests: 4
+    attempts: 3
+    timeout_seconds: 30
+
+  semantic_scholar:
+    enabled: true
+    searches:
+      - large language model benchmark
+      - artificial intelligence evaluation dataset
+      - data contamination benchmark
+    page_size: 100
+    max_requests: 3
+    attempts: 3
+    timeout_seconds: 30
+
+  github_releases:
+    enabled: true
+    repositories:
+      - stanford-crfm/helm
+      - EleutherAI/lm-evaluation-harness
+      - LiveBench/LiveBench
+      - princeton-nlp/SWE-bench
+      - evalplus/evalplus
+      - openai/evals
+      - mlcommons/inference
+      - ARCPrize/ARC-AGI
+    page_size: 30
+    max_pages_per_repository: 1
+    max_requests: 8
+    attempts: 3
+    timeout_seconds: 30
+
   openalex:
     enabled: true
     searches:
