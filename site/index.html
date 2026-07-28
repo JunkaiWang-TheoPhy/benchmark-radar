@@ -19,14 +19,48 @@
         <span class="brand-mark" aria-hidden="true">
           <span></span>
         </span>
-        <span>
-          <strong>Benchmark Radar</strong>
-          <small>Evidence log / UTC</small>
-        </span>
+        <strong>Benchmark Radar</strong>
       </a>
-      <div class="run-status" id="run-status" role="status">
-        <span class="status-light" aria-hidden="true"></span>
-        <span id="status-copy">Loading latest scan</span>
+      <div class="masthead-end">
+        <div class="run-status" id="run-status" role="status">
+          <span class="status-light" aria-hidden="true"></span>
+          <span id="status-copy">Loading latest scan</span>
+        </div>
+        <div class="repo-badges" id="repo-badges" aria-label="Repository activity">
+          <a
+            class="repo-badge"
+            id="badge-stars"
+            href="https://github.com/ktwu01/benchmark-radar/stargazers"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span aria-hidden="true">★</span>
+            <span class="repo-badge-label">Stars</span>
+            <span class="repo-badge-count" data-count>—</span>
+          </a>
+          <a
+            class="repo-badge"
+            id="badge-forks"
+            href="https://github.com/ktwu01/benchmark-radar/forks"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span aria-hidden="true">⑂</span>
+            <span class="repo-badge-label">Forks</span>
+            <span class="repo-badge-count" data-count>—</span>
+          </a>
+          <a
+            class="repo-badge"
+            id="badge-issues"
+            href="https://github.com/ktwu01/benchmark-radar/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span aria-hidden="true">◎</span>
+            <span class="repo-badge-label">Issues</span>
+            <span class="repo-badge-count" data-count>—</span>
+          </a>
+        </div>
       </div>
     </header>
 
@@ -57,9 +91,7 @@
               <h2>Attention signals</h2>
               <span id="today-attention-count"></span>
             </div>
-            <p class="section-note">
-              Public activity is persisted with this UTC snapshot and is never quality-scored.
-            </p>
+            <p class="section-note">Public activity, not quality-scored.</p>
             <div class="explorer-list" id="today-attention-list"></div>
           </div>
           <aside class="health-panel" aria-labelledby="health-heading">
@@ -79,6 +111,18 @@
           </div>
           <p class="heading-note">Counts describe discovery volume, not scientific quality.</p>
         </header>
+
+        <div class="domain-panel">
+          <div class="section-title">
+            <h2 id="domain-heading">New by domain</h2>
+            <span id="domain-date"></span>
+          </div>
+          <p class="section-note">
+            Records surfaced in each domain on the selected scan, against its own recent daily
+            average.
+          </p>
+          <div class="domain-grid" id="domain-grid" aria-labelledby="domain-heading"></div>
+        </div>
 
         <div class="trend-panel">
           <div class="section-title">
@@ -189,8 +233,7 @@
     </dialog>
 
     <footer>
-      <p>Automated discovery and triage—not an endorsement.</p>
-      <p id="build-meta">Schema — · Build —</p>
+      <p id="build-meta">Updated —</p>
     </footer>
   </body>
 </html>

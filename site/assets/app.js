@@ -141,6 +141,9 @@ function scoreBlock(item) {
 
 function pillBar(item) {
   const pills = [
+    ...(item.watchlist
+      ? [element("span", { className: "pill pill-watchlist", text: `★ ${item.watchlist}` })]
+      : []),
     element("span", { className: "pill pill-source", text: item.source }),
     element("span", { className: "pill pill-event", text: item.event_kind }),
     ...(item.categories || []).map((category) =>
@@ -159,6 +162,11 @@ function signalCard(item, index) {
     attrs: { href: item.url, target: "_blank", rel: "noopener noreferrer" },
   });
   const body = [pillBar(item), element("h3", {}, [title])];
+  // The watchlist note is the one line explaining why this artifact is
+  // tracked by name, so it leads ahead of the upstream description.
+  if (item.watchlist && item.watchlist_note) {
+    body.push(element("p", { className: "signal-tldr", text: item.watchlist_note }));
+  }
   // An absent description is reported as absent. Filling the gap with a
   // generated sentence would restate the pills above and tell the reader
   // nothing about the artifact.
@@ -288,6 +296,80 @@ function renderToday() {
   writeUrl();
 }
 
+function deltaText(value) {
+  if (!value) return "no change";
+  return value > 0 ? `+${value}` : String(value);
+}
+
+function domainCard(category, trend, index) {
+  const swatch = element("span", { className: "legend-swatch" });
+  swatch.style.setProperty("--swatch", categoryColor(category, index));
+  // A null delta means the previous scan used a different report limit, so the
+  // two counts are not comparable and no change is claimed.
+  const comparable = trend.delta !== null && trend.delta !== undefined;
+  const delta = comparable ? Number(trend.delta) : 0;
+  const rows = [
+    ["vs previous scan", comparable ? deltaText(delta) : "not comparable"],
+    [
+      "recent daily average",
+      trend.baseline === null || trend.baseline === undefined
+        ? "not enough history"
+        : Number(trend.baseline).toFixed(2),
+    ],
+    ["cumulative", Number(trend.cumulative || 0).toLocaleString()],
+  ];
+  if (trend.momentum !== null && trend.momentum !== undefined) {
+    const percent = Math.round(Number(trend.momentum) * 100);
+    rows.splice(2, 0, ["vs its average", `${percent > 0 ? "+" : ""}${percent}%`]);
+  }
+  return element(
+    "article",
+    {
+      className: `domain-card${!comparable ? "" : delta > 0 ? " is-up" : delta < 0 ? " is-down" : ""}`,
+    },
+    [
+      element("div", { className: "domain-head" }, [
+        swatch,
+        element("h3", { text: category.replaceAll("_", " ") }),
+      ]),
+      element("p", { className: "domain-count", text: String(trend.count ?? 0) }),
+      element(
+        "dl",
+        { className: "domain-stats" },
+        rows.flatMap(([label, value]) => [
+          element("dt", { text: label }),
+          element("dd", { text: value }),
+        ]),
+      ),
+    ],
+  );
+}
+
+function renderDomainMetrics(day) {
+  const grid = byId("domain-grid");
+  if (!grid) return;
+  const trends = day.category_trends || {};
+  const entries = Object.entries(trends).sort(
+    (a, b) => (b[1].count || 0) - (a[1].count || 0) || a[0].localeCompare(b[0]),
+  );
+  byId("domain-date").textContent = formatDate(day.date, { dateStyle: "medium" });
+  replaceChildren(
+    grid,
+    entries.length
+      ? entries.map(([category, trend], index) => domainCard(category, trend, index))
+      : [
+          element("p", {
+            className: "empty-state",
+            text: "No categorized records in this scan.",
+          }),
+        ],
+  );
+}
+
+function sameReportLimit(a, b) {
+  return (a.selection || {}).report_limit === (b.selection || {}).report_limit;
+}
+
 function renderTrends() {
   const categories = state.data.facets.categories;
   replaceChildren(
@@ -310,6 +392,7 @@ function renderTrends() {
       })(),
     ],
   );
+  renderDomainMetrics(state.data.days[state.data.days.length - 1]);
   const dayCount = state.data.days.length;
   const trendMessage = byId("trend-message");
   const trendChart = byId("trend-chart");
@@ -320,17 +403,37 @@ function renderTrends() {
       `Baseline: ${only.evidence_count} evidence records and ${only.attention.active_count} active attention signals.`;
     trendChart.hidden = true;
   } else if (dayCount === 2) {
-    trendMessage.textContent =
-      "Two snapshots are available. The chart shows the first comparable daily change; broader trend language begins with three snapshots.";
+    trendMessage.textContent = sameReportLimit(
+      state.data.days[1],
+      state.data.days[0],
+    )
+      ? "Two snapshots are available. The chart shows the first comparable daily change; broader trend language begins with three snapshots."
+      : "Two snapshots are available, but they used different report limits, so the change between them is not comparable.";
     trendChart.hidden = false;
   } else {
     const latest = state.data.days[dayCount - 1];
     const previous = state.data.days[dayCount - 2];
-    const evidenceDelta = latest.evidence_count - previous.evidence_count;
-    const attentionDelta = latest.attention.active_count - previous.attention.active_count;
-    const direction = (value) => (value > 0 ? `up ${value}` : value < 0 ? `down ${Math.abs(value)}` : "flat");
-    trendMessage.textContent =
-      `Compared with ${previous.date}, surfaced evidence is ${direction(evidenceDelta)} and active attention is ${direction(attentionDelta)}.`;
+    // Raising the report limit lifts every count at once. Announcing that as
+    // movement would report a collection-policy change as a change in field,
+    // so the same gate the domain cards use applies to this sentence.
+    const comparable = sameReportLimit(latest, previous);
+    if (comparable) {
+      const evidenceDelta = latest.evidence_count - previous.evidence_count;
+      const attentionDelta = latest.attention.active_count - previous.attention.active_count;
+      const direction = (value) => (value > 0 ? `up ${value}` : value < 0 ? `down ${Math.abs(value)}` : "flat");
+      const movers = Object.entries(latest.category_trends || {})
+        .filter(([, trend]) => trend.delta)
+        .sort((a, b) => Math.abs(b[1].delta) - Math.abs(a[1].delta))
+        .slice(0, 2)
+        .map(([category, trend]) => `${category.replaceAll("_", " ")} ${deltaText(trend.delta)}`);
+      trendMessage.textContent =
+        `Compared with ${previous.date}, surfaced evidence is ${direction(evidenceDelta)} and active attention is ${direction(attentionDelta)}.` +
+        (movers.length ? ` Biggest domain moves: ${movers.join(", ")}.` : "");
+    } else {
+      trendMessage.textContent =
+        `${latest.date} used a different report limit than ${previous.date}, so the two scans ` +
+        "are not directly comparable. Counts are shown without a change figure.";
+    }
     trendChart.hidden = false;
   }
   const maxTotal = Math.max(
@@ -428,10 +531,13 @@ function countMapText(values) {
 }
 
 function healthSummary(entries) {
-  const nonempty = entries.filter((entry) => entry.ok && entry.item_count > 0).length;
+  // A source that returned nothing still succeeded. Only a failure is not ok,
+  // and an empty run is reported alongside rather than counted as a fault.
+  const total = entries.length;
+  const ok = entries.filter((entry) => entry.ok).length;
   const empty = entries.filter((entry) => entry.ok && entry.item_count === 0).length;
-  const failed = entries.filter((entry) => !entry.ok).length;
-  return `${nonempty} nonempty · ${empty} empty · ${failed} failed`;
+  const base = ok === total ? "all ok" : `${ok}/${total} ok`;
+  return empty ? `${base} · ${empty} empty` : base;
 }
 
 function allObservations() {
@@ -724,9 +830,47 @@ function bindEvents() {
   });
 }
 
+const REPO_SLUG = "ktwu01/benchmark-radar";
+
+function setBadgeCount(id, value) {
+  const node = byId(id)?.querySelector("[data-count]");
+  if (node) node.textContent = Number(value || 0).toLocaleString();
+}
+
+async function renderRepoBadges() {
+  // Counts are decoration: the badges link out and stay usable if this fails,
+  // so a rate-limited API must never surface as an error state.
+  try {
+    const response = await fetch(`https://api.github.com/repos/${REPO_SLUG}`, {
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (!response.ok) return;
+    const repo = await response.json();
+    setBadgeCount("badge-stars", repo.stargazers_count);
+    setBadgeCount("badge-forks", repo.forks_count);
+    // open_issues_count includes pull requests, so a badge labelled "Issues"
+    // built from it overstates the count and disagrees with the page it links
+    // to. Ask search for issues only, and leave the badge blank if that fails
+    // rather than showing the inflated number.
+    const issues = await fetch(
+      `https://api.github.com/search/issues?q=${encodeURIComponent(
+        `repo:${REPO_SLUG} is:issue is:open`,
+      )}&per_page=1`,
+      { headers: { Accept: "application/vnd.github+json" } },
+    );
+    if (issues.ok) {
+      setBadgeCount("badge-issues", (await issues.json()).total_count);
+    }
+  } catch (error) {
+    console.debug("Repository badge counts unavailable", error);
+  }
+}
+
 async function initialize() {
   readUrl();
   bindEvents();
+  // Independent of the data file, so badges still render on an error state.
+  renderRepoBadges();
   try {
     const response = await fetch("data/radar.json", { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -754,25 +898,25 @@ async function initialize() {
     renderExplorer();
     setView(state.view, false);
     const latest = dailySnapshot(state.data.latest_date);
-    const nonempty = latest.ingest_health.filter(
-      (entry) => entry.ok && entry.item_count > 0,
-    ).length;
+    // A source that succeeded with zero records is not down: empty and failed
+    // are distinct states everywhere else, so only failures are called out.
+    const failed = latest.ingest_health.filter((entry) => !entry.ok).length;
     const empty = latest.ingest_health.filter(
       (entry) => entry.ok && entry.item_count === 0,
     ).length;
-    const failed = latest.ingest_health.filter((entry) => !entry.ok).length;
+    // Report what the reader gets, and mention plumbing only when it broke.
     byId("status-copy").textContent =
-      `Latest ${latest.date} · ${nonempty} nonempty · ${empty} empty · ${failed} failed`;
+      `${formatDate(latest.date, { dateStyle: "medium" })} · ${latest.evidence_count} records` +
+      (failed ? ` · ${failed} source${failed === 1 ? "" : "s"} failed` : "");
     byId("feed-status").textContent =
       `${latest.evidence_count} ranked evidence · ${latest.attention.active_count} persisted attention`;
     byId("run-status").querySelector(".status-light").classList.add(
-      empty === 0 && failed === 0 ? "ok" : "warning",
+      failed === 0 && empty === 0 ? "ok" : "warning",
     );
-    byId("build-meta").textContent =
-      `Schema ${state.data.schema_version} · Build ${formatDate(state.data.generated_at, {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })} UTC`;
+    byId("build-meta").textContent = `Updated ${formatDate(state.data.generated_at, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    })} UTC`;
   } catch (error) {
     document.querySelectorAll(".view").forEach((section) => {
       section.hidden = true;

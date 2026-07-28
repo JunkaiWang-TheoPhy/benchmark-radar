@@ -4,6 +4,7 @@ import pytest
 
 from benchmark_radar.models import RadarItem
 from benchmark_radar.pipeline import (
+    apply_watchlist,
     assert_no_boilerplate_summaries,
     canonical_url,
     deduplicate,
@@ -11,6 +12,11 @@ from benchmark_radar.pipeline import (
     run_pipeline,
     score_item,
 )
+
+WATCHLIST = [
+    {"name": "MLE-bench", "aliases": ["mlebench", "mle-bench"], "note": "ML engineering tasks."},
+    {"name": "PaperBench", "aliases": ["paperbench"], "note": "Paper replication."},
+]
 
 
 def item(**overrides):
@@ -86,6 +92,172 @@ def test_boilerplate_summary_cannot_earn_relevance():
         datetime(2026, 7, 27, 1, tzinfo=UTC),
     )
     assert "dataset" not in bare.categories
+
+
+def test_watchlist_matches_aliases_across_fields():
+    by_title = item(title="PaperBench: replicating research")
+    by_source_id = item(source="GitHub", source_id="openai/mle-bench", title="openai/mle-bench")
+    unrelated = item(title="An unrelated corpus release")
+
+    tagged = apply_watchlist([by_title, by_source_id, unrelated], WATCHLIST)
+
+    assert [record.watchlist for record in tagged] == ["PaperBench", "MLE-bench", None]
+    assert tagged[0].watchlist_note == "Paper replication."
+    assert "Watchlist: PaperBench" in tagged[0].rationale
+
+
+def test_watchlist_ignores_passing_mentions_in_the_summary():
+    # A watchlisted name inside an abstract is related work, not a release.
+    mention = item(
+        title="A survey of agent evaluation practice",
+        summary="We compare against PaperBench and other suites.",
+    )
+
+    assert apply_watchlist([mention], WATCHLIST)[0].watchlist is None
+
+
+def test_watchlist_matches_on_word_boundaries_and_separators():
+    spaced = item(title="MLE bench results", source_id="a/b")
+    underscored = item(title="mle_bench harness", source_id="a/c")
+    embedded = item(title="Nonmlebenchmarking of models", source_id="a/d")
+
+    tagged = apply_watchlist([spaced, underscored, embedded], WATCHLIST)
+
+    assert [record.watchlist for record in tagged] == ["MLE-bench", "MLE-bench", None]
+
+
+def test_watchlist_does_not_alter_scores():
+    taxonomy = {"benchmark": ["benchmark"]}
+    scored = score_item(item(title="PaperBench"), taxonomy, datetime(2026, 7, 27, tzinfo=UTC))
+    before = scored.total_score
+
+    apply_watchlist([scored], WATCHLIST)
+
+    assert scored.watchlist == "PaperBench"
+    assert scored.total_score == before
+
+
+def test_watchlist_record_publishes_below_threshold(monkeypatch):
+    # Named artifacts are published even when the generic score would drop them.
+    tracked = item(title="mlebench release", summary="", source="GitHub", source_id="o/mlebench")
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "github",
+        lambda config, since, limit: [tracked],
+    )
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 99,
+        },
+        "taxonomy": {"benchmark": ["benchmark"]},
+        "sources": {"github": {"enabled": True, "required": True}},
+        "watchlist": WATCHLIST,
+    }
+
+    run = run_pipeline(config, datetime(2026, 7, 27, tzinfo=UTC))
+
+    assert [record.watchlist for record in run.items] == ["MLE-bench"]
+
+
+def test_selection_counts_expose_the_published_gap(monkeypatch):
+    records = [
+        item(
+            source="GitHub",
+            source_id=f"org/repo{index}",
+            title=f"A distinct benchmark repository number {index}",
+            url=f"https://github.com/org/repo{index}",
+            summary=f"Benchmark suite number {index} for language model evaluation.",
+        )
+        for index in range(5)
+    ]
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "github",
+        lambda config, since, limit: records,
+    )
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 2,
+            "minimum_score": 0,
+        },
+        "taxonomy": {"benchmark": ["benchmark"]},
+        "sources": {"github": {"enabled": True, "required": True}},
+    }
+
+    run = run_pipeline(config, datetime(2026, 7, 27, tzinfo=UTC))
+
+    assert run.selection["fetched"] == 5
+    assert run.selection["qualified"] == 5
+    assert run.selection["published"] == 2
+    assert len(run.items) == 2
+
+
+def test_funnel_counts_suppressed_arxiv_records_as_fetched(monkeypatch):
+    # Source health counts these as fetched, so the funnel must agree rather
+    # than reporting zero for a source that plainly returned records.
+    seen = item(source_id="2607.12345", updated_at=datetime(2026, 7, 26, 18, tzinfo=UTC))
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "arxiv",
+        lambda config, since, limit: [seen],
+    )
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 0,
+        },
+        "taxonomy": {"benchmark": ["benchmark"]},
+        "sources": {"arxiv": {"enabled": True, "required": True}},
+    }
+    previous = {
+        "discovery_state": {
+            "arxiv": {
+                "2607.12345": {
+                    "discovered_at": "2026-07-26T19:00:00+00:00",
+                    "last_activity_at": "2026-07-26T18:00:00+00:00",
+                }
+            }
+        }
+    }
+
+    run = run_pipeline(config, datetime(2026, 7, 27, tzinfo=UTC), previous_snapshot=previous)
+
+    assert run.items == []
+    assert run.health[0].item_count == 1
+    assert run.selection["fetched"] == 1
+    assert run.selection["suppressed_as_seen"] == 1
+
+
+def test_funnel_names_watchlist_bypasses_separately(monkeypatch):
+    tracked = item(title="mlebench release", summary="", source="GitHub", source_id="o/mlebench")
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "github",
+        lambda config, since, limit: [tracked],
+    )
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 99,
+        },
+        "taxonomy": {"benchmark": ["benchmark"]},
+        "sources": {"github": {"enabled": True, "required": True}},
+        "watchlist": WATCHLIST,
+    }
+
+    run = run_pipeline(config, datetime(2026, 7, 27, tzinfo=UTC))
+
+    assert run.selection["qualified"] == 1
+    assert run.selection["watchlisted"] == 1
 
 
 def test_every_required_source_must_return_records(monkeypatch):

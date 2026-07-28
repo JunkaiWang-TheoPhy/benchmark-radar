@@ -60,8 +60,13 @@ def main() -> None:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.json_output.parent.mkdir(parents=True, exist_ok=True)
     dashboard_url = config.get("publish", {}).get("dashboard_url")
+    issue_item_limit = config.get("radar", {}).get("issue_item_limit")
     args.output.write_text(
-        render_markdown(run, dashboard_url=dashboard_url),
+        render_markdown(
+            run,
+            dashboard_url=dashboard_url,
+            issue_item_limit=int(issue_item_limit) if issue_item_limit else None,
+        ),
         encoding="utf-8",
     )
     args.json_output.write_text(
@@ -77,6 +82,7 @@ def main() -> None:
                     health.to_dict() for health in [*run.health, *run.attention_ingest_health]
                 ],
                 "producer_health": [health.to_dict() for health in run.producer_health],
+                "selection": run.selection,
             },
             indent=2,
             ensure_ascii=False,

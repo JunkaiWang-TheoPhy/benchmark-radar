@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from urllib.error import HTTPError
 
-from benchmark_radar.sources import fetch_arxiv
+from benchmark_radar.sources import fetch_arxiv, fetch_github
 
 ARXIV_XML = """\
 <feed xmlns="http://www.w3.org/2005/Atom">
@@ -109,3 +109,151 @@ def test_arxiv_can_use_official_rss_as_primary(monkeypatch):
     )
 
     assert [item.source_id for item in items] == ["2607.54321"]
+
+
+def _github_row(index: int) -> dict:
+    return {
+        "full_name": f"org/repo{index}",
+        "html_url": f"https://github.com/org/repo{index}",
+        "pushed_at": "2026-07-27T00:00:00Z",
+        "created_at": "2026-07-27T00:00:00Z",
+        "description": f"Benchmark suite {index}",
+        "stargazers_count": index,
+        "forks_count": 0,
+    }
+
+
+def test_github_pages_past_the_hundred_row_search_limit(monkeypatch):
+    # The search API caps a response at 100 rows, so a single request silently
+    # dropped everything beyond it whenever a query matched more.
+    monkeypatch.setattr("benchmark_radar.sources.time.sleep", lambda seconds: None)
+    requested_pages = []
+
+    def fake_get_json(url, params=None, headers=None):
+        requested_pages.append(params["page"])
+        start = (params["page"] - 1) * 100
+        if start >= 150:
+            return {"items": []}
+        return {"items": [_github_row(start + offset) for offset in range(min(100, 150 - start))]}
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+
+    items = fetch_github(
+        {"queries": ["benchmark"]},
+        datetime(2026, 7, 25, 12, tzinfo=UTC),
+        300,
+    )
+
+    assert requested_pages == [1, 2]
+    assert len(items) == 150
+
+
+def test_github_stops_paging_once_a_page_is_short(monkeypatch):
+    monkeypatch.setattr("benchmark_radar.sources.time.sleep", lambda seconds: None)
+    calls = []
+
+    def fake_get_json(url, params=None, headers=None):
+        calls.append(params["page"])
+        return {"items": [_github_row(0)]}
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+
+    items = fetch_github(
+        {"queries": ["benchmark"]},
+        datetime(2026, 7, 25, 12, tzinfo=UTC),
+        300,
+    )
+
+    assert calls == [1]
+    assert len(items) == 1
+
+
+def test_github_bounds_total_requests_when_unauthenticated(monkeypatch):
+    # Search allows ~10 requests/minute without a token. Paging every query to
+    # exhaustion tripped a 403, which fails a required source and aborts the run.
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.setattr("benchmark_radar.sources.time.sleep", lambda seconds: None)
+    calls = []
+
+    def fake_get_json(url, params=None, headers=None):
+        calls.append(params["page"])
+        # Rows repeat across queries, so the per-source limit is never reached
+        # and only the request budget can stop the walk.
+        return {"items": [_github_row(offset) for offset in range(100)]}
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+
+    fetch_github(
+        {"queries": ["a", "b", "c", "d"], "max_requests": 8},
+        datetime(2026, 7, 25, 12, tzinfo=UTC),
+        1000,
+    )
+
+    assert len(calls) == 8
+
+
+def test_github_spaces_unauthenticated_requests(monkeypatch):
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    delays = []
+    monkeypatch.setattr("benchmark_radar.sources.time.sleep", delays.append)
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, params=None, headers=None: {
+            "items": [_github_row(offset) for offset in range(100)]
+        },
+    )
+
+    fetch_github(
+        {"queries": ["a"], "max_requests": 3},
+        datetime(2026, 7, 25, 12, tzinfo=UTC),
+        300,
+    )
+
+    assert delays and all(delay > 0 for delay in delays)
+
+
+def test_github_pages_round_robin_so_no_query_is_skipped(monkeypatch):
+    # Draining the first query to the source limit spent the whole budget on
+    # it and never issued the other configured searches, dropping whole topics.
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.setattr("benchmark_radar.sources.time.sleep", lambda seconds: None)
+    queried = []
+
+    def fake_get_json(url, params=None, headers=None):
+        queried.append(params["q"].split(" pushed")[0])
+        return {"items": [_github_row(offset) for offset in range(100)]}
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+
+    fetch_github(
+        {"queries": ["alpha", "beta", "gamma"], "max_requests": 3},
+        datetime(2026, 7, 25, 12, tzinfo=UTC),
+        300,
+    )
+
+    assert sorted(queried) == ["alpha", "beta", "gamma"]
+
+
+def test_github_respects_the_per_source_limit_after_round_robin(monkeypatch):
+    # Every query contributes before the running total is known, so the final
+    # sweep can overshoot; the cap must still hold for the returned records.
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.setattr("benchmark_radar.sources.time.sleep", lambda seconds: None)
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, params=None, headers=None: {
+            "items": [
+                # Unique across query and page so nothing dedupes away.
+                _github_row(ord(params["q"][0]) * 100_000 + params["page"] * 1000 + offset)
+                for offset in range(100)
+            ]
+        },
+    )
+
+    items = fetch_github(
+        {"queries": ["alpha", "beta", "gamma"], "max_requests": 9},
+        datetime(2026, 7, 25, 12, tzinfo=UTC),
+        150,
+    )
+
+    assert len(items) == 150

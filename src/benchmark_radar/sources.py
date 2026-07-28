@@ -190,6 +190,8 @@ def fetch_huggingface(config: dict[str, Any], since: datetime, limit: int) -> li
                     "full": "true",
                 },
             )
+            if not isinstance(rows, list):
+                continue
             for row in rows:
                 changed = _date(row.get("lastModified") or row.get("createdAt"))
                 if changed < since:
@@ -222,37 +224,72 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
     headers = {"Authorization": f"Bearer {token}"} if token else {}
     found: dict[str, RadarItem] = {}
     date_filter = since.date().isoformat()
-    for query in config.get("queries", []):
-        payload = get_json(
-            "https://api.github.com/search/repositories",
-            params={
-                "q": f"{query} pushed:>={date_filter}",
-                "sort": "updated",
-                "order": "desc",
-                "per_page": min(limit, 100),
-            },
-            headers=headers,
-        )
-        for row in payload.get("items", []):
-            changed = _date(row.get("pushed_at") or row.get("updated_at"))
-            if changed < since:
+    # The search API returns at most 100 rows per request, so a bare
+    # `per_page=limit` silently truncates any query that matches more. Page
+    # until the query is exhausted or the per-source limit is reached.
+    page_size = 100
+    max_pages = max(1, -(-limit // page_size))
+    # Search is rate-limited to 10 requests/minute unauthenticated and 30
+    # authenticated. Paging every query to exhaustion can exceed that and
+    # trip a 403, which fails a required source and aborts the whole run, so
+    # bound the total requests and space them out when running tokenless.
+    queries = list(config.get("queries", []))
+    budget = int(config.get("max_requests", 30 if token else 8))
+    delay = float(config.get("request_delay_seconds", 0 if token else 6.5))
+    requests_made = 0
+    # Page round-robin rather than query-by-query. Draining the first query to
+    # the source limit would spend the whole budget on it and never issue the
+    # evaluation, dataset and contamination searches at all, quietly dropping
+    # entire topics from the scan.
+    exhausted: set[int] = set()
+    for page in range(1, max_pages + 1):
+        if len(exhausted) == len(queries):
+            break
+        for index, query in enumerate(queries):
+            if index in exhausted or requests_made >= budget:
                 continue
-            full_name = row["full_name"]
-            found[full_name] = RadarItem(
-                source="GitHub",
-                source_id=full_name,
-                title=full_name,
-                url=row["html_url"],
-                published_at=changed,
-                summary=github_summary(row),
-                event_kind=("released" if _date(row.get("created_at")) >= since else "updated"),
-                metrics={
-                    "stars": float(row.get("stargazers_count") or 0),
-                    "forks": float(row.get("forks_count") or 0),
+            if requests_made and delay > 0:
+                time.sleep(delay)
+            requests_made += 1
+            payload = get_json(
+                "https://api.github.com/search/repositories",
+                params={
+                    "q": f"{query} pushed:>={date_filter}",
+                    "sort": "updated",
+                    "order": "desc",
+                    "per_page": min(limit, page_size),
+                    "page": page,
                 },
-                raw=row,
+                headers=headers,
             )
-    return list(found.values())
+            rows = payload.get("items", [])
+            for row in rows:
+                changed = _date(row.get("pushed_at") or row.get("updated_at"))
+                if changed < since:
+                    continue
+                full_name = row["full_name"]
+                found[full_name] = RadarItem(
+                    source="GitHub",
+                    source_id=full_name,
+                    title=full_name,
+                    url=row["html_url"],
+                    published_at=changed,
+                    summary=github_summary(row),
+                    event_kind=("released" if _date(row.get("created_at")) >= since else "updated"),
+                    metrics={
+                        "stars": float(row.get("stargazers_count") or 0),
+                        "forks": float(row.get("forks_count") or 0),
+                    },
+                    raw=row,
+                )
+            if len(rows) < min(limit, page_size):
+                exhausted.add(index)
+        if requests_made >= budget:
+            break
+    # Round-robin can overshoot the per-source cap on its final sweep, since
+    # every query contributes before the total is known. Trim to the most
+    # recently active repositories so `max_items_per_source` stays honest.
+    return sorted(found.values(), key=lambda item: item.published_at, reverse=True)[:limit]
 
 
 def fetch_openalex(config: dict[str, Any], since: datetime, limit: int) -> list[RadarItem]:

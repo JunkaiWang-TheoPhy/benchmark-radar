@@ -86,6 +86,32 @@ pytest -q
 Edit [`config.yml`](config.yml) to change the lookback, threshold, queries, taxonomy, and
 report size. Copy `.env.example` to `.env` only for local use; never commit credentials.
 
+Record volume is controlled by three separate keys, so the daily Issue stays readable
+without discarding the corpus behind it:
+
+| Key | Effect |
+|---|---|
+| `max_items_per_source` | Upper bound on records fetched from each source |
+| `report_limit` | Records scored, snapshotted, and published to the dashboard |
+| `issue_item_limit` | Records written into the daily Issue body |
+
+Every run records its own drop-off (`fetched → deduplicated → qualified → published`) in
+the snapshot and at the top of the Issue, so the gap between what a source returned and
+what was published is always auditable.
+
+GitHub search is rate-limited to 10 requests per minute without a token and 30 with one,
+so pagination is bounded by `sources.github.max_requests` and spaced by
+`request_delay_seconds`. Both default by whether `GITHUB_TOKEN` is present; raising
+`max_items_per_source` well beyond the defaults on a tokenless run risks a 403.
+
+Trend comparisons only run between snapshots collected under the same `report_limit`.
+Changing the cap lifts every count at once, and reporting that as domain momentum would
+present a change in collection policy as a change in the field.
+
+The `watchlist` block pins named artifacts, matched on title and source id by word
+boundary. A hit is routed to the top and labelled with a one-line note; it never changes
+a score, so the ranking stays explainable.
+
 Optional repository secrets:
 
 ```text

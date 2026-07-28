@@ -141,6 +141,98 @@ def test_rebuild_is_deterministic(tmp_path):
     assert first["days"][0]["attention"]["active_count"] == 1
 
 
+def test_dashboard_reports_per_category_deltas_and_cumulative(tmp_path):
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(26), snapshot_dir)
+    write_snapshot(radar_run(27), snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    first, second = data["days"]
+    assert first["category_trends"]["benchmark"]["count"] == 1
+    # Nothing precedes the first scan, so no change is claimed.
+    assert first["category_trends"]["benchmark"]["delta"] is None
+    assert first["category_trends"]["benchmark"]["baseline"] is None
+    # Day two matches day one, so the domain is flat but the total accumulates.
+    assert second["category_trends"]["benchmark"]["delta"] == 0
+    assert second["category_trends"]["benchmark"]["baseline"] == 1.0
+    assert second["category_trends"]["benchmark"]["cumulative"] == 2
+    assert second["cumulative_evidence_count"] == 2
+
+
+def test_cumulative_counts_artifacts_once_across_overlapping_windows(tmp_path):
+    # The scan window overlaps by design, so the same repository appears on
+    # adjacent days. Summing daily counts would grow the total while nothing
+    # new was actually discovered.
+    snapshot_dir = tmp_path / "snapshots"
+    for day in (26, 27):
+        run = radar_run(day)
+        # Same artifact identity on both days.
+        run.items[0].source_id = "2607.0001"
+        run.items[0].url = "https://arxiv.org/abs/2607.0001"
+        write_snapshot(run, snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    second = data["days"][1]
+    assert second["category_trends"]["benchmark"]["cumulative"] == 1
+    assert second["cumulative_evidence_count"] == 1
+
+
+def test_trends_do_not_compare_across_a_report_limit_change(tmp_path):
+    # Raising the cap lifts every count at once. Reporting that as domain
+    # momentum would present a collection-policy change as a change in field.
+    snapshot_dir = tmp_path / "snapshots"
+    narrow = radar_run(26)
+    narrow.selection = {"report_limit": 30}
+    wide = radar_run(27)
+    wide.selection = {"report_limit": 300}
+    write_snapshot(narrow, snapshot_dir)
+    write_snapshot(wide, snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    after = data["days"][1]["category_trends"]["benchmark"]
+    assert after["delta"] is None
+    assert after["baseline"] is None
+    assert after["comparable"] is False
+    # Cumulative totals still accrue: they describe the corpus, not a rate.
+    assert after["cumulative"] == 2
+
+
+def test_trends_compare_snapshots_sharing_a_report_limit(tmp_path):
+    snapshot_dir = tmp_path / "snapshots"
+    for day in (26, 27):
+        run = radar_run(day)
+        run.selection = {"report_limit": 300}
+        write_snapshot(run, snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    after = data["days"][1]["category_trends"]["benchmark"]
+    assert after["delta"] == 0
+    assert after["comparable"] is True
+
+
+def test_selection_counts_round_trip_through_the_snapshot(tmp_path):
+    run = radar_run(27)
+    run.selection = {"fetched": 300, "published": 30, "minimum_score": 2.0}
+
+    snapshot = snapshot_for_run(run)
+    validate_snapshot(snapshot)
+
+    write_snapshot(run, tmp_path / "snapshots")
+    data = rebuild_dashboard(tmp_path / "snapshots", tmp_path / "radar.json")
+    assert data["days"][-1]["selection"]["fetched"] == 300
+
+
+def test_snapshots_without_selection_stay_valid():
+    snapshot = snapshot_for_run(radar_run())
+    snapshot.pop("selection")
+
+    validate_snapshot(snapshot)
+
+
 def test_validation_rejects_missing_item_fields():
     snapshot = snapshot_for_run(radar_run())
     del snapshot["evidence_items"][0]["event_kind"]

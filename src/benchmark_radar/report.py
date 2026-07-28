@@ -17,13 +17,16 @@ def _item_block(index: int, item: RadarItem) -> str:
     authors = ", ".join(item.authors[:4])
     if len(item.authors) > 4:
         authors += " et al."
+    marker = f"⭐ {_escape(item.watchlist)} · " if item.watchlist else ""
     lines = [
         f"### {index}. [{_escape(item.title)}]({item.url})",
         "",
-        f"**{item.source} · {item.event_kind} · {category} · "
+        f"**{marker}{item.source} · {item.event_kind} · {category} · "
         f"priority {item.total_score:.2f}/4.00**",
         "",
     ]
+    if item.watchlist and item.watchlist_note:
+        lines.extend([f"> {_escape(item.watchlist_note)}", ""])
     if item.summary:
         summary = _escape(item.summary)
         lines.extend([summary[:700] + ("…" if len(summary) > 700 else ""), ""])
@@ -51,7 +54,12 @@ def _item_block(index: int, item: RadarItem) -> str:
     return "\n".join(lines)
 
 
-def render_markdown(run: RadarRun, dashboard_url: str | None = None) -> str:
+def render_markdown(
+    run: RadarRun,
+    dashboard_url: str | None = None,
+    *,
+    issue_item_limit: int | None = None,
+) -> str:
     date = run.generated_at.astimezone(UTC).date().isoformat()
     category_counts = Counter(category for item in run.items for category in item.categories)
     source_counts = Counter(item.source for item in run.items)
@@ -99,10 +107,60 @@ def render_markdown(run: RadarRun, dashboard_url: str | None = None) -> str:
             "",
         ]
     )
+    if run.selection:
+        selection = run.selection
+        watchlisted = int(selection.get("watchlisted") or 0)
+        # Watchlist hits bypass the threshold on purpose and are already inside
+        # `qualified`, so subtract them before claiming how many cleared the
+        # bar. Otherwise a lone bypass reads as "1 qualified (at or above 99)".
+        by_threshold = int(selection.get("qualified", 0)) - watchlisted
+        qualified = (
+            f"**{selection.get('qualified', 0)}** qualified "
+            f"({by_threshold} at or above {selection.get('minimum_score', 0):g}"
+            + (f", {watchlisted} by watchlist" if watchlisted else "")
+            + ")"
+        )
+        suppressed = int(selection.get("suppressed_as_seen") or 0)
+        lines.extend(
+            [
+                "- Selection: "
+                f"**{selection.get('fetched', 0)}** fetched → "
+                + (f"**{suppressed}** already seen → " if suppressed else "")
+                + f"**{selection.get('deduplicated', 0)}** after dedupe → "
+                + qualified
+                + f" → **{selection.get('published', 0)}** published",
+                "",
+            ]
+        )
+    tracked = [item for item in run.items if item.watchlist]
+    if tracked:
+        lines.extend(["## Watchlist", ""])
+        for item in tracked:
+            note = f" {_escape(item.watchlist_note)}" if item.watchlist_note else ""
+            lines.append(
+                f"- **{_escape(item.watchlist)}** — [{_escape(item.title)}]({item.url}) "
+                f"({item.source} · {item.event_kind}).{note}"
+            )
+        lines.append("")
     if run.items:
-        lines.extend(["## Today's signals", ""])
-        for index, item in enumerate(run.items, start=1):
+        # GitHub Issue bodies have a hard size limit, so the digest is
+        # truncated while the snapshot and dashboard keep every record.
+        shown = run.items[:issue_item_limit] if issue_item_limit else run.items
+        heading = "## Today's signals"
+        if len(shown) < len(run.items):
+            heading += f" (top {len(shown)} of {len(run.items)})"
+        lines.extend([heading, ""])
+        for index, item in enumerate(shown, start=1):
             lines.append(_item_block(index, item))
+        if len(shown) < len(run.items):
+            remaining = len(run.items) - len(shown)
+            link = f"[the dashboard]({dashboard_url})" if dashboard_url else "the dashboard"
+            lines.extend(
+                [
+                    f"_{remaining} further ranked records are published to {link}._",
+                    "",
+                ]
+            )
     else:
         lines.extend(
             [
