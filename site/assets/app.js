@@ -230,6 +230,15 @@ function renderToday() {
     ...day.ingest_health.map((entry) => ({ ...entry, layer: "Radar ingest" })),
     ...day.producer_health.map((entry) => ({ ...entry, layer: "Producer report" })),
   ];
+  // Fetch plumbing is not what the reader came for, so the roster collapses to
+  // one line. It opens itself only when a connector failed, which is the one
+  // case where the panel explains a gap in the list beside it.
+  const failedCount = healthEntries.filter((entry) => !entry.ok).length;
+  byId("health-status").textContent = failedCount
+    ? `${failedCount} of ${healthEntries.length} failed`
+    : `${healthEntries.length} ok`;
+  byId("health-status").classList.toggle("has-failure", failedCount > 0);
+  byId("health-panel-details").open = failedCount > 0;
   replaceChildren(
     byId("health-list"),
     healthEntries.map((entry) => {
@@ -609,8 +618,18 @@ function openRubric(item = null) {
   const contribution = (component) =>
     Number(item?.[`${component.key}_score`] || 0) * Number(component.weight || 0);
 
+  // Two rubrics are in circulation on different scales (v1 tops out at 4, v2 at
+  // 100). A dialog that says only "0 to 4" leaves a reader who has read the
+  // README's 0-100 rubric unable to tell whether the number is wrong or simply
+  // older, so the version is named rather than implied.
+  const version = Number(data.scoring_version) || 1;
+  const current = Number(state.data?.rubric?.scoring_version) || version;
+  const isLegacy = version !== current;
   const header = [
-    element("p", { className: "detail-source", text: "Scoring rubric" }),
+    element("p", {
+      className: "detail-source",
+      text: `Scoring rubric v${version}${isLegacy ? " · superseded" : " · current"}`,
+    }),
     element("h2", {
       className: "detail-title rubric-title",
       text: "How priority is scored",
@@ -622,6 +641,18 @@ function openRubric(item = null) {
         `Priority is the weighted mean of four components, each measured on a 0 to ${max.toFixed(2)} ` +
         "scale. Every number below is read from the same definition the pipeline applies.",
     }),
+    ...(isLegacy
+      ? [
+          element("p", {
+            className: "discovery-note",
+            text:
+              `This record was scored by rubric v${version} on a 0 to ${max.toFixed(2)} scale. ` +
+              `The current rubric is v${current} on a 0 to ` +
+              `${(Number(state.data?.rubric?.score_max) || 100).toFixed(2)} scale. Scores from the ` +
+              "two versions are not directly comparable, and past records are not rescored.",
+          }),
+        ]
+      : []),
     element("p", { className: "rubric-formula", text: data.formula }),
   ];
 
@@ -1216,20 +1247,6 @@ async function initialize() {
     renderTrends();
     renderTrendMap();
     setView(state.view, false);
-    const latest = dailySnapshot(state.data.latest_date);
-    // A source that succeeded with zero records is not down: empty and failed
-    // are distinct states everywhere else, so only failures are called out.
-    const failed = latest.ingest_health.filter((entry) => !entry.ok).length;
-    const empty = latest.ingest_health.filter(
-      (entry) => entry.ok && entry.item_count === 0,
-    ).length;
-    // Report what the reader gets, and mention plumbing only when it broke.
-    byId("status-copy").textContent =
-      `${formatDate(latest.date, { dateStyle: "medium" })} · ${latest.evidence_count} records` +
-      (failed ? ` · ${failed} source${failed === 1 ? "" : "s"} failed` : "");
-    byId("run-status").querySelector(".status-light").classList.add(
-      failed === 0 && empty === 0 ? "ok" : "warning",
-    );
     byId("build-meta").textContent = `Updated ${formatDate(state.data.generated_at, {
       dateStyle: "medium",
       timeStyle: "short",
@@ -1239,7 +1256,6 @@ async function initialize() {
       section.hidden = true;
     });
     byId("error-state").hidden = false;
-    byId("run-status").textContent = "Validated data unavailable";
     console.error(error);
   }
 }

@@ -22,10 +22,6 @@
         <strong>Benchmark Radar</strong>
       </a>
       <div class="masthead-end">
-        <div class="run-status" id="run-status" role="status">
-          <span class="status-light" aria-hidden="true"></span>
-          <span id="status-copy">Loading latest scan</span>
-        </div>
         <div class="repo-badges" id="repo-badges" aria-label="Repository activity">
           <a
             class="repo-badge"
@@ -119,10 +115,13 @@
             <div class="signal-list" id="today-list"></div>
           </div>
           <aside class="health-panel" aria-labelledby="health-heading">
-            <div class="section-title">
-              <h2 id="health-heading">Sources</h2>
-            </div>
-            <ul id="health-list"></ul>
+            <details id="health-panel-details">
+              <summary>
+                <span class="health-panel-title" id="health-heading">Sources</span>
+                <span class="health-panel-status" id="health-status"></span>
+              </summary>
+              <ul id="health-list"></ul>
+            </details>
           </aside>
         </div>
       </section>
@@ -172,10 +171,6 @@
             <h2 id="domain-heading">New by domain</h2>
             <span id="domain-date"></span>
           </div>
-          <p class="section-note">
-            Records surfaced in each domain on the selected scan, against its own recent daily
-            average.
-          </p>
           <div class="domain-grid" id="domain-grid" aria-labelledby="domain-heading"></div>
         </div>
 
@@ -188,44 +183,33 @@
           <div class="trend-chart" id="trend-chart" role="img" aria-label="Daily category counts"></div>
         </div>
 
-        <div class="trend-grid">
-          <section class="ledger" aria-labelledby="ledger-heading">
-            <div class="section-title">
-              <h2 id="ledger-heading">Daily ledger</h2>
-              <span id="snapshot-count"></span>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Coverage (UTC)</th>
-                    <th>Evidence</th>
-                    <th>Source mix</th>
-                    <th>Categories</th>
-                    <th>Events</th>
-                    <th>Attention</th>
-                    <th>Fetch health</th>
-                  </tr>
-                </thead>
-                <tbody id="trend-table"></tbody>
-              </table>
-            </div>
-          </section>
-          <aside class="method-note">
-            <p class="eyebrow">Read the chart</p>
-            <h2>Volume is a prompt to inspect.</h2>
-            <p>
-              Each column is one validated UTC snapshot. A taller band means more records matched
-              that category on the day; it does not imply better work or stronger evidence.
-            </p>
-            <p>
-              Source mix counts ranked evidence after scoring and the report cap. Fetch health
-              counts raw records returned before scoring; an empty source succeeded but returned
-              zero records.
-            </p>
-          </aside>
-        </div>
+        <section class="ledger" aria-labelledby="ledger-heading">
+          <div class="section-title">
+            <h2 id="ledger-heading">Daily ledger</h2>
+            <span id="snapshot-count"></span>
+          </div>
+          <p class="section-note">
+            Source mix counts ranked evidence after scoring. Fetch health counts raw records
+            returned before scoring, so a source can be ok and still empty.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Coverage (UTC)</th>
+                  <th>Evidence</th>
+                  <th>Source mix</th>
+                  <th>Categories</th>
+                  <th>Events</th>
+                  <th>Attention</th>
+                  <th>Fetch health</th>
+                </tr>
+              </thead>
+              <tbody id="trend-table"></tbody>
+            </table>
+          </div>
+        </section>
       </section>
 
       <section class="error-state" id="error-state" hidden>

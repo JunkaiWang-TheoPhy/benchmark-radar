@@ -112,7 +112,6 @@ footer {
 }
 
 .brand small,
-.run-status,
 .eyebrow,
 .section-title span,
 .heading-note,
@@ -166,30 +165,6 @@ th {
   border-top: 2px solid var(--orange);
   border-radius: 50%;
   transform: rotate(35deg);
-}
-
-.run-status {
-  display: flex;
-  gap: 0.55rem;
-  align-items: center;
-}
-
-.status-light {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--gold);
-  box-shadow: 0 0 0 4px rgb(201 147 39 / 14%);
-}
-
-.status-light.ok {
-  background: var(--sea);
-  box-shadow: 0 0 0 4px rgb(76 148 139 / 14%);
-}
-
-.status-light.warning {
-  background: var(--orange);
-  box-shadow: 0 0 0 4px rgb(220 99 63 / 14%);
 }
 
 .masthead-end {
@@ -745,9 +720,43 @@ input {
 .health-panel {
   position: sticky;
   top: 1rem;
-  padding: 1.4rem;
+  padding: 0.9rem 1.4rem;
   border: 1px solid var(--ink);
   background: var(--panel);
+}
+
+.health-panel summary {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.health-panel-title {
+  font-family: var(--display);
+  font-size: 1rem;
+  font-stretch: condensed;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.health-panel-status {
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.68rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.health-panel-status.has-failure {
+  color: var(--danger);
+}
+
+.health-panel details[open] summary {
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--line);
 }
 
 .health-panel ul {
@@ -805,7 +814,6 @@ input {
 .trend-panel,
 .domain-panel,
 .ledger,
-.method-note,
 .filter-panel {
   border: 1px solid var(--ink);
   background: var(--panel);
@@ -990,12 +998,8 @@ input {
   white-space: nowrap;
 }
 
-.trend-grid {
-  display: grid;
-  grid-template-columns: 1.6fr 0.7fr;
-  gap: 2rem;
+.ledger {
   margin-top: 2rem;
-  align-items: stretch;
 }
 
 .table-wrap {
@@ -1025,25 +1029,6 @@ td {
 
 td a {
   font-weight: 600;
-}
-
-.method-note {
-  padding: clamp(2rem, 4vw, 3.5rem);
-  background: var(--blue-deep);
-  color: white;
-}
-
-.method-note .eyebrow {
-  color: #a9c9f2;
-}
-
-.method-note h2 {
-  max-width: 300px;
-  font-size: clamp(2rem, 4vw, 3.25rem);
-}
-
-.method-note p:last-child {
-  color: #d0dceb;
 }
 
 .filter-panel {
@@ -1411,10 +1396,6 @@ footer {
     min-height: 76px;
   }
 
-  .run-status {
-    display: none;
-  }
-
   /* Keep the badges reachable on narrow screens, but drop the word so the
      icon and count still fit beside the wordmark. */
   .repo-badge-label {
@@ -1478,10 +1459,6 @@ footer {
   .record-detail {
     margin: 0 0 0 51px;
     padding-right: 1rem;
-  }
-
-  .trend-grid {
-    grid-template-columns: 1fr;
   }
 
   .map-layout {
