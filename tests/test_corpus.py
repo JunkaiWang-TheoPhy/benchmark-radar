@@ -4,6 +4,7 @@ from benchmark_radar.corpus import (
     CorpusError,
     build_corpus,
     exact_artifact_key,
+    exact_artifact_keys,
     organizations_for_item,
     validate_corpus,
 )
@@ -46,6 +47,20 @@ def test_exact_primary_identifier_wins_over_secondary_record_and_repo_links():
     assert exact_artifact_key(record) == "artifact:arxiv:2607.12345"
 
 
+def test_every_identifier_of_the_same_kind_is_preserved():
+    record = item(
+        artifact_urls=[
+            "https://github.com/org/benchmark",
+            "https://github.com/org/evaluator",
+        ]
+    )
+
+    assert exact_artifact_keys(record) == [
+        "artifact:github:org/benchmark",
+        "artifact:github:org/evaluator",
+    ]
+
+
 def test_equal_titles_do_not_merge_without_an_exact_identifier():
     first = item(url="https://example.com/releases/one")
     second = item(source_id="paper-2", url="https://example.net/releases/two")
@@ -76,6 +91,34 @@ def test_cross_source_observations_cluster_under_one_entity():
     assert len(artifacts) == 1
     assert artifacts[0]["observation_count"] == 2
     assert artifacts[0]["sources"] == ["Semantic Scholar", "arXiv"]
+
+
+def test_multi_identifier_aliases_cluster_across_snapshots():
+    first = item(
+        artifact_urls=[
+            "https://doi.org/10.1000/radar",
+            "https://arxiv.org/abs/2607.12345",
+        ]
+    )
+    second = item(
+        source="OpenAlex",
+        source_id="W1",
+        url="https://openalex.org/W1",
+        artifact_urls=["https://arxiv.org/abs/2607.12345"],
+    )
+
+    corpus = build_corpus(
+        [
+            {"date": "2026-07-27", "evidence_items": [first]},
+            {"date": "2026-07-28", "evidence_items": [second]},
+        ]
+    )
+    artifacts = [entity for entity in corpus["entities"] if entity["type"] == "artifact"]
+
+    assert len(artifacts) == 1
+    assert artifacts[0]["id"] == "artifact:doi:10.1000/radar"
+    assert artifacts[0]["observation_count"] == 2
+    assert artifacts[0]["sources"] == ["OpenAlex", "Semantic Scholar"]
 
 
 def test_validation_rejects_edges_to_unknown_entities():

@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 from collections import Counter, defaultdict
+from collections.abc import Iterable
 from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
@@ -50,51 +51,61 @@ def _arxiv_id(path: str) -> str | None:
     return re.sub(r"v\d+$", "", match.group(1), flags=re.IGNORECASE).lower()
 
 
-def _exact_candidates(item: dict[str, Any]) -> dict[int, str]:
-    """Map priority rank to exact identifier for every one this record carries."""
+def _exact_candidates(item: dict[str, Any]) -> list[tuple[int, str]]:
+    """Return every exact identifier this record carries with its priority."""
     urls = [str(item.get("url") or ""), *map(str, item.get("artifact_urls") or [])]
-    candidates: dict[int, str] = {}
+    candidates: set[tuple[int, str]] = set()
     for url in urls:
         parsed = urlsplit(url)
         host = parsed.netloc.casefold().removeprefix("www.")
         segments = [segment for segment in parsed.path.split("/") if segment]
         if host in {"doi.org", "dx.doi.org"} and segments:
-            candidates[1] = f"artifact:doi:{'/'.join(segments).casefold()}"
+            candidates.add((1, f"artifact:doi:{'/'.join(segments).casefold()}"))
         arxiv = _arxiv_id(parsed.path) if host.endswith("arxiv.org") else None
         if arxiv:
-            candidates[2] = f"artifact:arxiv:{arxiv}"
+            candidates.add((2, f"artifact:arxiv:{arxiv}"))
         if host == "openreview.net":
             forum = (parse_qs(parsed.query).get("id") or [None])[0]
             if forum:
-                candidates[3] = f"artifact:openreview:{str(forum).casefold()}"
+                candidates.add((3, f"artifact:openreview:{str(forum).casefold()}"))
         if host == "github.com" and len(segments) >= 2:
-            candidates[4] = f"artifact:github:{segments[0].casefold()}/{segments[1].casefold()}"
+            candidates.add(
+                (4, f"artifact:github:{segments[0].casefold()}/{segments[1].casefold()}")
+            )
         if host == "huggingface.co" and len(segments) >= 2:
             kind = segments[0].casefold()
             if kind in {"datasets", "spaces", "models"} and len(segments) >= 3:
-                candidates[5] = (
-                    f"artifact:huggingface:{kind}:{segments[1].casefold()}/{segments[2].casefold()}"
+                candidates.add(
+                    (
+                        5,
+                        f"artifact:huggingface:{kind}:"
+                        f"{segments[1].casefold()}/{segments[2].casefold()}",
+                    )
                 )
             elif kind not in {"datasets", "spaces"}:
-                candidates[5] = (
-                    f"artifact:huggingface:models:{segments[0].casefold()}/{segments[1].casefold()}"
+                candidates.add(
+                    (
+                        5,
+                        f"artifact:huggingface:models:"
+                        f"{segments[0].casefold()}/{segments[1].casefold()}",
+                    )
                 )
     if candidates:
-        return candidates
+        return sorted(candidates)
 
     # No recognizable URL identifier, so fall back to the source's own id.
     source = str(item.get("source") or "").casefold()
     source_id = str(item.get("source_id") or "").strip().casefold()
     if source == "arxiv":
         base_id = re.sub(r"v\d+$", "", source_id)
-        return {2: f"artifact:arxiv:{base_id}"}
+        return [(2, f"artifact:arxiv:{base_id}")]
     if source == "openreview":
-        return {3: f"artifact:openreview:{source_id}"}
+        return [(3, f"artifact:openreview:{source_id}")]
     if source in {"github", "github release"}:
-        return {4: f"artifact:github:{source_id.split('@', 1)[0]}"}
+        return [(4, f"artifact:github:{source_id.split('@', 1)[0]}")]
     if source == "hugging face":
-        return {5: f"artifact:huggingface:datasets:{source_id}"}
-    return {9: _stable_id("artifact:url", str(item.get("url") or source_id).casefold())}
+        return [(5, f"artifact:huggingface:datasets:{source_id}")]
+    return [(9, _stable_id("artifact:url", str(item.get("url") or source_id).casefold()))]
 
 
 def exact_artifact_keys(item: dict[str, Any]) -> list[str]:
@@ -106,8 +117,7 @@ def exact_artifact_keys(item: dict[str, Any]) -> list[str]:
     identifier is compared, because the paper resolves to its arXiv id and the
     repository to its owner/repo.
     """
-    candidates = _exact_candidates(item)
-    return [candidates[rank] for rank in sorted(candidates)]
+    return [key for _, key in _exact_candidates(item)]
 
 
 def exact_artifact_key(item: dict[str, Any]) -> str:
@@ -117,8 +127,59 @@ def exact_artifact_key(item: dict[str, Any]) -> str:
     carrying an arXiv, DOI, GitHub, or Hugging Face link joins that primary
     entity. Ambiguous title similarity is deliberately not used.
     """
-    candidates = _exact_candidates(item)
-    return candidates[min(candidates)]
+    return _exact_candidates(item)[0][1]
+
+
+def artifact_alias_map(items: Iterable[dict[str, Any]]) -> dict[str, str]:
+    """Resolve transitively linked exact identifiers to one stable identity.
+
+    A single record can carry several identifiers for the same artifact, such
+    as a DOI and an arXiv URL. Another source may expose only one of them. The
+    shared identifier joins both observations, and transitive links join later
+    observations too. This is the same additive identity rule daily dedup uses,
+    applied across the full snapshot history.
+    """
+    parents: dict[str, str] = {}
+    priorities: dict[str, int] = {}
+
+    def find(key: str) -> str:
+        root = key
+        while parents[root] != root:
+            root = parents[root]
+        while parents[key] != key:
+            parent = parents[key]
+            parents[key] = root
+            key = parent
+        return root
+
+    def union(left: str, right: str) -> None:
+        left_root = find(left)
+        right_root = find(right)
+        if left_root == right_root:
+            return
+        # The parent choice is deterministic; canonical priority is applied
+        # after every connected component has been assembled.
+        first, second = sorted((left_root, right_root))
+        parents[second] = first
+
+    for item in items:
+        candidates = _exact_candidates(item)
+        keys = [key for _, key in candidates]
+        for priority, key in candidates:
+            parents.setdefault(key, key)
+            priorities[key] = min(priority, priorities.get(key, priority))
+        for key in keys[1:]:
+            union(keys[0], key)
+
+    components: dict[str, list[str]] = defaultdict(list)
+    for key in parents:
+        components[find(key)].append(key)
+
+    aliases: dict[str, str] = {}
+    for keys in components.values():
+        canonical = min(keys, key=lambda key: (priorities[key], key))
+        aliases.update({key: canonical for key in keys})
+    return aliases
 
 
 def organizations_for_item(item: dict[str, Any]) -> list[str]:
@@ -184,6 +245,9 @@ def build_corpus(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
     entities: dict[str, dict[str, Any]] = {}
     edges: dict[str, dict[str, Any]] = {}
     observations: list[dict[str, Any]] = []
+    aliases = artifact_alias_map(
+        item for snapshot in snapshots for item in snapshot["evidence_items"]
+    )
 
     def touch(entity: dict[str, Any], *, date: str, source: str = "") -> None:
         entity["first_seen_at"] = min(entity["first_seen_at"] or date, date)
@@ -227,7 +291,7 @@ def build_corpus(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
             retrieved_at = (
                 item.get("retrieved_at") or snapshot.get("generated_at") or f"{date}T00:00:00+00:00"
             )
-            entity_id = exact_artifact_key(item)
+            entity_id = aliases[exact_artifact_key(item)]
             artifact = entities.setdefault(
                 entity_id,
                 _entity(entity_id, "artifact", str(item["title"]), url=str(item["url"])),

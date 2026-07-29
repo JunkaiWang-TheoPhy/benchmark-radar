@@ -9,7 +9,12 @@ from pathlib import Path
 from typing import Any
 
 from .attention import fetch_attention_feeds
-from .corpus import build_corpus, exact_artifact_key, organizations_for_item
+from .corpus import (
+    artifact_alias_map,
+    build_corpus,
+    exact_artifact_key,
+    organizations_for_item,
+)
 from .models import RadarRun
 from .rubric import (
     SCORING_VERSION,
@@ -334,16 +339,27 @@ def _attach_category_trends(days: list[dict[str, Any]]) -> None:
     counts would re-count the same repository every day it stayed in range and
     grow steadily while nothing new was found.
 
-    Identity is the exact artifact key, not `source:source_id`. Keying on the
-    latter counted one artifact once per source that reported it, which
-    contradicted the "distinct artifacts" promise above.
+    Identity joins every exact identifier a record carries, not just one
+    preferred key or `source:source_id`. A DOI-plus-arXiv observation and a
+    later arXiv-only observation are two sightings of the same artifact.
     """
     seen: dict[str, set[str]] = {}
     seen_any: set[str] = set()
+    records_seen: list[dict[str, Any]] = []
     for index, day in enumerate(days):
         counts = day["category_counts"]
+        records_seen.extend(day["evidence_items"])
+        aliases = artifact_alias_map(records_seen)
+        # A later observation can bridge identifiers previously thought to be
+        # separate. Reconcile cumulative sets from this day forward without
+        # leaking that later knowledge into already-published historical days.
+        seen_any = {aliases.get(identity, identity) for identity in seen_any}
+        seen = {
+            category: {aliases.get(identity, identity) for identity in identities}
+            for category, identities in seen.items()
+        }
         for record in day["evidence_items"]:
-            identity = exact_artifact_key(record)
+            identity = aliases[exact_artifact_key(record)]
             seen_any.add(identity)
             for category in record["categories"]:
                 seen.setdefault(category, set()).add(identity)
