@@ -51,6 +51,30 @@ def test_priority_score_is_reachably_explained():
     assert "How is this scored?" in script
 
 
+def test_scan_date_select_is_not_reset_by_the_shared_filters_input_handler():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # Issue #43: a <select> fires "input" before "change". The shared
+    # #filters input handler must not re-render on the Scan date select's
+    # bubbled "input" event, or it clobbers the pick with the stale date
+    # before the select's own dedicated "change" handler runs.
+    filters_handler = script.split('byId("filters").addEventListener("input"', 1)[1]
+    handler_body = filters_handler.split("});", 1)[0]
+    assert 'event.target === byId("today-date")' in handler_body
+    assert "return" in handler_body
+
+
+def test_rubric_dialog_is_linkable_by_url_hash():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # Issue #41: opening the rubric must be shareable as a hashtag link, and
+    # loading that link must reopen the same rubric version.
+    assert "state.rubric" in script
+    assert 'window.location.hash.slice(1)).get("rubric")' in script
+    assert 'hashParams.set("rubric", state.rubric)' in script
+    assert "openRubric(null, state.rubric)" in script
+
+
 def test_rubric_is_read_from_published_data_not_restated_in_the_browser():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 

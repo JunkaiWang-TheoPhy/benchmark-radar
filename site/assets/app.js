@@ -18,6 +18,7 @@ const state = {
   organization: "",
   event: "",
   entity: "",
+  rubric: "",
 };
 
 function element(tag, options = {}, children = []) {
@@ -84,6 +85,7 @@ function readUrl() {
   state.organization = params.get("organization") || "";
   state.event = params.get("event") || "";
   state.entity = params.get("entity") || "";
+  state.rubric = new URLSearchParams(window.location.hash.slice(1)).get("rubric") || "";
 }
 
 function writeUrl() {
@@ -100,7 +102,16 @@ function writeUrl() {
   if (state.event) params.set("event", state.event);
   if (state.view === "map" && state.entity) params.set("entity", state.entity);
   const query = params.toString();
-  window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+  // The rubric dialog is a hashtag, not a query param, so a shared link like
+  // #rubric=2 reads as "jump to this section" rather than another filter.
+  const hashParams = new URLSearchParams();
+  if (state.rubric) hashParams.set("rubric", state.rubric);
+  const hash = hashParams.toString();
+  window.history.replaceState(
+    null,
+    "",
+    `${window.location.pathname}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`,
+  );
 }
 
 function setView(view, update = true) {
@@ -618,8 +629,12 @@ function filteredObservations() {
 // When a record is supplied, the rubric is rendered with that record's own
 // component scores beside each weight, so the reader can see the arithmetic
 // that produced the total rather than a generic description of it.
-function openRubric(item = null) {
-  const data = rubricFor(item);
+// versionOverride opens a specific rubric version (e.g. from a #rubric=1
+// deep link) without implying a record's own scores are being shown.
+function openRubric(item = null, versionOverride = null) {
+  const data = versionOverride
+    ? state.data?.rubrics?.[String(versionOverride)] || rubricFor(item)
+    : rubricFor(item);
   const dialog = byId("rubric-dialog");
   if (!data) return;
   const max = Number(data.score_max) || 4;
@@ -634,6 +649,8 @@ function openRubric(item = null) {
   const version = Number(data.scoring_version) || 1;
   const current = Number(state.data?.rubric?.scoring_version) || version;
   const isLegacy = version !== current;
+  state.rubric = String(version);
+  writeUrl();
   const header = [
     element("p", {
       className: "detail-source",
@@ -655,7 +672,9 @@ function openRubric(item = null) {
           element("p", {
             className: "discovery-note",
             text:
-              `This record was scored by rubric v${version} on a 0 to ${max.toFixed(2)} scale. ` +
+              (item
+                ? `This record was scored by rubric v${version} on a 0 to ${max.toFixed(2)} scale. `
+                : `Rubric v${version} scored records on a 0 to ${max.toFixed(2)} scale. `) +
               `The current rubric is v${current} on a 0 to ` +
               `${(Number(state.data?.rubric?.score_max) || 100).toFixed(2)} scale. Scores from the ` +
               "two versions are not directly comparable, and past records are not rescored.",
@@ -1168,7 +1187,13 @@ function bindEvents() {
     state.todayDate = event.target.value;
     renderToday();
   });
-  byId("filters").addEventListener("input", () => {
+  byId("filters").addEventListener("input", (event) => {
+    // The Scan date select has its own dedicated change handler above. A
+    // <select> fires "input" before "change", and this bubbled "input"
+    // reaching here would call renderToday() with the still-stale
+    // state.todayDate, which then writes the OLD date back onto the
+    // control and clobbers the user's just-made selection.
+    if (event.target === byId("today-date")) return;
     state.q = byId("search-filter").value;
     state.kind = byId("kind-filter").value;
     state.category = byId("category-filter").value;
@@ -1189,6 +1214,12 @@ function bindEvents() {
   byId("rubric-close").addEventListener("click", () => byId("rubric-dialog").close());
   byId("rubric-dialog").addEventListener("click", (event) => {
     if (event.target === byId("rubric-dialog")) byId("rubric-dialog").close();
+  });
+  // Fires for every close path (button, backdrop click, Esc), so #rubric is
+  // cleared from the URL no matter how the reader dismisses the dialog.
+  byId("rubric-dialog").addEventListener("close", () => {
+    state.rubric = "";
+    writeUrl();
   });
   // Reachable without a record in hand, for a reader who wants the method
   // before they trust any single row.
@@ -1279,6 +1310,9 @@ async function initialize() {
       dateStyle: "medium",
       timeStyle: "short",
     })} UTC`;
+    if (state.rubric && state.data.rubrics?.[state.rubric]) {
+      openRubric(null, state.rubric);
+    }
   } catch (error) {
     document.querySelectorAll(".view").forEach((section) => {
       section.hidden = true;
