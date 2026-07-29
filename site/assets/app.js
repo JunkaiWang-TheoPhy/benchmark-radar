@@ -239,6 +239,9 @@ function renderToday() {
     : `${healthEntries.length} ok`;
   byId("health-status").classList.toggle("has-failure", failedCount > 0);
   byId("health-panel-details").open = failedCount > 0;
+  // Absent on snapshots written before the cap was published, in which case no
+  // count can be identified as truncated and all are shown as-is.
+  const ingestCap = day.selection?.max_items_per_source ?? null;
   replaceChildren(
     byId("health-list"),
     healthEntries.map((entry) => {
@@ -250,11 +253,17 @@ function renderToday() {
         }),
         element("span", {
           className: "health-count",
+          // A source that returned exactly the per-source cap was truncated, so
+          // the number is a ceiling. "300+ found" says that; "300 found" read as
+          // a measured total.
           text: entry.ok
             ? entry.item_count
-              ? `${entry.item_count} found`
+              ? `${entry.item_count}${entry.item_count === ingestCap ? "+" : ""} found`
               : "empty"
             : "failed",
+          ...(entry.item_count === ingestCap
+            ? { attrs: { title: `Truncated at the ${ingestCap}-record per-source limit` } }
+            : {}),
         }),
       ];
       if (entry.error) {
@@ -903,8 +912,14 @@ function selectMapNode(entity, relatedEntities) {
       ? [
           definition("Artifact count", topicAggregate.entity_count),
           definition("Source breadth", topicAggregate.source_breadth),
+          // The window is nominally 7 days but divides by the days actually
+          // observed, so early in the archive "7-day" named a span that does
+          // not exist yet. The label states the span that was measured.
           definition(
-            `${state.data.corpus.aggregates.window_days}-day velocity`,
+            `${
+              state.data.corpus.aggregates.observed_window_days ??
+              state.data.corpus.aggregates.window_days
+            }-day velocity`,
             topicAggregate.velocity === null
               ? "needs a prior window"
               : `${topicAggregate.velocity >= 0 ? "+" : ""}${topicAggregate.velocity}/day`,

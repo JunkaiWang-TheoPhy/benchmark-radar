@@ -182,6 +182,7 @@
       "type": "object",
       "required": [
         "window_days",
+        "observed_window_days",
         "topics",
         "entity_types",
         "sources",
