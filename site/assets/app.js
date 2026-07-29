@@ -1168,7 +1168,13 @@ function bindEvents() {
     state.todayDate = event.target.value;
     renderToday();
   });
-  byId("filters").addEventListener("input", () => {
+  byId("filters").addEventListener("input", (event) => {
+    // The Scan date select has its own dedicated change handler above. A
+    // <select> fires "input" before "change", and this bubbled "input"
+    // reaching here would call renderToday() with the still-stale
+    // state.todayDate, which then writes the OLD date back onto the
+    // control and clobbers the user's just-made selection.
+    if (event.target === byId("today-date")) return;
     state.q = byId("search-filter").value;
     state.kind = byId("kind-filter").value;
     state.category = byId("category-filter").value;
