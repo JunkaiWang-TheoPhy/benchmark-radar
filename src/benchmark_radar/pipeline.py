@@ -11,6 +11,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from . import rubric
 from .attention import fetch_attention_feeds
+from .corpus import exact_artifact_keys
 from .models import RadarItem, RadarRun, SourceHealth
 from .sources import SOURCE_FETCHERS
 
@@ -28,19 +29,53 @@ def normalized_title(title: str) -> str:
     return " ".join(re.findall(r"[a-z0-9]+", title.lower()))
 
 
+def dedupe_keys(item: RadarItem) -> list[str]:
+    """Every identity this record can be recognized by.
+
+    Keying on the normalized title alone ignored the DOI, arXiv id, and
+    owner/repo already sitting in ``artifact_urls``, so two connectors that
+    titled the same artifact differently never merged, and short-titled
+    repositories such as ``torchgeo/torchgeo`` fell back to a URL key that can
+    never match across sources.
+
+    The keys are additive rather than ranked: a record merges with anything it
+    shares *any* identity with. Returning only the strongest key would make
+    dedup stricter instead of smarter, because a paper and its own repository
+    have different exact identifiers and would stop merging on their title.
+    """
+    keys: list[str] = [
+        # Every identifier, not just the strongest: a paper linking its own
+        # repository must emit that repository's key too, or the two never meet.
+        exact
+        for exact in exact_artifact_keys(
+            {
+                "url": item.url,
+                "artifact_urls": item.artifact_urls,
+                "source": item.source,
+                "source_id": item.source_id,
+            }
+        )
+        # A URL digest is not a public identifier, so it carries no more
+        # authority than the canonical URL already used below.
+        if not exact.startswith("artifact:url:")
+    ]
+    title_key = normalized_title(item.title)
+    if len(title_key) >= 24:
+        keys.append(f"title:{hashlib.sha256(title_key.encode()).hexdigest()}")
+    keys.append(f"url:{hashlib.sha256(canonical_url(item.url).encode()).hexdigest()}")
+    return keys
+
+
 def deduplicate(items: list[RadarItem]) -> list[RadarItem]:
     kept: dict[str, RadarItem] = {}
+    order: list[RadarItem] = []
     for item in sorted(
         items,
         key=lambda value: value.updated_at or value.published_at,
         reverse=True,
     ):
-        title_key = normalized_title(item.title)
-        if len(title_key) >= 24:
-            key = hashlib.sha256(title_key.encode()).hexdigest()
-        else:
-            key = hashlib.sha256(canonical_url(item.url).encode()).hexdigest()
-        existing = kept.get(key)
+        keys = dedupe_keys(item)
+        existing = next((kept[key] for key in keys if key in kept), None)
         if existing:
             if item.url not in existing.artifact_urls:
                 existing.artifact_urls.append(item.url)
@@ -50,10 +85,33 @@ def deduplicate(items: list[RadarItem]) -> list[RadarItem]:
                     for metric, value in item.metrics.items()
                 }
             )
-            existing.rationale.append(f"Also found via {item.source}")
+            # The merged copy is dropped, so keep the corroboration it carried:
+            # a cross-source link is exactly what the evidence component reads.
+            for url in item.artifact_urls:
+                if url not in existing.artifact_urls:
+                    existing.artifact_urls.append(url)
+            for author in item.authors:
+                if author not in existing.authors:
+                    existing.authors.append(author)
+            # A record with no description loses nothing by adopting one that
+            # has it; a record that already has one keeps its own.
+            if not existing.summary.strip() and item.summary.strip():
+                existing.summary = item.summary
+            note = f"Also found via {item.source}"
+            if note not in existing.rationale:
+                existing.rationale.append(note)
+            # The absorbed record's identities now point at the survivor, so a
+            # third copy sharing only the arXiv id or only the title still lands
+            # on the same artifact.
+            target = existing
         else:
-            kept[key] = item
-    return list(kept.values())
+            target = item
+            order.append(item)
+        for key in keys:
+            kept.setdefault(key, target)
+    # One record is registered under several keys, so dict values repeat.
+    # Insertion order is preserved to keep the output deterministic.
+    return order
 
 
 def score_item(
@@ -362,18 +420,18 @@ def run_pipeline(
             1
             for item in selected
             if item.watchlist
-            and not (
-                not item.suppression_reasons
-                and item.total_score >= float(settings["minimum_score"])
-                and item.categories
-            )
+            and not (item.total_score >= float(settings["minimum_score"]) and item.categories)
         ),
-        "suppressed_low_value": sum(
-            1 for item in scored if item.suppression_reasons and not item.watchlist
-        ),
+        # Suppression now applies to watchlisted records too, so the count is
+        # every suppressed record rather than only the un-watchlisted ones.
+        "suppressed_low_value": sum(1 for item in scored if item.suppression_reasons),
         "published": len(published),
         "minimum_score": float(settings["minimum_score"]),
         "report_limit": int(settings["report_limit"]),
+        # A per-source fetch that returns exactly this many rows was truncated,
+        # so "300 found" is a ceiling rather than a total. Publishing the cap
+        # lets the dashboard say which counts are limits.
+        "max_items_per_source": int(settings["max_items_per_source"]),
         "lookback_hours": float(settings["lookback_hours"]),
         "score_version": rubric.SCORING_VERSION,
         "score_max": rubric.SCORE_MAX,

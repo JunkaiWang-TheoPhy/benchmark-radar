@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -415,3 +416,89 @@ def test_arxiv_discovery_state_suppresses_unchanged_overlap(monkeypatch):
     assert run.discovery_state["arxiv"]["2607.12345"]["discovered_at"] == (
         "2026-07-26T19:00:00+00:00"
     )
+
+
+def test_dedupe_merges_short_titles_across_sources():
+    # A title under the 24-character threshold used to fall back to a URL key,
+    # which can never match across sources, so well-known short-named repos
+    # were the ones dedup could not merge.
+    repo = item(
+        source="GitHub",
+        source_id="torchgeo/torchgeo",
+        title="torchgeo/torchgeo",
+        url="https://github.com/torchgeo/torchgeo",
+    )
+    mirror = item(
+        source="Hugging Face",
+        source_id="x/y",
+        title="torchgeo/torchgeo",
+        url="https://huggingface.co/datasets/x/y",
+        artifact_urls=["https://github.com/torchgeo/torchgeo"],
+    )
+    result = deduplicate([repo, mirror])
+
+    assert len(result) == 1
+    assert any("Also found via" in reason for reason in result[0].rationale)
+
+
+def test_dedupe_matches_on_a_weaker_shared_identifier():
+    # The paper resolves to its arXiv id and the repository to its owner/repo,
+    # so comparing only the strongest identifier never merges them.
+    paper = item(artifact_urls=["https://github.com/org/repo"])
+    repo = item(
+        source="GitHub",
+        source_id="org/repo",
+        title="A Completely Different Repository Name",
+        url="https://github.com/org/repo",
+    )
+
+    assert len(deduplicate([paper, repo])) == 1
+
+
+def test_dedupe_keeps_unrelated_records_apart():
+    first = item(
+        source_id="1111.2222",
+        title="First Distinct Benchmark Paper About Things",
+        url="https://arxiv.org/abs/1111.2222",
+    )
+    second = item(
+        source_id="3333.4444",
+        title="Second Unrelated Dataset Paper Entirely",
+        url="https://arxiv.org/abs/3333.4444",
+    )
+
+    assert len(deduplicate([first, second])) == 2
+
+
+def test_dedupe_preserves_authors_and_summary_from_the_absorbed_copy():
+    described = item(
+        source="GitHub",
+        source_id="org/repo2",
+        title="Same Long Title For Merge Testing Purposes",
+        url="https://github.com/org/repo2",
+        authors=["Alice"],
+        summary="A real card.",
+    )
+    bare = item(
+        title="Same Long Title For Merge Testing Purposes",
+        url="https://arxiv.org/abs/9999.1111",
+        source_id="9999.1111",
+        summary="",
+        authors=["Bob"],
+        published_at=datetime(2026, 7, 27, 6, tzinfo=UTC),
+    )
+    merged = deduplicate([described, bare])[0]
+
+    assert set(merged.authors) == {"Alice", "Bob"}
+    assert merged.summary == "A real card."
+
+
+def test_suppression_is_not_bypassed_by_the_watchlist():
+    # `item.watchlist or (not item.suppression_reasons and ...)` short-circuited,
+    # so a watchlisted record published even after matching a suppress rule.
+    source = Path("src/benchmark_radar/pipeline.py").read_text(encoding="utf-8")
+
+    assert "if not item.suppression_reasons" in source
+    index = source.index("if not item.suppression_reasons")
+    assert "item.watchlist" in source[index : index + 400]
+    assert "if item.watchlist\n        or (" not in source

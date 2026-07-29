@@ -10,6 +10,8 @@ from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
+from . import rubric
+
 CORPUS_SCHEMA_VERSION = 1
 AGGREGATE_WINDOW_DAYS = 7
 PRIMARY_SOURCE_RANK = {
@@ -22,12 +24,13 @@ PRIMARY_SOURCE_RANK = {
     "OpenAlex": 2,
     "Brave Search": 3,
 }
+# Derived from the rubric rather than restated, which had let the two lists
+# drift: the rubric credits OpenAlex and Semantic Scholar as primary scholarly
+# records while this set omitted both, so an observation could be primary for
+# scoring and not primary for provenance reporting.
 PRIMARY_OR_STRUCTURED_SOURCES = {
-    "arXiv",
-    "OpenReview",
-    "GitHub Release",
-    "GitHub",
-    "Hugging Face",
+    *rubric.EVIDENCE_PRIMARY_SOURCES,
+    *rubric.EVIDENCE_ARTIFACT_SOURCES,
 }
 
 
@@ -47,13 +50,8 @@ def _arxiv_id(path: str) -> str | None:
     return re.sub(r"v\d+$", "", match.group(1), flags=re.IGNORECASE).lower()
 
 
-def exact_artifact_key(item: dict[str, Any]) -> str:
-    """Resolve an artifact using exact public identifiers only.
-
-    URL identifiers take priority so a Semantic Scholar/OpenReview observation
-    carrying an arXiv, DOI, GitHub, or Hugging Face link joins that primary
-    entity. Ambiguous title similarity is deliberately not used.
-    """
+def _exact_candidates(item: dict[str, Any]) -> dict[int, str]:
+    """Map priority rank to exact identifier for every one this record carries."""
     urls = [str(item.get("url") or ""), *map(str, item.get("artifact_urls") or [])]
     candidates: dict[int, str] = {}
     for url in urls:
@@ -82,20 +80,45 @@ def exact_artifact_key(item: dict[str, Any]) -> str:
                     f"artifact:huggingface:models:{segments[0].casefold()}/{segments[1].casefold()}"
                 )
     if candidates:
-        return candidates[min(candidates)]
+        return candidates
 
+    # No recognizable URL identifier, so fall back to the source's own id.
     source = str(item.get("source") or "").casefold()
     source_id = str(item.get("source_id") or "").strip().casefold()
     if source == "arxiv":
         base_id = re.sub(r"v\d+$", "", source_id)
-        return f"artifact:arxiv:{base_id}"
+        return {2: f"artifact:arxiv:{base_id}"}
     if source == "openreview":
-        return f"artifact:openreview:{source_id}"
+        return {3: f"artifact:openreview:{source_id}"}
     if source in {"github", "github release"}:
-        return f"artifact:github:{source_id.split('@', 1)[0]}"
+        return {4: f"artifact:github:{source_id.split('@', 1)[0]}"}
     if source == "hugging face":
-        return f"artifact:huggingface:datasets:{source_id}"
-    return _stable_id("artifact:url", str(item.get("url") or source_id).casefold())
+        return {5: f"artifact:huggingface:datasets:{source_id}"}
+    return {9: _stable_id("artifact:url", str(item.get("url") or source_id).casefold())}
+
+
+def exact_artifact_keys(item: dict[str, Any]) -> list[str]:
+    """Every exact public identifier this record carries, strongest first.
+
+    :func:`exact_artifact_key` collapses these to one so a corpus entity has a
+    single identity. Deduplication needs all of them: a paper that links its own
+    repository shares no identity with that repository when only the strongest
+    identifier is compared, because the paper resolves to its arXiv id and the
+    repository to its owner/repo.
+    """
+    candidates = _exact_candidates(item)
+    return [candidates[rank] for rank in sorted(candidates)]
+
+
+def exact_artifact_key(item: dict[str, Any]) -> str:
+    """Resolve an artifact using exact public identifiers only.
+
+    URL identifiers take priority so a Semantic Scholar/OpenReview observation
+    carrying an arXiv, DOI, GitHub, or Hugging Face link joins that primary
+    entity. Ambiguous title similarity is deliberately not used.
+    """
+    candidates = _exact_candidates(item)
+    return candidates[min(candidates)]
 
 
 def organizations_for_item(item: dict[str, Any]) -> list[str]:
@@ -404,6 +427,10 @@ def _aggregate_corpus(
         )
     return {
         "window_days": AGGREGATE_WINDOW_DAYS,
+        # The window holds at most AGGREGATE_WINDOW_DAYS of snapshots, but early
+        # in the archive it holds fewer. Publishing the count actually divided by
+        # lets the dashboard stop calling a 2-day average a 7-day one.
+        "observed_window_days": len(recent_dates),
         "topics": topics,
         "entity_types": dict(sorted(Counter(entity["type"] for entity in entities).items())),
         "sources": dict(
