@@ -7,8 +7,11 @@ from benchmark_radar.http import RequestError
 from benchmark_radar.sources import (
     ConnectorPayloadError,
     fetch_arxiv,
+    fetch_brave,
     fetch_github,
     fetch_github_releases,
+    fetch_huggingface,
+    fetch_openalex,
     fetch_openreview,
     fetch_semantic_scholar,
 )
@@ -482,3 +485,119 @@ def test_new_connectors_never_synthesize_missing_summary(monkeypatch, fetcher, c
     items = fetcher(config, datetime(2026, 7, 26, tzinfo=UTC), 10)
 
     assert items and items[0].summary == ""
+
+
+def test_openalex_rejects_a_shapeless_payload(monkeypatch):
+    # `payload.get("results", [])` made a `{}` reply indistinguishable from a
+    # genuine zero-result day, so a broken response reported as healthy.
+    monkeypatch.setenv("OPENALEX_API_KEY", "key")
+    monkeypatch.setattr("benchmark_radar.sources.get_json", lambda url, params: {})
+
+    with pytest.raises(ConnectorPayloadError):
+        fetch_openalex({"searches": ["benchmark"]}, datetime(2026, 7, 26, tzinfo=UTC), 10)
+
+
+def test_openalex_skips_undated_works(monkeypatch):
+    monkeypatch.setenv("OPENALEX_API_KEY", "key")
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, params: {
+            "results": [
+                {
+                    "id": "https://openalex.org/W1",
+                    "display_name": "Undated benchmark",
+                    "publication_date": None,
+                    "primary_location": {"landing_page_url": "https://example.com/w1"},
+                },
+                {
+                    "id": "https://openalex.org/W2",
+                    "display_name": "Dated benchmark",
+                    "publication_date": "2026-07-27",
+                    "primary_location": {"landing_page_url": "https://example.com/w2"},
+                },
+            ]
+        },
+    )
+
+    items = fetch_openalex({"searches": ["benchmark"]}, datetime(2026, 7, 26, tzinfo=UTC), 10)
+
+    assert [item.title for item in items] == ["Dated benchmark"]
+
+
+def test_brave_rejects_a_shapeless_payload(monkeypatch):
+    monkeypatch.setenv("BRAVE_API_KEY", "key")
+    monkeypatch.setattr("benchmark_radar.sources.get_json", lambda url, params, headers: {})
+
+    with pytest.raises(ConnectorPayloadError):
+        fetch_brave({"searches": ["benchmark"]}, datetime(2026, 7, 26, tzinfo=UTC), 10)
+
+
+def test_brave_skips_undated_results_and_does_not_read_the_clock(monkeypatch):
+    monkeypatch.setenv("BRAVE_API_KEY", "key")
+    seen: list[dict] = []
+
+    def fake_get_json(url, params, headers):
+        seen.append(params)
+        return {
+            "web": {
+                "results": [
+                    {"url": "https://example.com/a", "title": "No age", "page_age": None},
+                    {
+                        "url": "https://example.com/b",
+                        "title": "Has age",
+                        "page_age": "2026-07-27T00:00:00Z",
+                    },
+                ]
+            }
+        }
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+    since = datetime(2026, 7, 26, tzinfo=UTC)
+
+    items = fetch_brave({"searches": ["benchmark"]}, since, 10)
+
+    assert [item.title for item in items] == ["Has age"]
+    # Anchored to `since`, so replaying the run rebuilds the same query.
+    assert seen[0]["freshness"].startswith("2026-07-26to")
+
+
+def test_huggingface_trims_the_union_to_the_limit(monkeypatch):
+    # `limit` is applied per request and this fetcher issues one per kind per
+    # search, so the union could reach kinds x searches x limit.
+    def fake_get_json(url, params):
+        return [
+            {
+                "id": f"{params['search']}/set-{index}",
+                "lastModified": "2026-07-27T12:00:00Z",
+                "createdAt": "2026-07-27T12:00:00Z",
+            }
+            for index in range(5)
+        ]
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+
+    items = fetch_huggingface(
+        {"kinds": ["datasets"], "searches": ["a", "b", "c"]},
+        datetime(2026, 7, 26, tzinfo=UTC),
+        4,
+    )
+
+    assert len(items) == 4
+
+
+def test_huggingface_skips_undated_repositories(monkeypatch):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, params: [
+            {"id": "org/undated", "lastModified": None, "createdAt": None},
+            {"id": "org/dated", "lastModified": "2026-07-27T12:00:00Z"},
+        ],
+    )
+
+    items = fetch_huggingface(
+        {"kinds": ["datasets"], "searches": ["a"]},
+        datetime(2026, 7, 26, tzinfo=UTC),
+        10,
+    )
+
+    assert [item.source_id for item in items] == ["org/dated"]

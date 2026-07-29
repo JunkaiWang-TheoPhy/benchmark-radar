@@ -56,10 +56,26 @@ def _milliseconds(value: Any) -> datetime | None:
         return None
 
 
-def _date(value: str | None) -> datetime:
+def _optional_date(value: str | None) -> datetime | None:
+    """Parse a timestamp, or report its absence rather than inventing one."""
     if not value:
-        return datetime.now(UTC)
-    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone(UTC)
+    except (TypeError, ValueError):
+        return None
+
+
+def _date(value: str | None) -> datetime:
+    """Parse a timestamp, substituting the current time when it is missing.
+
+    Callers that feed a recency score must use :func:`_optional_date` instead: a
+    missing timestamp resolved to "now" is indistinguishable from a genuinely
+    fresh record, so the substitution silently awards maximum recency to a
+    record whose age is unknown.
+    """
+    parsed = _optional_date(value)
+    return datetime.now(UTC) if parsed is None else parsed
 
 
 def _arxiv_source_id(value: str) -> str:
@@ -240,12 +256,16 @@ def fetch_huggingface(config: dict[str, Any], since: datetime, limit: int) -> li
             if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows):
                 raise ConnectorPayloadError("Hugging Face Hub returned a non-array payload")
             for row in rows:
-                changed = _date(row.get("lastModified") or row.get("createdAt"))
-                if changed < since:
+                # An undated repo is skipped rather than dated "now": the
+                # substitution both invented freshness and slipped past the
+                # `since` check below, which is what it was meant to enforce.
+                changed = _optional_date(row.get("lastModified") or row.get("createdAt"))
+                if changed is None or changed < since:
                     continue
                 item_id = row.get("id") or row.get("modelId")
                 if not item_id:
                     continue
+                created = _optional_date(row.get("createdAt"))
                 found[item_id] = RadarItem(
                     source="Hugging Face",
                     source_id=item_id,
@@ -256,7 +276,9 @@ def fetch_huggingface(config: dict[str, Any], since: datetime, limit: int) -> li
                     # so a template would let the pipeline score itself on its
                     # own words. "" means the repo shipped no card.
                     summary=huggingface_summary(row, item_id),
-                    event_kind=("released" if _date(row.get("createdAt")) >= since else "updated"),
+                    event_kind=(
+                        "released" if created is not None and created >= since else "updated"
+                    ),
                     metrics={
                         "downloads": float(row.get("downloads") or 0),
                         "likes": float(row.get("likes") or 0),
@@ -264,7 +286,11 @@ def fetch_huggingface(config: dict[str, Any], since: datetime, limit: int) -> li
                     raw=row,
                     parser_version="huggingface-hub/1",
                 )
-    return list(found.values())
+    # `limit` is applied per request, and this fetcher issues one per kind per
+    # search, so the union could reach kinds x searches x limit. Trimming to the
+    # most recently changed keeps the source's reported count comparable with
+    # every other connector's.
+    return sorted(found.values(), key=lambda item: item.published_at, reverse=True)[:limit]
 
 
 def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[RadarItem]:
@@ -635,7 +661,10 @@ def fetch_openalex(config: dict[str, Any], since: datetime, limit: int) -> list[
                 "cited_by_count,primary_location,type",
             },
         )
-        for row in payload.get("results", []):
+        # `payload.get("results", [])` treated a `{}` response as a successful
+        # empty fetch, so a malformed reply was indistinguishable from a day
+        # with no matching works.
+        for row in _payload_rows(payload, "results", "OpenAlex"):
             source_id = row["id"].rsplit("/", 1)[-1]
             authors = [
                 authorship.get("author", {}).get("display_name", "")
@@ -643,12 +672,20 @@ def fetch_openalex(config: dict[str, Any], since: datetime, limit: int) -> list[
             ]
             primary = row.get("primary_location") or {}
             url = row.get("doi") or primary.get("landing_page_url") or row["id"]
+            # OpenAlex publishes a date, not a timestamp, so an exact cutoff
+            # against `since` would drop every paper dated the since-day. The
+            # comparison stays date-granular to match the field's real
+            # resolution; an undated row is skipped rather than dated "now",
+            # which would have handed it maximum recency.
+            published = _optional_date(row.get("publication_date"))
+            if published is None or published.date() < since.date():
+                continue
             found[source_id] = RadarItem(
                 source="OpenAlex",
                 source_id=source_id,
                 title=row["display_name"],
                 url=url,
-                published_at=_date(row.get("publication_date")),
+                published_at=published,
                 event_kind="released",
                 authors=[author for author in authors if author],
                 metrics={"citations": float(row.get("cited_by_count") or 0)},
@@ -656,6 +693,12 @@ def fetch_openalex(config: dict[str, Any], since: datetime, limit: int) -> list[
                 parser_version="openalex-works/1",
             )
     return list(found.values())
+
+
+# Brave's freshness range is date-granular and inclusive. `since` plus the
+# longest lookback the radar runs with, rounded up, keeps today inside the range
+# without reading the clock.
+_BRAVE_RANGE_DAYS = 7
 
 
 def fetch_brave(config: dict[str, Any], since: datetime, limit: int) -> list[RadarItem]:
@@ -668,23 +711,42 @@ def fetch_brave(config: dict[str, Any], since: datetime, limit: int) -> list[Rad
             "https://api.search.brave.com/res/v1/web/search",
             params={
                 "q": query,
-                "freshness": f"{since.date().isoformat()}to{datetime.now(UTC).date().isoformat()}",
+                # Anchored to `since` rather than wall-clock now, so replaying a
+                # run reconstructs the same query. The end is padded past the
+                # lookback so the present day stays inside the range: reading
+                # the clock here made the request depend on when it was issued.
+                "freshness": (
+                    f"{since.date().isoformat()}to"
+                    f"{(since + timedelta(days=_BRAVE_RANGE_DAYS)).date().isoformat()}"
+                ),
                 "count": min(limit, 20),
                 "extra_snippets": "true",
             },
             headers={"X-Subscription-Token": api_key},
         )
-        for row in payload.get("web", {}).get("results", []):
+        # Same reasoning as OpenAlex: a `{}` reply must not read as a genuine
+        # zero-result day. Brave nests its rows under `web`, so the wrapper is
+        # validated before the rows are.
+        web = _payload_dict(payload, "Brave Web").get("web")
+        if not isinstance(web, dict):
+            raise ConnectorPayloadError("Brave Web response is missing web")
+        for row in _payload_rows(web, "results", "Brave Web"):
             url = row.get("url")
             if not url:
                 continue
             source_id = re.sub(r"\W+", "-", url).strip("-")[-120:]
+            # Brave omits page_age for many results. Dating those "now" claimed
+            # a freshness the response never asserted and awarded them full
+            # recency, so an undated result is skipped instead.
+            published = _optional_date(row.get("page_age"))
+            if published is None:
+                continue
             found[url] = RadarItem(
                 source="Brave Web",
                 source_id=source_id,
                 title=row.get("title") or url,
                 url=url,
-                published_at=_date(row.get("page_age")),
+                published_at=published,
                 summary=" ".join([row.get("description") or "", *row.get("extra_snippets", [])]),
                 event_kind="discovered",
                 raw=row,
