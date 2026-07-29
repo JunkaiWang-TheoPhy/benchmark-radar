@@ -71,7 +71,7 @@ def test_rubric_dialog_is_linkable_by_url_hash():
     # loading that link must reopen the same rubric version.
     assert "state.rubric" in script
     assert 'window.location.hash.slice(1)).get("rubric")' in script
-    assert "hashParams.set(\"rubric\", state.rubric)" in script
+    assert 'hashParams.set("rubric", state.rubric)' in script
     assert "openRubric(null, state.rubric)" in script
 
 
