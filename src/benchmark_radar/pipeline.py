@@ -328,13 +328,16 @@ def run_pipeline(
     selected = [
         item
         for item in scored
+        # Suppression is checked before the watchlist, not beside it. Written as
+        # `item.watchlist or (not item.suppression_reasons and ...)` the `or`
+        # short-circuits, so a watchlisted record published even when it matched
+        # a suppress rule, which made every "hard" filter advisory.
+        if not item.suppression_reasons
         # A watchlist hit is published even when the generic score or taxonomy
         # would have dropped it: the reader asked for these by name.
-        if item.watchlist
-        or (
-            not item.suppression_reasons
-            and item.total_score >= float(settings["minimum_score"])
-            and item.categories
+        and (
+            item.watchlist
+            or (item.total_score >= float(settings["minimum_score"]) and item.categories)
         )
     ]
     selected.sort(
