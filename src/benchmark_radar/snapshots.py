@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .attention import fetch_attention_feeds
-from .corpus import build_corpus, organizations_for_item
+from .corpus import build_corpus, exact_artifact_key, organizations_for_item
 from .models import RadarRun
 from .rubric import (
     SCORING_VERSION,
@@ -333,13 +333,17 @@ def _attach_category_trends(days: list[dict[str, Any]]) -> None:
     overlaps by design and only arXiv suppresses repeats, so summing daily
     counts would re-count the same repository every day it stayed in range and
     grow steadily while nothing new was found.
+
+    Identity is the exact artifact key, not `source:source_id`. Keying on the
+    latter counted one artifact once per source that reported it, which
+    contradicted the "distinct artifacts" promise above.
     """
     seen: dict[str, set[str]] = {}
     seen_any: set[str] = set()
     for index, day in enumerate(days):
         counts = day["category_counts"]
         for record in day["evidence_items"]:
-            identity = f"{record['source']}:{record['source_id']}".lower()
+            identity = exact_artifact_key(record)
             seen_any.add(identity)
             for category in record["categories"]:
                 seen.setdefault(category, set()).add(identity)

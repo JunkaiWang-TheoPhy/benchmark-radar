@@ -408,3 +408,37 @@ def test_migrate_does_not_refetch_attention_for_schema_two(tmp_path, monkeypatch
     migrated = migrate_snapshot_history({}, tmp_path)
 
     assert migrated[0]["schema_version"] == 2
+
+
+def test_cumulative_counts_one_artifact_reported_by_two_sources_once(tmp_path):
+    # Identity was `source:source_id`, so the same paper found via arXiv and via
+    # a secondary index that links it counted twice, contradicting the
+    # "distinct artifacts, not sightings" promise the function documents.
+    generated = datetime(2026, 7, 27, 12, 15, tzinfo=UTC)
+    run = radar_run(27)
+    run.items.append(
+        RadarItem(
+            source="Semantic Scholar",
+            source_id="s2-abc123",
+            title="A New Evaluation Benchmark Mirrored Elsewhere",
+            url="https://www.semanticscholar.org/paper/s2-abc123",
+            published_at=generated - timedelta(hours=3),
+            summary="The same release, indexed by a second source.",
+            event_kind="released",
+            categories=["benchmark"],
+            # Links the arXiv record, so both resolve to one artifact.
+            artifact_urls=["https://arxiv.org/abs/2607.0027"],
+            total_score=2.6,
+            rationale=["Matched: benchmark"],
+        )
+    )
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(run, snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+    day = data["days"][0]
+
+    assert day["category_trends"]["benchmark"]["count"] == 2
+    # Two sightings, one artifact.
+    assert day["category_trends"]["benchmark"]["cumulative"] == 1
+    assert day["cumulative_evidence_count"] == 1
