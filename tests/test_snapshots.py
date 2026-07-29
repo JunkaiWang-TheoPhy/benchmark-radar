@@ -442,3 +442,62 @@ def test_cumulative_counts_one_artifact_reported_by_two_sources_once(tmp_path):
     # Two sightings, one artifact.
     assert day["category_trends"]["benchmark"]["cumulative"] == 1
     assert day["cumulative_evidence_count"] == 1
+
+
+def test_cumulative_counts_transitively_linked_identifiers_once(tmp_path):
+    first = radar_run(26)
+    first.items[0].source = "Semantic Scholar"
+    first.items[0].source_id = "s2-abc123"
+    first.items[0].url = "https://www.semanticscholar.org/paper/s2-abc123"
+    first.items[0].artifact_urls = [
+        "https://doi.org/10.1000/radar",
+        "https://arxiv.org/abs/2607.0027",
+    ]
+    second = radar_run(27)
+    second.items[0].source = "OpenAlex"
+    second.items[0].source_id = "W1"
+    second.items[0].url = "https://openalex.org/W1"
+    second.items[0].artifact_urls = ["https://arxiv.org/abs/2607.0027"]
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(first, snapshot_dir)
+    write_snapshot(second, snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+    day = data["days"][1]
+
+    assert day["category_trends"]["benchmark"]["cumulative"] == 1
+    assert day["cumulative_evidence_count"] == 1
+
+
+def test_later_alias_bridge_does_not_rewrite_earlier_trend(tmp_path):
+    first = radar_run(26)
+    first.items.append(
+        RadarItem(
+            source="OpenAlex",
+            source_id="W1",
+            title="A DOI-only sighting",
+            url="https://openalex.org/W1",
+            published_at=first.generated_at - timedelta(hours=2),
+            summary="A benchmark.",
+            categories=["benchmark"],
+            artifact_urls=["https://doi.org/10.1000/radar"],
+            total_score=50,
+        )
+    )
+    first.items[0].artifact_urls = ["https://arxiv.org/abs/2607.0026"]
+    second = radar_run(27)
+    second.items[0].source = "Semantic Scholar"
+    second.items[0].source_id = "s2-bridge"
+    second.items[0].url = "https://www.semanticscholar.org/paper/s2-bridge"
+    second.items[0].artifact_urls = [
+        "https://doi.org/10.1000/radar",
+        "https://arxiv.org/abs/2607.0026",
+    ]
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(first, snapshot_dir)
+    write_snapshot(second, snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    assert data["days"][0]["cumulative_evidence_count"] == 2
+    assert data["days"][1]["cumulative_evidence_count"] == 1
