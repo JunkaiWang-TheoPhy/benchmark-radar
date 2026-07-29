@@ -672,7 +672,9 @@ function openRubric(item = null, versionOverride = null) {
           element("p", {
             className: "discovery-note",
             text:
-              `This record was scored by rubric v${version} on a 0 to ${max.toFixed(2)} scale. ` +
+              (item
+                ? `This record was scored by rubric v${version} on a 0 to ${max.toFixed(2)} scale. `
+                : `Rubric v${version} scored records on a 0 to ${max.toFixed(2)} scale. `) +
               `The current rubric is v${current} on a 0 to ` +
               `${(Number(state.data?.rubric?.score_max) || 100).toFixed(2)} scale. Scores from the ` +
               "two versions are not directly comparable, and past records are not rescored.",
