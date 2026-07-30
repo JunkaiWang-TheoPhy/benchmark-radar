@@ -171,8 +171,8 @@ def test_records_expand_inline_without_an_exclusive_accordion_or_record_modal():
     assert '"details"' in script
     assert '"summary"' in script
     assert "record-detail" in script
-    assert '.record-summary::before' in styles
-    assert '.record-card[open] > .record-summary::before' in styles
+    assert ".record-summary::before" in styles
+    assert ".record-card[open] > .record-summary::before" in styles
     assert "detail-dialog" not in html
     assert "detail-dialog" not in script
     # A shared details[name] would force one row closed when another opens.
