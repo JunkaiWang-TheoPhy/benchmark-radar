@@ -124,10 +124,7 @@ def test_summaries_truncate_at_a_word_boundary():
 
     assert 'const lastSpace = candidate.lastIndexOf(" ");' in script
     assert "candidate.slice(0, lastSpace)" in script
-    # The collapsed row is abbreviated, while the expanded region receives
-    # the retained upstream text rather than the abbreviation.
     assert "shorten(item.summary)" in script
-    assert 'text: item.summary || "No description published at the source."' in script
 
 
 def test_site_does_not_render_source_content_as_html():
@@ -185,6 +182,16 @@ def test_hugging_face_expansion_links_to_the_full_card():
 
     assert 'item.source === "Hugging Face"' in script
     assert '"Read full card ↗"' in script
+
+
+def test_expanded_detail_continues_past_the_teaser_instead_of_repeating_it():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert "function summaryRemainder(fullText, teaser)" in script
+    assert "summaryRemainder(item.summary, teaser)" in script
+    # expandedRecord must receive the same teaser text the summary row shows,
+    # or the remainder cannot know what the reader already read.
+    assert 'expandedRecord(item, (item.summary || "").trim() ? summary : "")' in script
 
 
 def test_trend_map_is_keyboard_accessible_and_coordinates_today_filters():

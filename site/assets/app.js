@@ -65,6 +65,18 @@ function shorten(value, max = 190) {
   return `${cutoff.replace(/[,:;.!?-]+$/, "")}…`;
 }
 
+// Expanding a record whose teaser already ran most of the way through the
+// description used to re-show that same opening text in full, which reads as
+// "this just repeats what I already read" rather than as new information.
+// Continuing from where the teaser was cut keeps the expanded view additive.
+function summaryRemainder(fullText, teaser) {
+  const trimmedFull = (fullText || "").trim();
+  const teaserBody = teaser.replace(/…$/, "").trim();
+  if (!trimmedFull.startsWith(teaserBody)) return trimmedFull;
+  const rest = trimmedFull.slice(teaserBody.length).trim();
+  return rest ? `…${rest}` : "";
+}
+
 function option(value, label, selected = false) {
   return element("option", {
     text: label,
@@ -772,7 +784,7 @@ function openRubric(item = null, versionOverride = null) {
   dialog.showModal();
 }
 
-function expandedRecord(item) {
+function expandedRecord(item, teaser) {
   const isAttention = item.observation_kind === "attention";
   const primaryArtifact = item.primary_artifact_url || item.artifact_urls?.[0];
   const scoreEntries = isAttention
@@ -863,7 +875,11 @@ function expandedRecord(item) {
     }),
     element("p", {
       className: item.summary ? "detail-summary" : "detail-summary signal-nodesc",
-      text: item.summary || "No description published at the source.",
+      text: item.summary
+        ? teaser
+          ? summaryRemainder(item.summary, teaser) || "No further description beyond the preview above."
+          : item.summary
+        : "No description published at the source.",
     }),
     attentionNotice,
     element(
@@ -1260,7 +1276,7 @@ function observationCard(item, index) {
     {
       className: `record-card${isAttention ? " attention-card" : ""}`,
     },
-    [header, expandedRecord(item)],
+    [header, expandedRecord(item, (item.summary || "").trim() ? summary : "")],
   );
 }
 
