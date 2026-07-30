@@ -166,10 +166,13 @@ def test_main_filters_use_persisted_attention_and_snapshot_dates():
 def test_records_expand_inline_without_an_exclusive_accordion_or_record_modal():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
     html = Path("site/index.html").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
 
     assert '"details"' in script
     assert '"summary"' in script
     assert "record-detail" in script
+    assert '.record-summary::before' in styles
+    assert '.record-card[open] > .record-summary::before' in styles
     assert "detail-dialog" not in html
     assert "detail-dialog" not in script
     # A shared details[name] would force one row closed when another opens.
