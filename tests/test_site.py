@@ -249,7 +249,7 @@ def test_repo_badges_invite_an_action_rather_than_listing_a_roster():
     assert "/stargazers" not in html
     assert "benchmark-radar/forks" not in html
 
-    for label in (">Star<", ">Fork<", ">Report<"):
+    for label in (">Star<", ">Fork<", ">Issues<"):
         assert label in html
 
     # Starring has no GET endpoint, so the star badge opens the repository and
