@@ -69,6 +69,8 @@
       </div>
     </header>
 
+    <p class="stale-banner" id="stale-banner" hidden></p>
+
     <nav class="view-nav" aria-label="Dashboard views">
       <button type="button" data-view="today" aria-controls="today-view">Today</button>
       <button type="button" data-view="trends" aria-controls="trends-view">Trends</button>
@@ -123,15 +125,26 @@
             </div>
             <div class="signal-list" id="today-list"></div>
           </div>
-          <aside class="health-panel" aria-labelledby="health-heading">
-            <details id="health-panel-details">
-              <summary>
-                <span class="health-panel-title" id="health-heading">Sources</span>
-                <span class="health-panel-status" id="health-status"></span>
-              </summary>
-              <ul id="health-list"></ul>
-            </details>
-          </aside>
+          <div>
+            <aside class="health-panel" aria-labelledby="health-heading">
+              <details id="health-panel-details">
+                <summary>
+                  <span class="health-panel-title" id="health-heading">Sources</span>
+                  <span class="health-panel-status" id="health-status"></span>
+                </summary>
+                <ul id="health-list"></ul>
+              </details>
+            </aside>
+            <aside class="health-panel corpus-totals-panel" aria-labelledby="corpus-totals-heading">
+              <details id="corpus-totals-details">
+                <summary>
+                  <span class="health-panel-title" id="corpus-totals-heading">Corpus totals</span>
+                  <span class="health-panel-status" id="corpus-totals-status"></span>
+                </summary>
+                <ul id="corpus-totals-list"></ul>
+              </details>
+            </aside>
+          </div>
         </div>
       </section>
 

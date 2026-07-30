@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import yaml
 
-from .pipeline import run_pipeline
+from .pipeline import run_pipeline, simulate_backfill
 from .report import render_markdown
 from .snapshots import (
     load_snapshots,
@@ -26,11 +27,11 @@ def main() -> None:
     parser.add_argument(
         "command",
         nargs="?",
-        choices=("run", "rebuild", "backfill", "migrate"),
+        choices=("run", "rebuild", "backfill", "migrate", "simulate-history"),
         default="run",
         help=(
             "Collect a daily run, rebuild/backfill cumulative data from saved snapshots, "
-            "or migrate snapshot schemas."
+            "migrate snapshot schemas, or simulate missing historical snapshots."
         ),
     )
     parser.add_argument("--config", type=Path, default=Path("config.yml"))
@@ -38,6 +39,15 @@ def main() -> None:
     parser.add_argument("--json-output", type=Path, default=Path("out/items.json"))
     parser.add_argument("--snapshot-dir", type=Path, default=Path("data/snapshots"))
     parser.add_argument("--dashboard-output", type=Path, default=Path("site/data/radar.json"))
+    parser.add_argument(
+        "--target-count",
+        type=int,
+        default=30,
+        help=(
+            "simulate-history only: total snapshot files to reach (issue #35's "
+            "30-replay coverage), counting real snapshots already on disk."
+        ),
+    )
     args = parser.parse_args()
 
     if args.command in {"rebuild", "backfill"}:
@@ -47,6 +57,48 @@ def main() -> None:
         return
 
     config = load_config(args.config)
+
+    if args.command == "simulate-history":
+        existing = load_snapshots(args.snapshot_dir)
+        existing_dates = {snapshot["date"] for snapshot in existing}
+        missing = max(0, args.target_count - len(existing))
+        earliest = (
+            datetime.fromisoformat(min(existing_dates)).replace(tzinfo=UTC)
+            if existing_dates
+            else datetime.now(UTC)
+        )
+        dates = []
+        for day_offset in range(missing, 0, -1):
+            candidate = earliest - timedelta(days=day_offset)
+            if candidate.date().isoformat() not in existing_dates:
+                dates.append(candidate)
+        if not dates:
+            print(f"Already have {len(existing)} snapshots, target is {args.target_count}")
+            return
+        runs = simulate_backfill(
+            config,
+            dates,
+            previous_snapshot=existing[0] if existing else None,
+        )
+        # Every connector here is recency-sorted with no per-day cursor
+        # (GitHub's search API, HF Hub's `sort=lastModified`), so one broad
+        # fetch structurally favors the days nearest today and thins out fast
+        # going further back. A day with nothing after that thinning point is
+        # not "confirmed empty," it is "not reached" -- publishing it as a
+        # zero-item snapshot would misrepresent history rather than admit the
+        # gap, so it is skipped and reported rather than written.
+        written = [run for run in runs if run.items]
+        skipped = len(runs) - len(written)
+        for run in written:
+            write_snapshot(run, args.snapshot_dir)
+        dashboard = rebuild_dashboard(args.snapshot_dir, args.dashboard_output)
+        print(
+            f"Simulated {len(written)} historical snapshots with coverage "
+            f"({skipped} of {len(runs)} candidate days had no reachable records and were "
+            "skipped rather than published empty; arXiv excluded from simulation, see issue "
+            f"#35 known limitations); {dashboard['snapshot_count']} total daily snapshots"
+        )
+        return
     if args.command == "migrate":
         snapshots = migrate_snapshot_history(config, args.snapshot_dir)
         dashboard = rebuild_dashboard(args.snapshot_dir, args.dashboard_output)
