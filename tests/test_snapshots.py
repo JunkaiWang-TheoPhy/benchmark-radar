@@ -252,6 +252,33 @@ def test_dashboard_reports_per_category_deltas_and_cumulative(tmp_path):
     assert second["cumulative_evidence_count"] == 2
 
 
+def test_trend_deltas_exclude_records_reannounced_as_updated(tmp_path):
+    # Issue #50: a paper reannounced as an "updated" version is not new
+    # activity in the field, so it must not move the 30-day change the way a
+    # fresh "released" sighting does.
+    snapshot_dir = tmp_path / "snapshots"
+    baseline = radar_run(26)
+    write_snapshot(baseline, snapshot_dir)
+    updated_only = radar_run(27)
+    updated_only.items[0].event_kind = "updated"
+    write_snapshot(updated_only, snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    first, second = data["days"]
+    assert first["category_trends"]["benchmark"]["count"] == 1
+    trend = second["category_trends"]["benchmark"]
+    # The all-events total still shows the record; the release-based trend
+    # figures it feeds do not count it as new.
+    assert second["category_counts"]["benchmark"] == 1
+    assert trend["count"] == 0
+    assert trend["delta"] == -1
+    assert trend["total_count"] == 1
+    # Cumulative corpus coverage is unaffected: the artifact is still real and
+    # still in the corpus, whichever event announced it.
+    assert trend["cumulative"] == 2
+
+
 def test_cumulative_counts_artifacts_once_across_overlapping_windows(tmp_path):
     # The scan window overlaps by design, so the same repository appears on
     # adjacent days. Summing daily counts would grow the total while nothing

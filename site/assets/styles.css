@@ -957,6 +957,26 @@ input {
   background: #756aa8;
 }
 
+.trend-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.trend-filter input {
+  cursor: pointer;
+}
+
+.trend-filter .heading-note {
+  margin: 0;
+  font-size: 0.75rem;
+  cursor: default;
+}
+
 .trend-message {
   margin: 1.25rem 0 0;
   padding: 0.9rem 1rem;

@@ -19,6 +19,7 @@ const state = {
   event: "",
   entity: "",
   rubric: "",
+  trendReleasedOnly: false,
 };
 
 function element(tag, options = {}, children = []) {
@@ -324,6 +325,10 @@ function domainCard(category, trend, index) {
     const percent = Math.round(Number(trend.momentum) * 100);
     rows.splice(2, 0, ["vs its average", `${percent > 0 ? "+" : ""}${percent}%`]);
   }
+  const updatedOnly = Math.max(0, (trend.total_count || 0) - (trend.count || 0));
+  if (updatedOnly) {
+    rows.push(["also updated (not counted above)", updatedOnly.toLocaleString()]);
+  }
   return element(
     "article",
     {
@@ -334,7 +339,11 @@ function domainCard(category, trend, index) {
         swatch,
         element("h3", { text: category.replaceAll("_", " ") }),
       ]),
-      element("p", { className: "domain-count", text: String(trend.count ?? 0) }),
+      element("p", {
+        className: "domain-count",
+        text: String(trend.count ?? 0),
+        attrs: { title: "New releases only. Re-announced updates are tracked separately." },
+      }),
       element(
         "dl",
         { className: "domain-stats" },
@@ -383,6 +392,7 @@ function coverageNote(day) {
 
 function renderTrends() {
   const categories = state.data.facets.categories;
+  byId("trend-released-only").checked = state.trendReleasedOnly;
   replaceChildren(
     byId("trend-legend"),
     [
@@ -449,11 +459,13 @@ function renderTrends() {
     }
     trendChart.hidden = false;
   }
+  const countsFor = (day) =>
+    state.trendReleasedOnly ? day.category_counts_released : day.category_counts;
   const maxTotal = Math.max(
     1,
     ...state.data.days.map((day) =>
       Math.max(
-        Object.values(day.category_counts).reduce((sum, count) => sum + count, 0),
+        Object.values(countsFor(day)).reduce((sum, count) => sum + count, 0),
         day.attention.active_count,
       ),
     ),
@@ -461,13 +473,14 @@ function renderTrends() {
   replaceChildren(
     byId("trend-chart"),
     state.data.days.map((day) => {
-      const total = Object.values(day.category_counts).reduce((sum, count) => sum + count, 0);
+      const dayCounts = countsFor(day);
+      const total = Object.values(dayCounts).reduce((sum, count) => sum + count, 0);
       const segments = categories.map((category, index) => {
         const segment = element("span", {
           className: "bar-segment",
-          attrs: { title: `${category.replaceAll("_", " ")}: ${day.category_counts[category] || 0}` },
+          attrs: { title: `${category.replaceAll("_", " ")}: ${dayCounts[category] || 0}` },
         });
-        segment.style.height = `${((day.category_counts[category] || 0) / maxTotal) * 260}px`;
+        segment.style.height = `${((dayCounts[category] || 0) / maxTotal) * 260}px`;
         segment.style.setProperty("--bar-color", categoryColor(category, index));
         return segment;
       });
@@ -1292,6 +1305,10 @@ function bindEvents() {
   byId("today-date").addEventListener("change", (event) => {
     state.todayDate = event.target.value;
     renderToday();
+  });
+  byId("trend-released-only").addEventListener("change", (event) => {
+    state.trendReleasedOnly = event.target.checked;
+    renderTrends();
   });
   byId("filters").addEventListener("input", (event) => {
     // The Scan date select has its own dedicated change handler above. A

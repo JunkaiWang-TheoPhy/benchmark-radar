@@ -231,6 +231,20 @@ def test_trends_gate_comparisons_on_connector_coverage():
     assert "Coverage is incomplete:" in script
 
 
+def test_trend_chart_can_filter_to_releases_only():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'id="trend-released-only"' in html
+    assert 'byId("trend-released-only")' in script
+    assert "state.trendReleasedOnly" in script
+    assert "day.category_counts_released" in script
+    # The domain card shows the release count as the headline, and reports
+    # anything set aside as an update rather than dropping it silently.
+    assert "trend.total_count" in script
+    assert "also updated (not counted above)" in script
+
+
 def test_static_html_references_existing_local_assets():
     parser = SiteParser()
     parser.feed(Path("site/index.html").read_text(encoding="utf-8"))
