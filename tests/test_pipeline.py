@@ -12,6 +12,7 @@ from benchmark_radar.pipeline import (
     normalized_title,
     run_pipeline,
     score_item,
+    simulate_backfill,
 )
 
 WATCHLIST = [
@@ -502,3 +503,142 @@ def test_suppression_is_not_bypassed_by_the_watchlist():
     index = source.index("if not item.suppression_reasons")
     assert "item.watchlist" in source[index : index + 400]
     assert "if item.watchlist\n        or (" not in source
+
+
+def _backfill_config():
+    return {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 0,
+        },
+        "taxonomy": {"benchmark": ["benchmark"]},
+        "sources": {
+            "arxiv": {"enabled": True, "required": True},
+            "github": {"enabled": True, "required": True},
+            "huggingface": {"enabled": True, "required": True},
+        },
+    }
+
+
+def test_simulate_backfill_fetches_each_source_once_for_every_date(monkeypatch):
+    calls = []
+
+    def fake_github(config, since, limit):
+        calls.append(since)
+        return [
+            item(
+                source="GitHub",
+                source_id="org/repo",
+                title="A benchmark repository for evaluation",
+                url="https://github.com/org/repo",
+                summary="Benchmark suite for language model evaluation.",
+                published_at=datetime(2026, 7, 10, tzinfo=UTC),
+            )
+        ]
+
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "github",
+        fake_github,
+    )
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "huggingface",
+        lambda config, since, limit: [],
+    )
+    dates = [datetime(2026, 7, 11, tzinfo=UTC), datetime(2026, 7, 12, tzinfo=UTC)]
+
+    runs = simulate_backfill(_backfill_config(), dates)
+
+    assert len(calls) == 1, "each connector must be queried once, not once per simulated date"
+    assert [run.generated_at for run in runs] == dates
+    assert all(
+        item_.title.startswith("A benchmark repository") for run in runs for item_ in run.items
+    )
+
+
+def test_simulate_backfill_excludes_items_published_after_the_simulated_date(monkeypatch):
+    early = item(
+        source="GitHub",
+        source_id="org/early",
+        title="An early benchmark repository release",
+        url="https://github.com/org/early",
+        summary="Benchmark suite released early for language model evaluation.",
+        published_at=datetime(2026, 7, 4, tzinfo=UTC),
+    )
+    late = item(
+        source="GitHub",
+        source_id="org/late",
+        title="A later benchmark repository release",
+        url="https://github.com/org/late",
+        summary="Benchmark suite released later for language model evaluation.",
+        published_at=datetime(2026, 7, 20, tzinfo=UTC),
+    )
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "github",
+        lambda config, since, limit: [early, late],
+    )
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "huggingface",
+        lambda config, since, limit: [],
+    )
+
+    [run] = simulate_backfill(_backfill_config(), [datetime(2026, 7, 5, tzinfo=UTC)])
+
+    titles = {item_.source_id for item_ in run.items}
+    assert titles == {"org/early"}
+
+
+def test_simulate_backfill_marks_arxiv_as_a_known_limitation(monkeypatch):
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "github",
+        lambda config, since, limit: [],
+    )
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "huggingface",
+        lambda config, since, limit: [],
+    )
+
+    [run] = simulate_backfill(_backfill_config(), [datetime(2026, 7, 5, tzinfo=UTC)])
+
+    arxiv_health = [health for health in run.health if health.source == "arxiv"]
+    assert arxiv_health and arxiv_health[0].ok is False
+    assert run.selection["simulated"] is True
+
+
+def test_simulate_backfill_requires_dates_sorted_oldest_first():
+    with pytest.raises(ValueError):
+        simulate_backfill(
+            _backfill_config(),
+            [datetime(2026, 7, 12, tzinfo=UTC), datetime(2026, 7, 11, tzinfo=UTC)],
+        )
+
+
+def test_simulate_backfill_chains_discovery_state_across_simulated_dates(monkeypatch):
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "github",
+        lambda config, since, limit: [],
+    )
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "huggingface",
+        lambda config, since, limit: [],
+    )
+    previous = {
+        "discovery_state": {"arxiv": {"seed": {"discovered_at": "2026-07-01T00:00:00+00:00"}}}
+    }
+
+    runs = simulate_backfill(
+        _backfill_config(),
+        [datetime(2026, 7, 11, tzinfo=UTC), datetime(2026, 7, 12, tzinfo=UTC)],
+        previous_snapshot=previous,
+    )
+
+    assert all(run.discovery_state["arxiv"]["seed"] for run in runs)

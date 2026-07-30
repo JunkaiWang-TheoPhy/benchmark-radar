@@ -301,6 +301,195 @@ def _apply_arxiv_discovery_state(
     return changed
 
 
+def _score_and_select(
+    items: list[RadarItem],
+    config: dict[str, Any],
+    *,
+    now: datetime,
+    fetched_count: int,
+    suppressed_count: int,
+) -> tuple[list[RadarItem], dict[str, Any]]:
+    """Score, dedupe and select a fetched item pool as of a given moment.
+
+    Split out of `run_pipeline` so a backfill replay can reuse the exact same
+    scoring and selection a live run applies, evaluated at a simulated `now`
+    instead of the real one, without duplicating the threshold/watchlist/sort
+    logic a second time.
+    """
+    settings = config["radar"]
+    unique = deduplicate(items)
+    scored = apply_watchlist(
+        [
+            score_item(
+                item,
+                config["taxonomy"],
+                now,
+                lookback_hours=float(settings["lookback_hours"]),
+            )
+            for item in unique
+        ],
+        config.get("watchlist") or [],
+    )
+    selected = [
+        item
+        for item in scored
+        # Suppression is checked before the watchlist, not beside it. Written as
+        # `item.watchlist or (not item.suppression_reasons and ...)` the `or`
+        # short-circuits, so a watchlisted record published even when it matched
+        # a suppress rule, which made every "hard" filter advisory.
+        if not item.suppression_reasons
+        # A watchlist hit is published even when the generic score or taxonomy
+        # would have dropped it: the reader asked for these by name.
+        and (
+            item.watchlist
+            or (item.total_score >= float(settings["minimum_score"]) and item.categories)
+        )
+    ]
+    selected.sort(
+        key=lambda item: (bool(item.watchlist), item.total_score, item.published_at),
+        reverse=True,
+    )
+    published = selected[: int(settings["report_limit"])]
+    assert_no_boilerplate_summaries(published)
+    # The dashboard previously showed "228 found" beside 8 published records
+    # with nothing to explain the gap. Persist each stage so the drop-off is
+    # auditable rather than looking like lost data.
+    selection = {
+        "fetched": fetched_count,
+        # arXiv records already seen in a previous run, dropped before dedupe.
+        "suppressed_as_seen": suppressed_count,
+        "deduplicated": len(unique),
+        "scored": len(scored),
+        "qualified": len(selected),
+        # Qualified purely by a watchlist match, so the threshold wording in
+        # the report stays true for the records that did clear the bar.
+        "watchlisted": sum(
+            1
+            for item in selected
+            if item.watchlist
+            and not (item.total_score >= float(settings["minimum_score"]) and item.categories)
+        ),
+        # Suppression now applies to watchlisted records too, so the count is
+        # every suppressed record rather than only the un-watchlisted ones.
+        "suppressed_low_value": sum(1 for item in scored if item.suppression_reasons),
+        "published": len(published),
+        "minimum_score": float(settings["minimum_score"]),
+        "report_limit": int(settings["report_limit"]),
+        # A per-source fetch that returned exactly this many rows was truncated,
+        # so "300 found" is a ceiling rather than a total. Publishing the cap
+        # lets the dashboard say which counts are limits.
+        "max_items_per_source": int(settings["max_items_per_source"]),
+        "lookback_hours": float(settings["lookback_hours"]),
+        "score_version": rubric.SCORING_VERSION,
+        "score_max": rubric.SCORE_MAX,
+    }
+    return published, selection
+
+
+# Connectors this project can honestly re-derive for a past date from data
+# fetched today. arXiv is excluded: its reliable path (RSS, config.yml's
+# `atom_enabled: false`) only ever serves the current feed with no date-range
+# query, and its date-range-capable path (Atom) is the one already disabled
+# for rate-limit fragility (see config.yml comments at the arxiv source). Its
+# adoption metrics (stars/downloads/citations) also reflect today's values,
+# not what they were on the simulated date, which is a known limitation of
+# every connector below too -- recorded on the resulting run rather than
+# presented as if it were measured at the time.
+BACKFILL_SOURCES = {"huggingface", "github", "github_releases", "openreview", "semantic_scholar"}
+
+
+def simulate_backfill(
+    config: dict[str, Any],
+    dates: list[datetime],
+    *,
+    previous_snapshot: dict[str, Any] | None = None,
+) -> list[RadarRun]:
+    """Derive one simulated `RadarRun` per date in `dates` from a single fetch.
+
+    Issue #35: reaching 30 daily snapshots by waiting on the calendar is slow
+    when the same historical window is already fetchable today. Rather than
+    issue one live historical query per simulated date (rate-limit and
+    flakiness risk for `github` in particular, and arXiv cannot do this at
+    all -- see `BACKFILL_SOURCES`), every connector below is queried exactly
+    once with `since` covering the entire requested span, and each simulated
+    date re-runs the same scoring and selection `run_pipeline` uses, evaluated
+    at that date instead of the live one.
+
+    `dates` must be sorted oldest first: discovery_state (the arXiv
+    already-seen ledger folds into this too, though arxiv itself never
+    contributes items here) chains from one simulated day to the next exactly
+    as the daily pipeline chains from one real day to the next, and running
+    dates out of order would let a later, older `discovered_at` overwrite a
+    real ledger entry.
+    """
+    if dates != sorted(dates):
+        raise ValueError("simulate_backfill dates must be sorted oldest first")
+    settings = config["radar"]
+    lookback_hours = int(settings["lookback_hours"])
+    limit = int(settings["max_items_per_source"])
+    earliest_since = min(dates) - timedelta(hours=lookback_hours)
+
+    pool: list[RadarItem] = []
+    fetch_health: list[SourceHealth] = []
+    for source_name, source_config in config["sources"].items():
+        if source_name not in BACKFILL_SOURCES or not source_config.get("enabled", True):
+            continue
+        fetcher = SOURCE_FETCHERS[source_name]
+        try:
+            fetched = fetcher(source_config, earliest_since, limit)
+            fetch_health.append(SourceHealth(source=source_name, ok=True, item_count=len(fetched)))
+            pool.extend(fetched)
+        except Exception as error:  # a partial backfill is preferable; health exposes the gap
+            fetch_health.append(
+                SourceHealth(
+                    source=source_name,
+                    ok=False,
+                    error=f"{type(error).__name__}: {error}",
+                )
+            )
+
+    runs: list[RadarRun] = []
+    discovery_state = deepcopy((previous_snapshot or {}).get("discovery_state") or {})
+    for simulated_now in dates:
+        since = simulated_now - timedelta(hours=lookback_hours)
+        visible = [
+            item
+            for item in pool
+            if since <= (item.updated_at or item.published_at) <= simulated_now
+        ]
+        for item in visible:
+            item.discovered_at = simulated_now
+            item.retrieved_at = item.retrieved_at or simulated_now
+        health = [
+            *fetch_health,
+            SourceHealth(
+                source="arxiv",
+                ok=False,
+                error="arXiv has no date-range query on the RSS path this project relies on; "
+                "excluded from simulated backfill (issue #35 known limitation)",
+            ),
+        ]
+        published, selection = _score_and_select(
+            visible,
+            config,
+            now=simulated_now,
+            fetched_count=len(visible),
+            suppressed_count=0,
+        )
+        selection["simulated"] = True
+        runs.append(
+            RadarRun(
+                generated_at=simulated_now,
+                since=since,
+                items=published,
+                health=health,
+                selection=selection,
+                discovery_state=discovery_state,
+            )
+        )
+    return runs
+
+
 def run_pipeline(
     config: dict[str, Any],
     now: datetime | None = None,
@@ -370,72 +559,13 @@ def run_pipeline(
             "Required discovery sources failed or returned no records: "
             + ", ".join(unavailable_required)
         )
-    unique = deduplicate(items)
-    scored = apply_watchlist(
-        [
-            score_item(
-                item,
-                config["taxonomy"],
-                now,
-                lookback_hours=float(settings["lookback_hours"]),
-            )
-            for item in unique
-        ],
-        config.get("watchlist") or [],
+    published, selection = _score_and_select(
+        items,
+        config,
+        now=now,
+        fetched_count=fetched_count,
+        suppressed_count=suppressed_count,
     )
-    selected = [
-        item
-        for item in scored
-        # Suppression is checked before the watchlist, not beside it. Written as
-        # `item.watchlist or (not item.suppression_reasons and ...)` the `or`
-        # short-circuits, so a watchlisted record published even when it matched
-        # a suppress rule, which made every "hard" filter advisory.
-        if not item.suppression_reasons
-        # A watchlist hit is published even when the generic score or taxonomy
-        # would have dropped it: the reader asked for these by name.
-        and (
-            item.watchlist
-            or (item.total_score >= float(settings["minimum_score"]) and item.categories)
-        )
-    ]
-    selected.sort(
-        key=lambda item: (bool(item.watchlist), item.total_score, item.published_at),
-        reverse=True,
-    )
-    published = selected[: int(settings["report_limit"])]
-    assert_no_boilerplate_summaries(published)
-    # The dashboard previously showed "228 found" beside 8 published records
-    # with nothing to explain the gap. Persist each stage so the drop-off is
-    # auditable rather than looking like lost data.
-    selection = {
-        "fetched": fetched_count,
-        # arXiv records already seen in a previous run, dropped before dedupe.
-        "suppressed_as_seen": suppressed_count,
-        "deduplicated": len(unique),
-        "scored": len(scored),
-        "qualified": len(selected),
-        # Qualified purely by a watchlist match, so the threshold wording in
-        # the report stays true for the records that did clear the bar.
-        "watchlisted": sum(
-            1
-            for item in selected
-            if item.watchlist
-            and not (item.total_score >= float(settings["minimum_score"]) and item.categories)
-        ),
-        # Suppression now applies to watchlisted records too, so the count is
-        # every suppressed record rather than only the un-watchlisted ones.
-        "suppressed_low_value": sum(1 for item in scored if item.suppression_reasons),
-        "published": len(published),
-        "minimum_score": float(settings["minimum_score"]),
-        "report_limit": int(settings["report_limit"]),
-        # A per-source fetch that returns exactly this many rows was truncated,
-        # so "300 found" is a ceiling rather than a total. Publishing the cap
-        # lets the dashboard say which counts are limits.
-        "max_items_per_source": int(settings["max_items_per_source"]),
-        "lookback_hours": float(settings["lookback_hours"]),
-        "score_version": rubric.SCORING_VERSION,
-        "score_max": rubric.SCORE_MAX,
-    }
     attention, attention_health, producer_health, attention_state = fetch_attention_feeds(
         config.get("attention") or {},
         observed_at=now,
