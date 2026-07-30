@@ -296,6 +296,32 @@ function renderToday() {
       return element("li", {}, children);
     }),
   );
+
+  // How many distinct benchmarks/datasets/etc. the whole corpus has ever
+  // surfaced, by category (issue #52). `topics` already counts each artifact
+  // once across every source and day; this just makes that total legible
+  // outside the trend map.
+  const topics = state.data.corpus?.aggregates?.topics || [];
+  const totalArtifacts = Number(state.data.corpus?.aggregates?.entity_types?.artifact || 0);
+  byId("corpus-totals-status").textContent = `${totalArtifacts.toLocaleString()} artifacts`;
+  replaceChildren(
+    byId("corpus-totals-list"),
+    [...topics]
+      .sort((a, b) => b.entity_count - a.entity_count)
+      .map((topic) =>
+        element("li", {}, [
+          element("span", {
+            className: "health-name",
+            text: topic.topic.replace(/_/g, " "),
+          }),
+          element("span", {
+            className: "health-count",
+            text: topic.entity_count.toLocaleString(),
+          }),
+        ]),
+      ),
+  );
+
   writeUrl();
 }
 

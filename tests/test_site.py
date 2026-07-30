@@ -296,6 +296,18 @@ def test_repo_badges_invite_an_action_rather_than_listing_a_roster():
     assert "benchmark-radar/star" not in html
 
 
+def test_today_view_shows_total_corpus_counts_by_category():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # Issue #52: how many distinct artifacts the whole corpus has ever
+    # surfaced, by category, alongside the existing per-source health panel.
+    assert 'id="corpus-totals-list"' in html
+    assert 'id="corpus-totals-status"' in html
+    assert "state.data.corpus?.aggregates?.topics" in script
+    assert "state.data.corpus?.aggregates?.entity_types?.artifact" in script
+
+
 def test_badge_accessible_names_state_the_action():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
