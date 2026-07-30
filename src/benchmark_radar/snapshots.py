@@ -25,6 +25,13 @@ from .rubric import (
 SCHEMA_VERSION = 2
 SUPPORTED_SCHEMA_VERSIONS = {1, SCHEMA_VERSION}
 
+# Mirrors the `required: true` sources in config.yml: the connectors that need
+# no optional secret and whose failure `run_pipeline` already treats as fatal
+# to the run. `coverage_gaps` below also flags optional sources (brave,
+# openalex, ...), which fail on every run without their API key and would
+# make a "degraded" signal fire constantly if used for that instead of this.
+REQUIRED_SOURCES = {"arxiv", "huggingface", "github"}
+
 
 class SnapshotError(ValueError):
     """Raised when persisted public data does not match the supported schema."""
@@ -471,6 +478,11 @@ def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
             f"{entry['source']}:{'ok' if entry['ok'] else 'failed'}" for entry in evidence_health
         )
         coverage_gaps = sorted(entry["source"] for entry in evidence_health if not entry["ok"])
+        required_coverage_gaps = sorted(
+            entry["source"]
+            for entry in evidence_health
+            if not entry["ok"] and entry["source"] in REQUIRED_SOURCES
+        )
         days.append(
             {
                 "date": snapshot["date"],
@@ -496,15 +508,33 @@ def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
                 "coverage_complete": not coverage_gaps,
                 "coverage_gaps": coverage_gaps,
                 "coverage_signature": coverage_signature,
+                # Required-source health only: unlike coverage_complete above,
+                # this ignores optional sources missing an API key so it can
+                # drive a "degraded" signal without firing on every run.
+                "required_coverage_complete": not required_coverage_gaps,
+                "required_coverage_gaps": required_coverage_gaps,
             }
         )
     _attach_category_trends(days)
     corpus = build_corpus(snapshots)
+    last_successful = next(
+        (day for day in reversed(days) if day["required_coverage_complete"]), None
+    )
     return {
         "schema_version": SCHEMA_VERSION,
         "latest_date": days[-1]["date"] if days else None,
         "snapshot_count": len(days),
         "generated_at": days[-1]["generated_at"] if days else None,
+        # Distinct from `generated_at`: the most recent run where every
+        # required source (arxiv, huggingface, github) reported `ok`, vs. the
+        # most recent run at all. A stale-data banner needs both to tell "no
+        # run happened" apart from "a run happened but a required connector
+        # failed" (issue #53). Optional sources missing an API key do not
+        # count against this.
+        "last_successful_collection_at": (
+            last_successful["generated_at"] if last_successful else None
+        ),
+        "degraded": not days[-1]["required_coverage_complete"] if days else False,
         "facets": {
             "dates": [day["date"] for day in days],
             "categories": sorted(categories),

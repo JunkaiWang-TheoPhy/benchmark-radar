@@ -1398,6 +1398,42 @@ async function renderRepoBadges() {
   }
 }
 
+// Two scheduled runs a day (issue #44), roughly 6h apart; a gap past 30h
+// means both the scheduled run and its same-day retry were missed.
+const STALE_AFTER_HOURS = 30;
+
+function renderStaleBanner() {
+  const banner = byId("stale-banner");
+  const latestDay = state.data.days[state.data.days.length - 1];
+  const generatedAt = new Date(state.data.generated_at);
+  const ageHours = (Date.now() - generatedAt.getTime()) / 3_600_000;
+  const degraded = !latestDay.required_coverage_complete;
+  if (ageHours <= STALE_AFTER_HOURS && !degraded) {
+    banner.hidden = true;
+    banner.textContent = "";
+    banner.classList.remove("stale-banner-degraded");
+    return;
+  }
+  const parts = [];
+  if (ageHours > STALE_AFTER_HOURS) {
+    parts.push(
+      `Latest snapshot is from ${formatDate(state.data.generated_at, {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })} UTC (${Math.floor(ageHours)}h ago) — the scheduled run may have failed.`,
+    );
+  }
+  if (degraded) {
+    parts.push(
+      `Required source failures on ${latestDay.date}: ` +
+        `${latestDay.required_coverage_gaps.join(", ")}.`,
+    );
+  }
+  banner.textContent = parts.join(" ");
+  banner.classList.toggle("stale-banner-degraded", degraded);
+  banner.hidden = false;
+}
+
 async function initialize() {
   readUrl();
   bindEvents();
@@ -1433,6 +1469,7 @@ async function initialize() {
       dateStyle: "medium",
       timeStyle: "short",
     })} UTC`;
+    renderStaleBanner();
     if (state.rubric && state.data.rubrics?.[state.rubric]) {
       openRubric(null, state.rubric);
     }

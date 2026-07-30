@@ -352,6 +352,47 @@ def test_trends_do_not_compare_when_connector_coverage_changes(tmp_path):
     assert after["category_trends"]["benchmark"]["comparable"] is False
 
 
+def test_degraded_ignores_optional_source_gaps(tmp_path):
+    # The fixture's only failing source (brave) is optional: missing its API
+    # key fails every run and must not be reported as "degraded" (issue #53).
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(27), snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    assert data["days"][-1]["coverage_complete"] is False
+    assert data["days"][-1]["required_coverage_complete"] is True
+    assert data["degraded"] is False
+    assert data["last_successful_collection_at"] == data["generated_at"]
+
+
+def test_last_successful_collection_at_skips_required_source_failures(tmp_path):
+    snapshot_dir = tmp_path / "snapshots"
+    healthy = radar_run(26)
+    degraded = radar_run(27)
+    degraded.health[0] = SourceHealth(source="arxiv", ok=False, error="RequestError: HTTP 500")
+    write_snapshot(healthy, snapshot_dir)
+    write_snapshot(degraded, snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    assert data["degraded"] is True
+    assert data["last_successful_collection_at"] == data["days"][0]["generated_at"]
+    assert data["last_successful_collection_at"] != data["generated_at"]
+
+
+def test_last_successful_collection_at_is_none_when_no_run_ever_had_required_coverage(tmp_path):
+    snapshot_dir = tmp_path / "snapshots"
+    run = radar_run(27)
+    run.health[0] = SourceHealth(source="arxiv", ok=False, error="RequestError: HTTP 500")
+    write_snapshot(run, snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    assert data["degraded"] is True
+    assert data["last_successful_collection_at"] is None
+
+
 def test_selection_counts_round_trip_through_the_snapshot(tmp_path):
     run = radar_run(27)
     run.selection = {"fetched": 300, "published": 30, "minimum_score": 2.0}

@@ -812,6 +812,14 @@ input {
   border-bottom: 0;
 }
 
+.corpus-totals-panel {
+  margin-top: 1.25rem;
+}
+
+.corpus-totals-panel li {
+  grid-template-columns: 1fr auto;
+}
+
 .health-dot {
   width: 8px;
   height: 8px;
@@ -1461,6 +1469,21 @@ dialog::backdrop {
   font-size: 0.7rem;
   text-decoration: none;
   text-transform: uppercase;
+}
+
+.stale-banner {
+  margin: 0;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--ink);
+  font-family: var(--utility);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: #fff4d6;
+}
+
+.stale-banner.stale-banner-degraded {
+  background: #ffe1d9;
 }
 
 .error-state {
