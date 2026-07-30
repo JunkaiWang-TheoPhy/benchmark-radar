@@ -1115,6 +1115,64 @@ td a {
   text-transform: uppercase;
 }
 
+.map-insights {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.map-insight-card {
+  min-width: 0;
+  padding: 1rem;
+  border-top: 3px solid var(--blue);
+  background: var(--panel);
+}
+
+.map-insight-card h2 {
+  margin: 0 0 0.75rem;
+  font-family: var(--utility);
+  font-size: 0.72rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.map-insight-card ul {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.map-insight-card li {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 0.76rem;
+}
+
+.map-insight-card li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+
+.map-insight-card li strong {
+  flex: none;
+  font-family: var(--utility);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.map-insight-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
 .map-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
@@ -1139,7 +1197,7 @@ td a {
 
 .map-edge {
   stroke: #9baab1;
-  stroke-opacity: 0.38;
+  stroke-opacity: 0.24;
   stroke-width: 1;
 }
 
@@ -1218,6 +1276,11 @@ td a {
 .map-detail .primary-link {
   display: inline-block;
   margin-top: 1rem;
+}
+
+.map-view-results {
+  border: 0;
+  cursor: pointer;
 }
 
 dialog {
@@ -1494,6 +1557,10 @@ footer {
     padding-right: 1rem;
   }
 
+  .map-insights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .map-layout {
     grid-template-columns: 1fr;
   }
@@ -1521,6 +1588,10 @@ footer {
   }
 
   .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .map-insights {
     grid-template-columns: 1fr;
   }
 }

@@ -198,8 +198,22 @@ def test_trend_map_is_keyboard_accessible_and_coordinates_today_filters():
     assert '"aria-label": `${entity.type}: ${entity.label}`' in script
     assert 'event.key === "Enter" || event.key === " "' in script
     assert "mapFilterFor(entity)" in script
+    assert "View matching observations →" in script
+    assert 'setView("today")' in script
     assert 'id="organization-filter"' in html
     assert "state.organization" in script
+
+
+def test_trend_map_shows_the_complete_corpus_and_summarizes_its_shape():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'id="map-insights"' in html
+    assert "renderMapInsights(corpus)" in script
+    assert "Most represented organizations" in script
+    assert "Showing all ${artifacts.length.toLocaleString()} artifacts" in script
+    assert ".slice(0, 16)" not in script
+    assert "author nodes summarized above and omitted from the canvas" in script
 
 
 def test_trends_gate_comparisons_on_connector_coverage():
