@@ -76,19 +76,36 @@ sources:
     # Atom parsing remains available for deployments with a stable egress IP.
     atom_enabled: false
     rss_categories: [cs.AI, cs.CL, cs.CV]
+    # "benchmark"/"evaluation"/"dataset" alone match most ML papers, since
+    # almost every paper evaluates on some existing benchmark. cs.AI+cs.CL+cs.CV
+    # publish 700+ papers a day, and the old bare-word list matched roughly two
+    # of every three (issue #51: "111 releases today"). These phrases require
+    # the paper to be introducing a benchmark, dataset, or leaderboard, not
+    # merely using one, which cuts matches to about one in ten.
     rss_keywords:
-      - benchmark
-      - evaluation
-      - evaluator
+      - benchmark for
+      - new benchmark
+      - novel benchmark
+      - benchmark dataset
+      - benchmark suite
       - leaderboard
-      - dataset
-      - test set
+      - evaluation benchmark
+      - evaluation suite
+      - evaluation dataset
+      - we introduce a benchmark
+      - we present a benchmark
+      - we release a benchmark
+      - we introduce a dataset
+      - we present a dataset
+      - we release a dataset
+      - a new dataset for
+      - a novel dataset for
+      - curated dataset
       - data contamination
       - benchmark leakage
-      - data quality
     queries:
-      - 'all:"large language model" AND (all:benchmark OR all:evaluation)'
-      - '(all:benchmark OR all:dataset) AND (cat:cs.AI OR cat:cs.CL OR cat:cs.CV)'
+      - 'ti:"benchmark" AND (all:"we introduce" OR all:"we present" OR all:"we release")'
+      - 'ti:"dataset" AND (all:"we introduce" OR all:"we present" OR all:"we release")'
       - '(all:"data contamination" OR all:"benchmark leakage" OR all:"data quality")'
 
   huggingface:

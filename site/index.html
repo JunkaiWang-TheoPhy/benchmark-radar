@@ -62,7 +62,7 @@
             title="Open a new issue"
           >
             <span aria-hidden="true">◎</span>
-            <span class="repo-badge-label">Report</span>
+            <span class="repo-badge-label">Issues</span>
             <span class="repo-badge-count" data-count>—</span>
           </a>
         </div>
@@ -142,10 +142,12 @@
             <h1 id="map-heading">Artifacts and their context</h1>
           </div>
           <p class="heading-note">
-            Exact identifiers connect artifacts to topics, publishers, and discovery sources.
-            Select a node to carry it into the Today filters.
+            The overview summarizes the full corpus. The relationship canvas includes every
+            artifact and connected organization, source, and topic; select a node to carry it
+            into the Today filters.
           </p>
         </header>
+        <div class="map-insights" id="map-insights" aria-label="Corpus overview"></div>
         <p class="map-summary" id="map-summary"></p>
         <div class="map-layout">
           <div
@@ -188,6 +190,13 @@
             <h2>Daily evidence and attention volume</h2>
             <div class="legend" id="trend-legend" aria-label="Category legend"></div>
           </div>
+          <label class="trend-filter">
+            <input type="checkbox" id="trend-released-only" />
+            Releases only
+            <span class="heading-note">
+              Excludes records re-announced as an update to something already surfaced.
+            </span>
+          </label>
           <p class="trend-message" id="trend-message" role="status"></p>
           <div class="trend-chart" id="trend-chart" role="img" aria-label="Daily category counts"></div>
         </div>

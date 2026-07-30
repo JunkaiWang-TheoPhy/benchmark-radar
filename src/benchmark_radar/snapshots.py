@@ -342,12 +342,17 @@ def _attach_category_trends(days: list[dict[str, Any]]) -> None:
     Identity joins every exact identifier a record carries, not just one
     preferred key or `source:source_id`. A DOI-plus-arXiv observation and a
     later arXiv-only observation are two sightings of the same artifact.
+
+    Deltas, baselines and momentum are built from `category_counts_released`,
+    not the raw `category_counts`: a version bump reannounced as "updated" is
+    not new activity in the field, so it must not move the 30-day change the
+    way a first "released" sighting does (issue #50).
     """
     seen: dict[str, set[str]] = {}
     seen_any: set[str] = set()
     records_seen: list[dict[str, Any]] = []
     for index, day in enumerate(days):
-        counts = day["category_counts"]
+        counts = day["category_counts_released"]
         records_seen.extend(day["evidence_items"])
         aliases = artifact_alias_map(records_seen)
         # A later observation can bridge identifiers previously thought to be
@@ -373,15 +378,19 @@ def _attach_category_trends(days: list[dict[str, Any]]) -> None:
         prior_day = days[index - 1] if index else None
         if prior_day is not None and _collection_context(prior_day) != context:
             prior_day = None
-        previous = prior_day["category_counts"] if prior_day else {}
+        previous = prior_day["category_counts_released"] if prior_day else {}
         trends = {}
-        for category in sorted({*counts, *previous}):
+        for category in sorted({*counts, *previous, *day["category_counts"]}):
             count = counts.get(category, 0)
-            history = [entry["category_counts"].get(category, 0) for entry in comparable]
+            history = [entry["category_counts_released"].get(category, 0) for entry in comparable]
             baseline = round(sum(history) / len(history), 2) if history else None
             prior = previous.get(category, 0) if prior_day else None
             trends[category] = {
                 "count": count,
+                # The all-events figure this released-only count was drawn
+                # from, so the UI can show how many re-announced updates were
+                # set aside rather than silently dropping them.
+                "total_count": day["category_counts"].get(category, 0),
                 "previous": prior,
                 "delta": None if prior is None else count - prior,
                 "baseline": baseline,
@@ -423,6 +432,16 @@ def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
         category_counts = Counter(
             category for item in evidence_items for category in item["categories"]
         )
+        # A record re-announced as "updated" (a new version of a paper, a
+        # repository pushing again) is not new activity in the field the way a
+        # first "released" sighting is. Trend deltas built from the mixed count
+        # register a version bump as if it were a fresh benchmark landing.
+        category_counts_released = Counter(
+            category
+            for item in evidence_items
+            if item["event_kind"] == "released"
+            for category in item["categories"]
+        )
         source_counts = Counter(item["source"] for item in evidence_items)
         event_counts = Counter(item["event_kind"] for item in evidence_items)
         attention_source_counts = Counter(item["source"] for item in observations)
@@ -460,6 +479,7 @@ def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
                 "item_count": len(evidence_items),
                 "evidence_count": len(evidence_items),
                 "category_counts": dict(sorted(category_counts.items())),
+                "category_counts_released": dict(sorted(category_counts_released.items())),
                 "source_counts": dict(sorted(source_counts.items())),
                 "event_kind_counts": dict(sorted(event_counts.items())),
                 "evidence_items": evidence_items,

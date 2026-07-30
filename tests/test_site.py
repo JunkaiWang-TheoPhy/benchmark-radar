@@ -124,10 +124,7 @@ def test_summaries_truncate_at_a_word_boundary():
 
     assert 'const lastSpace = candidate.lastIndexOf(" ");' in script
     assert "candidate.slice(0, lastSpace)" in script
-    # The collapsed row is abbreviated, while the expanded region receives
-    # the retained upstream text rather than the abbreviation.
     assert "shorten(item.summary)" in script
-    assert 'text: item.summary || "No description published at the source."' in script
 
 
 def test_site_does_not_render_source_content_as_html():
@@ -166,10 +163,13 @@ def test_main_filters_use_persisted_attention_and_snapshot_dates():
 def test_records_expand_inline_without_an_exclusive_accordion_or_record_modal():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
     html = Path("site/index.html").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
 
     assert '"details"' in script
     assert '"summary"' in script
     assert "record-detail" in script
+    assert ".record-summary::before" in styles
+    assert ".record-card[open] > .record-summary::before" in styles
     assert "detail-dialog" not in html
     assert "detail-dialog" not in script
     # A shared details[name] would force one row closed when another opens.
@@ -184,6 +184,16 @@ def test_hugging_face_expansion_links_to_the_full_card():
     assert '"Read full card ↗"' in script
 
 
+def test_expanded_detail_continues_past_the_teaser_instead_of_repeating_it():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert "function summaryRemainder(fullText, teaser)" in script
+    assert "summaryRemainder(item.summary, teaser)" in script
+    # expandedRecord must receive the same teaser text the summary row shows,
+    # or the remainder cannot know what the reader already read.
+    assert 'expandedRecord(item, (item.summary || "").trim() ? summary : "")' in script
+
+
 def test_trend_map_is_keyboard_accessible_and_coordinates_today_filters():
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
@@ -195,8 +205,22 @@ def test_trend_map_is_keyboard_accessible_and_coordinates_today_filters():
     assert '"aria-label": `${entity.type}: ${entity.label}`' in script
     assert 'event.key === "Enter" || event.key === " "' in script
     assert "mapFilterFor(entity)" in script
+    assert "View matching observations →" in script
+    assert 'setView("today")' in script
     assert 'id="organization-filter"' in html
     assert "state.organization" in script
+
+
+def test_trend_map_shows_the_complete_corpus_and_summarizes_its_shape():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'id="map-insights"' in html
+    assert "renderMapInsights(corpus)" in script
+    assert "Most represented organizations" in script
+    assert "Showing all ${artifacts.length.toLocaleString()} artifacts" in script
+    assert ".slice(0, 16)" not in script
+    assert "author nodes summarized above and omitted from the canvas" in script
 
 
 def test_trends_gate_comparisons_on_connector_coverage():
@@ -205,6 +229,20 @@ def test_trends_gate_comparisons_on_connector_coverage():
     assert "sameCollectionContext" in script
     assert "coverage_signature" in script
     assert "Coverage is incomplete:" in script
+
+
+def test_trend_chart_can_filter_to_releases_only():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'id="trend-released-only"' in html
+    assert 'byId("trend-released-only")' in script
+    assert "state.trendReleasedOnly" in script
+    assert "day.category_counts_released" in script
+    # The domain card shows the release count as the headline, and reports
+    # anything set aside as an update rather than dropping it silently.
+    assert "trend.total_count" in script
+    assert "also updated (not counted above)" in script
 
 
 def test_static_html_references_existing_local_assets():
@@ -249,7 +287,7 @@ def test_repo_badges_invite_an_action_rather_than_listing_a_roster():
     assert "/stargazers" not in html
     assert "benchmark-radar/forks" not in html
 
-    for label in (">Star<", ">Fork<", ">Report<"):
+    for label in (">Star<", ">Fork<", ">Issues<"):
         assert label in html
 
     # Starring has no GET endpoint, so the star badge opens the repository and

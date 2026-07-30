@@ -19,6 +19,7 @@ const state = {
   event: "",
   entity: "",
   rubric: "",
+  trendReleasedOnly: false,
 };
 
 function element(tag, options = {}, children = []) {
@@ -63,6 +64,18 @@ function shorten(value, max = 190) {
     ? candidate.slice(0, lastSpace)
     : candidate;
   return `${cutoff.replace(/[,:;.!?-]+$/, "")}…`;
+}
+
+// Expanding a record whose teaser already ran most of the way through the
+// description used to re-show that same opening text in full, which reads as
+// "this just repeats what I already read" rather than as new information.
+// Continuing from where the teaser was cut keeps the expanded view additive.
+function summaryRemainder(fullText, teaser) {
+  const trimmedFull = (fullText || "").trim();
+  const teaserBody = teaser.replace(/…$/, "").trim();
+  if (!trimmedFull.startsWith(teaserBody)) return trimmedFull;
+  const rest = trimmedFull.slice(teaserBody.length).trim();
+  return rest ? `…${rest}` : "";
 }
 
 function option(value, label, selected = false) {
@@ -312,6 +325,10 @@ function domainCard(category, trend, index) {
     const percent = Math.round(Number(trend.momentum) * 100);
     rows.splice(2, 0, ["vs its average", `${percent > 0 ? "+" : ""}${percent}%`]);
   }
+  const updatedOnly = Math.max(0, (trend.total_count || 0) - (trend.count || 0));
+  if (updatedOnly) {
+    rows.push(["also updated (not counted above)", updatedOnly.toLocaleString()]);
+  }
   return element(
     "article",
     {
@@ -322,7 +339,11 @@ function domainCard(category, trend, index) {
         swatch,
         element("h3", { text: category.replaceAll("_", " ") }),
       ]),
-      element("p", { className: "domain-count", text: String(trend.count ?? 0) }),
+      element("p", {
+        className: "domain-count",
+        text: String(trend.count ?? 0),
+        attrs: { title: "New releases only. Re-announced updates are tracked separately." },
+      }),
       element(
         "dl",
         { className: "domain-stats" },
@@ -371,6 +392,7 @@ function coverageNote(day) {
 
 function renderTrends() {
   const categories = state.data.facets.categories;
+  byId("trend-released-only").checked = state.trendReleasedOnly;
   replaceChildren(
     byId("trend-legend"),
     [
@@ -437,11 +459,13 @@ function renderTrends() {
     }
     trendChart.hidden = false;
   }
+  const countsFor = (day) =>
+    state.trendReleasedOnly ? day.category_counts_released : day.category_counts;
   const maxTotal = Math.max(
     1,
     ...state.data.days.map((day) =>
       Math.max(
-        Object.values(day.category_counts).reduce((sum, count) => sum + count, 0),
+        Object.values(countsFor(day)).reduce((sum, count) => sum + count, 0),
         day.attention.active_count,
       ),
     ),
@@ -449,13 +473,14 @@ function renderTrends() {
   replaceChildren(
     byId("trend-chart"),
     state.data.days.map((day) => {
-      const total = Object.values(day.category_counts).reduce((sum, count) => sum + count, 0);
+      const dayCounts = countsFor(day);
+      const total = Object.values(dayCounts).reduce((sum, count) => sum + count, 0);
       const segments = categories.map((category, index) => {
         const segment = element("span", {
           className: "bar-segment",
-          attrs: { title: `${category.replaceAll("_", " ")}: ${day.category_counts[category] || 0}` },
+          attrs: { title: `${category.replaceAll("_", " ")}: ${dayCounts[category] || 0}` },
         });
-        segment.style.height = `${((day.category_counts[category] || 0) / maxTotal) * 260}px`;
+        segment.style.height = `${((dayCounts[category] || 0) / maxTotal) * 260}px`;
         segment.style.setProperty("--bar-color", categoryColor(category, index));
         return segment;
       });
@@ -772,7 +797,7 @@ function openRubric(item = null, versionOverride = null) {
   dialog.showModal();
 }
 
-function expandedRecord(item) {
+function expandedRecord(item, teaser) {
   const isAttention = item.observation_kind === "attention";
   const primaryArtifact = item.primary_artifact_url || item.artifact_urls?.[0];
   const scoreEntries = isAttention
@@ -863,7 +888,11 @@ function expandedRecord(item) {
     }),
     element("p", {
       className: item.summary ? "detail-summary" : "detail-summary signal-nodesc",
-      text: item.summary || "No description published at the source.",
+      text: item.summary
+        ? teaser
+          ? summaryRemainder(item.summary, teaser) || "No further description beyond the preview above."
+          : item.summary
+        : "No description published at the source.",
     }),
     attentionNotice,
     element(
@@ -946,6 +975,16 @@ function selectMapNode(entity, relatedEntities) {
         ]
       : []),
   ];
+  const viewResults = element("button", {
+    className: "primary-link map-view-results",
+    text: "View matching observations →",
+    attrs: { type: "button" },
+  });
+  viewResults.addEventListener("click", () => {
+    setView("today");
+    renderToday();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
   replaceChildren(byId("map-detail"), [
     element("p", { className: "eyebrow", text: "Selected node" }),
     element("h2", { text: entity.label }),
@@ -965,6 +1004,7 @@ function selectMapNode(entity, relatedEntities) {
             .join(", ")}${relatedEntities.length > 8 ? "…" : ""}`,
         })
       : null,
+    viewResults,
     entity.url
       ? element("a", {
           className: "primary-link",
@@ -980,26 +1020,88 @@ function selectMapNode(entity, relatedEntities) {
   writeUrl();
 }
 
+function rankedCounts(values, limit = 6) {
+  return Object.entries(values || {})
+    .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0) || a[0].localeCompare(b[0]))
+    .slice(0, limit);
+}
+
+function mapInsightCard(title, entries, emptyText) {
+  return element("article", { className: "map-insight-card" }, [
+    element("h2", { text: title }),
+    entries.length
+      ? element(
+          "ul",
+          {},
+          entries.map(([label, value]) =>
+            element("li", {}, [
+              element("span", { text: label }),
+              element("strong", { text: value }),
+            ]),
+          ),
+        )
+      : element("p", { text: emptyText }),
+  ]);
+}
+
+function renderMapInsights(corpus) {
+  const aggregates = corpus.aggregates || {};
+  const entityTypes = aggregates.entity_types || {};
+  const topicEntries = (aggregates.topics || [])
+    .sort(
+      (a, b) =>
+        Number(b.entity_count || 0) - Number(a.entity_count || 0) ||
+        a.topic.localeCompare(b.topic),
+    )
+    .map((topic) => [
+      topic.topic.replaceAll("_", " "),
+      `${metricLabel(topic.entity_count, "artifact")} · ${metricLabel(
+        topic.source_breadth,
+        "source",
+      )}`,
+    ]);
+  const sourceEntries = rankedCounts(aggregates.sources).map(([source, count]) => [
+    source,
+    metricLabel(count, "observation"),
+  ]);
+  const organizationEntries = rankedCounts(aggregates.organizations).map(
+    ([organization, count]) => [organization, metricLabel(count, "observation")],
+  );
+  const coverageEntries = [
+    ["Artifacts", Number(entityTypes.artifact || 0).toLocaleString()],
+    ["Organizations", Number(entityTypes.organization || 0).toLocaleString()],
+    ["Authors", Number(entityTypes.person || 0).toLocaleString()],
+    ["Discovery sources", Number(entityTypes.source || 0).toLocaleString()],
+    ["Topics", Number(entityTypes.topic || 0).toLocaleString()],
+  ];
+  replaceChildren(byId("map-insights"), [
+    mapInsightCard("Corpus coverage", coverageEntries, "No corpus entities yet."),
+    mapInsightCard("Topic coverage", topicEntries, "No topics assigned yet."),
+    mapInsightCard("Discovery sources", sourceEntries, "No discovery sources yet."),
+    mapInsightCard(
+      "Most represented organizations",
+      organizationEntries,
+      "No organizations identified yet.",
+    ),
+  ]);
+}
+
 function renderTrendMap() {
   const corpus = state.data.corpus;
   if (!corpus) return;
   const entityById = new Map(corpus.entities.map((entity) => [entity.id, entity]));
   const selectedFromUrl = entityById.get(state.entity);
-  let artifacts = corpus.entities
+  const artifacts = corpus.entities
     .filter((entity) => entity.type === "artifact")
     .sort(
       (a, b) =>
         Number(b.latest_score || 0) - Number(a.latest_score || 0) ||
         Number(b.observation_count || 0) - Number(a.observation_count || 0) ||
         a.label.localeCompare(b.label),
-    )
-    .slice(0, 16);
-  if (
-    selectedFromUrl?.type === "artifact" &&
-    !artifacts.some((entity) => entity.id === selectedFromUrl.id)
-  ) {
-    artifacts = [selectedFromUrl, ...artifacts.slice(0, 15)];
-  }
+    );
+  const artifactOrder = new Map(
+    artifacts.map((entity, index) => [entity.id, index]),
+  );
   const artifactIds = new Set(artifacts.map((entity) => entity.id));
   const visibleEdges = corpus.edges.filter(
     (edge) =>
@@ -1026,17 +1128,28 @@ function renderTrendMap() {
       type,
       visibleEntities
         .filter((entity) => entity.type === type)
-        .sort((a, b) => a.label.localeCompare(b.label)),
+        .sort((a, b) =>
+          type === "artifact"
+            ? artifactOrder.get(a.id) - artifactOrder.get(b.id)
+            : a.label.localeCompare(b.label),
+        ),
     ]),
   );
+  const rowSpacing = 36;
   const height = Math.max(
     560,
-    ...typeOrder.map((type) => groups[type].length * 52 + 90),
+    groups.artifact.length * rowSpacing + 120,
   );
   const positions = new Map();
   typeOrder.forEach((type) => {
     groups[type].forEach((entity, index) => {
-      positions.set(entity.id, { x: xByType[type], y: 70 + index * 52 });
+      const y =
+        type === "artifact"
+          ? 70 + index * rowSpacing
+          : groups[type].length === 1
+            ? height / 2
+            : 70 + (index * (height - 140)) / (groups[type].length - 1);
+      positions.set(entity.id, { x: xByType[type], y });
     });
   });
 
@@ -1107,10 +1220,16 @@ function renderTrendMap() {
     });
     svg.append(group);
   });
+  renderMapInsights(corpus);
   replaceChildren(byId("map-canvas"), [svg]);
+  const authorCount = Number(corpus.aggregates?.entity_types?.person || 0);
   byId("map-summary").textContent =
-    `${corpus.entity_count} cumulative entities · ${corpus.observation_count} observations · ` +
-    `${corpus.edge_count} relationships · showing ${artifacts.length} ranked artifacts`;
+    `Showing all ${artifacts.length.toLocaleString()} artifacts · ` +
+    `${groups.organization.length.toLocaleString()} organizations · ` +
+    `${groups.source.length.toLocaleString()} sources · ${groups.topic.length.toLocaleString()} topics` +
+    (authorCount
+      ? ` · ${authorCount.toLocaleString()} author nodes summarized above and omitted from the canvas`
+      : "");
   if (selectedFromUrl) {
     const related = corpus.edges
       .filter(
@@ -1170,7 +1289,7 @@ function observationCard(item, index) {
     {
       className: `record-card${isAttention ? " attention-card" : ""}`,
     },
-    [header, expandedRecord(item)],
+    [header, expandedRecord(item, (item.summary || "").trim() ? summary : "")],
   );
 }
 
@@ -1186,6 +1305,10 @@ function bindEvents() {
   byId("today-date").addEventListener("change", (event) => {
     state.todayDate = event.target.value;
     renderToday();
+  });
+  byId("trend-released-only").addEventListener("change", (event) => {
+    state.trendReleasedOnly = event.target.checked;
+    renderTrends();
   });
   byId("filters").addEventListener("input", (event) => {
     // The Scan date select has its own dedicated change handler above. A
