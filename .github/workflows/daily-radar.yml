@@ -2,6 +2,11 @@ name: Daily Benchmark Radar
 
 on:
   schedule:
+    # Issue #44: one early run to catch overnight arXiv/HF activity before the
+    # day starts, one mid-morning run so a failed or late trigger has a same-day
+    # retry instead of waiting 24h. Both land in early hours America/Chicago.
+    # 06:15 UTC = 01:15 America/Chicago during daylight saving time.
+    - cron: "15 6 * * *"
     # 12:15 UTC = 07:15 America/Chicago during daylight saving time.
     - cron: "15 12 * * *"
   workflow_dispatch:
