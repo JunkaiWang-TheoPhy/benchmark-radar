@@ -306,6 +306,10 @@ def test_today_view_shows_total_corpus_counts_by_category():
     assert 'id="corpus-totals-status"' in html
     assert "state.data.corpus?.aggregates?.topics" in script
     assert "state.data.corpus?.aggregates?.entity_types?.artifact" in script
+    # A collapsed <details> next to a long, often multi-screen record list was
+    # reported unreadable ("I cannot see it") -- default it open so the totals
+    # are visible without a click, on both wide and stacked-mobile layouts.
+    assert '<details id="corpus-totals-details" open>' in html
 
 
 def test_badge_accessible_names_state_the_action():
