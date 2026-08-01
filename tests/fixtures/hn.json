@@ -1,0 +1,31 @@
+{
+  "hits": [
+    {
+      "created_at": "2026-07-27T10:00:00Z",
+      "title": "Show HN: A transparent LLM evaluation benchmark",
+      "url": "https://example.org/benchmark",
+      "author": "researcher",
+      "points": 42,
+      "num_comments": 12,
+      "objectID": "12345"
+    },
+    {
+      "created_at": "2026-07-27T09:00:00Z",
+      "title": "Show HN: A transparent LLM evaluation benchmark",
+      "url": "https://mirror.example.org/benchmark",
+      "author": "second-reader",
+      "points": 1,
+      "num_comments": 0,
+      "objectID": "12346"
+    },
+    {
+      "created_at": "2026-07-27T08:00:00Z",
+      "title": "A general programming discussion",
+      "url": "https://example.org/unrelated",
+      "author": "reader",
+      "points": 3,
+      "num_comments": 1,
+      "objectID": "99999"
+    }
+  ]
+}

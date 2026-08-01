@@ -2,6 +2,89 @@ from datetime import UTC, datetime
 
 from benchmark_radar.attention import fetch_attention_feeds
 
+LOCAL_CONFIG = {
+    "hacker_news": {
+        "enabled": True,
+        "producer": "benchmark-social-signal",
+    }
+}
+
+
+def local_observation(now):
+    return {
+        "id": "hacker-news:1",
+        "source": "Hacker News",
+        "source_id": "1",
+        "title": "Benchmark discussion",
+        "url": "https://news.ycombinator.com/item?id=1",
+        "published_at": "2026-07-26T12:00:00+00:00",
+        "discovered_at": now.isoformat(),
+        "event_kind": "discussed",
+        "categories": ["benchmark"],
+        "metrics": {"points": 2},
+        "rationale": ["Attention signal only"],
+    }
+
+
+def test_integrated_collector_preserves_legacy_observation_ids(monkeypatch):
+    observed = datetime(2026, 7, 27, 12, tzinfo=UTC)
+    monkeypatch.setattr(
+        "benchmark_radar.attention.collect_hacker_news",
+        lambda config, now, **kwargs: (
+            [local_observation(now)],
+            {"source": "Hacker News", "ok": True, "item_count": 1, "error": None},
+        ),
+    )
+
+    observations, ingest, producer, _ = fetch_attention_feeds(
+        LOCAL_CONFIG,
+        observed_at=observed,
+    )
+
+    assert observations[0].observation_id == "benchmark-social-signal:hacker-news:1"
+    assert observations[0].quality_scored is False
+    assert ingest[0].source == "Hacker News collector"
+    assert ingest[0].ok is True
+    assert producer[0].producer == "benchmark-social-signal"
+
+
+def test_failed_integrated_collection_carries_forward_last_healthy_observations(monkeypatch):
+    observed = datetime(2026, 7, 27, 12, tzinfo=UTC)
+    monkeypatch.setattr(
+        "benchmark_radar.attention.collect_hacker_news",
+        lambda config, now, **kwargs: (
+            [local_observation(now)],
+            {"source": "Hacker News", "ok": True, "item_count": 1, "error": None},
+        ),
+    )
+    first, _, _, state = fetch_attention_feeds(LOCAL_CONFIG, observed_at=observed)
+    previous = [first[0].to_dict()]
+    monkeypatch.setattr(
+        "benchmark_radar.attention.collect_hacker_news",
+        lambda config, now, **kwargs: (
+            [],
+            {
+                "source": "Hacker News",
+                "ok": False,
+                "item_count": 0,
+                "error": "TimeoutError: fixture timeout",
+            },
+        ),
+    )
+
+    restored, ingest, producer, next_state = fetch_attention_feeds(
+        LOCAL_CONFIG,
+        observed_at=observed.replace(day=28),
+        previous_state=state,
+        previous_observations=previous,
+    )
+
+    assert [item.to_dict() for item in restored] == previous
+    assert ingest[0].ok is False
+    assert "TimeoutError" in ingest[0].error
+    assert producer[0].ok is False
+    assert next_state == state
+
 
 def test_feed_is_normalized_without_quality_scores(monkeypatch):
     payload = {

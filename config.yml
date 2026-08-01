@@ -246,10 +246,23 @@ sources:
       - new agentic AI benchmark leaderboard
 
 attention:
-  feeds:
-    - name: Benchmark Social Signal
-      enabled: true
-      url: "https://raw.githubusercontent.com/ktwu01/benchmark-social-signal/main/feed.json"
+  hacker_news:
+    enabled: true
+    # Keep the v1 producer namespace so observation IDs remain stable after
+    # moving collection out of benchmark-social-signal.
+    producer: benchmark-social-signal
+    lookback_hours: 168
+    items_per_query: 40
+    queries:
+      - AI benchmark
+      - LLM evaluation
+      - machine learning dataset
+      - model leaderboard
+    taxonomy:
+      benchmark: [benchmark, leaderboard, challenge set]
+      evaluation: [evaluation, eval, judge model]
+      dataset: [dataset, corpus, training data, synthetic data]
+      data_quality: [data quality, contamination, deduplication, provenance, leakage]
 
 publish:
   dashboard_url: "https://ktwu01.github.io/benchmark-radar/"
