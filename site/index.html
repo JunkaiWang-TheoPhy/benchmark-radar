@@ -211,7 +211,12 @@
             </span>
           </label>
           <p class="trend-message" id="trend-message" role="status"></p>
-          <div class="trend-chart" id="trend-chart" role="img" aria-label="Daily category counts"></div>
+          <div class="trend-chart-frame">
+            <!-- A group, not an img: role="img" would make the day buttons
+                 presentational and hide their tooltip description. -->
+            <div class="trend-chart" id="trend-chart" role="group" aria-label="Daily category counts"></div>
+            <div class="day-tooltip" id="day-tooltip" role="tooltip" aria-hidden="true" hidden></div>
+          </div>
         </div>
 
         <section class="ledger" aria-labelledby="ledger-heading">

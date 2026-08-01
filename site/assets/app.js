@@ -499,22 +499,16 @@ function renderTrends() {
   );
   replaceChildren(
     byId("trend-chart"),
-    state.data.days.map((day) => {
+    state.data.days.map((day, dayIndex) => {
       const dayCounts = countsFor(day);
       const total = Object.values(dayCounts).reduce((sum, count) => sum + count, 0);
       const segments = categories.map((category, index) => {
-        const segment = element("span", {
-          className: "bar-segment",
-          attrs: { title: `${category.replaceAll("_", " ")}: ${dayCounts[category] || 0}` },
-        });
+        const segment = element("span", { className: "bar-segment" });
         segment.style.height = `${((dayCounts[category] || 0) / maxTotal) * 260}px`;
         segment.style.setProperty("--bar-color", categoryColor(category, index));
         return segment;
       });
-      const attentionBar = element("span", {
-        className: "attention-volume",
-        attrs: { title: `Active attention: ${day.attention.active_count}` },
-      });
+      const attentionBar = element("span", { className: "attention-volume" });
       attentionBar.style.height = `${(day.attention.active_count / maxTotal) * 260}px`;
       const button = element("button", {
         className: "day-column",
@@ -529,6 +523,26 @@ function renderTrends() {
         ]),
         element("span", { className: "day-label", text: day.date.slice(5) }),
       ]);
+      const previous = state.data.days[dayIndex - 1];
+      const show = () => {
+        // Escape stays honoured until the pointer or focus leaves and returns,
+        // so the card does not spring back while the column is still active.
+        if (dismissedTooltipColumn === button) return;
+        // Clear the previous column's description first: moving between columns
+        // must never leave two triggers pointing at one card.
+        hideDayTooltip();
+        showDayTooltip(button, day, previous, dayCounts, categories);
+      };
+      button.showDayTooltip = show;
+      button.addEventListener("pointerenter", show);
+      button.addEventListener("focus", show);
+      // Mixed pointer and keyboard use: leaving with the mouse must not close a
+      // card the keyboard still owns, so hand it back to the focused column.
+      // An Escape dismissal lifts only once the column is neither hovered nor
+      // focused; otherwise taking the mouse off a focused column would undo the
+      // dismissal and reopen the card the reader just closed.
+      button.addEventListener("pointerleave", releaseDayTooltip);
+      button.addEventListener("blur", releaseDayTooltip);
       button.addEventListener("click", () => {
         state.todayDate = day.date;
         setView("today");
@@ -538,6 +552,7 @@ function renderTrends() {
       return button;
     }),
   );
+  hideDayTooltip();
   byId("snapshot-count").textContent = `${state.data.snapshot_count} snapshots`;
   replaceChildren(
     byId("trend-table"),
@@ -567,6 +582,231 @@ function renderTrends() {
       ]);
     }),
   );
+}
+
+// The chart exists to compare days, so the tooltip answers only what made this
+// column this tall and whether that is up or down. Momentum, baselines, and
+// cumulative totals stay on the domain cards rather than being repeated here.
+const TOOLTIP_CATEGORY_LIMIT = 4;
+
+// The column whose card is open, so a scroll or resize can re-place it, and the
+// column Escape dismissed, so re-entering is required before it opens again.
+let openTooltipColumn = null;
+let dismissedTooltipColumn = null;
+
+function showDayTooltip(column, day, previous, dayCounts, categories) {
+  const tooltip = byId("day-tooltip");
+  const total = Object.values(dayCounts).reduce((sum, count) => sum + count, 0);
+  // A different report limit or connector set lifts every count at once, so the
+  // same gate the headline sentence uses decides whether a delta is meaningful.
+  const comparable = previous && sameCollectionContext(day, previous);
+  const previousTotal = comparable
+    ? Object.values(
+        state.trendReleasedOnly
+          ? previous.category_counts_released
+          : previous.category_counts,
+      ).reduce((sum, count) => sum + count, 0)
+    : null;
+  const ranked = categories
+    .map((category, index) => ({
+      category,
+      count: dayCounts[category] || 0,
+      color: categoryColor(category, index),
+    }))
+    .filter((entry) => entry.count > 0)
+    .sort((a, b) => b.count - a.count);
+  const shown = ranked.slice(0, TOOLTIP_CATEGORY_LIMIT);
+  const restCount = ranked
+    .slice(TOOLTIP_CATEGORY_LIMIT)
+    .reduce((sum, entry) => sum + entry.count, 0);
+
+  const rows = shown.map((entry) => {
+    const swatch = element("span", { className: "legend-swatch" });
+    swatch.style.setProperty("--swatch", entry.color);
+    return element("span", { className: "day-tooltip-row" }, [
+      swatch,
+      element("span", {
+        className: "day-tooltip-name",
+        text: entry.category.replaceAll("_", " "),
+      }),
+      element("span", { className: "day-tooltip-value", text: entry.count }),
+    ]);
+  });
+  if (restCount) {
+    rows.push(
+      element("span", { className: "day-tooltip-row day-tooltip-rest" }, [
+        element("span", {
+          className: "day-tooltip-name",
+          text: `+${ranked.length - shown.length} more categories`,
+        }),
+        element("span", { className: "day-tooltip-value", text: restCount }),
+      ]),
+    );
+  }
+
+  replaceChildren(tooltip, [
+    element("span", { className: "day-tooltip-date", text: formatDate(day.date) }),
+    element("span", {
+      className: "day-tooltip-total",
+      text:
+        `${metricLabel(total, "category match", "category matches")}` +
+        (previousTotal === null
+          ? ""
+          : total === previousTotal
+            ? ` · flat vs ${previous.date.slice(5)}`
+            : ` · ${deltaText(total - previousTotal)} vs ${previous.date.slice(5)}`),
+    }),
+    rows.length ? element("span", { className: "day-tooltip-rows" }, rows) : null,
+    element("span", {
+      className: "day-tooltip-attention",
+      text: `Active attention: ${day.attention.active_count}`,
+    }),
+  ]);
+
+  tooltip.hidden = false;
+  tooltip.setAttribute("aria-hidden", "false");
+  // Point the trigger at the card while it is open. Without this the breakdown
+  // is visual only: a screen reader on the focused column would never reach it.
+  column.setAttribute("aria-describedby", tooltip.id);
+  openTooltipColumn = column;
+  positionDayTooltip(tooltip, column);
+  // Tabbing to an off-screen column scrolls the chart after focus fires, which
+  // would leave the card behind. Re-place it once that scrolling has settled.
+  requestAnimationFrame(() => {
+    if (openTooltipColumn === column && !tooltip.hidden) {
+      positionDayTooltip(tooltip, column);
+    }
+  });
+}
+
+function positionDayTooltip(tooltip, column) {
+  const frame = tooltip.parentElement;
+  // Drop any narrowing a previous cramped placement applied, so every hover is
+  // measured at the card's natural width.
+  tooltip.style.maxWidth = "";
+  const frameBox = frame.getBoundingClientRect();
+  const columnBox = column.getBoundingClientRect();
+  const width = tooltip.offsetWidth;
+  const height = tooltip.offsetHeight;
+  // Reads the live width, so a placement that narrows the card first still
+  // clamps against its new size rather than the width measured on entry.
+  const clampLeft = (value) =>
+    Math.min(
+      Math.max(value, 8),
+      Math.max(frame.clientWidth - tooltip.offsetWidth - 8, 8),
+    );
+  // The bar stack is a fixed-height plotting box, so its own top says nothing
+  // about how tall the rendered bars are. Measure the drawn segments instead.
+  const drawn = [...column.querySelectorAll(".bar-segment, .attention-volume")]
+    .map((bar) => bar.getBoundingClientRect())
+    .filter((box) => box.height > 0);
+  const barTop = drawn.length
+    ? Math.min(...drawn.map((box) => box.top))
+    : columnBox.bottom;
+  const above = barTop - frameBox.top - height - 10;
+  const center = columnBox.left - frameBox.left + columnBox.width / 2;
+  if (above >= 0) {
+    // There is room over the bar, so sit above it and stay centred.
+    tooltip.style.left = `${clampLeft(center - width / 2)}px`;
+    tooltip.style.top = `${above}px`;
+    return;
+  }
+  // A tall bar leaves no headroom. Move beside the column rather than on top of
+  // it, so the hovered bar the reader is inspecting is never covered.
+  const gap = 12;
+  const rightEdge = columnBox.right - frameBox.left + gap;
+  const leftEdge = columnBox.left - frameBox.left - gap - width;
+  const fitsRight = rightEdge + width <= frame.clientWidth - 8;
+  const fitsLeft = leftEdge >= 8;
+  const besideTop = () =>
+    `${Math.max(
+      Math.min(barTop - frameBox.top, frame.clientHeight - tooltip.offsetHeight - 8),
+      8,
+    )}px`;
+  if (fitsRight || fitsLeft) {
+    tooltip.style.left = `${clampLeft(fitsRight ? rightEdge : leftEdge)}px`;
+    tooltip.style.top = besideTop();
+    return;
+  }
+  // Neither side has room at the card's natural width. Narrow it to whichever
+  // side has more space rather than letting it clamp back over the bar; the
+  // card is capped in CSS, so this only ever shrinks it further.
+  const roomRight = frame.clientWidth - 8 - rightEdge;
+  const roomLeft = columnBox.left - frameBox.left - gap - 8;
+  const useRight = roomRight >= roomLeft;
+  tooltip.style.maxWidth = `${Math.max(Math.round(useRight ? roomRight : roomLeft), 120)}px`;
+  tooltip.style.left = `${clampLeft(
+    useRight ? rightEdge : columnBox.left - frameBox.left - gap - tooltip.offsetWidth,
+  )}px`;
+  tooltip.style.top = besideTop();
+}
+
+function hideDayTooltip() {
+  const tooltip = byId("day-tooltip");
+  if (!tooltip) return;
+  tooltip.hidden = true;
+  tooltip.setAttribute("aria-hidden", "true");
+  openTooltipColumn = null;
+  document
+    .querySelectorAll("#trend-chart .day-column[aria-describedby]")
+    .forEach((column) => column.removeAttribute("aria-describedby"));
+}
+
+// Escape closes the card without moving focus, so a reader who finds it in the
+// way can clear it and keep their place in the column order.
+function dismissDayTooltip() {
+  if (!openTooltipColumn) return false;
+  dismissedTooltipColumn = openTooltipColumn;
+  hideDayTooltip();
+  return true;
+}
+
+// The chart scrolls horizontally, so an open card has to follow its column. A
+// column scrolled out of the viewport takes its card with it: on a narrow frame
+// the card would otherwise stay pinned at the clamp edge, labelled with a day
+// no longer on screen.
+function repositionDayTooltip() {
+  const tooltip = byId("day-tooltip");
+  if (!tooltip || tooltip.hidden || !openTooltipColumn) return;
+  const chart = byId("trend-chart");
+  const columnBox = openTooltipColumn.getBoundingClientRect();
+  const chartBox = chart.getBoundingClientRect();
+  if (columnBox.right <= chartBox.left || columnBox.left >= chartBox.right) {
+    hideDayTooltip();
+    return;
+  }
+  positionDayTooltip(tooltip, openTooltipColumn);
+}
+
+// A pointer leaving, or focus moving on, closes the card only if no day column
+// still holds focus. Otherwise the keyboard's card is restored. The check is
+// deferred because blur fires before focus settles on the next element, and a
+// pointerleave arrives before :hover has updated.
+function releaseDayTooltip() {
+  hideDayTooltip();
+  requestAnimationFrame(() => {
+    // An Escape dismissal outlives a pointer moving away: it lifts only once
+    // its column is neither hovered nor focused, so taking the mouse off a
+    // focused column cannot reopen the card the reader just closed.
+    const dismissed = dismissedTooltipColumn;
+    if (
+      dismissed &&
+      document.activeElement !== dismissed &&
+      !dismissed.matches(":hover")
+    ) {
+      dismissedTooltipColumn = null;
+    }
+    const focused = document.activeElement;
+    if (
+      focused &&
+      focused.classList &&
+      focused.classList.contains("day-column") &&
+      typeof focused.showDayTooltip === "function" &&
+      byId("day-tooltip").hidden
+    ) {
+      focused.showDayTooltip();
+    }
+  });
 }
 
 function metricLabel(value, singular, plural = `${singular}s`) {
@@ -1336,6 +1576,16 @@ function bindEvents() {
   byId("trend-released-only").addEventListener("change", (event) => {
     state.trendReleasedOnly = event.target.checked;
     renderTrends();
+  });
+  // An open hover card is positioned against the chart, so any scroll or resize
+  // that moves its column has to move it too.
+  byId("trend-chart").addEventListener("scroll", repositionDayTooltip, {
+    passive: true,
+  });
+  window.addEventListener("resize", repositionDayTooltip);
+  document.addEventListener("keydown", (event) => {
+    // Do not swallow Escape unless a card is actually open to close.
+    if (event.key === "Escape" && dismissDayTooltip()) event.preventDefault();
   });
   byId("filters").addEventListener("input", (event) => {
     // The Scan date select has its own dedicated change handler above. A
