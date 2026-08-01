@@ -524,7 +524,12 @@ function renderTrends() {
         element("span", { className: "day-label", text: day.date.slice(5) }),
       ]);
       const previous = state.data.days[dayIndex - 1];
-      const show = () => showDayTooltip(button, day, previous, dayCounts, categories);
+      const show = () => {
+        // Clear the previous column's description first: moving between columns
+        // must never leave two triggers pointing at one card.
+        hideDayTooltip();
+        showDayTooltip(button, day, previous, dayCounts, categories);
+      };
       button.addEventListener("pointerenter", show);
       button.addEventListener("focus", show);
       button.addEventListener("pointerleave", hideDayTooltip);
@@ -646,6 +651,9 @@ function showDayTooltip(column, day, previous, dayCounts, categories) {
 
   tooltip.hidden = false;
   tooltip.setAttribute("aria-hidden", "false");
+  // Point the trigger at the card while it is open. Without this the breakdown
+  // is visual only: a screen reader on the focused column would never reach it.
+  column.setAttribute("aria-describedby", tooltip.id);
   positionDayTooltip(tooltip, column);
 }
 
@@ -653,19 +661,39 @@ function positionDayTooltip(tooltip, column) {
   const frame = tooltip.parentElement;
   const frameBox = frame.getBoundingClientRect();
   const columnBox = column.getBoundingClientRect();
-  // The chart scrolls horizontally, so anchor to the frame and clamp inside it
-  // rather than trusting the column to sit within view.
+  const width = tooltip.offsetWidth;
+  const height = tooltip.offsetHeight;
+  const clampLeft = (value) =>
+    Math.min(Math.max(value, 8), Math.max(frame.clientWidth - width - 8, 8));
+  // The bar stack is a fixed-height plotting box, so its own top says nothing
+  // about how tall the rendered bars are. Measure the drawn segments instead.
+  const drawn = [...column.querySelectorAll(".bar-segment, .attention-volume")]
+    .map((bar) => bar.getBoundingClientRect())
+    .filter((box) => box.height > 0);
+  const barTop = drawn.length
+    ? Math.min(...drawn.map((box) => box.top))
+    : columnBox.bottom;
+  const above = barTop - frameBox.top - height - 10;
   const center = columnBox.left - frameBox.left + columnBox.width / 2;
-  tooltip.style.left = `${Math.min(
-    Math.max(center - tooltip.offsetWidth / 2, 8),
-    Math.max(frame.clientWidth - tooltip.offsetWidth - 8, 8),
+  if (above >= 0) {
+    // There is room over the bar, so sit above it and stay centred.
+    tooltip.style.left = `${clampLeft(center - width / 2)}px`;
+    tooltip.style.top = `${above}px`;
+    return;
+  }
+  // A tall bar leaves no headroom. Move beside the column rather than on top of
+  // it, so the hovered bar the reader is inspecting is never covered.
+  const gap = 12;
+  const rightEdge = columnBox.right - frameBox.left + gap;
+  const fitsRight = rightEdge + width <= frame.clientWidth - 8;
+  const beside = fitsRight
+    ? rightEdge
+    : columnBox.left - frameBox.left - gap - width;
+  tooltip.style.left = `${clampLeft(beside)}px`;
+  tooltip.style.top = `${Math.max(
+    Math.min(barTop - frameBox.top, frame.clientHeight - height - 8),
+    8,
   )}px`;
-  // Prefer sitting above the hovered bar, but never escape the frame: a tall
-  // tooltip on a short bar would otherwise float off the top of the panel.
-  const barTop = (column.querySelector(".bar-stack") || column).getBoundingClientRect().top;
-  const preferred = barTop - frameBox.top - tooltip.offsetHeight - 10;
-  const maxTop = Math.max(frame.clientHeight - tooltip.offsetHeight - 8, 0);
-  tooltip.style.top = `${Math.min(Math.max(preferred, 0), maxTop)}px`;
 }
 
 function hideDayTooltip() {
@@ -673,6 +701,9 @@ function hideDayTooltip() {
   if (!tooltip) return;
   tooltip.hidden = true;
   tooltip.setAttribute("aria-hidden", "true");
+  document
+    .querySelectorAll("#trend-chart .day-column[aria-describedby]")
+    .forEach((column) => column.removeAttribute("aria-describedby"));
 }
 
 function metricLabel(value, singular, plural = `${singular}s`) {
