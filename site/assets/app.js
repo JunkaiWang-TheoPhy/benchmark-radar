@@ -530,10 +530,13 @@ function renderTrends() {
         hideDayTooltip();
         showDayTooltip(button, day, previous, dayCounts, categories);
       };
+      button.showDayTooltip = show;
       button.addEventListener("pointerenter", show);
       button.addEventListener("focus", show);
-      button.addEventListener("pointerleave", hideDayTooltip);
-      button.addEventListener("blur", hideDayTooltip);
+      // Mixed pointer and keyboard use: leaving with the mouse must not close a
+      // card the keyboard still owns, so hand it back to the focused column.
+      button.addEventListener("pointerleave", releaseDayTooltip);
+      button.addEventListener("blur", releaseDayTooltip);
       button.addEventListener("click", () => {
         state.todayDate = day.date;
         setView("today");
@@ -659,6 +662,9 @@ function showDayTooltip(column, day, previous, dayCounts, categories) {
 
 function positionDayTooltip(tooltip, column) {
   const frame = tooltip.parentElement;
+  // Drop any narrowing a previous cramped placement applied, so every hover is
+  // measured at the card's natural width.
+  tooltip.style.maxWidth = "";
   const frameBox = frame.getBoundingClientRect();
   const columnBox = column.getBoundingClientRect();
   const width = tooltip.offsetWidth;
@@ -685,15 +691,30 @@ function positionDayTooltip(tooltip, column) {
   // it, so the hovered bar the reader is inspecting is never covered.
   const gap = 12;
   const rightEdge = columnBox.right - frameBox.left + gap;
+  const leftEdge = columnBox.left - frameBox.left - gap - width;
   const fitsRight = rightEdge + width <= frame.clientWidth - 8;
-  const beside = fitsRight
-    ? rightEdge
-    : columnBox.left - frameBox.left - gap - width;
-  tooltip.style.left = `${clampLeft(beside)}px`;
-  tooltip.style.top = `${Math.max(
-    Math.min(barTop - frameBox.top, frame.clientHeight - height - 8),
-    8,
+  const fitsLeft = leftEdge >= 8;
+  const besideTop = () =>
+    `${Math.max(
+      Math.min(barTop - frameBox.top, frame.clientHeight - tooltip.offsetHeight - 8),
+      8,
+    )}px`;
+  if (fitsRight || fitsLeft) {
+    tooltip.style.left = `${clampLeft(fitsRight ? rightEdge : leftEdge)}px`;
+    tooltip.style.top = besideTop();
+    return;
+  }
+  // Neither side has room at the card's natural width. Narrow it to whichever
+  // side has more space rather than letting it clamp back over the bar; the
+  // card is capped in CSS, so this only ever shrinks it further.
+  const roomRight = frame.clientWidth - 8 - rightEdge;
+  const roomLeft = columnBox.left - frameBox.left - gap - 8;
+  const useRight = roomRight >= roomLeft;
+  tooltip.style.maxWidth = `${Math.max(Math.round(useRight ? roomRight : roomLeft), 120)}px`;
+  tooltip.style.left = `${clampLeft(
+    useRight ? rightEdge : columnBox.left - frameBox.left - gap - tooltip.offsetWidth,
   )}px`;
+  tooltip.style.top = besideTop();
 }
 
 function hideDayTooltip() {
@@ -704,6 +725,25 @@ function hideDayTooltip() {
   document
     .querySelectorAll("#trend-chart .day-column[aria-describedby]")
     .forEach((column) => column.removeAttribute("aria-describedby"));
+}
+
+// A pointer leaving, or focus moving on, closes the card only if no day column
+// still holds focus. Otherwise the keyboard's card is restored. The check is
+// deferred because blur fires before focus settles on the next element.
+function releaseDayTooltip() {
+  hideDayTooltip();
+  requestAnimationFrame(() => {
+    const focused = document.activeElement;
+    if (
+      focused &&
+      focused.classList &&
+      focused.classList.contains("day-column") &&
+      typeof focused.showDayTooltip === "function" &&
+      byId("day-tooltip").hidden
+    ) {
+      focused.showDayTooltip();
+    }
+  });
 }
 
 function metricLabel(value, singular, plural = `${singular}s`) {
