@@ -98,6 +98,7 @@ The source mix affects interpretation. arXiv exposes proposed methods and benchm
 
 ### 3.2 Category composition
 
+<!-- Source table retained for reproducibility. The figure below presents the same values.
 | Category | Distinct artifacts | Share of corpus |
 |---|---:|---:|
 | benchmark | 512 | 79.4% |
@@ -105,6 +106,7 @@ The source mix affects interpretation. arXiv exposes proposed methods and benchm
 | evaluation | 401 | 62.2% |
 | agentic | 78 | 12.1% |
 | data quality | 15 | 2.3% |
+-->
 
 ![Category composition of the observed corpus](figures/ai-benchmark-landscape/02_categories/figure.png)
 
@@ -159,12 +161,14 @@ This is a useful classifier for discovery, but it is not an expert-validated mar
 
 ### 4.2 Source mix
 
+<!-- Source table retained for reproducibility. The figure below presents the same values.
 | Source | Agentic artifacts | Share of agentic set |
 |---|---:|---:|
 | arXiv | 53 | 67.9% |
 | Hugging Face | 17 | 21.8% |
 | GitHub | 8 | 10.3% |
 | **Total** | **78** | **100%** |
+-->
 
 ![Source composition of the agentic set](figures/ai-benchmark-landscape/03_agentic_sources/figure.png)
 
@@ -178,6 +182,7 @@ Adoption fields are present for 25 of the 78 agentic artifacts, and 23 have at l
 
 The following probes are transparent keyword scans over the 78 tagged artifacts. They overlap and are directional, not a second ground-truth taxonomy.
 
+<!-- Source table retained for reproducibility. The figure below presents the same values.
 | Theme signal | Artifacts matched in title or summary | Share of agentic set |
 |---|---:|---:|
 | Software engineering and computer use | 34 | 43.6% |
@@ -186,6 +191,7 @@ The following probes are transparent keyword scans over the 78 tagged artifacts.
 | Domain and professional tasks | 24 | 30.8% |
 | Security and safety | 19 | 24.4% |
 | Multi-agent coordination | 7 | 9.0% |
+-->
 
 ![Theme signals within the agentic set](figures/ai-benchmark-landscape/04_agentic_themes/figure.png)
 
@@ -247,6 +253,7 @@ Cross-source identity is the highest-value data-engineering gap after the market
 
 The project configures eight discovery connectors, but the stored corpus contains records from only arXiv, Hugging Face, and GitHub. On July 31:
 
+<!-- Source table retained for reproducibility. The figure below presents the same values and status groups.
 | Connector | Fetched | Result |
 |---|---:|---|
 | GitHub | 300 | Active, at cap |
@@ -257,6 +264,7 @@ The project configures eight discovery connectors, but the stored corpus contain
 | Semantic Scholar | 0 | HTTP 429 after retries |
 | OpenAlex | 0 | API key not configured |
 | Brave Search | 0 | API key not configured |
+-->
 
 ![Connector results on July 31](figures/ai-benchmark-landscape/05_connectors/figure.png)
 
