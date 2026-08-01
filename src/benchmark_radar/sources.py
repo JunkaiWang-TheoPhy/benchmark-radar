@@ -112,23 +112,24 @@ def _fetch_arxiv_rss(
     found: dict[str, RadarItem] = {}
     for category in config.get("rss_categories", ["cs.AI", "cs.CL", "cs.CV"]):
         root = ET.fromstring(get_text(f"https://rss.arxiv.org/rss/{category}"))
-        for entry in root.findall("./channel/item"):
+        channel = root.find("channel") if root.tag == "rss" else None
+        if channel is None:
+            raise ConnectorPayloadError("arXiv RSS returned an incompatible document")
+        for entry in channel.findall("item"):
             title = " ".join((entry.findtext("title") or "").split())
             description = " ".join((entry.findtext("description") or "").split())
+            published_text = entry.findtext("pubDate")
+            url = (entry.findtext("link") or "").replace("http:", "https:")
+            guid = entry.findtext("guid") or url
+            source_id = _arxiv_source_id(guid)
+            if not title or not description or not published_text or not url or not source_id:
+                raise ConnectorPayloadError("arXiv RSS item is missing required fields")
             if keywords and not any(
                 keyword in f"{title} {description}".casefold() for keyword in keywords
             ):
                 continue
-            published_text = entry.findtext("pubDate")
-            if not published_text:
-                continue
             published = parsedate_to_datetime(published_text).astimezone(UTC)
             if published < overlap_since:
-                continue
-            url = (entry.findtext("link") or "").replace("http:", "https:")
-            guid = entry.findtext("guid") or url
-            source_id = _arxiv_source_id(guid)
-            if not source_id or not url:
                 continue
             announce_type = (
                 entry.findtext("arxiv:announce_type", namespaces=namespaces) or ""

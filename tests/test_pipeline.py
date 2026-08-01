@@ -532,6 +532,36 @@ def test_every_required_source_must_return_records(monkeypatch):
         run_pipeline(config, datetime(2026, 7, 27, tzinfo=UTC))
 
 
+def test_required_source_can_explicitly_allow_empty(monkeypatch):
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "required_fixture",
+        lambda config, since, limit: [],
+    )
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 0,
+        },
+        "taxonomy": {"benchmark": ["benchmark"]},
+        "sources": {
+            "required_fixture": {
+                "enabled": True,
+                "required": True,
+                "allow_empty": True,
+            }
+        },
+    }
+
+    run = run_pipeline(config, datetime(2026, 8, 1, tzinfo=UTC))
+
+    assert run.items == []
+    assert run.health[0].ok is True
+    assert run.health[0].item_count == 0
+
+
 def test_arxiv_discovery_state_suppresses_unchanged_overlap(monkeypatch):
     unchanged = item(
         source_id="2607.12345",
