@@ -525,6 +525,9 @@ function renderTrends() {
       ]);
       const previous = state.data.days[dayIndex - 1];
       const show = () => {
+        // Escape stays honoured until the pointer or focus leaves and returns,
+        // so the card does not spring back while the column is still active.
+        if (dismissedTooltipColumn === button) return;
         // Clear the previous column's description first: moving between columns
         // must never leave two triggers pointing at one card.
         hideDayTooltip();
@@ -535,8 +538,13 @@ function renderTrends() {
       button.addEventListener("focus", show);
       // Mixed pointer and keyboard use: leaving with the mouse must not close a
       // card the keyboard still owns, so hand it back to the focused column.
-      button.addEventListener("pointerleave", releaseDayTooltip);
-      button.addEventListener("blur", releaseDayTooltip);
+      // Leaving also lifts an Escape dismissal, so returning reopens the card.
+      const leave = () => {
+        if (dismissedTooltipColumn === button) dismissedTooltipColumn = null;
+        releaseDayTooltip();
+      };
+      button.addEventListener("pointerleave", leave);
+      button.addEventListener("blur", leave);
       button.addEventListener("click", () => {
         state.todayDate = day.date;
         setView("today");
@@ -582,6 +590,11 @@ function renderTrends() {
 // column this tall and whether that is up or down. Momentum, baselines, and
 // cumulative totals stay on the domain cards rather than being repeated here.
 const TOOLTIP_CATEGORY_LIMIT = 4;
+
+// The column whose card is open, so a scroll or resize can re-place it, and the
+// column Escape dismissed, so re-entering is required before it opens again.
+let openTooltipColumn = null;
+let dismissedTooltipColumn = null;
 
 function showDayTooltip(column, day, previous, dayCounts, categories) {
   const tooltip = byId("day-tooltip");
@@ -657,7 +670,15 @@ function showDayTooltip(column, day, previous, dayCounts, categories) {
   // Point the trigger at the card while it is open. Without this the breakdown
   // is visual only: a screen reader on the focused column would never reach it.
   column.setAttribute("aria-describedby", tooltip.id);
+  openTooltipColumn = column;
   positionDayTooltip(tooltip, column);
+  // Tabbing to an off-screen column scrolls the chart after focus fires, which
+  // would leave the card behind. Re-place it once that scrolling has settled.
+  requestAnimationFrame(() => {
+    if (openTooltipColumn === column && !tooltip.hidden) {
+      positionDayTooltip(tooltip, column);
+    }
+  });
 }
 
 function positionDayTooltip(tooltip, column) {
@@ -727,9 +748,36 @@ function hideDayTooltip() {
   if (!tooltip) return;
   tooltip.hidden = true;
   tooltip.setAttribute("aria-hidden", "true");
+  openTooltipColumn = null;
   document
     .querySelectorAll("#trend-chart .day-column[aria-describedby]")
     .forEach((column) => column.removeAttribute("aria-describedby"));
+}
+
+// Escape closes the card without moving focus, so a reader who finds it in the
+// way can clear it and keep their place in the column order.
+function dismissDayTooltip() {
+  if (!openTooltipColumn) return false;
+  dismissedTooltipColumn = openTooltipColumn;
+  hideDayTooltip();
+  return true;
+}
+
+// The chart scrolls horizontally, so an open card has to follow its column. A
+// column scrolled out of the viewport takes its card with it: on a narrow frame
+// the card would otherwise stay pinned at the clamp edge, labelled with a day
+// no longer on screen.
+function repositionDayTooltip() {
+  const tooltip = byId("day-tooltip");
+  if (!tooltip || tooltip.hidden || !openTooltipColumn) return;
+  const chart = byId("trend-chart");
+  const columnBox = openTooltipColumn.getBoundingClientRect();
+  const chartBox = chart.getBoundingClientRect();
+  if (columnBox.right <= chartBox.left || columnBox.left >= chartBox.right) {
+    hideDayTooltip();
+    return;
+  }
+  positionDayTooltip(tooltip, openTooltipColumn);
 }
 
 // A pointer leaving, or focus moving on, closes the card only if no day column
@@ -1518,6 +1566,16 @@ function bindEvents() {
   byId("trend-released-only").addEventListener("change", (event) => {
     state.trendReleasedOnly = event.target.checked;
     renderTrends();
+  });
+  // An open hover card is positioned against the chart, so any scroll or resize
+  // that moves its column has to move it too.
+  byId("trend-chart").addEventListener("scroll", repositionDayTooltip, {
+    passive: true,
+  });
+  window.addEventListener("resize", repositionDayTooltip);
+  document.addEventListener("keydown", (event) => {
+    // Do not swallow Escape unless a card is actually open to close.
+    if (event.key === "Escape" && dismissDayTooltip()) event.preventDefault();
   });
   byId("filters").addEventListener("input", (event) => {
     // The Scan date select has its own dedicated change handler above. A
