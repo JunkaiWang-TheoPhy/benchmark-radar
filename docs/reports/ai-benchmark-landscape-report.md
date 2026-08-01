@@ -19,6 +19,10 @@
 | How many agentic benchmarks has the radar observed? | **78 agentic-evaluation artifacts** | These account for 12.1% of the corpus, and 66 also carry the benchmark tag. The discovery classifier measured 73.1% precision and 95.0% recall against a strict model-labeled set. |
 | How many categories are tracked? | **5** | Benchmark, dataset, evaluation, agentic, and data quality. These tags overlap and must not be added together. |
 
+![Observed corpus totals and source composition](figures/ai-benchmark-landscape/01_overview/figure.png)
+
+*Observed corpus totals and source composition. Category tags overlap.*
+
 The rest of this report explains the counting contract, maps the observed agentic segment, audits the radar's coverage, and specifies the work needed for a defensible market census. The main limitation is coverage: four of nine snapshot dates are simulated, only three source families contribute artifacts, 19 of 20 canonical benchmarks tested are absent, and cross-source records are not yet linked into benchmark families.
 
 The practical conclusion is to keep the current radar as a monitor of new and updated artifacts, then add a separate registry-based census. A recurring report can combine four modules: market stock, live activity, research themes, and measurement quality.
@@ -102,6 +106,10 @@ The source mix affects interpretation. arXiv exposes proposed methods and benchm
 | agentic | 78 | 12.1% |
 | data quality | 15 | 2.3% |
 
+![Category composition of the observed corpus](figures/ai-benchmark-landscape/02_categories/figure.png)
+
+*Share of the 645-artifact corpus carrying each tag. One artifact can appear in several bars.*
+
 These categories are multi-label. Most artifacts carry two or three tags:
 
 | Tags per artifact | Artifacts | Share |
@@ -158,6 +166,10 @@ This is a useful classifier for discovery, but it is not an expert-validated mar
 | GitHub | 8 | 10.3% |
 | **Total** | **78** | **100%** |
 
+![Source composition of the agentic set](figures/ai-benchmark-landscape/03_agentic_sources/figure.png)
+
+*Source composition of the 78 agentic-evaluation artifacts.*
+
 Agentic evaluation is even more paper-heavy than the full corpus. This may mean that proposed tasks and methods are arriving faster than reusable implementations. It may also reflect source bias: the GitHub queries are capped, and several scholarly connectors are inactive. The report should track the paper-to-runnable-artifact conversion rate over longer windows before calling this a maturity gap.
 
 Adoption fields are present for 25 of the 78 agentic artifacts, and 23 have at least one nonzero metric. Neither figure is a usage rate because arXiv lacks a comparable metric in the current data. They show that adoption evidence is sparse and source-dependent.
@@ -174,6 +186,10 @@ The following probes are transparent keyword scans over the 78 tagged artifacts.
 | Domain and professional tasks | 24 | 30.8% |
 | Security and safety | 19 | 24.4% |
 | Multi-agent coordination | 7 | 9.0% |
+
+![Theme signals within the agentic set](figures/ai-benchmark-landscape/04_agentic_themes/figure.png)
+
+*Overlapping keyword signals within the 78-artifact agentic set.*
 
 The probe text is the lowercased title plus summary. The exact Python regular expressions are versioned here so the table can be reproduced:
 
@@ -241,6 +257,10 @@ The project configures eight discovery connectors, but the stored corpus contain
 | Semantic Scholar | 0 | HTTP 429 after retries |
 | OpenAlex | 0 | API key not configured |
 | Brave Search | 0 | API key not configured |
+
+![Connector results on July 31](figures/ai-benchmark-landscape/05_connectors/figure.png)
+
+*Evidence records fetched by each connector on July 31, 2026.*
 
 Configured coverage is not realized coverage. The daily report should publish both, and market claims should be blocked when required source families are absent.
 
@@ -370,6 +390,12 @@ Recompute taxonomy tags across stored history:
 
 ```bash
 .venv/bin/benchmark-radar rescore --config config.yml
+```
+
+Regenerate the five report figures through the July 31 evidence cutoff:
+
+```bash
+.venv/bin/python scripts/generate_landscape_report_figures.py
 ```
 
 Run the verification suite:
