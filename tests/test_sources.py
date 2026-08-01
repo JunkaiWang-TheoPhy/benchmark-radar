@@ -124,6 +124,48 @@ def test_arxiv_can_use_official_rss_as_primary(monkeypatch):
     assert [item.source_id for item in items] == ["2607.54321"]
 
 
+def test_arxiv_rejects_incompatible_empty_rss_document(monkeypatch):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_text",
+        lambda url, params=None: "<html><body>maintenance</body></html>",
+    )
+
+    with pytest.raises(ConnectorPayloadError, match="arXiv RSS returned an incompatible document"):
+        fetch_arxiv(
+            {
+                "atom_enabled": False,
+                "rss_categories": ["cs.AI"],
+            },
+            datetime(2026, 8, 1, 12, tzinfo=UTC),
+            10,
+        )
+
+
+def test_arxiv_rejects_malformed_present_rss_item(monkeypatch):
+    malformed = """\
+<rss version="2.0">
+  <channel>
+    <item>
+      <title>New benchmark</title>
+      <link>https://arxiv.org/abs/2608.00001</link>
+      <description>A benchmark announcement without a publication date.</description>
+    </item>
+  </channel>
+</rss>
+"""
+    monkeypatch.setattr("benchmark_radar.sources.get_text", lambda url, params=None: malformed)
+
+    with pytest.raises(ConnectorPayloadError, match="arXiv RSS item is missing required fields"):
+        fetch_arxiv(
+            {
+                "atom_enabled": False,
+                "rss_categories": ["cs.AI"],
+            },
+            datetime(2026, 8, 1, 12, tzinfo=UTC),
+            10,
+        )
+
+
 def _github_row(index: int) -> dict:
     return {
         "full_name": f"org/repo{index}",
