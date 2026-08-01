@@ -538,13 +538,11 @@ function renderTrends() {
       button.addEventListener("focus", show);
       // Mixed pointer and keyboard use: leaving with the mouse must not close a
       // card the keyboard still owns, so hand it back to the focused column.
-      // Leaving also lifts an Escape dismissal, so returning reopens the card.
-      const leave = () => {
-        if (dismissedTooltipColumn === button) dismissedTooltipColumn = null;
-        releaseDayTooltip();
-      };
-      button.addEventListener("pointerleave", leave);
-      button.addEventListener("blur", leave);
+      // An Escape dismissal lifts only once the column is neither hovered nor
+      // focused; otherwise taking the mouse off a focused column would undo the
+      // dismissal and reopen the card the reader just closed.
+      button.addEventListener("pointerleave", releaseDayTooltip);
+      button.addEventListener("blur", releaseDayTooltip);
       button.addEventListener("click", () => {
         state.todayDate = day.date;
         setView("today");
@@ -782,10 +780,22 @@ function repositionDayTooltip() {
 
 // A pointer leaving, or focus moving on, closes the card only if no day column
 // still holds focus. Otherwise the keyboard's card is restored. The check is
-// deferred because blur fires before focus settles on the next element.
+// deferred because blur fires before focus settles on the next element, and a
+// pointerleave arrives before :hover has updated.
 function releaseDayTooltip() {
   hideDayTooltip();
   requestAnimationFrame(() => {
+    // An Escape dismissal outlives a pointer moving away: it lifts only once
+    // its column is neither hovered nor focused, so taking the mouse off a
+    // focused column cannot reopen the card the reader just closed.
+    const dismissed = dismissedTooltipColumn;
+    if (
+      dismissed &&
+      document.activeElement !== dismissed &&
+      !dismissed.matches(":hover")
+    ) {
+      dismissedTooltipColumn = null;
+    }
     const focused = document.activeElement;
     if (
       focused &&
