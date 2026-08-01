@@ -499,22 +499,16 @@ function renderTrends() {
   );
   replaceChildren(
     byId("trend-chart"),
-    state.data.days.map((day) => {
+    state.data.days.map((day, dayIndex) => {
       const dayCounts = countsFor(day);
       const total = Object.values(dayCounts).reduce((sum, count) => sum + count, 0);
       const segments = categories.map((category, index) => {
-        const segment = element("span", {
-          className: "bar-segment",
-          attrs: { title: `${category.replaceAll("_", " ")}: ${dayCounts[category] || 0}` },
-        });
+        const segment = element("span", { className: "bar-segment" });
         segment.style.height = `${((dayCounts[category] || 0) / maxTotal) * 260}px`;
         segment.style.setProperty("--bar-color", categoryColor(category, index));
         return segment;
       });
-      const attentionBar = element("span", {
-        className: "attention-volume",
-        attrs: { title: `Active attention: ${day.attention.active_count}` },
-      });
+      const attentionBar = element("span", { className: "attention-volume" });
       attentionBar.style.height = `${(day.attention.active_count / maxTotal) * 260}px`;
       const button = element("button", {
         className: "day-column",
@@ -529,6 +523,12 @@ function renderTrends() {
         ]),
         element("span", { className: "day-label", text: day.date.slice(5) }),
       ]);
+      const previous = state.data.days[dayIndex - 1];
+      const show = () => showDayTooltip(button, day, previous, dayCounts, categories);
+      button.addEventListener("pointerenter", show);
+      button.addEventListener("focus", show);
+      button.addEventListener("pointerleave", hideDayTooltip);
+      button.addEventListener("blur", hideDayTooltip);
       button.addEventListener("click", () => {
         state.todayDate = day.date;
         setView("today");
@@ -538,6 +538,7 @@ function renderTrends() {
       return button;
     }),
   );
+  hideDayTooltip();
   byId("snapshot-count").textContent = `${state.data.snapshot_count} snapshots`;
   replaceChildren(
     byId("trend-table"),
@@ -567,6 +568,111 @@ function renderTrends() {
       ]);
     }),
   );
+}
+
+// The chart exists to compare days, so the tooltip answers only what made this
+// column this tall and whether that is up or down. Momentum, baselines, and
+// cumulative totals stay on the domain cards rather than being repeated here.
+const TOOLTIP_CATEGORY_LIMIT = 4;
+
+function showDayTooltip(column, day, previous, dayCounts, categories) {
+  const tooltip = byId("day-tooltip");
+  const total = Object.values(dayCounts).reduce((sum, count) => sum + count, 0);
+  // A different report limit or connector set lifts every count at once, so the
+  // same gate the headline sentence uses decides whether a delta is meaningful.
+  const comparable = previous && sameCollectionContext(day, previous);
+  const previousTotal = comparable
+    ? Object.values(
+        state.trendReleasedOnly
+          ? previous.category_counts_released
+          : previous.category_counts,
+      ).reduce((sum, count) => sum + count, 0)
+    : null;
+  const ranked = categories
+    .map((category, index) => ({
+      category,
+      count: dayCounts[category] || 0,
+      color: categoryColor(category, index),
+    }))
+    .filter((entry) => entry.count > 0)
+    .sort((a, b) => b.count - a.count);
+  const shown = ranked.slice(0, TOOLTIP_CATEGORY_LIMIT);
+  const restCount = ranked
+    .slice(TOOLTIP_CATEGORY_LIMIT)
+    .reduce((sum, entry) => sum + entry.count, 0);
+
+  const rows = shown.map((entry) => {
+    const swatch = element("span", { className: "legend-swatch" });
+    swatch.style.setProperty("--swatch", entry.color);
+    return element("span", { className: "day-tooltip-row" }, [
+      swatch,
+      element("span", {
+        className: "day-tooltip-name",
+        text: entry.category.replaceAll("_", " "),
+      }),
+      element("span", { className: "day-tooltip-value", text: entry.count }),
+    ]);
+  });
+  if (restCount) {
+    rows.push(
+      element("span", { className: "day-tooltip-row day-tooltip-rest" }, [
+        element("span", {
+          className: "day-tooltip-name",
+          text: `+${ranked.length - shown.length} more categories`,
+        }),
+        element("span", { className: "day-tooltip-value", text: restCount }),
+      ]),
+    );
+  }
+
+  replaceChildren(tooltip, [
+    element("span", { className: "day-tooltip-date", text: formatDate(day.date) }),
+    element("span", {
+      className: "day-tooltip-total",
+      text:
+        `${metricLabel(total, "category match", "category matches")}` +
+        (previousTotal === null
+          ? ""
+          : total === previousTotal
+            ? ` · flat vs ${previous.date.slice(5)}`
+            : ` · ${deltaText(total - previousTotal)} vs ${previous.date.slice(5)}`),
+    }),
+    rows.length ? element("span", { className: "day-tooltip-rows" }, rows) : null,
+    element("span", {
+      className: "day-tooltip-attention",
+      text: `Active attention: ${day.attention.active_count}`,
+    }),
+  ]);
+
+  tooltip.hidden = false;
+  tooltip.setAttribute("aria-hidden", "false");
+  positionDayTooltip(tooltip, column);
+}
+
+function positionDayTooltip(tooltip, column) {
+  const frame = tooltip.parentElement;
+  const frameBox = frame.getBoundingClientRect();
+  const columnBox = column.getBoundingClientRect();
+  // The chart scrolls horizontally, so anchor to the frame and clamp inside it
+  // rather than trusting the column to sit within view.
+  const center = columnBox.left - frameBox.left + columnBox.width / 2;
+  tooltip.style.left = `${Math.min(
+    Math.max(center - tooltip.offsetWidth / 2, 8),
+    Math.max(frame.clientWidth - tooltip.offsetWidth - 8, 8),
+  )}px`;
+  // Prefer sitting above the hovered bar, but never escape the frame: a tall
+  // tooltip on a short bar would otherwise float off the top of the panel.
+  const barTop = (column.querySelector(".bar-stack") || column).getBoundingClientRect().top;
+  const preferred = barTop - frameBox.top - tooltip.offsetHeight - 10;
+  const maxTop = Math.max(frame.clientHeight - tooltip.offsetHeight - 8, 0);
+  tooltip.style.top = `${Math.min(Math.max(preferred, 0), maxTop)}px`;
+}
+
+function hideDayTooltip() {
+  const tooltip = byId("day-tooltip");
+  if (!tooltip) return;
+  tooltip.hidden = true;
+  tooltip.setAttribute("aria-hidden", "true");
 }
 
 function metricLabel(value, singular, plural = `${singular}s`) {

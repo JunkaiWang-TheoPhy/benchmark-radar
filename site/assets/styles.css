@@ -1044,8 +1044,80 @@ input {
   transition: filter 180ms ease;
 }
 
-.day-column:hover .bar-segment {
+.day-column:hover .bar-segment,
+.day-column:focus-visible .bar-segment {
   filter: saturate(1.35) brightness(0.93);
+}
+
+/* The hovered column stays at full strength while the rest recede, so the eye
+   lands on one day instead of hunting for a highlight. */
+.trend-chart:has(.day-column:hover) .day-column:not(:hover),
+.trend-chart:has(.day-column:focus-visible) .day-column:not(:focus-visible) {
+  opacity: 0.45;
+  transition: opacity 180ms ease;
+}
+
+.trend-chart-frame {
+  position: relative;
+}
+
+.day-tooltip {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: 260px;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--ink);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+
+.day-tooltip-date {
+  font-family: var(--display);
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.day-tooltip-total {
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.68rem;
+}
+
+.day-tooltip-rows {
+  display: grid;
+  gap: 0.3rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.day-tooltip-row {
+  display: grid;
+  grid-template-columns: 8px 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  font-family: var(--utility);
+  font-size: 0.7rem;
+}
+
+.day-tooltip-rest {
+  grid-template-columns: 1fr auto;
+  color: var(--muted);
+}
+
+.day-tooltip-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.day-tooltip-attention {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+  color: var(--violet);
+  font-family: var(--utility);
+  font-size: 0.68rem;
 }
 
 .day-label {
