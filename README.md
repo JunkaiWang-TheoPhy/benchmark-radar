@@ -29,6 +29,7 @@ Default sources:
 | Semantic Scholar | Optional `SEMANTIC_SCHOLAR_API_KEY` | Structured scholarly discovery |
 | OpenAlex | `OPENALEX_API_KEY` | Scholarly metadata enrichment |
 | Brave Search | `BRAVE_API_KEY` | Web and lab-blog discovery |
+| Hacker News | No | Public attention only; never quality-scored |
 
 The report remains useful without optional secrets. Missing optional sources are shown
 as warnings in the source-health table instead of being silently ignored.
@@ -164,7 +165,8 @@ the snapshot push uses the App token so its `main` push can trigger deployment.
 `.github/workflows/daily-radar.yml` runs at 12:15 UTC and can also be started manually.
 It:
 
-1. collects and renders with read-only repository permission;
+1. collects evidence plus public Hacker News attention and renders with read-only
+   repository permission;
 2. validates and uses the snapshot-writer App to persist one snapshot on `main`;
 3. creates or updates the date-filtered daily Issue;
 4. lets that App-authenticated push trigger the standalone Pages workflow;
@@ -190,13 +192,20 @@ must exist; they are created during initial repository setup.
 
 ## Public observation feeds
 
-The collector ingests compatible public attention observations from separate, read-only
-repositories before persisting the daily snapshot. Feed producers must follow
+The daily pipeline collects public Hacker News attention directly through its anonymous
+Algolia endpoint before persisting the snapshot. It preserves the original
+`benchmark-social-signal:hacker-news:*` observation IDs so historical records remain
+continuous after the collector migration. A failed collection is reported in source
+health and carries forward the last healthy observations instead of publishing a false
+empty result.
+
+Additional read-only feed producers can follow
 [`docs/public-observation-feed.schema.json`](docs/public-observation-feed.schema.json).
-The collector validates the feed version and HTTP(S) links, records producer health
-separately from radar ingest health, and stamps publication, producer discovery, and
+The radar validates feed versions and HTTP(S) links, records collection/producer health
+separately from evidence ingest health, and stamps publication, producer discovery, and
 first radar observation independently. The dashboard renders source text as plain text
-and labels these records as unranked attention rather than evidence.
+and labels these records as unranked attention rather than evidence. No cookies,
+authenticated sessions, private posts, LinkedIn, or X scraping are used.
 
 ## License
 

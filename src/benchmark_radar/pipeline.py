@@ -637,6 +637,8 @@ def run_pipeline(
         observed_at=now,
         previous_state=((previous_snapshot or {}).get("discovery_state") or {}).get("attention")
         or {},
+        previous_observations=((previous_snapshot or {}).get("attention") or {}).get("observations")
+        or [],
     )
     return RadarRun(
         generated_at=now,
