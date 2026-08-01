@@ -207,7 +207,16 @@ def fetch_attention_feeds(
     if hacker_news.get("enabled", False):
         name = "Hacker News collector"
         producer = str(hacker_news.get("producer") or LEGACY_HACKER_NEWS_PRODUCER)
-        raw_observations, raw_health = collect_hacker_news(hacker_news, observed_at)
+        prior_source_ids = {
+            str(value.get("source_id"))
+            for value in previous_observations
+            if isinstance(value, dict) and value.get("producer") == producer
+        }
+        raw_observations, raw_health = collect_hacker_news(
+            hacker_news,
+            observed_at,
+            preferred_source_ids=prior_source_ids,
+        )
         if raw_health.get("ok"):
             payload = {
                 "schema_version": 1,

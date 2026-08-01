@@ -30,7 +30,7 @@ def test_integrated_collector_preserves_legacy_observation_ids(monkeypatch):
     observed = datetime(2026, 7, 27, 12, tzinfo=UTC)
     monkeypatch.setattr(
         "benchmark_radar.attention.collect_hacker_news",
-        lambda config, now: (
+        lambda config, now, **kwargs: (
             [local_observation(now)],
             {"source": "Hacker News", "ok": True, "item_count": 1, "error": None},
         ),
@@ -52,7 +52,7 @@ def test_failed_integrated_collection_carries_forward_last_healthy_observations(
     observed = datetime(2026, 7, 27, 12, tzinfo=UTC)
     monkeypatch.setattr(
         "benchmark_radar.attention.collect_hacker_news",
-        lambda config, now: (
+        lambda config, now, **kwargs: (
             [local_observation(now)],
             {"source": "Hacker News", "ok": True, "item_count": 1, "error": None},
         ),
@@ -61,7 +61,7 @@ def test_failed_integrated_collection_carries_forward_last_healthy_observations(
     previous = [first[0].to_dict()]
     monkeypatch.setattr(
         "benchmark_radar.attention.collect_hacker_news",
-        lambda config, now: (
+        lambda config, now, **kwargs: (
             [],
             {
                 "source": "Hacker News",

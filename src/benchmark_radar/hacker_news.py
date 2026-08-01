@@ -27,7 +27,7 @@ def match_categories(title: str, taxonomy: dict[str, list[str]]) -> list[str]:
     return sorted(
         category
         for category, terms in taxonomy.items()
-        if any(str(term).casefold() in haystack for term in terms)
+        if any(re.search(rf"\b{re.escape(str(term).casefold())}", haystack) for term in terms)
     )
 
 
@@ -35,12 +35,18 @@ def normalized_title(title: str) -> str:
     return " ".join(re.findall(r"[a-z0-9]+", title.casefold()))
 
 
-def _attention_total(observation: dict[str, Any]) -> float:
-    metrics = observation["metrics"]
-    return float(metrics.get("points", 0)) + float(metrics.get("comments", 0))
+def cluster_observations(
+    observations: list[dict[str, Any]],
+    *,
+    preferred_source_ids: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Cluster repeated titles while keeping the cluster identity immutable.
 
-
-def cluster_observations(observations: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    A previous primary wins when present so IDs created by the standalone
+    collector survive the migration. New clusters use the smallest immutable
+    HN object ID; mutable points and comment counts never select identity.
+    """
+    preferred_source_ids = preferred_source_ids or set()
     groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for observation in observations:
         key = (observation["source"], normalized_title(observation["title"]))
@@ -48,14 +54,8 @@ def cluster_observations(observations: list[dict[str, Any]]) -> list[dict[str, A
 
     clustered: list[dict[str, Any]] = []
     for group in groups.values():
-        primary = max(
-            group,
-            key=lambda value: (
-                _attention_total(value),
-                value["published_at"],
-                value["source_id"],
-            ),
-        )
+        preferred = [value for value in group if str(value["source_id"]) in preferred_source_ids]
+        primary = min(preferred or group, key=lambda value: str(value["source_id"]))
         result = {
             **primary,
             "categories": sorted({category for value in group for category in value["categories"]}),
@@ -101,6 +101,8 @@ def collect_hacker_news(
     config: dict[str, Any],
     now: datetime,
     fetcher: Callable[[str, dict[str, Any]], dict[str, Any]] = _fetch_json,
+    *,
+    preferred_source_ids: set[str] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Collect public HN stories without treating attention as quality evidence."""
     now = now.astimezone(UTC)
@@ -134,7 +136,7 @@ def collect_hacker_news(
                 if not source_id or not title or not created_at:
                     continue
                 published = parse_time(str(created_at))
-                if published < since:
+                if not since <= published <= now:
                     continue
                 categories = match_categories(title, taxonomy)
                 if not categories:
@@ -191,7 +193,10 @@ def collect_hacker_news(
             "item_count": 0,
             "error": f"{type(error).__name__}: {error}",
         }
-    observations = cluster_observations(list(found.values()))
+    observations = cluster_observations(
+        list(found.values()),
+        preferred_source_ids=preferred_source_ids,
+    )
     return observations, {
         "source": "Hacker News",
         "ok": True,
