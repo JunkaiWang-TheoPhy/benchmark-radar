@@ -161,8 +161,11 @@ the snapshot push uses the App token so its `main` push can trigger deployment.
 
 ## Daily publishing
 
-`.github/workflows/daily-radar.yml` runs at 12:15 UTC and can also be started manually.
-It:
+`.github/workflows/daily-radar.yml` targets 06:15 and 12:15 UTC and can also be
+started manually. GitHub scheduled events are best-effort and may start late under
+Actions load, so the two targets provide a same-day retry. Every scheduled run records
+its target, actual runner start, and latency in the job summary, with a warning after
+30 minutes. The workflow:
 
 1. collects and renders with read-only repository permission;
 2. validates and uses the snapshot-writer App to persist one snapshot on `main`;

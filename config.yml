@@ -117,6 +117,10 @@ sources:
   arxiv:
     enabled: true
     required: true
+    # Official category RSS feeds publish an empty bulletin on non-announcement
+    # days (notably weekends). A validated empty feed is healthy; HTTP, XML, and
+    # connector failures still fail this required source.
+    allow_empty: true
     # 48h report window + 120h overlap = seven days. arXiv's Atom published
     # timestamp is submission time, while announcements pause on weekends.
     overlap_hours: 120

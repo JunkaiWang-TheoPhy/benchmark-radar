@@ -618,7 +618,9 @@ def run_pipeline(
             unavailable_required.append(
                 f"{source} failed" + (f" ({source_health.error})" if source_health.error else "")
             )
-        elif source_health.item_count == 0:
+        elif source_health.item_count == 0 and not config["sources"][source].get(
+            "allow_empty", False
+        ):
             unavailable_required.append(f"{source} returned no records")
     if unavailable_required:
         raise RuntimeError(
