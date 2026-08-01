@@ -669,8 +669,13 @@ function positionDayTooltip(tooltip, column) {
   const columnBox = column.getBoundingClientRect();
   const width = tooltip.offsetWidth;
   const height = tooltip.offsetHeight;
+  // Reads the live width, so a placement that narrows the card first still
+  // clamps against its new size rather than the width measured on entry.
   const clampLeft = (value) =>
-    Math.min(Math.max(value, 8), Math.max(frame.clientWidth - width - 8, 8));
+    Math.min(
+      Math.max(value, 8),
+      Math.max(frame.clientWidth - tooltip.offsetWidth - 8, 8),
+    );
   // The bar stack is a fixed-height plotting box, so its own top says nothing
   // about how tall the rendered bars are. Measure the drawn segments instead.
   const drawn = [...column.querySelectorAll(".bar-segment, .attention-volume")]

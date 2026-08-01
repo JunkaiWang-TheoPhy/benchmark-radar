@@ -1008,6 +1008,7 @@ input {
   min-width: 44px;
   border: 0;
   background: transparent;
+  transition: opacity 180ms ease;
 }
 
 .bar-stack {
@@ -1049,12 +1050,17 @@ input {
   filter: saturate(1.35) brightness(0.93);
 }
 
-/* The hovered column stays at full strength while the rest recede, so the eye
-   lands on one day instead of hunting for a highlight. */
-.trend-chart:has(.day-column:hover) .day-column:not(:hover),
-.trend-chart:has(.day-column:focus-visible) .day-column:not(:focus-visible) {
+/* The active column stays at full strength while the rest recede, so the eye
+   lands on one day instead of hunting for a highlight. The card shows a single
+   day, so exactly one column stays lit. A pointer wins when present, which
+   stops a column left focused by the keyboard from keeping a second one lit. */
+.trend-chart:has(.day-column:hover) .day-column:not(:hover) {
   opacity: 0.45;
-  transition: opacity 180ms ease;
+}
+
+.trend-chart:not(:has(.day-column:hover)):has(.day-column:focus-visible)
+  .day-column:not(:focus-visible) {
+  opacity: 0.45;
 }
 
 .trend-chart-frame {
