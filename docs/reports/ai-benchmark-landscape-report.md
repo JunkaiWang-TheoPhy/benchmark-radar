@@ -8,26 +8,20 @@
 > Origin: [Issue #52](https://github.com/ktwu01/benchmark-radar/issues/52)  
 > Author: [Koutian Wu](https://ktwu01.github.io/)
 
-## Executive findings
+## TL;DR
 
-Benchmark Radar currently supports two different products. The first is already useful: a live monitor of newly released or updated AI evaluation artifacts. The second is the product requested in issue #52: a census and interpretation of the benchmark market. The current pipeline does not yet support that second claim.
+**The shortest honest answer to issue #52:** Benchmark Radar has observed **512 benchmark-tagged artifacts** and **78 agentic-evaluation artifacts** across **5 overlapping operational categories**. Of the agentic set, 66 also carry the benchmark tag. These are corpus counts, not a census of every benchmark on the market.
 
-This distinction changes the meaning of every headline number.
+| Question | Current answer | What the number means |
+|---|---:|---|
+| How many AI benchmarks are on the market? | **Not yet known** | The live radar measures recent releases and updates, so it cannot count the full installed stock. Separate registry probes found 214 task directories in lm-evaluation-harness and 4,548-5,099 benchmark-labeled Hugging Face datasets, but these counts overlap and include different units. |
+| How many benchmarks has the radar observed? | **512** | Benchmark-tagged artifacts within a validated corpus of 645 distinct artifacts and 791 sightings. One benchmark may appear as multiple artifacts, and some matches are false positives. |
+| How many agentic benchmarks has the radar observed? | **78 agentic-evaluation artifacts** | These account for 12.1% of the corpus, and 66 also carry the benchmark tag. The discovery classifier measured 73.1% precision and 95.0% recall against a strict model-labeled set. |
+| How many categories are tracked? | **5** | Benchmark, dataset, evaluation, agentic, and data quality. These tags overlap and must not be added together. |
 
-The validated snapshot corpus contains 645 distinct artifacts from 791 sightings. Its current tags are 512 benchmark, 450 dataset, 401 evaluation, 78 agentic, and 15 data quality. These tags overlap. They describe the observed corpus, not the total market, and they must not be added together.
+The rest of this report explains the counting contract, maps the observed agentic segment, audits the radar's coverage, and specifies the work needed for a defensible market census. The main limitation is coverage: four of nine snapshot dates are simulated, only three source families contribute artifacts, 19 of 20 canonical benchmarks tested are absent, and cross-source records are not yet linked into benchmark families.
 
-The most informative finding is not the corrected agentic count. It is the shape of the observed agentic segment. Of the 78 tagged artifacts, 53 come from arXiv, 17 from Hugging Face, and 8 from GitHub. Transparent content probes find software engineering and computer use in 34 artifacts, tool use and planning in 32, and memory or long-horizon behavior in 30. The overlap among these signals points to evaluation moving beyond static question answering toward sustained action in technical and operational environments.
-
-The report also identifies why a market total remains unavailable. Four of nine snapshot dates are simulated. Only three source families contribute any corpus records. Nineteen of 20 canonical benchmarks tested are absent. No artifact has a populated cross-source link, so a paper, repository, and dataset for the same benchmark may remain separate. The watchlist has not fired once. These are properties of the measurement system, not minor footnotes.
-
-Issue #52 should therefore become a recurring landscape report with four modules:
-
-1. a registry-based census of the installed benchmark stock;
-2. a live monitor of new and updated artifacts;
-3. a research interpretation of emerging evaluation themes;
-4. an audit of coverage, classification quality, and uncertainty.
-
-The present corpus can support modules 2, 3, and part of 4. A separate registry-enumeration mode is required for module 1.
+The practical conclusion is to keep the current radar as a monitor of new and updated artifacts, then add a separate registry-based census. A recurring report can combine four modules: market stock, live activity, research themes, and measurement quality.
 
 ## 1. The decision this report supports
 
