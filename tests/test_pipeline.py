@@ -91,6 +91,137 @@ def test_agentic_taxonomy_requires_a_scoped_phrase_not_a_bare_word():
     assert unmatched.categories == []
 
 
+AGENTIC_RULE = {
+    "within": 15,
+    "any_of": ["agent", "agents", "agentic"],
+    "near": ["benchmark", "evaluation", "evaluating", "leaderboard", "harness", "bench"],
+    "exclude": r"\b(?:position:|survey)",
+}
+
+
+def test_agentic_proximity_rule_matches_non_adjacent_phrasing():
+    """Regression for issue #52: the adjacent-phrase list scored 21.7% recall
+    because real titles put the agent noun last and interpose qualifiers.
+    Neither 'agent benchmark' nor 'benchmark for agent' appears in this title,
+    which is the single most common shape in the corpus."""
+    scored = score_item(
+        item(
+            title="DBA-Bench: A Production-Fidelity Benchmark for LLM-Based Database Agents",
+            summary="",
+        ),
+        {"agentic": AGENTIC_RULE},
+        datetime(2026, 7, 27, 1, tzinfo=UTC),
+    )
+    assert scored.categories == ["agentic"]
+
+
+def test_agentic_proximity_rule_splits_hyphenated_repository_names():
+    """A repository carries its whole description in one hyphenated slug, so
+    splitting on whitespace alone hid six real agentic artifacts."""
+    scored = score_item(
+        item(title="solsticestudioai/agent-failure-atlas-benchmark", summary=""),
+        {"agentic": AGENTIC_RULE},
+        datetime(2026, 7, 27, 1, tzinfo=UTC),
+    )
+    assert scored.categories == ["agentic"]
+
+
+def test_agentic_proximity_rule_still_rejects_bare_agent_mentions():
+    """Issue #51's lesson survives the widening: an artifact that merely
+    mentions an agent, with no evaluation noun anywhere near it, must not be
+    tagged agentic."""
+    scored = score_item(
+        item(
+            title="Scaling Transformers",
+            summary="Our agent uses a transformer trained on web-scale data.",
+        ),
+        {"agentic": AGENTIC_RULE},
+        datetime(2026, 7, 27, 1, tzinfo=UTC),
+    )
+    assert scored.categories == []
+
+
+def test_agentic_proximity_rule_excludes_surveys_and_position_papers():
+    """The residual false positives were artifacts that survey or build agents
+    rather than evaluate them."""
+    scored = score_item(
+        item(
+            title="Position: Evaluation Scores Are Perishable Knowledge Claims",
+            summary="We argue that agent benchmark scores decay.",
+        ),
+        {"agentic": AGENTIC_RULE},
+        datetime(2026, 7, 27, 1, tzinfo=UTC),
+    )
+    assert scored.categories == []
+
+
+def test_phrase_terms_do_not_match_inside_a_longer_word():
+    """Regression: bare `corpora` matched inside "incorporates" and
+    "corporate", tagging unrelated artifacts as datasets. This is the same
+    bare-substring failure mode issue #51 raised."""
+    taxonomy = {"dataset": ["corpora$"]}
+    inside_word = score_item(
+        item(title="LowAux-RDNet", summary="The framework incorporates metallic-aware modeling."),
+        taxonomy,
+        datetime(2026, 7, 27, 1, tzinfo=UTC),
+    )
+    standalone = score_item(
+        item(title="KletterMix", summary="We release two German pretraining corpora."),
+        taxonomy,
+        datetime(2026, 7, 27, 1, tzinfo=UTC),
+    )
+    assert inside_word.categories == []
+    assert standalone.categories == ["dataset"]
+
+
+def test_stem_terms_keep_matching_their_inflections():
+    """The right edge stays open without a trailing `$`, because `evaluat` is
+    deliberately a stem covering "evaluating" and "evaluated"."""
+    taxonomy = {"evaluation": ["evaluat"]}
+    for summary in ("We are evaluating agents.", "The model was evaluated.", "An evaluation."):
+        scored = score_item(
+            item(title="Study", summary=summary),
+            taxonomy,
+            datetime(2026, 7, 27, 1, tzinfo=UTC),
+        )
+        assert scored.categories == ["evaluation"], summary
+
+
+def test_agentic_exclusion_targets_the_genre_not_the_subject():
+    """A bare `survey` in the exclusion would drop a real agent benchmark
+    about survey responses, which is an active evaluation area."""
+    rule = {
+        **AGENTIC_RULE,
+        "exclude": r"(?:^|: )(?:position:|a survey|survey of|scoping review)|\bwe survey\b",
+    }
+    genre = score_item(
+        item(title="A Survey of LLM Agent Benchmarks", summary=""),
+        {"agentic": rule},
+        datetime(2026, 7, 27, 1, tzinfo=UTC),
+    )
+    subject = score_item(
+        item(
+            title="When Synthetic Users Fail: A Benchmark of LLM-Simulated Survey Response",
+            summary="We evaluate agents answering survey questions.",
+        ),
+        {"agentic": rule},
+        datetime(2026, 7, 27, 1, tzinfo=UTC),
+    )
+    assert genre.categories == []
+    assert subject.categories == ["agentic"]
+
+
+def test_taxonomy_still_accepts_plain_phrase_lists():
+    """The three categories measured as working keep their exact semantics, so
+    both config shapes must stay supported."""
+    scored = score_item(
+        item(title="A new benchmark", summary="We release a dataset."),
+        {"benchmark": ["benchmark"], "dataset": ["dataset"]},
+        datetime(2026, 7, 27, 1, tzinfo=UTC),
+    )
+    assert scored.categories == ["benchmark", "dataset"]
+
+
 def test_templated_summaries_fail_the_run():
     """Regression: 26/30 records once shared 'Dataset repository updated on
     Hugging Face.', which told the reader nothing and inflated relevance
