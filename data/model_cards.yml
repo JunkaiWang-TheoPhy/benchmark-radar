@@ -728,18 +728,20 @@ benchmarks:
     aliases: ["ExploitBench", "ExploitBench (Cap%)"]
     domain: security
     url: https://deploymentsafety.openai.com/gpt-5-6-preview
-    # Dated to the earliest document observed reporting it, Anthropic's
-    # 2026-06-09 Fable 5 / Mythos 5 comparison table, not to the GPT-5.6 preview
-    # the URL points at. The previous 2026-06-26 date was that preview's own
-    # publication date, which is a claim about when OpenAI reported the
-    # benchmark rather than when the instrument existed, and it post-dated a
-    # card that demonstrably measures against it.
-    released: 2026-06-09
+    # Unset rather than guessed. This previously carried 2026-06-26, the
+    # publication date of the GPT-5.6 preview the URL points at, which records
+    # when OpenAI reported the benchmark rather than when the instrument was
+    # published. That reading was demonstrably wrong: Anthropic's 2026-06-09
+    # table already measures against it. The earlier date is evidence the
+    # benchmark existed by then, but "first seen" is not a release date, and
+    # this field's contract is to say nothing rather than carry a guess.
+    released: null
     caveat: >-
       Offensive-security capability measured as a risk indicator against a
       preparedness threshold, not a leaderboard to top. Reported as a
       capability percentage, and no public specification of the task set has
-      been published, so the number cannot be independently reproduced.
+      been published, so the number cannot be independently reproduced. In use
+      by 2026-06-09; no announced publication date.
 
   # ---------------------------------------------------------------------------
   # Instruments first observed in Anthropic's 2026-06-09 Claude Fable 5 /
@@ -760,7 +762,10 @@ benchmarks:
     aliases: ["FrontierCode", "FrontierCode (Diamond)"]
     domain: coding_agent
     url: https://cognition.ai/blog/frontier-bench
-    released: 2026-05-19
+    # Unset: 2026-05-19 is Frontier-Bench's release date, and assuming this
+    # shares it because both are Cognition's would be a guess about a separate
+    # instrument.
+    released: null
     caveat: >-
       Cognition's production-standard coding evaluation, distinct from that
       vendor's Frontier-Bench despite the shared prefix and blog. Reported per
@@ -773,7 +778,7 @@ benchmarks:
     aliases: ["Blueprint-Bench 2", "Blueprint-Bench", "BlueprintBench 2"]
     domain: spatial_reasoning
     url: null
-    released: 2026-06-09
+    released: null
     caveat: >-
       Spatial-reasoning set named in Anthropic's comparison table with no
       published task specification, so scores cannot be reproduced or audited
@@ -784,7 +789,7 @@ benchmarks:
     aliases: ["Legal Agent Benchmark"]
     domain: legal
     url: null
-    released: 2026-06-09
+    released: null
     caveat: >-
       Absolute scores are very low across all models (0-13%), so ordering at
       the top is decided by a handful of tasks and small gaps are noise. No
@@ -795,7 +800,7 @@ benchmarks:
     aliases: ["BioMysteryBench"]
     domain: biology
     url: null
-    released: 2026-06-09
+    released: null
     caveat: >-
       Reported in two splits ("hard" and "human solved") that differ by more
       than 35 points, so a bare score is unreadable without its split.
@@ -807,7 +812,7 @@ benchmarks:
     aliases: ["GDP.pdf"]
     domain: multimodal
     url: null
-    released: 2026-06-09
+    released: null
     caveat: >-
       Vision-based knowledge work, reported no-tools. Named in Anthropic's
       table without a published specification; the name resembles GDPval but
@@ -818,7 +823,7 @@ benchmarks:
     aliases: ["ViBench"]
     domain: coding_agent
     url: null
-    released: 2026-06-09
+    released: null
     caveat: >-
       Anthropic's own end-to-end vibe-coding benchmark, described in prose
       rather than scored in the table. First-party to the vendor reporting it,
@@ -829,7 +834,10 @@ benchmarks:
     aliases: ["HealthBench Professional"]
     domain: health
     url: https://openai.com/index/healthbench/
-    released: 2026-06-09
+    # Unset: the Professional split postdates HealthBench's own 2025-05-12
+    # release, but no announcement dates it, and the 2026-06-09 table that
+    # reports it only establishes when it was first seen in use.
+    released: null
     caveat: >-
       A distinct, harder split from the HealthBench variants recorded
       separately in this registry, so its scores are not comparable to them.
