@@ -223,6 +223,98 @@ def test_measures_statement_travels_with_the_data():
     assert "not benchmark quality" in board["measures"]
 
 
+def test_adoption_rank_links_are_exact_inverses():
+    """The registry is one edge set published in two directions.
+
+    `entries[].adopters` answers "who reports this benchmark" and
+    `model_cards[].reported_benchmarks` answers "what does this card report".
+    Both are derived from the same validated `card["benchmarks"]`, and this test
+    is what makes that a guarantee rather than a coincidence: if either
+    projection is ever filtered, truncated or sorted into a lossy shape, the two
+    edge sets diverge and a reader auditing a card against the table above would
+    be shown a benchmark list that does not explain the counts.
+    """
+    board = build_adoption_rank(DEFAULT_REGISTRY_PATH)
+
+    forward = {
+        (entry["benchmark_id"], adopter["model_card_id"])
+        for entry in board["entries"]
+        for adopter in entry["adopters"]
+    }
+    reverse = {
+        (benchmark["benchmark_id"], card["model_card_id"])
+        for card in board["model_cards"]
+        for benchmark in card["reported_benchmarks"]
+    }
+
+    assert forward == reverse
+    assert forward, "the shipped registry must publish at least one adoption edge"
+    # Every card's own count agrees with the number of edges it contributes.
+    # `reported_benchmarks` is ordered by domain for display, so compare as sets
+    # against the id list rather than positionally.
+    for card in board["model_cards"]:
+        assert card["benchmark_count"] == len(card["reported_benchmarks"])
+        assert {benchmark["benchmark_id"] for benchmark in card["reported_benchmarks"]} == set(
+            card["benchmarks"]
+        )
+
+
+def test_expanded_card_carries_enough_to_audit_against_the_source():
+    board = build_adoption_rank(DEFAULT_REGISTRY_PATH)
+
+    # A reader opening a card checks our list against the vendor's own document.
+    # That requires the source URL, when a human last read it, and for each
+    # benchmark the name and caveat -- not just an id they would have to resolve
+    # against another table by hand.
+    for card in board["model_cards"]:
+        assert card["url"].startswith("https://")
+        for benchmark in card["reported_benchmarks"]:
+            assert benchmark["name"]
+            assert benchmark["domain"]
+            assert benchmark["caveat"]
+
+
+def test_benchmark_release_dates_are_published_and_validated(tmp_path):
+    board = build_adoption_rank(DEFAULT_REGISTRY_PATH)
+
+    # Filterable in the dashboard, so it has to survive into the published data.
+    assert any(entry["released"] for entry in board["entries"])
+    for entry in board["entries"]:
+        if entry["released"]:
+            assert len(entry["released"]) == 10
+
+    # Validated on the same terms as a card's dates: this value reaches the same
+    # browser formatter, and an unparseable one would take every view down.
+    document = minimal_registry()
+    document["benchmarks"][0]["released"] = "March 2025"
+    with pytest.raises(ModelCardRegistryError, match="must be an ISO date"):
+        load_registry(write_registry(tmp_path, document))
+
+    document = minimal_registry()
+    document["benchmarks"][0]["released"] = "2025-02-30"
+    with pytest.raises(ModelCardRegistryError, match="not a real calendar date"):
+        load_registry(write_registry(tmp_path, document))
+
+
+def test_registry_covers_the_2026_frontier():
+    """The ranking has to describe current reporting, not 2025's.
+
+    Issue #83 asks which benchmarks vendors put in front of readers. A registry
+    whose newest document predates the current model generation answers that
+    question about a frontier that no longer exists, so coverage of recent cards
+    is a correctness property of this feature rather than a nice-to-have.
+    """
+    board = build_adoption_rank(DEFAULT_REGISTRY_PATH)
+
+    published = [card["published"] for card in board["model_cards"] if card["published"]]
+    assert sum(1 for date in published if date >= "2026-01-01") >= 10
+
+    # Each organization in the registry is represented by at least one document,
+    # and the agentic evaluations that headline 2026 cards are present.
+    names = {entry["benchmark_id"] for entry in board["entries"] if entry["card_count"]}
+    assert {"terminal_bench", "swe_bench_pro", "tau2_bench", "gdpval", "osworld"} <= names
+
+
 def test_adopters_link_back_to_the_source_document():
     board = build_adoption_rank(DEFAULT_REGISTRY_PATH)
 
