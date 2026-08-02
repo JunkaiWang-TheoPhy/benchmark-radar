@@ -506,7 +506,10 @@ benchmarks:
 
   - id: healthbench
     name: HealthBench
-    aliases: ["HealthBench", "HealthBench Hard", "HealthBench Consensus", "HealthBench Professional"]
+    # "HealthBench Professional" is deliberately absent: it is a distinct
+    # harder split with its own id, and leaving it here would let an extractor
+    # resolve one spelling to two benchmarks.
+    aliases: ["HealthBench", "HealthBench Hard", "HealthBench Consensus"]
     domain: health
     url: https://openai.com/index/healthbench/
     released: 2025-05-12

@@ -532,6 +532,35 @@ def test_fable_mythos_card_records_its_full_comparison_table():
     assert not ({"browsecomp", "swe_bench_verified"} & reported)
 
 
+def test_new_benchmarks_do_not_reuse_an_existing_benchmarks_alias():
+    """A spelling must not resolve to two different benchmarks.
+
+    Aliases exist so a future extractor can map vendor spellings onto one id.
+    Splitting a benchmark out of a broader entry -- HealthBench Professional
+    out of HealthBench -- leaves that spelling claimed by both unless it is
+    removed from the entry it left, and the extractor would then have no way
+    to decide which id a card meant.
+
+    Scoped to the benchmarks touched here: three older collisions predate this
+    change and resolving them means deciding what those cards actually
+    reported, which is a separate piece of work.
+    """
+    registry = load_registry(DEFAULT_REGISTRY_PATH)
+
+    claimed: dict[str, set[str]] = {}
+    for benchmark in registry["benchmarks"]:
+        spellings = {str(benchmark["name"])} | {
+            str(alias) for alias in benchmark.get("aliases") or []
+        }
+        for spelling in spellings:
+            claimed.setdefault(spelling.strip().lower(), set()).add(str(benchmark["id"]))
+
+    for spelling in ("healthbench professional", "frontiercode", "vibench"):
+        assert len(claimed.get(spelling, set())) == 1, (
+            f"{spelling!r} resolves to more than one benchmark id"
+        )
+
+
 def test_adopters_link_back_to_the_source_document():
     board = build_adoption_rank(DEFAULT_REGISTRY_PATH)
 
