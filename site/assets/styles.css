@@ -374,6 +374,14 @@ input {
   list-style: none;
 }
 
+/* Model card rows carry no rank number, so they have three children where a
+   ranked benchmark row has four. Without its own template the heading lands in
+   the 38px rank column and wraps one character per line. Matching on child
+   count keeps both row types on one rule set rather than forking the class. */
+.record-summary:not(:has(.signal-rank)) {
+  grid-template-columns: 26px minmax(0, 1fr) 170px;
+}
+
 .record-summary::before {
   content: "›";
   display: inline-flex;
@@ -1341,6 +1349,20 @@ td a {
   font-family: var(--utility);
   font-size: 0.68rem;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Domain groups inside an expanded model card. The heading is deliberately
+   quieter than the card's own h3: it labels a section of one document's
+   benchmark list, and styling it as a peer of the model name made an expanded
+   card read as several stacked records rather than one. */
+.card-benchmark-group > h4 {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
