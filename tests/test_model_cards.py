@@ -219,3 +219,53 @@ def test_benchmarks_reported_by_no_card_are_kept_and_ranked_last(tmp_path):
     assert gamma["adopters"] == []
     assert gamma["rank"] == len(board["entries"])
     assert "agent" not in board["domains"]
+
+
+def test_unparseable_publication_date_fails_the_build(tmp_path):
+    # These values reach Intl.DateTimeFormat unmodified, which throws on an
+    # unparseable one. The dashboard treats that as an unusable data file and
+    # hides every view, so one typo in an optional field would take Today and
+    # Trends down with the leaderboard.
+    document = minimal_registry()
+    document["model_cards"][0]["published"] = "Aug 7th 2025"
+    with pytest.raises(ModelCardRegistryError, match="published must be an ISO date"):
+        load_registry(write_registry(tmp_path, document))
+
+    document = minimal_registry()
+    document["model_cards"][0]["retrieved_at"] = "yesterday"
+    with pytest.raises(ModelCardRegistryError, match="retrieved_at must be an ISO date"):
+        load_registry(write_registry(tmp_path, document))
+
+
+def test_dates_parsed_by_yaml_into_date_objects_are_accepted(tmp_path):
+    # Unquoted YYYY-MM-DD is a date, not a string, after yaml.safe_load. The
+    # shipped registry is written that way, so rejecting it would fail on the
+    # file this module exists to read.
+    path = tmp_path / "model_cards.yml"
+    path.write_text(
+        "schema_version: 1\n"
+        "benchmarks:\n"
+        "  - {id: alpha, name: Alpha, domain: math}\n"
+        "model_cards:\n"
+        "  - id: card\n"
+        "    organization: Org\n"
+        "    model: One\n"
+        "    published: 2025-08-07\n"
+        "    retrieved_at: 2026-08-02\n"
+        "    url: https://example.com/one\n"
+        "    benchmarks: [alpha]\n",
+        encoding="utf-8",
+    )
+    board = adoption_rank(load_registry(path))
+
+    assert board["model_cards"][0]["published"] == "2025-08-07"
+
+
+def test_every_shipped_date_is_browser_formattable():
+    board = build_adoption_rank(DEFAULT_REGISTRY_PATH)
+
+    from datetime import date as date_type
+
+    for card in board["model_cards"]:
+        assert date_type.fromisoformat(card["published"])
+        assert date_type.fromisoformat(card["retrieved_at"])

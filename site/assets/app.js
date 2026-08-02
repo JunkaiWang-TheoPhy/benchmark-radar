@@ -1495,7 +1495,10 @@ function leaderboardRow(entry) {
 }
 
 function renderLeaderboardFilters(board) {
-  const domains = Object.keys(board.domains || {}).sort();
+  // Every domain present in the ranking, not board.domains: that summary counts
+  // only adopted benchmarks, so a domain whose benchmarks are all unadopted
+  // would be listed in the table with no way to filter to it.
+  const domains = [...new Set((board.entries || []).map((entry) => entry.domain))].sort();
   replaceChildren(byId("leaderboard-domain"), [
     option("", "All domains", !state.ldomain),
     ...domains.map((domain) =>

@@ -409,3 +409,12 @@ def test_leaderboard_names_an_unadopted_benchmark_rather_than_showing_a_bare_zer
     # benchmarks so it must not claim to be the same figure as the filter.
     assert '"not yet reported in these cards"' in script
     assert '"Domains reported at least once"' in script
+
+
+def test_leaderboard_domain_filter_offers_every_tracked_domain():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # board.domains counts only adopted benchmarks, so a domain whose
+    # benchmarks are all unadopted would appear in the table with no way to
+    # filter to it. The options come from the entries themselves.
+    assert "new Set((board.entries || []).map((entry) => entry.domain))" in script

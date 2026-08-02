@@ -21,6 +21,7 @@ reporting it once, so a verbose appendix cannot outvote a different vendor.
 from __future__ import annotations
 
 from collections import Counter
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +48,23 @@ def _require(value: Any, fields: tuple[str, ...], *, label: str) -> None:
     missing = [field for field in fields if not value.get(field)]
     if missing:
         raise ModelCardRegistryError(f"{label} is missing fields: {', '.join(missing)}")
+
+
+def _require_date(value: Any, *, label: str) -> None:
+    """Reject a date the browser cannot format.
+
+    These values reach `Intl.DateTimeFormat` unmodified, and it throws a
+    RangeError on an unparseable one. The dashboard's initialization catch
+    treats that as an unusable data file and hides *every* view, so a single
+    typo in one optional field would take Today and Trends down with the
+    leaderboard. Failing the build here keeps that blast radius at zero.
+    """
+    if isinstance(value, date):
+        return
+    try:
+        date.fromisoformat(str(value))
+    except ValueError as error:
+        raise ModelCardRegistryError(f"{label} must be an ISO date (YYYY-MM-DD)") from error
 
 
 def load_registry(path: Path = DEFAULT_REGISTRY_PATH) -> dict[str, Any]:
@@ -101,6 +119,9 @@ def load_registry(path: Path = DEFAULT_REGISTRY_PATH) -> dict[str, Any]:
             )
         if not str(card["url"]).startswith(("https://", "http://")):
             raise ModelCardRegistryError(f"{path}: model card {card_id!r} url must be HTTP(S)")
+        for field in ("published", "retrieved_at"):
+            if card.get(field):
+                _require_date(card[field], label=f"{path}: model card {card_id!r} {field}")
 
     return {"benchmarks": benchmarks, "model_cards": cards}
 
