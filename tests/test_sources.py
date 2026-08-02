@@ -69,6 +69,7 @@ def test_arxiv_uses_overlap_and_updated_timestamp(monkeypatch):
     )
 
     assert len(calls) == 3
+    assert all("lastUpdatedDate:" in call["search_query"] for call in calls)
     assert delays == [3, 3]
     assert len(items) == 1
     assert items[0].published_at == datetime(2026, 7, 23, 18, tzinfo=UTC)
@@ -386,6 +387,29 @@ def test_semantic_scholar_success_preserves_external_ids(monkeypatch):
     assert items[0].parser_version == "semantic-scholar-graph/1"
 
 
+def test_semantic_scholar_paces_an_individual_api_key(monkeypatch):
+    calls = []
+    delays = []
+    monkeypatch.setenv("SEMANTIC_SCHOLAR_API_KEY", "  key-with-newline\n")
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, **kwargs: calls.append(kwargs) or {"data": [], "next": None},
+    )
+    monkeypatch.setattr("benchmark_radar.sources.time.sleep", delays.append)
+
+    fetch_semantic_scholar(
+        {"searches": ["one", "two"], "max_requests": 2},
+        datetime(2026, 7, 26, tzinfo=UTC),
+        10,
+    )
+
+    assert [call["headers"] for call in calls] == [
+        {"x-api-key": "key-with-newline"},
+        {"x-api-key": "key-with-newline"},
+    ]
+    assert delays == [1.1]
+
+
 def test_github_releases_success_uses_release_notes(monkeypatch):
     payload = [
         {
@@ -416,6 +440,79 @@ def test_github_releases_success_uses_release_notes(monkeypatch):
     assert items[0].summary == "The upstream release notes."
     assert items[0].metrics["downloads"] == 7
     assert items[0].parser_version == "github-releases/1"
+
+
+def test_github_releases_replaces_a_page_consumed_by_future_rows(monkeypatch):
+    pages = []
+
+    def fake_get_json(url, params, **kwargs):
+        pages.append(params["page"])
+        published = "2050-01-01T00:00:00Z" if params["page"] == 1 else "2026-07-27T12:00:00Z"
+        tag = "future" if params["page"] == 1 else "current"
+        return [
+            {
+                "tag_name": tag,
+                "html_url": f"https://github.com/example/benchmark/releases/tag/{tag}",
+                "published_at": published,
+            }
+        ]
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+    config = {
+        "repositories": ["example/benchmark"],
+        "page_size": 1,
+        "max_pages_per_repository": 1,
+        "max_requests": 2,
+        "_collection_now": datetime(2026, 7, 28, tzinfo=UTC),
+    }
+
+    items = fetch_github_releases(config, datetime(2026, 7, 26, tzinfo=UTC), 1)
+
+    assert pages == [1, 2]
+    assert [item.source_id for item in items] == ["example/benchmark@current"]
+    assert config["_future_rejections"] == 1
+
+
+def test_release_replacement_budget_preserves_later_repository_coverage(monkeypatch):
+    calls = []
+
+    def fake_get_json(url, params, **kwargs):
+        repository = url.split("/repos/", 1)[1].split("/releases", 1)[0]
+        calls.append((repository, params["page"]))
+        if repository == "org/repo0" and params["page"] == 1:
+            return [
+                {
+                    "tag_name": "future",
+                    "html_url": "https://example.test/future",
+                    "published_at": "2050-01-01T00:00:00Z",
+                }
+            ]
+        if repository == "org/repo0" and params["page"] == 2:
+            return [
+                {
+                    "tag_name": "current",
+                    "html_url": "https://example.test/current",
+                    "published_at": "2026-07-27T00:00:00Z",
+                }
+            ]
+        return []
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+    repositories = [f"org/repo{index}" for index in range(8)]
+    config = {
+        "repositories": repositories,
+        "page_size": 1,
+        "max_pages_per_repository": 1,
+        "max_requests": 8,
+        "future_replacement_requests": 1,
+        "_collection_now": datetime(2026, 7, 28, tzinfo=UTC),
+    }
+
+    fetch_github_releases(config, datetime(2026, 7, 26, tzinfo=UTC), 300)
+
+    assert ("org/repo0", 2) in calls
+    assert ("org/repo7", 1) in calls
+    assert len(calls) == 9
 
 
 @pytest.mark.parametrize(
@@ -539,6 +636,54 @@ def test_openalex_rejects_a_shapeless_payload(monkeypatch):
         fetch_openalex({"searches": ["benchmark"]}, datetime(2026, 7, 26, tzinfo=UTC), 10)
 
 
+@pytest.mark.parametrize("blank", ["", "   ", "\n", " \t\n"])
+def test_openalex_requires_a_nonblank_free_api_key(monkeypatch, blank):
+    monkeypatch.setenv("OPENALEX_API_KEY", blank)
+
+    with pytest.raises(RuntimeError, match="OPENALEX_API_KEY is not configured"):
+        fetch_openalex(
+            {"searches": ["benchmark"]},
+            datetime(2026, 7, 26, tzinfo=UTC),
+            10,
+        )
+
+
+def test_openalex_bounds_results_to_the_run_date(monkeypatch):
+    seen = []
+    monkeypatch.setenv("OPENALEX_API_KEY", "  free-key\n")
+
+    def fake_get_json(url, params):
+        seen.append(params)
+        return {
+            "results": [
+                {
+                    "id": "https://openalex.org/W2050",
+                    "display_name": "Erroneously future benchmark",
+                    "publication_date": "2050-01-01",
+                    "primary_location": {"landing_page_url": "https://example.com/future"},
+                },
+                {
+                    "id": "https://openalex.org/WNOW",
+                    "display_name": "Current benchmark",
+                    "publication_date": "2026-07-28",
+                    "primary_location": {"landing_page_url": "https://example.com/current"},
+                },
+            ]
+        }
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+    items = fetch_openalex(
+        {"searches": ["benchmark"]},
+        datetime(2026, 7, 26, tzinfo=UTC),
+        10,
+        now=datetime(2026, 7, 28, 12, tzinfo=UTC),
+    )
+
+    assert [item.title for item in items] == ["Current benchmark"]
+    assert seen[0]["api_key"] == "free-key"
+    assert seen[0]["filter"] == ("from_publication_date:2026-07-26,to_publication_date:2026-07-28")
+
+
 def test_openalex_skips_undated_works(monkeypatch):
     monkeypatch.setenv("OPENALEX_API_KEY", "key")
     monkeypatch.setattr(
@@ -643,3 +788,31 @@ def test_huggingface_skips_undated_repositories(monkeypatch):
     )
 
     assert [item.source_id for item in items] == ["org/dated"]
+
+
+def test_huggingface_filters_future_rows_before_the_local_cap(monkeypatch):
+    seen_limit = []
+
+    def fake_get_json(url, params):
+        seen_limit.append(params["limit"])
+        return [
+            {"id": "org/future", "lastModified": "2050-01-01T00:00:00Z"},
+            {"id": "org/current", "lastModified": "2026-07-27T12:00:00Z"},
+        ]
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+
+    config = {
+        "kinds": ["datasets"],
+        "searches": ["benchmark", "evaluation"],
+        "_collection_now": datetime(2026, 7, 28, tzinfo=UTC),
+    }
+    items = fetch_huggingface(
+        config,
+        datetime(2026, 7, 26, tzinfo=UTC),
+        1,
+    )
+
+    assert seen_limit == [51, 51]
+    assert [item.source_id for item in items] == ["org/current"]
+    assert config["_future_rejections"] == 1

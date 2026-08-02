@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from benchmark_radar.models import RadarItem
+from benchmark_radar.models import ProducerHealth, RadarItem, SourceHealth
 from benchmark_radar.pipeline import (
     apply_watchlist,
     assert_no_boilerplate_summaries,
@@ -440,6 +440,258 @@ def test_selection_counts_expose_the_published_gap(monkeypatch):
     assert run.selection["qualified"] == 5
     assert run.selection["published"] == 2
     assert len(run.items) == 2
+
+
+def test_pipeline_quarantines_future_dated_records_before_scoring(monkeypatch):
+    current = item(
+        source="GitHub",
+        source_id="org/current",
+        url="https://github.com/org/current",
+        published_at=datetime(2026, 7, 27, 11, tzinfo=UTC),
+    )
+    future = item(
+        source="GitHub",
+        source_id="org/future",
+        url="https://github.com/org/future",
+        published_at=datetime(2050, 1, 1, tzinfo=UTC),
+    )
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "github",
+        lambda config, since, limit: [current, future],
+    )
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 0,
+        },
+        "taxonomy": {"benchmark": ["benchmark"]},
+        "sources": {"github": {"enabled": True, "required": True}},
+    }
+
+    run = run_pipeline(config, datetime(2026, 7, 27, 12, tzinfo=UTC))
+
+    assert [record.source_id for record in run.items] == ["org/current"]
+    assert run.health[0].item_count == 1
+    assert run.health[0].error == "Discarded 1 future-dated record(s)"
+    assert run.selection["fetched"] == 2
+    assert run.selection["suppressed_future_dated"] == 1
+
+
+def test_pipeline_accounts_for_future_records_rejected_inside_a_connector(monkeypatch):
+    current = item(
+        source="Hugging Face",
+        source_id="org/current",
+        published_at=datetime(2026, 7, 27, 11, tzinfo=UTC),
+    )
+
+    def fetch(config, since, limit):
+        config["_future_rejections"] = 1
+        return [current]
+
+    pipeline = __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"])
+    monkeypatch.setitem(pipeline.SOURCE_FETCHERS, "huggingface", fetch)
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 0,
+        },
+        "taxonomy": {"benchmark": ["benchmark"]},
+        "sources": {"huggingface": {"enabled": True, "required": True}},
+    }
+
+    run = run_pipeline(config, datetime(2026, 7, 27, 12, tzinfo=UTC))
+
+    assert run.health[0].item_count == 1
+    assert run.health[0].error == "Discarded 1 future-dated record(s)"
+    assert run.selection["fetched"] == 2
+    assert run.selection["suppressed_future_dated"] == 1
+
+
+def test_optional_source_failure_streak_persists_and_resets(monkeypatch):
+    pipeline = __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"])
+
+    def fail(config, since, limit):
+        raise RuntimeError("upstream unavailable")
+
+    monkeypatch.setitem(pipeline.SOURCE_FETCHERS, "optional_fixture", fail)
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 0,
+        },
+        "taxonomy": {"benchmark": ["benchmark"]},
+        "sources": {"optional_fixture": {"enabled": True}},
+    }
+    previous = None
+    for hour in range(3):
+        run = run_pipeline(
+            config,
+            datetime(2026, 7, 27, hour, tzinfo=UTC),
+            previous_snapshot=previous,
+        )
+        previous = {"discovery_state": run.discovery_state}
+
+    assert run.discovery_state["source_failure_streaks"] == {'["evidence","optional_fixture"]': 3}
+
+    monkeypatch.setitem(pipeline.SOURCE_FETCHERS, "optional_fixture", lambda c, s, limit: [])
+    recovered = run_pipeline(
+        config,
+        datetime(2026, 7, 27, 4, tzinfo=UTC),
+        previous_snapshot=previous,
+    )
+    assert recovered.discovery_state["source_failure_streaks"] == {}
+
+
+def test_attention_failure_participates_in_persistent_streaks(monkeypatch):
+    pipeline = __import__("benchmark_radar.pipeline", fromlist=["fetch_attention_feeds"])
+    monkeypatch.setattr(
+        pipeline,
+        "fetch_attention_feeds",
+        lambda *args, **kwargs: (
+            [],
+            [
+                SourceHealth(
+                    source="Hacker News collector",
+                    kind="attention",
+                    ok=False,
+                    error="HTTP 503",
+                )
+            ],
+            [],
+            {},
+        ),
+    )
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 0,
+        },
+        "taxonomy": {"benchmark": ["benchmark"]},
+        "sources": {},
+        "attention": {"hacker_news": {"enabled": True}},
+    }
+    previous = None
+    for hour in range(3):
+        run = run_pipeline(
+            config,
+            datetime(2026, 7, 27, hour, tzinfo=UTC),
+            previous_snapshot=previous,
+        )
+        previous = {"discovery_state": run.discovery_state}
+
+    assert run.discovery_state["source_failure_streaks"] == {
+        '["attention","Hacker News collector"]': 3
+    }
+
+
+def test_attention_producer_failure_participates_in_persistent_streaks(monkeypatch):
+    pipeline = __import__("benchmark_radar.pipeline", fromlist=["fetch_attention_feeds"])
+    monkeypatch.setattr(
+        pipeline,
+        "fetch_attention_feeds",
+        lambda *args, **kwargs: (
+            [],
+            [SourceHealth(source="Fixture feed", kind="attention", ok=True)],
+            [
+                ProducerHealth(
+                    producer="fixture-producer",
+                    source="Hacker News",
+                    ok=False,
+                    error="HTTP 503",
+                )
+            ],
+            {},
+        ),
+    )
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 0,
+        },
+        "taxonomy": {"benchmark": ["benchmark"]},
+        "sources": {},
+    }
+    previous = {
+        "discovery_state": {
+            "source_failure_streaks": {'["producer","fixture-producer","Hacker News"]': 2}
+        }
+    }
+
+    run = run_pipeline(
+        config,
+        datetime(2026, 7, 27, tzinfo=UTC),
+        previous_snapshot=previous,
+    )
+
+    assert run.discovery_state["source_failure_streaks"] == {
+        '["producer","fixture-producer","Hacker News"]': 3
+    }
+
+
+def test_attention_producer_streaks_do_not_cross_producer_boundaries(monkeypatch):
+    pipeline = __import__("benchmark_radar.pipeline", fromlist=["fetch_attention_feeds"])
+    monkeypatch.setattr(
+        pipeline,
+        "fetch_attention_feeds",
+        lambda *args, **kwargs: (
+            [],
+            [],
+            [
+                ProducerHealth(
+                    producer="producer-b",
+                    source="Hacker News",
+                    ok=False,
+                    error="HTTP 503",
+                )
+            ],
+            {},
+        ),
+    )
+    config = {
+        "radar": {
+            "lookback_hours": 48,
+            "max_items_per_source": 10,
+            "report_limit": 10,
+            "minimum_score": 0,
+        },
+        "taxonomy": {},
+        "sources": {},
+    }
+    previous = {
+        "discovery_state": {
+            "source_failure_streaks": {'["producer","producer-a","Hacker News"]': 2}
+        }
+    }
+
+    run = run_pipeline(
+        config,
+        datetime(2026, 7, 27, tzinfo=UTC),
+        previous_snapshot=previous,
+    )
+
+    assert run.discovery_state["source_failure_streaks"] == {
+        '["producer","producer-b","Hacker News"]': 1
+    }
+
+
+def test_attention_producer_streak_key_is_unambiguous():
+    from benchmark_radar.pipeline import _failure_streak_key
+
+    first = ProducerHealth(producer="a:b", source="c", ok=False)
+    second = ProducerHealth(producer="a", source="b:c", ok=False)
+
+    assert _failure_streak_key("producer", first) != _failure_streak_key("producer", second)
 
 
 def test_funnel_counts_suppressed_arxiv_records_as_fetched(monkeypatch):

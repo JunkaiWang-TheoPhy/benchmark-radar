@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import yaml
 
-from .pipeline import run_pipeline, simulate_backfill
+from .pipeline import _failure_streak_key, run_pipeline, simulate_backfill
 from .report import render_markdown
 from .snapshots import (
     load_snapshots,
@@ -16,6 +17,39 @@ from .snapshots import (
     rescore_snapshot_history,
     write_snapshot,
 )
+
+
+def _emit_persistent_source_warnings(run, config: dict) -> None:
+    """Raise visible Actions warnings for optional sources that keep failing."""
+    if os.getenv("GITHUB_ACTIONS") != "true":
+        return
+    threshold = max(
+        1,
+        int(config.get("radar", {}).get("optional_source_failure_warning_runs", 3)),
+    )
+    required = {
+        name
+        for name, source_config in config.get("sources", {}).items()
+        if source_config.get("enabled", True) and source_config.get("required", False)
+    }
+    streaks = run.discovery_state.get("source_failure_streaks") or {}
+
+    def emit(health, *, layer: str, required_source: bool = False) -> None:
+        streak_key = _failure_streak_key(layer, health)
+        streak = int(streaks.get(streak_key, 0) or 0)
+        if not health.ok and not required_source and streak >= threshold:
+            source = health.source.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+            print(
+                "::warning title=Persistent optional source failure::"
+                f"{source} has failed for {streak} consecutive runs"
+            )
+
+    for health in run.health:
+        emit(health, layer="evidence", required_source=health.source in required)
+    for health in run.attention_ingest_health:
+        emit(health, layer="attention")
+    for health in run.producer_health:
+        emit(health, layer="producer")
 
 
 def load_config(path: Path) -> dict:
@@ -160,6 +194,7 @@ def main() -> None:
         config,
         previous_snapshot=snapshots[-1] if snapshots else None,
     )
+    _emit_persistent_source_warnings(run, config)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.json_output.parent.mkdir(parents=True, exist_ok=True)
     dashboard_url = config.get("publish", {}).get("dashboard_url")

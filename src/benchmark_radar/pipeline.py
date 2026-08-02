@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 import re
 from collections import Counter
@@ -13,7 +14,7 @@ from . import rubric
 from .attention import fetch_attention_feeds
 from .corpus import exact_artifact_keys
 from .models import RadarItem, RadarRun, SourceHealth
-from .sources import SOURCE_FETCHERS
+from .sources import FUTURE_TIMESTAMP_TOLERANCE, SOURCE_FETCHERS
 
 TRACKING_PARAMETERS = {"ref", "source", "utm_campaign", "utm_content", "utm_medium", "utm_source"}
 
@@ -336,6 +337,30 @@ def assert_no_boilerplate_summaries(items: list[RadarItem]) -> None:
         )
 
 
+def _drop_future_dated_items(
+    items: list[RadarItem],
+    *,
+    now: datetime,
+) -> tuple[list[RadarItem], int]:
+    """Quarantine records whose source timestamps are materially in the future."""
+    latest_allowed = now + FUTURE_TIMESTAMP_TOLERANCE
+    accepted = [
+        item
+        for item in items
+        if item.published_at <= latest_allowed
+        and (item.updated_at is None or item.updated_at <= latest_allowed)
+    ]
+    return accepted, len(items) - len(accepted)
+
+
+def _failure_streak_key(layer: str, health: Any) -> str:
+    if layer == "producer":
+        identity = [layer, health.producer, health.source]
+    else:
+        identity = [layer, health.source]
+    return json.dumps(identity, ensure_ascii=False, separators=(",", ":"))
+
+
 def _date(value: str | None, *, fallback: datetime) -> datetime:
     if not value:
         return fallback
@@ -374,6 +399,7 @@ def _score_and_select(
     now: datetime,
     fetched_count: int,
     suppressed_count: int,
+    future_dated_count: int = 0,
 ) -> tuple[list[RadarItem], dict[str, Any]]:
     """Score, dedupe and select a fetched item pool as of a given moment.
 
@@ -424,6 +450,9 @@ def _score_and_select(
         "fetched": fetched_count,
         # arXiv records already seen in a previous run, dropped before dedupe.
         "suppressed_as_seen": suppressed_count,
+        # Invalid upstream dates are removed before scoring so they cannot get
+        # maximum recency or displace legitimate current records.
+        "suppressed_future_dated": future_dated_count,
         "deduplicated": len(unique),
         "scored": len(scored),
         "qualified": len(selected),
@@ -568,19 +597,39 @@ def run_pipeline(
     limit = int(settings["max_items_per_source"])
     items: list[RadarItem] = []
     health: list[SourceHealth] = []
-    # Counted before arXiv overlap suppression, so this always agrees with the
-    # per-source health table rather than silently excluding repeat records.
+    # Counted before arXiv overlap and future-date suppression. The selection
+    # funnel records both exclusions so every fetched row remains accounted for.
     fetched_count = 0
     suppressed_count = 0
+    future_dated_count = 0
     discovery_state = deepcopy((previous_snapshot or {}).get("discovery_state") or {})
     for source_name, source_config in config["sources"].items():
         if not source_config.get("enabled", True):
             continue
         fetcher = SOURCE_FETCHERS[source_name]
         try:
-            fetched = fetcher(source_config, since, limit)
-            fetched_count += len(fetched)
-            health.append(SourceHealth(source=source_name, ok=True, item_count=len(fetched)))
+            fetch_config = {**source_config, "_collection_now": now}
+            if source_name == "openalex":
+                fetched = fetcher(fetch_config, since, limit, now=now)
+            else:
+                fetched = fetcher(fetch_config, since, limit)
+            connector_rejected = int(fetch_config.get("_future_rejections", 0) or 0)
+            fetched_count += len(fetched) + connector_rejected
+            fetched, rejected_future = _drop_future_dated_items(fetched, now=now)
+            rejected_future += connector_rejected
+            future_dated_count += rejected_future
+            health.append(
+                SourceHealth(
+                    source=source_name,
+                    ok=True,
+                    item_count=len(fetched),
+                    error=(
+                        f"Discarded {rejected_future} future-dated record(s)"
+                        if rejected_future
+                        else None
+                    ),
+                )
+            )
             for item in fetched:
                 item.retrieved_at = item.retrieved_at or now
             if source_name == "arxiv":
@@ -633,6 +682,7 @@ def run_pipeline(
         now=now,
         fetched_count=fetched_count,
         suppressed_count=suppressed_count,
+        future_dated_count=future_dated_count,
     )
     attention, attention_health, producer_health, attention_state = fetch_attention_feeds(
         config.get("attention") or {},
@@ -642,6 +692,26 @@ def run_pipeline(
         previous_observations=((previous_snapshot or {}).get("attention") or {}).get("observations")
         or [],
     )
+    previous_streaks = ((previous_snapshot or {}).get("discovery_state") or {}).get(
+        "source_failure_streaks"
+    ) or {}
+    failure_streaks: dict[str, int] = {}
+    monitored_health = [
+        *(("evidence", source_health) for source_health in health),
+        *(("attention", source_health) for source_health in attention_health),
+        *(("producer", source_health) for source_health in producer_health),
+    ]
+    for layer, source_health in monitored_health:
+        if source_health.ok:
+            continue
+        streak_key = _failure_streak_key(layer, source_health)
+        previous = previous_streaks.get(streak_key, 0)
+        try:
+            previous_count = max(0, int(previous))
+        except (TypeError, ValueError):
+            previous_count = 0
+        failure_streaks[streak_key] = previous_count + 1
+
     return RadarRun(
         generated_at=now,
         since=since,
@@ -654,5 +724,6 @@ def run_pipeline(
         discovery_state={
             **discovery_state,
             "attention": attention_state,
+            "source_failure_streaks": failure_streaks,
         },
     )

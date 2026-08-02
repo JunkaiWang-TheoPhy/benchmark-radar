@@ -27,12 +27,14 @@ Default sources:
 | GitHub | No in Actions | Code and artifact discovery |
 | GitHub Releases | No in Actions | Curated first-party release discovery |
 | Semantic Scholar | Optional `SEMANTIC_SCHOLAR_API_KEY` | Structured scholarly discovery |
-| OpenAlex | `OPENALEX_API_KEY` | Scholarly metadata enrichment |
+| OpenAlex | Free `OPENALEX_API_KEY` | Scholarly metadata enrichment |
 | Brave Search | `BRAVE_API_KEY` | Web and lab-blog discovery |
 | Hacker News | No | Public attention only; never quality-scored |
 
 The report remains useful without optional secrets. Missing optional sources are shown
 as warnings in the source-health table instead of being silently ignored.
+In GitHub Actions, an optional source that fails for three consecutive runs also emits a
+workflow warning; `radar.optional_source_failure_warning_runs` controls that threshold.
 
 ## How ranking works
 
@@ -177,6 +179,11 @@ SEMANTIC_SCHOLAR_API_KEY
 OPENALEX_API_KEY
 BRAVE_API_KEY
 ```
+
+OpenAlex replaced its old `mailto` polite pool with free API keys in February 2026.
+Create the key at <https://openalex.org/settings/api>. Semantic Scholar keys also start
+with a one-request-per-second limit, so its connector is paced by
+`sources.semantic_scholar.request_delay_seconds`.
 
 Daily snapshot persistence also requires a private GitHub App with **Contents: read and
 write** access to this repository. Add the App to the `main-protect` ruleset's bypass

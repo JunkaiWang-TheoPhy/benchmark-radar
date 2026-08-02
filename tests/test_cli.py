@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 
 from benchmark_radar import cli
-from benchmark_radar.models import RadarItem, RadarRun
+from benchmark_radar.models import ProducerHealth, RadarItem, RadarRun
 from benchmark_radar.pipeline import SOURCE_FETCHERS
 from benchmark_radar.snapshots import write_snapshot
 
@@ -124,3 +124,80 @@ def test_simulate_history_marks_written_snapshots_as_simulated(monkeypatch, tmp_
 
     simulated = json.loads((tmp_path / "snapshots" / "2026-07-29.json").read_text(encoding="utf-8"))
     assert simulated["selection"]["simulated"] is True
+
+
+def test_actions_warn_after_repeated_optional_source_failures(monkeypatch, capsys):
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    run = RadarRun(
+        generated_at=datetime(2026, 8, 2, tzinfo=UTC),
+        since=datetime(2026, 7, 31, tzinfo=UTC),
+        items=[],
+        health=[],
+        producer_health=[
+            ProducerHealth(
+                producer="fixture-producer",
+                source="Hacker News",
+                ok=False,
+                error="HTTP 503",
+            )
+        ],
+        discovery_state={
+            "source_failure_streaks": {'["producer","fixture-producer","Hacker News"]': 3}
+        },
+    )
+    config = {
+        "radar": {"optional_source_failure_warning_runs": 3},
+        "sources": {},
+    }
+
+    cli._emit_persistent_source_warnings(run, config)
+
+    assert capsys.readouterr().out == (
+        "::warning title=Persistent optional source failure::"
+        "Hacker News has failed for 3 consecutive runs\n"
+    )
+
+
+def test_actions_escape_remote_source_names(monkeypatch, capsys):
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    source = "safe%name\r\n::error::injected"
+    run = RadarRun(
+        generated_at=datetime(2026, 8, 2, tzinfo=UTC),
+        since=datetime(2026, 7, 31, tzinfo=UTC),
+        items=[],
+        health=[],
+        producer_health=[ProducerHealth(producer="fixture-producer", source=source, ok=False)],
+        discovery_state={
+            "source_failure_streaks": {
+                json.dumps(
+                    ["producer", "fixture-producer", source],
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ): 3
+            }
+        },
+    )
+
+    cli._emit_persistent_source_warnings(run, {"radar": {}, "sources": {}})
+
+    assert capsys.readouterr().out == (
+        "::warning title=Persistent optional source failure::"
+        "safe%25name%0D%0A::error::injected has failed for 3 consecutive runs\n"
+    )
+
+
+def test_required_discovery_name_does_not_exempt_attention_failure(monkeypatch, capsys):
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    run = RadarRun(
+        generated_at=datetime(2026, 8, 2, tzinfo=UTC),
+        since=datetime(2026, 7, 31, tzinfo=UTC),
+        items=[],
+        health=[],
+        producer_health=[ProducerHealth(producer="fixture-producer", source="github", ok=False)],
+        discovery_state={"source_failure_streaks": {'["producer","fixture-producer","github"]': 3}},
+    )
+    config = {"radar": {}, "sources": {"github": {"required": True}}}
+
+    cli._emit_persistent_source_warnings(run, config)
+
+    assert "github has failed for 3 consecutive runs" in capsys.readouterr().out

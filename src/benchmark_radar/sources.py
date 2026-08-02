@@ -17,6 +17,29 @@ class ConnectorPayloadError(ValueError):
     """Raised when a source returns a successful but incompatible payload."""
 
 
+FUTURE_TIMESTAMP_TOLERANCE = timedelta(minutes=5)
+
+
+def _latest_allowed(config: dict[str, Any]) -> datetime:
+    collection_now = config.get("_collection_now")
+    if not isinstance(collection_now, datetime):
+        collection_now = datetime.now(UTC)
+    return collection_now.astimezone(UTC) + FUTURE_TIMESTAMP_TOLERANCE
+
+
+def _reject_future(
+    config: dict[str, Any],
+    identity: str,
+    *timestamps: datetime | None,
+) -> bool:
+    if not any(value is not None and value > _latest_allowed(config) for value in timestamps):
+        return False
+    identities = config.setdefault("_future_rejection_ids", set())
+    identities.add(identity)
+    config["_future_rejections"] = len(identities)
+    return True
+
+
 def _payload_dict(payload: Any, source: str) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ConnectorPayloadError(f"{source} returned a non-object payload")
@@ -129,7 +152,7 @@ def _fetch_arxiv_rss(
             ):
                 continue
             published = parsedate_to_datetime(published_text).astimezone(UTC)
-            if published < overlap_since:
+            if published < overlap_since or _reject_future(config, source_id, published):
                 continue
             announce_type = (
                 entry.findtext("arxiv:announce_type", namespaces=namespaces) or ""
@@ -179,23 +202,29 @@ def fetch_arxiv(config: dict[str, Any], since: datetime, limit: int) -> list[Rad
                 xml = get_text(
                     "https://export.arxiv.org/api/query",
                     params={
-                        "search_query": query,
+                        "search_query": (
+                            f"({query}) AND lastUpdatedDate:"
+                            f"[{overlap_since:%Y%m%d%H%M} TO "
+                            f"{_latest_allowed(config):%Y%m%d%H%M}]"
+                        ),
                         "start": 0,
                         "max_results": limit,
-                        "sortBy": "submittedDate",
+                        "sortBy": "lastUpdatedDate",
                         "sortOrder": "descending",
                     },
                 )
                 root = ET.fromstring(xml)
                 for entry in root.findall("atom:entry", namespace):
-                    published = _date(entry.findtext("atom:published", namespaces=namespace))
-                    updated = _date(entry.findtext("atom:updated", namespaces=namespace))
-                    if max(published, updated) < overlap_since:
-                        continue
                     url = (entry.findtext("atom:id", namespaces=namespace) or "").replace(
                         "http:", "https:"
                     )
                     source_id = _arxiv_source_id(url)
+                    published = _date(entry.findtext("atom:published", namespaces=namespace))
+                    updated = _date(entry.findtext("atom:updated", namespaces=namespace))
+                    if max(published, updated) < overlap_since or _reject_future(
+                        config, source_id, published, updated
+                    ):
+                        continue
                     title = " ".join(
                         (entry.findtext("atom:title", namespaces=namespace) or "").split()
                     )
@@ -250,21 +279,28 @@ def fetch_huggingface(config: dict[str, Any], since: datetime, limit: int) -> li
                     "search": search,
                     "sort": "lastModified",
                     "direction": -1,
-                    "limit": limit,
+                    # The Hub API has no upper-date filter. Fetch extra rows so
+                    # malformed future timestamps cannot consume the local cap
+                    # before they are rejected below.
+                    "limit": min(1000, max(limit * 2, limit + 50)),
                     "full": "true",
                 },
             )
             if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows):
                 raise ConnectorPayloadError("Hugging Face Hub returned a non-array payload")
             for row in rows:
+                item_id = row.get("id") or row.get("modelId")
+                if not item_id:
+                    continue
                 # An undated repo is skipped rather than dated "now": the
                 # substitution both invented freshness and slipped past the
                 # `since` check below, which is what it was meant to enforce.
                 changed = _optional_date(row.get("lastModified") or row.get("createdAt"))
-                if changed is None or changed < since:
-                    continue
-                item_id = row.get("id") or row.get("modelId")
-                if not item_id:
+                if (
+                    changed is None
+                    or changed < since
+                    or _reject_future(config, str(item_id), changed)
+                ):
                     continue
                 created = _optional_date(row.get("createdAt"))
                 found[item_id] = RadarItem(
@@ -329,7 +365,10 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
             payload = get_json(
                 "https://api.github.com/search/repositories",
                 params={
-                    "q": f"{query} pushed:>={date_filter}",
+                    "q": (
+                        f"{query} pushed:{date_filter}.."
+                        f"{_latest_allowed(config).date().isoformat()}"
+                    ),
                     "sort": "updated",
                     "order": "desc",
                     "per_page": min(limit, page_size),
@@ -339,10 +378,10 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
             )
             rows = _payload_rows(payload, "items", "GitHub Search")
             for row in rows:
-                changed = _date(row.get("pushed_at") or row.get("updated_at"))
-                if changed < since:
-                    continue
                 full_name = row["full_name"]
+                changed = _date(row.get("pushed_at") or row.get("updated_at"))
+                if changed < since or _reject_future(config, full_name, changed):
+                    continue
                 found[full_name] = RadarItem(
                     source="GitHub",
                     source_id=full_name,
@@ -409,7 +448,7 @@ def fetch_openreview(
                 if not note_id or not title or not created or not activity:
                     continue
                 oldest = min(oldest or activity, activity)
-                if activity < since:
+                if activity < since or _reject_future(config, note_id, activity):
                     continue
                 abstract = str(_openreview_value(content, "abstract", "") or "").strip()
                 authors = _openreview_value(content, "authors", []) or []
@@ -460,21 +499,33 @@ def fetch_semantic_scholar(
     limit: int,
 ) -> list[RadarItem]:
     """Fetch structured scholarly records with exact external identifiers."""
-    api_key = os.getenv("SEMANTIC_SCHOLAR_API_KEY")
+    api_key = os.getenv("SEMANTIC_SCHOLAR_API_KEY", "").strip()
     headers = {"x-api-key": api_key} if api_key else {}
     found: dict[str, RadarItem] = {}
     searches = [str(value) for value in config.get("searches", []) if str(value).strip()]
     budget = max(1, int(config.get("max_requests", len(searches) or 1)))
     page_size = min(100, max(1, int(config.get("page_size", 100))))
+    # An individual Semantic Scholar key starts at one request per second.
+    # Pace proactively instead of making every request after the first rely on
+    # a 429 and retry. Anonymous callers remain on the shared pool and retain
+    # the old no-delay default unless the configuration says otherwise.
+    request_delay = max(
+        0.0,
+        float(config.get("request_delay_seconds", 1.1 if api_key else 0.0)),
+    )
     requests_made = 0
     for search in searches:
         offset = 0
         while requests_made < budget and len(found) < limit:
+            if requests_made and request_delay:
+                time.sleep(request_delay)
             payload = get_json(
                 "https://api.semanticscholar.org/graph/v1/paper/search",
                 params={
                     "query": search,
-                    "publicationDateOrYear": f"{since.date().isoformat()}:",
+                    "publicationDateOrYear": (
+                        f"{since.date().isoformat()}:{_latest_allowed(config).date().isoformat()}"
+                    ),
                     "offset": offset,
                     "limit": min(page_size, limit - len(found)),
                     "fields": (
@@ -496,7 +547,7 @@ def fetch_semantic_scholar(
                 if not paper_id or not title or not published_text:
                     continue
                 published = _date(str(published_text))
-                if published < since:
+                if published < since or _reject_future(config, paper_id, published):
                     continue
                 external = row.get("externalIds") or {}
                 if not isinstance(external, dict):
@@ -570,11 +621,20 @@ def fetch_github_releases(
     page_size = min(100, max(1, int(config.get("page_size", 30))))
     max_pages = max(1, int(config.get("max_pages_per_repository", 2)))
     budget = max(1, int(config.get("max_requests", len(repositories) or 1)))
-    requests_made = 0
+    replacement_budget = max(0, int(config.get("future_replacement_requests", 2)))
+    regular_requests = 0
+    replacement_requests = 0
     found: dict[str, RadarItem] = {}
     for repository in repositories:
-        for page in range(1, max_pages + 1):
-            if requests_made >= budget or len(found) >= limit:
+        page = 1
+        page_limit = max_pages
+        while page <= page_limit:
+            is_replacement = page > max_pages
+            if (
+                (is_replacement and replacement_requests >= replacement_budget)
+                or (not is_replacement and regular_requests >= budget)
+                or len(found) >= limit
+            ):
                 break
             payload = get_json(
                 f"https://api.github.com/repos/{repository}/releases",
@@ -582,12 +642,16 @@ def fetch_github_releases(
                 headers=headers,
                 **_request_options(config),
             )
-            requests_made += 1
+            if is_replacement:
+                replacement_requests += 1
+            else:
+                regular_requests += 1
             if not isinstance(payload, list) or not all(isinstance(row, dict) for row in payload):
                 raise ConnectorPayloadError("GitHub Releases returned a non-array payload")
             if not payload:
                 break
             oldest: datetime | None = None
+            rejected_on_page = 0
             for row in payload:
                 if row.get("draft"):
                     continue
@@ -601,6 +665,9 @@ def fetch_github_releases(
                 tag = str(row.get("tag_name") or "").strip()
                 url = str(row.get("html_url") or "").strip()
                 if not tag or not url:
+                    continue
+                if _reject_future(config, f"{repository}@{tag}", published):
+                    rejected_on_page += 1
                     continue
                 author = row.get("author") or {}
                 assets = row.get("assets") or []
@@ -639,15 +706,29 @@ def fetch_github_releases(
                 oldest is not None and oldest < since
             ):
                 break
-        if requests_made >= budget or len(found) >= limit:
+            if rejected_on_page:
+                page_limit += 1
+            page += 1
+        if regular_requests >= budget or len(found) >= limit:
             break
     return sorted(found.values(), key=lambda item: item.published_at, reverse=True)[:limit]
 
 
-def fetch_openalex(config: dict[str, Any], since: datetime, limit: int) -> list[RadarItem]:
-    api_key = os.getenv("OPENALEX_API_KEY")
+def fetch_openalex(
+    config: dict[str, Any],
+    since: datetime,
+    limit: int,
+    *,
+    now: datetime | None = None,
+) -> list[RadarItem]:
+    # OpenAlex replaced its mailto-based polite pool with free API keys in
+    # February 2026. Anonymous calls still have a small compatibility budget,
+    # but they are not the documented production path.
+    api_key = os.getenv("OPENALEX_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("OPENALEX_API_KEY is not configured")
+    now = now or _latest_allowed(config) - FUTURE_TIMESTAMP_TOLERANCE
+    config.setdefault("_collection_now", now)
     found: dict[str, RadarItem] = {}
     for search in config.get("searches", []):
         payload = get_json(
@@ -655,7 +736,12 @@ def fetch_openalex(config: dict[str, Any], since: datetime, limit: int) -> list[
             params={
                 "api_key": api_key,
                 "search": search,
-                "filter": f"from_publication_date:{since.date().isoformat()}",
+                # The lower bound alone lets erroneous future records sort to
+                # the front and crowd real current work out of the first page.
+                "filter": (
+                    f"from_publication_date:{since.date().isoformat()},"
+                    f"to_publication_date:{now.date().isoformat()}"
+                ),
                 "sort": "publication_date:desc",
                 "per_page": min(limit, 100),
                 "select": "id,doi,display_name,publication_date,authorships,"
@@ -679,7 +765,14 @@ def fetch_openalex(config: dict[str, Any], since: datetime, limit: int) -> list[
             # resolution; an undated row is skipped rather than dated "now",
             # which would have handed it maximum recency.
             published = _optional_date(row.get("publication_date"))
-            if published is None or published.date() < since.date():
+            # Keep a defensive client-side bound as well as the API filter: a
+            # malformed or ignored upstream filter must not grant future work
+            # maximum recency in the shared scorer.
+            if (
+                published is None
+                or published.date() < since.date()
+                or _reject_future(config, source_id, published)
+            ):
                 continue
             found[source_id] = RadarItem(
                 source="OpenAlex",
@@ -707,6 +800,10 @@ def fetch_brave(config: dict[str, Any], since: datetime, limit: int) -> list[Rad
     if not api_key:
         raise RuntimeError("BRAVE_API_KEY is not configured")
     found: dict[str, RadarItem] = {}
+    freshness_end = min(
+        since + timedelta(days=_BRAVE_RANGE_DAYS),
+        _latest_allowed(config),
+    ).date()
     for query in config.get("searches", []):
         payload = get_json(
             "https://api.search.brave.com/res/v1/web/search",
@@ -716,10 +813,7 @@ def fetch_brave(config: dict[str, Any], since: datetime, limit: int) -> list[Rad
                 # run reconstructs the same query. The end is padded past the
                 # lookback so the present day stays inside the range: reading
                 # the clock here made the request depend on when it was issued.
-                "freshness": (
-                    f"{since.date().isoformat()}to"
-                    f"{(since + timedelta(days=_BRAVE_RANGE_DAYS)).date().isoformat()}"
-                ),
+                "freshness": (f"{since.date().isoformat()}to{freshness_end.isoformat()}"),
                 "count": min(limit, 20),
                 "extra_snippets": "true",
             },
@@ -740,7 +834,7 @@ def fetch_brave(config: dict[str, Any], since: datetime, limit: int) -> list[Rad
             # a freshness the response never asserted and awarded them full
             # recency, so an undated result is skipped instead.
             published = _optional_date(row.get("page_age"))
-            if published is None:
+            if published is None or _reject_future(config, url, published):
                 continue
             found[url] = RadarItem(
                 source="Brave Web",
