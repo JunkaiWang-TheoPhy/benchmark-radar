@@ -441,6 +441,14 @@ def adoption_rank(registry: dict[str, Any]) -> dict[str, Any]:
                 _descending(card["published"] or ""),
                 card["organization"],
                 card["model"],
+                # Z.ai published a GLM-5 model card and a GLM-5 technical
+                # report on the same day, which ties every key above. Without
+                # a unique final key their order would follow their position in
+                # the YAML file, so editing an unrelated part of the registry
+                # could reorder the published roster. The id is the only field
+                # guaranteed distinct.
+                card["document_type"],
+                card["model_card_id"],
             ),
         ),
         "entries": entries,

@@ -1644,11 +1644,16 @@ function renderLeaderboard() {
   // `adoption_rank`: an unknown date is not evidence of recency. Organization
   // then model break ties so the order is total rather than dependent on the
   // input sequence.
+  // The trailing document_type and id keys match the backend's: Z.ai's GLM-5
+  // model card and technical report tie on date, organization and model, so
+  // without them the two rosters could disagree on that pair.
   const byNewestFirst = (a, b) =>
     Number(!a.published) - Number(!b.published) ||
     (b.published || "").localeCompare(a.published || "") ||
     a.organization.localeCompare(b.organization) ||
-    String(a.model).localeCompare(String(b.model));
+    String(a.model).localeCompare(String(b.model)) ||
+    String(a.document_type).localeCompare(String(b.document_type)) ||
+    String(a.model_card_id).localeCompare(String(b.model_card_id));
 
   replaceChildren(byId("leaderboard-insights"), [
     mapInsightCard(

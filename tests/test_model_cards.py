@@ -459,6 +459,38 @@ def test_model_cards_are_listed_newest_first(tmp_path):
     ]
 
 
+def test_card_order_does_not_depend_on_registry_file_order(tmp_path):
+    """Two documents about one model on one day must still order totally.
+
+    Z.ai published a GLM-5 model card and a GLM-5 technical report on the same
+    date, tying organization, model and published. Without a unique final key
+    their relative order follows their position in the YAML file, so editing an
+    unrelated part of the registry could silently reorder the roster.
+    """
+    document = minimal_registry()
+    for suffix in ("model_card", "technical_report"):
+        document["model_cards"].append(
+            {
+                "id": f"org_one_{suffix}",
+                "organization": "Org One",
+                "model": "Twin",
+                "document_type": suffix,
+                "published": "2025-03-01",
+                "url": f"https://example.com/twin-{suffix}",
+                "benchmarks": ["alpha"],
+            }
+        )
+    forward = adoption_rank(load_registry(write_registry(tmp_path, document)))
+
+    reversed_document = minimal_registry()
+    reversed_document["model_cards"].extend(reversed(document["model_cards"][2:]))
+    backward = adoption_rank(load_registry(write_registry(tmp_path, reversed_document)))
+
+    assert [card["model_card_id"] for card in forward["model_cards"]] == [
+        card["model_card_id"] for card in backward["model_cards"]
+    ]
+
+
 def test_undated_model_cards_sort_last_not_first(tmp_path):
     """An unknown date is not evidence of recency.
 
