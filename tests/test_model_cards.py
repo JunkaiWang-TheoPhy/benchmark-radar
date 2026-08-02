@@ -288,3 +288,37 @@ def test_a_well_formed_but_impossible_date_is_rejected(tmp_path):
     document["model_cards"][0]["published"] = "2025-02-30"
     with pytest.raises(ModelCardRegistryError, match="not a real calendar date"):
         load_registry(write_registry(tmp_path, document))
+
+
+def test_the_same_document_registered_twice_is_rejected(tmp_path):
+    # The counting unit is the document. Two ids pointing at one URL would add
+    # two adoptions to every benchmark that document lists and reorder the
+    # ranking, which is exactly the inflation the per-document rule prevents.
+    document = minimal_registry()
+    document["model_cards"].append(
+        {
+            **document["model_cards"][0],
+            "id": "org_one_card_again",
+        }
+    )
+    with pytest.raises(ModelCardRegistryError, match="repeats the document URL"):
+        load_registry(write_registry(tmp_path, document))
+
+
+def test_a_scalar_alias_is_rejected_rather_than_split_into_characters(tmp_path):
+    # `aliases: Alias` is the natural thing to write and is a YAML scalar,
+    # which iterates per character into ['A', 'l', 'i', 'a', 's'].
+    document = minimal_registry()
+    document["benchmarks"][0]["aliases"] = "Alpha Bench"
+    with pytest.raises(ModelCardRegistryError, match="aliases must be a list"):
+        load_registry(write_registry(tmp_path, document))
+
+
+def test_shipped_registry_has_no_repeated_documents_or_scalar_aliases():
+    registry = load_registry(DEFAULT_REGISTRY_PATH)
+
+    urls = [str(card["url"]) for card in registry["model_cards"]]
+    assert len(urls) == len(set(urls))
+    for benchmark in registry["benchmarks"]:
+        aliases = benchmark.get("aliases")
+        assert aliases is None or isinstance(aliases, list)

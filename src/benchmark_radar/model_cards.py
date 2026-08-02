@@ -112,15 +112,35 @@ def load_registry(path: Path = DEFAULT_REGISTRY_PATH) -> dict[str, Any]:
         benchmark_id = str(benchmark["id"])
         if benchmark_id in by_id:
             raise ModelCardRegistryError(f"{path}: duplicate benchmark id {benchmark_id!r}")
+        # `aliases: SWE-bench Verified` is the natural thing to write and is a
+        # YAML scalar, which iterates per character: the published registry
+        # would carry ['S', 'W', 'E', ...] and every alias search would miss,
+        # silently rather than loudly.
+        if benchmark.get("aliases") is not None and not isinstance(benchmark["aliases"], list):
+            raise ModelCardRegistryError(
+                f"{path}: benchmark {benchmark_id!r} aliases must be a list"
+            )
         by_id[benchmark_id] = benchmark
 
     seen_cards: set[str] = set()
+    seen_urls: dict[str, str] = {}
     for index, card in enumerate(cards):
         _require(card, _REQUIRED_CARD_FIELDS, label=f"{path}: model card {index}")
         card_id = str(card["id"])
         if card_id in seen_cards:
             raise ModelCardRegistryError(f"{path}: duplicate model card id {card_id!r}")
         seen_cards.add(card_id)
+        # The counting unit is the document, so the same document entered twice
+        # under two ids would add two adoptions to every benchmark it lists and
+        # reorder the ranking. A distinct id is not evidence of a distinct
+        # document; the URL is what identifies one.
+        url = str(card["url"])
+        if url in seen_urls:
+            raise ModelCardRegistryError(
+                f"{path}: model card {card_id!r} repeats the document URL already "
+                f"registered by {seen_urls[url]!r}: {url}"
+            )
+        seen_urls[url] = card_id
         if not isinstance(card["benchmarks"], list):
             raise ModelCardRegistryError(
                 f"{path}: model card {card_id!r} benchmarks must be a list"
