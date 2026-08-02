@@ -1279,6 +1279,78 @@ td a {
   font-size: 0.78rem;
 }
 
+/* Model Card Adoption Rank (issue #83) */
+
+.leaderboard-filters {
+  margin-bottom: 0.5rem;
+}
+
+.leaderboard-list {
+  margin-top: 0.75rem;
+}
+
+/* The bar encodes the same number the adjacent count states, so it carries an
+   aria-label rather than being announced twice: a screen reader hears the
+   count once, from the text. */
+.adoption-bar {
+  width: 100%;
+  height: 6px;
+  margin-top: 0.35rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: transparent;
+}
+
+.adoption-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--sea);
+}
+
+.adopter-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.adopter-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.adopter-link {
+  color: var(--blue-deep);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.adopter-link:hover,
+.adopter-link:focus-visible {
+  text-decoration: underline;
+}
+
+.adopter-meta {
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* The four registry cards hold lists of very different lengths, and a stretched
+   grid row gave the shortest one a column of dead whitespace as tall as the
+   longest. Aligning to the start lets each card end where its content does. */
+#leaderboard-insights {
+  align-items: start;
+}
+
 .map-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;

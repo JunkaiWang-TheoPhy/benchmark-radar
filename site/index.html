@@ -73,6 +73,9 @@
 
     <nav class="view-nav" aria-label="Dashboard views">
       <button type="button" data-view="today" aria-controls="today-view">Today</button>
+      <button type="button" data-view="leaderboard" aria-controls="leaderboard-view">
+        Leaderboard
+      </button>
       <button type="button" data-view="trends" aria-controls="trends-view">Trends</button>
       <button type="button" data-view="map" aria-controls="map-view">Trend map</button>
       <button type="button" id="rubric-nav" aria-haspopup="dialog">Rubric</button>
@@ -146,6 +149,91 @@
             </aside>
           </div>
         </div>
+      </section>
+
+      <section
+        class="view"
+        id="leaderboard-view"
+        aria-labelledby="leaderboard-heading"
+        hidden
+      >
+        <header class="view-heading">
+          <div>
+            <p class="eyebrow">Model Card Adoption Rank</p>
+            <h1 id="leaderboard-heading">Which benchmarks do model cards report?</h1>
+          </div>
+          <!--
+            The disclaimer sits in the heading, not in a footnote. This ranking
+            counts vendor attention, and a saturated benchmark can top it
+            precisely because reporting it is conventional. Readers who take the
+            order as a quality ranking would draw the opposite of the intended
+            conclusion, so the correction has to arrive before the table does.
+          -->
+          <p class="heading-note" id="leaderboard-measures"></p>
+        </header>
+
+        <div class="map-insights" id="leaderboard-insights" aria-label="Registry overview"></div>
+
+        <div class="trend-panel">
+          <div class="section-title">
+            <h2 id="leaderboard-table-heading">Benchmarks by model card adoption</h2>
+            <span id="leaderboard-count" aria-live="polite"></span>
+          </div>
+          <form class="filter-panel leaderboard-filters" id="leaderboard-filters">
+            <label class="search-field">
+              Search
+              <input
+                id="leaderboard-search"
+                name="lq"
+                type="search"
+                placeholder="Benchmark name or alias"
+              >
+            </label>
+            <label>
+              Domain
+              <select id="leaderboard-domain" name="ldomain"></select>
+            </label>
+            <label>
+              Organization
+              <select id="leaderboard-organization" name="lorg"></select>
+            </label>
+            <button class="clear-button" id="leaderboard-clear" type="button">
+              Clear filters
+            </button>
+          </form>
+          <p class="section-note">
+            Each model card counts once per benchmark. A card reporting AIME in four
+            configurations counts the same as a card reporting it once, so a long appendix
+            cannot outweigh a different vendor. Organizations breaks the tie: the same count
+            from six vendors is a shared standard, from one vendor a house style.
+          </p>
+          <div class="leaderboard-list" id="leaderboard-list"></div>
+        </div>
+
+        <section class="ledger" aria-labelledby="leaderboard-cards-heading">
+          <div class="section-title">
+            <h2 id="leaderboard-cards-heading">Model cards in the registry</h2>
+            <span id="leaderboard-cards-count"></span>
+          </div>
+          <p class="section-note">
+            The curated source list this ranking is computed from. Every row links to the
+            document the benchmark mentions were read from.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Organization</th>
+                  <th>Model</th>
+                  <th>Document</th>
+                  <th>Published</th>
+                  <th>Benchmarks</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-cards"></tbody>
+            </table>
+          </div>
+        </section>
       </section>
 
       <section class="view" id="map-view" aria-labelledby="map-heading" hidden>
