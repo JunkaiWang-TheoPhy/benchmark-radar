@@ -1390,7 +1390,13 @@ function leaderboardEntries() {
 }
 
 function adoptionBar(entry, maxCount) {
-  const width = maxCount ? Math.max(2, Math.round((entry.card_count / maxCount) * 100)) : 0;
+  // The 2% floor keeps a single-card benchmark from rendering as an empty
+  // track, but it must not apply to a zero: a visible bar beside a count of 0
+  // contradicts the number it is supposed to encode.
+  const width =
+    maxCount && entry.card_count
+      ? Math.max(2, Math.round((entry.card_count / maxCount) * 100))
+      : 0;
   return element(
     "div",
     {
@@ -1883,6 +1889,13 @@ function bindEvents() {
     state.organization = byId("organization-filter").value;
     state.event = byId("event-filter").value;
     renderToday();
+  });
+  // Both filter panels are <form>s whose state lives in the URL query we
+  // build ourselves. Enter in a search field would otherwise trigger an
+  // implicit GET that submits only the named controls, dropping `view` and
+  // reloading the reader into Today from whichever panel they were using.
+  document.querySelectorAll("#filters, #leaderboard-filters").forEach((form) => {
+    form.addEventListener("submit", (event) => event.preventDefault());
   });
   byId("clear-filters").addEventListener("click", () => {
     state.q = "";

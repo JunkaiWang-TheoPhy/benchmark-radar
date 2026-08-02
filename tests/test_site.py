@@ -418,3 +418,21 @@ def test_leaderboard_domain_filter_offers_every_tracked_domain():
     # benchmarks are all unadopted would appear in the table with no way to
     # filter to it. The options come from the entries themselves.
     assert "new Set((board.entries || []).map((entry) => entry.domain))" in script
+
+
+def test_filter_forms_do_not_submit_and_reload_the_page():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # Both panels are <form>s whose state lives in the URL query the app builds
+    # itself. Enter in a search field would fire an implicit GET carrying only
+    # the named controls, dropping `view` and dumping the reader into Today.
+    assert 'querySelectorAll("#filters, #leaderboard-filters")' in script
+    assert 'form.addEventListener("submit", (event) => event.preventDefault())' in script
+
+
+def test_a_zero_adoption_bar_has_no_visible_width():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # The 2% floor keeps a one-card benchmark visible, but a bar beside a count
+    # of 0 would contradict the number it encodes.
+    assert "maxCount && entry.card_count" in script

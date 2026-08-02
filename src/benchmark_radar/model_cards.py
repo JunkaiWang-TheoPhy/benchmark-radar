@@ -20,12 +20,17 @@ reporting it once, so a verbose appendix cannot outvote a different vendor.
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from datetime import date
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+# The single date format JavaScript's Date constructor parses reliably. See
+# `_require_date` for why the ISO 8601 standard is too wide a target here.
+_ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 REGISTRY_SCHEMA_VERSION = 1
 
@@ -58,13 +63,22 @@ def _require_date(value: Any, *, label: str) -> None:
     treats that as an unusable data file and hides *every* view, so a single
     typo in one optional field would take Today and Trends down with the
     leaderboard. Failing the build here keeps that blast radius at zero.
+
+    `date.fromisoformat` alone is too permissive to protect that: on Python
+    3.11+ it also accepts `20250807` and `2025-W32-4`, both of which are valid
+    ISO 8601 and both of which JavaScript's Date parses to Invalid Date. The
+    check is therefore against the one format the browser accepts, not against
+    the standard.
     """
     if isinstance(value, date):
         return
+    text = str(value)
+    if not _ISO_DATE.fullmatch(text):
+        raise ModelCardRegistryError(f"{label} must be an ISO date (YYYY-MM-DD)")
     try:
-        date.fromisoformat(str(value))
+        date.fromisoformat(text)
     except ValueError as error:
-        raise ModelCardRegistryError(f"{label} must be an ISO date (YYYY-MM-DD)") from error
+        raise ModelCardRegistryError(f"{label} is not a real calendar date") from error
 
 
 def load_registry(path: Path = DEFAULT_REGISTRY_PATH) -> dict[str, Any]:

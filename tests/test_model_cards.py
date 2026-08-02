@@ -269,3 +269,22 @@ def test_every_shipped_date_is_browser_formattable():
     for card in board["model_cards"]:
         assert date_type.fromisoformat(card["published"])
         assert date_type.fromisoformat(card["retrieved_at"])
+
+
+@pytest.mark.parametrize("value", ["20250807", "2025-W32-4", "2025-220"])
+def test_iso_variants_the_browser_cannot_parse_are_rejected(tmp_path, value):
+    # date.fromisoformat accepts all of these on Python 3.11+, and JavaScript's
+    # Date turns every one into Invalid Date. Validating against the standard
+    # rather than against the browser would let the build pass and the whole
+    # dashboard fail at load.
+    document = minimal_registry()
+    document["model_cards"][0]["published"] = value
+    with pytest.raises(ModelCardRegistryError, match="must be an ISO date"):
+        load_registry(write_registry(tmp_path, document))
+
+
+def test_a_well_formed_but_impossible_date_is_rejected(tmp_path):
+    document = minimal_registry()
+    document["model_cards"][0]["published"] = "2025-02-30"
+    with pytest.raises(ModelCardRegistryError, match="not a real calendar date"):
+        load_registry(write_registry(tmp_path, document))
