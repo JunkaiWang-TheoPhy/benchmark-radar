@@ -23,6 +23,12 @@
 #     read from, so any row can be checked against its source.
 #   * `retrieved_at` records when a human last read that document. It is not the
 #     model's release date, and it is not automatically refreshed.
+#   * `revised` is optional, and only for a document that gained a benchmark
+#     after first publication: an arXiv report at v2+, or a living model card a
+#     vendor edits in place. It relaxes the chronology check for that one card,
+#     so it must name the real revision date rather than be used to silence a
+#     complaint. A card reporting a benchmark newer than itself with no `revised`
+#     date is a data error, and the loader rejects it.
 #
 # Adding a model card: append an entry, list its benchmark ids, run
 # `benchmark-radar rebuild`. Adding a benchmark: add it to `benchmarks:` first.

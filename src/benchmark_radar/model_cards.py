@@ -215,17 +215,38 @@ def load_registry(path: Path = DEFAULT_REGISTRY_PATH) -> dict[str, Any]:
         # Compared as ISO strings, and only when both dates are present: a
         # benchmark with no recorded release date cannot be placed on the
         # timeline, so it is not evidence of anything either way.
+        #
+        # `revised` is the escape hatch for a document that legitimately gained a
+        # benchmark after first publication: an arXiv report reaching v3, or a
+        # living model card a vendor keeps editing in place. Those are real, and
+        # for them `published` is the original date while the contents are newer.
+        # It is opt-in per card rather than a blanket relaxation, because the
+        # common case is still a data error and silently allowing every later
+        # benchmark would give back the three edges this check just caught. A
+        # card claiming a revision must name the date it was revised to, which is
+        # a checkable claim about the document.
         published = str(card["published"]) if card.get("published") else ""
-        if published:
+        if card.get("revised"):
+            _require_date(card["revised"], label=f"{path}: model card {card_id!r} revised")
+            if published and str(card["revised"]) < published:
+                raise ModelCardRegistryError(
+                    f"{path}: model card {card_id!r} revised {card['revised']} "
+                    f"precedes its published date {published}"
+                )
+        # The revision date is the cutoff when one is recorded: the document as
+        # read at that point is what the mentions were taken from.
+        cutoff = str(card["revised"]) if card.get("revised") else published
+        if cutoff:
             impossible = sorted(
                 f"{ref} (released {by_id[ref]['released']})"
                 for ref in {str(ref) for ref in card["benchmarks"]}
-                if by_id[ref].get("released") and str(by_id[ref]["released"]) > published
+                if by_id[ref].get("released") and str(by_id[ref]["released"]) > cutoff
             )
             if impossible:
                 raise ModelCardRegistryError(
-                    f"{path}: model card {card_id!r} published {published} reports "
-                    f"benchmarks released after it: {', '.join(impossible)}"
+                    f"{path}: model card {card_id!r} ({cutoff}) reports benchmarks "
+                    f"released after it: {', '.join(impossible)}. If the document was "
+                    f"revised after publication, record the revision date as `revised`"
                 )
 
     return {"benchmarks": benchmarks, "model_cards": cards}
@@ -343,6 +364,10 @@ def adoption_rank(registry: dict[str, Any]) -> dict[str, Any]:
                     "retrieved_at": (
                         str(card["retrieved_at"]) if card.get("retrieved_at") else None
                     ),
+                    # Published so a reader can see that a document reporting a
+                    # benchmark newer than itself is a recorded revision rather
+                    # than a mistake nobody caught.
+                    "revised": str(card["revised"]) if card.get("revised") else None,
                     "benchmark_count": len({str(ref) for ref in card["benchmarks"]}),
                     "benchmarks": sorted({str(ref) for ref in card["benchmarks"]}),
                     # The reverse of `entries[].adopters`, and the reason this

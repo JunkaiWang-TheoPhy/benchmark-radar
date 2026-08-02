@@ -306,26 +306,66 @@ def test_a_card_cannot_report_a_benchmark_that_did_not_exist_yet(tmp_path):
     date and two benchmarks attributed to cards that reported a different
     instrument -- so this is the check that tells a data error from real data.
     """
+    # `beta` is reported only by the first card, so exactly one card violates the
+    # chronology and the raised message names it.
     document = minimal_registry()
-    document["benchmarks"][0]["released"] = "2025-06-01"
+    document["benchmarks"][1]["released"] = "2025-06-01"
     document["model_cards"][0]["published"] = "2025-01-01"
 
-    with pytest.raises(ModelCardRegistryError, match="reports benchmarks released after it"):
+    with pytest.raises(ModelCardRegistryError, match="'org_one_card'.*released after it"):
         load_registry(write_registry(tmp_path, document))
 
     # A benchmark with no recorded release date cannot be placed on the
     # timeline, so it is not evidence of a contradiction either way.
     document = minimal_registry()
-    document["benchmarks"][0].pop("released", None)
+    document["benchmarks"][1].pop("released", None)
     document["model_cards"][0]["published"] = "2025-01-01"
     load_registry(write_registry(tmp_path, document))
 
     # Same-day is legitimate: benchmarks are routinely published alongside the
     # card that first reports them (MRCR shipped with GPT-4.1).
     document = minimal_registry()
-    document["benchmarks"][0]["released"] = "2025-01-01"
+    document["benchmarks"][1]["released"] = "2025-01-01"
     document["model_cards"][0]["published"] = "2025-01-01"
     load_registry(write_registry(tmp_path, document))
+
+
+def test_a_revised_document_may_report_a_later_benchmark(tmp_path):
+    """An arXiv report at v3 or a living model card is not a data error.
+
+    For those, `published` is the original date while the contents are newer, so
+    a benchmark released after publication can be a real mention. The relaxation
+    is opt-in per card: the common case is still a mistake, and allowing every
+    later benchmark by default would give back the three bad edges the chronology
+    check was added to catch.
+    """
+    # `beta` is reported only by the first card, so the revision under test is
+    # the only thing the later release date interacts with.
+    document = minimal_registry()
+    document["benchmarks"][1]["released"] = "2025-06-01"
+    document["model_cards"][0]["published"] = "2025-01-01"
+    document["model_cards"][0]["revised"] = "2025-07-01"
+    registry = load_registry(write_registry(tmp_path, document))
+    assert registry["model_cards"][0]["revised"] == "2025-07-01"
+
+    # The revision date is a real cutoff, not a blanket exemption: a benchmark
+    # released after the revision is still impossible.
+    document["benchmarks"][1]["released"] = "2025-08-01"
+    with pytest.raises(ModelCardRegistryError, match="reports benchmarks released after it"):
+        load_registry(write_registry(tmp_path, document))
+
+    # A revision cannot predate the publication it revises.
+    document = minimal_registry()
+    document["model_cards"][0]["published"] = "2025-06-01"
+    document["model_cards"][0]["revised"] = "2025-01-01"
+    with pytest.raises(ModelCardRegistryError, match="precedes its published date"):
+        load_registry(write_registry(tmp_path, document))
+
+    # And it must be a well-formed date, like every other date in the registry.
+    document = minimal_registry()
+    document["model_cards"][0]["revised"] = "last Tuesday"
+    with pytest.raises(ModelCardRegistryError, match="must be an ISO date"):
+        load_registry(write_registry(tmp_path, document))
 
 
 def test_shipped_registry_has_no_chronologically_impossible_mention():
@@ -337,14 +377,15 @@ def test_shipped_registry_has_no_chronologically_impossible_mention():
     }
 
     for card in registry["model_cards"]:
-        published = str(card["published"]) if card.get("published") else ""
-        if not published:
+        # The revision date when the document has one: that is the version the
+        # mentions were read from.
+        cutoff = str(card.get("revised") or card.get("published") or "")
+        if not cutoff:
             continue
         for ref in {str(ref) for ref in card["benchmarks"]}:
             if ref in released:
-                assert released[ref] <= published, (
-                    f"{card['id']} published {published} cannot report {ref} "
-                    f"released {released[ref]}"
+                assert released[ref] <= cutoff, (
+                    f"{card['id']} ({cutoff}) cannot report {ref} released {released[ref]}"
                 )
 
 
