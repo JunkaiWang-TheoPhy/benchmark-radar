@@ -61,6 +61,36 @@ the selection funnel reports the count, and every scored deduction remains audit
 
 This is triage, not scientific quality adjudication or endorsement.
 
+## Model Card Adoption Rank
+
+A separate, curated view answering a different question: which benchmarks do frontier
+vendors actually report when they ship a model? It is published at `?view=leaderboard`
+on the dashboard and built from
+[`data/model_cards.yml`](data/model_cards.yml), a hand-maintained list of model cards,
+system cards, and technical reports with the benchmarks each one reports.
+
+The counted unit is the **document, not the result row**. A card reporting AIME at
+pass@1, at consensus@64, and with a Python tool contributes exactly one adoption, the
+same as a card reporting it once, so a long appendix cannot outvote a different vendor.
+Two counts are published side by side and neither is folded into a single score:
+`card_count` is the headline, and `organization_count` breaks ties, because the same
+count from six vendors is a shared standard while from one vendor it is a house style.
+
+This measures vendor attention, not benchmark quality. A saturated or contaminated
+benchmark can rank highly precisely because reporting it is conventional, so every row
+carries its own caveat and that disclaimer is published in `radar.json` rather than only
+stated in the browser. Benchmarks tracked but reported by no card are kept and ranked
+last: "in the registry, adopted by nobody" is itself a finding.
+
+Scores are deliberately out of scope. Vendors differ on prompt, scaffold, tool access,
+reasoning budget, pass@k, and evaluator, so two reported numbers for the same benchmark
+are usually not comparable. A mention survives all of those caveats, which is why it is
+the unit this ranking can honestly publish today.
+
+To extend it, add a benchmark to the `benchmarks:` block and a document to
+`model_cards:`, then run `benchmark-radar rebuild`. A card referencing an unknown
+benchmark id fails the build rather than silently creating a phantom entry.
+
 ## Run locally
 
 ```bash
@@ -96,8 +126,8 @@ graph and aggregates under the
 [versioned public schema](docs/cumulative-corpus.schema.json). No fuzzy match silently
 merges similarly titled artifacts.
 
-The dashboard exposes one filterable Today list, inline multi-record expansion, Trends,
-and a keyboard-accessible Trend Map. Selecting a map node carries its exact topic,
+The dashboard exposes one filterable Today list, inline multi-record expansion, the
+Model Card Adoption Rank leaderboard, Trends, and a keyboard-accessible Trend Map. Selecting a map node carries its exact topic,
 source, organization, or artifact into the Today filters. Trend comparisons require
 both the same report limit and the same connector-coverage signature; incomplete days
 remain visible and are explicitly annotated.

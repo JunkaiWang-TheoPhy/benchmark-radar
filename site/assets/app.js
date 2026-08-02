@@ -21,6 +21,12 @@ const state = {
   entity: "",
   rubric: "",
   trendReleasedOnly: false,
+  // Leaderboard filters carry their own prefixed keys so a shared permalink can
+  // hold a Today filter and a Leaderboard filter at once without either view
+  // silently reinterpreting the other's `category` or `organization`.
+  lq: "",
+  ldomain: "",
+  lorg: "",
 };
 
 function element(tag, options = {}, children = []) {
@@ -90,7 +96,7 @@ function readUrl() {
   const params = new URLSearchParams(window.location.search);
   const requestedView = params.get("view");
   // Legacy Explorer permalinks resolve to the filterable Today list.
-  state.view = ["trends", "map"].includes(requestedView) ? requestedView : "today";
+  state.view = ["trends", "map", "leaderboard"].includes(requestedView) ? requestedView : "today";
   state.todayDate = params.get("date") || "";
   state.q = params.get("q") || "";
   state.kind = params.get("kind") || "";
@@ -99,6 +105,9 @@ function readUrl() {
   state.organization = params.get("organization") || "";
   state.event = params.get("event") || "";
   state.entity = params.get("entity") || "";
+  state.lq = params.get("lq") || "";
+  state.ldomain = params.get("ldomain") || "";
+  state.lorg = params.get("lorg") || "";
   state.rubric = new URLSearchParams(window.location.hash.slice(1)).get("rubric") || "";
 }
 
@@ -115,6 +124,9 @@ function writeUrl() {
   if (state.organization) params.set("organization", state.organization);
   if (state.event) params.set("event", state.event);
   if (state.view === "map" && state.entity) params.set("entity", state.entity);
+  if (state.lq) params.set("lq", state.lq);
+  if (state.ldomain) params.set("ldomain", state.ldomain);
+  if (state.lorg) params.set("lorg", state.lorg);
   const query = params.toString();
   // The rubric dialog is a hashtag, not a query param, so a shared link like
   // #rubric=2 reads as "jump to this section" rather than another filter.
@@ -1353,6 +1365,262 @@ function renderMapInsights(corpus) {
   ]);
 }
 
+// --- Model Card Adoption Rank (issue #83) -----------------------------------
+//
+// Counts how many curated model cards report each benchmark. The count is per
+// document, so a card reporting AIME in four configurations contributes the
+// same single adoption as a card reporting it once. That is the whole reason
+// this ranking is publishable while a score table is not: a mention survives
+// every reasoning-budget and pass@k caveat that makes two reported scores
+// incomparable.
+
+function leaderboardEntries() {
+  const board = state.data?.model_card_leaderboard;
+  if (!board) return [];
+  const query = state.lq.trim().toLowerCase();
+  return (board.entries || []).filter((entry) => {
+    if (state.ldomain && entry.domain !== state.ldomain) return false;
+    if (state.lorg && !(entry.organizations || []).includes(state.lorg)) return false;
+    if (!query) return true;
+    const haystack = [entry.name, entry.benchmark_id, ...(entry.aliases || [])]
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(query);
+  });
+}
+
+function adoptionBar(entry, maxCount) {
+  // The 2% floor keeps a single-card benchmark from rendering as an empty
+  // track, but it must not apply to a zero: a visible bar beside a count of 0
+  // contradicts the number it is supposed to encode.
+  const width =
+    maxCount && entry.card_count
+      ? Math.max(2, Math.round((entry.card_count / maxCount) * 100))
+      : 0;
+  return element(
+    "div",
+    {
+      className: "adoption-bar",
+      attrs: {
+        role: "img",
+        "aria-label": `${metricLabel(entry.card_count, "model card")} of ${metricLabel(
+          state.data.model_card_leaderboard.model_card_count,
+          "model card",
+        )}`,
+      },
+    },
+    [
+      element("span", {
+        className: "adoption-bar-fill",
+        attrs: { style: `width: ${width}%` },
+      }),
+    ],
+  );
+}
+
+function leaderboardRow(entry) {
+  const board = state.data.model_card_leaderboard;
+  const maxCount = board.entries?.[0]?.card_count || 0;
+  const header = element("summary", { className: "record-summary" }, [
+    element("span", {
+      className: "signal-rank",
+      text: String(entry.rank).padStart(2, "0"),
+    }),
+    element("div", { className: "record-heading" }, [
+      element("div", { className: "signal-meta" }, [
+        element("span", { text: entry.domain.replaceAll("_", " ") }),
+        // A benchmark in the registry that no curated card reports is a real
+        // observation, not an empty row: it says the benchmark is discussed
+        // without yet being adopted in vendor reporting. Say that, rather than
+        // showing a bare "0 organizations of 8".
+        entry.card_count
+          ? element("span", {
+              text: `${metricLabel(entry.organization_count, "organization")} of ${
+                board.organization_count
+              }`,
+            })
+          : element("span", { text: "not yet reported in these cards" }),
+      ]),
+      element("h3", { text: entry.name }),
+      // The caveat is part of the row, not a footnote. A ranking that puts a
+      // saturated benchmark near the top without saying so is misleading in
+      // exactly the direction issue #83 warns about.
+      entry.caveat ? element("p", { className: "signal-tldr", text: entry.caveat }) : null,
+    ]),
+    element("div", { className: "score" }, [
+      element("div", { className: "score-value" }, [
+        element("strong", { text: String(entry.card_count) }),
+        element("span", { text: `/ ${board.model_card_count}` }),
+      ]),
+      adoptionBar(entry, maxCount),
+      element("p", { className: "score-label", text: "Model cards" }),
+    ]),
+  ]);
+
+  const adopters = element(
+    "ul",
+    { className: "adopter-list" },
+    (entry.adopters || []).map((adopter) =>
+      element("li", {}, [
+        // A plain text link, not the .primary-link call-to-action button: a
+        // twelve-row roster of dark blocks reads as twelve competing actions
+        // rather than as one list of sources.
+        element("a", {
+          className: "adopter-link",
+          text: `${adopter.organization} · ${adopter.model}`,
+          attrs: {
+            href: adopter.url,
+            target: "_blank",
+            rel: "noopener noreferrer",
+          },
+        }),
+        element("span", {
+          className: "adopter-meta",
+          text: `${String(adopter.document_type).replaceAll("_", " ")}${
+            adopter.published ? ` · ${formatDate(adopter.published, { dateStyle: "medium" })}` : ""
+          }`,
+        }),
+      ]),
+    ),
+  );
+
+  return element("details", { className: "record-card" }, [
+    header,
+    element("div", { className: "record-detail" }, [
+      element("h3", { text: "Reported by" }),
+      adopters,
+      entry.url
+        ? element("a", {
+            className: "primary-link",
+            text: "Benchmark home ↗",
+            attrs: { href: entry.url, target: "_blank", rel: "noopener noreferrer" },
+          })
+        : null,
+    ]),
+  ]);
+}
+
+function renderLeaderboardFilters(board) {
+  // Every domain present in the ranking, not board.domains: that summary counts
+  // only adopted benchmarks, so a domain whose benchmarks are all unadopted
+  // would be listed in the table with no way to filter to it.
+  const domains = [...new Set((board.entries || []).map((entry) => entry.domain))].sort();
+  replaceChildren(byId("leaderboard-domain"), [
+    option("", "All domains", !state.ldomain),
+    ...domains.map((domain) =>
+      option(domain, domain.replaceAll("_", " "), domain === state.ldomain),
+    ),
+  ]);
+  const organizations = Object.keys(board.organizations || {}).sort();
+  replaceChildren(byId("leaderboard-organization"), [
+    option("", "All organizations", !state.lorg),
+    ...organizations.map((organization) =>
+      option(organization, organization, organization === state.lorg),
+    ),
+  ]);
+  if (byId("leaderboard-search").value !== state.lq) {
+    byId("leaderboard-search").value = state.lq;
+  }
+}
+
+function renderLeaderboard() {
+  const board = state.data?.model_card_leaderboard;
+  const navButton = document.querySelector('[data-view="leaderboard"]');
+  // A checkout without the curated registry publishes no ranking. Hiding the
+  // nav entry is the honest response: offering a tab that opens an empty page
+  // reads as a broken feature rather than as absent data.
+  if (!board) {
+    if (navButton) navButton.hidden = true;
+    return;
+  }
+  if (navButton) navButton.hidden = false;
+
+  byId("leaderboard-measures").textContent = board.measures || "";
+  renderLeaderboardFilters(board);
+
+  const topEntries = (board.entries || []).filter((entry) => entry.card_count > 0);
+  replaceChildren(byId("leaderboard-insights"), [
+    mapInsightCard(
+      "Registry coverage",
+      [
+        ["Model cards", Number(board.model_card_count || 0).toLocaleString()],
+        ["Organizations", Number(board.organization_count || 0).toLocaleString()],
+        ["Benchmarks tracked", Number(board.benchmark_count || 0).toLocaleString()],
+        ["Reported at least once", Number(topEntries.length).toLocaleString()],
+      ],
+      "No registry entries yet.",
+    ),
+    mapInsightCard(
+      "Cards per organization",
+      Object.entries(board.organizations || {})
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([organization, count]) => [organization, metricLabel(count, "card")]),
+      "No organizations in the registry yet.",
+    ),
+    // Counts only benchmarks at least one card reports, which is deliberately
+    // narrower than the domain filter below. A benchmark tracked but reported
+    // by nobody is a real finding about the registry, so it stays visible in
+    // the list while being excluded from "how much of this domain is in use".
+    mapInsightCard(
+      "Domains reported at least once",
+      Object.entries(board.domains || {})
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([domain, count]) => [
+          domain.replaceAll("_", " "),
+          metricLabel(count, "benchmark"),
+        ]),
+      "No domains represented yet.",
+    ),
+    mapInsightCard(
+      "Adopted by every organization",
+      topEntries
+        .filter((entry) => entry.organization_count === board.organization_count)
+        .map((entry) => [entry.name, metricLabel(entry.card_count, "card")]),
+      "No benchmark is reported by every organization in the registry.",
+    ),
+  ]);
+
+  const entries = leaderboardEntries();
+  byId("leaderboard-count").textContent = `${metricLabel(
+    entries.length,
+    "benchmark",
+  )} of ${board.entries.length}`;
+  replaceChildren(
+    byId("leaderboard-list"),
+    entries.length
+      ? entries.map(leaderboardRow)
+      : [
+          element("p", {
+            className: "empty-state",
+            text: "No benchmarks match these filters. Clear one or more filters to widen the view.",
+          }),
+        ],
+  );
+
+  const cards = board.model_cards || [];
+  byId("leaderboard-cards-count").textContent = metricLabel(cards.length, "document");
+  replaceChildren(
+    byId("leaderboard-cards"),
+    cards.map((card) =>
+      element("tr", {}, [
+        element("td", { text: card.organization }),
+        element("td", {}, [
+          element("a", {
+            className: "adopter-link",
+            text: card.model,
+            attrs: { href: card.url, target: "_blank", rel: "noopener noreferrer" },
+          }),
+        ]),
+        element("td", { text: String(card.document_type).replaceAll("_", " ") }),
+        element("td", {
+          text: card.published ? formatDate(card.published, { dateStyle: "medium" }) : "Unknown",
+        }),
+        element("td", { text: String(card.benchmark_count) }),
+      ]),
+    ),
+  );
+}
+
 function renderTrendMap() {
   const corpus = state.data.corpus;
   if (!corpus) return;
@@ -1565,9 +1833,29 @@ function bindEvents() {
     button.addEventListener("click", () => {
       setView(button.dataset.view);
       if (button.dataset.view === "today") renderToday();
+      if (button.dataset.view === "leaderboard") renderLeaderboard();
       if (button.dataset.view === "trends") renderTrends();
       if (button.dataset.view === "map") renderTrendMap();
     });
+  });
+  // Reads every control rather than the event target, so the <select>
+  // "input"-before-"change" ordering that broke the Scan date picker (issue
+  // #43) cannot write a stale value back over the reader's pick here: whichever
+  // event arrives first, all three values come from the DOM as it stands now.
+  byId("leaderboard-filters").addEventListener("input", () => {
+    state.lq = byId("leaderboard-search").value;
+    state.ldomain = byId("leaderboard-domain").value;
+    state.lorg = byId("leaderboard-organization").value;
+    renderLeaderboard();
+    writeUrl();
+  });
+  byId("leaderboard-clear").addEventListener("click", () => {
+    state.lq = "";
+    state.ldomain = "";
+    state.lorg = "";
+    byId("leaderboard-search").value = "";
+    renderLeaderboard();
+    writeUrl();
   });
   byId("today-date").addEventListener("change", (event) => {
     state.todayDate = event.target.value;
@@ -1601,6 +1889,13 @@ function bindEvents() {
     state.organization = byId("organization-filter").value;
     state.event = byId("event-filter").value;
     renderToday();
+  });
+  // Both filter panels are <form>s whose state lives in the URL query we
+  // build ourselves. Enter in a search field would otherwise trigger an
+  // implicit GET that submits only the named controls, dropping `view` and
+  // reloading the reader into Today from whichever panel they were using.
+  document.querySelectorAll("#filters, #leaderboard-filters").forEach((form) => {
+    form.addEventListener("submit", (event) => event.preventDefault());
   });
   byId("clear-filters").addEventListener("click", () => {
     state.q = "";
@@ -1739,8 +2034,15 @@ async function initialize() {
         ),
     );
     renderToday();
+    renderLeaderboard();
     renderTrends();
     renderTrendMap();
+    // A permalink to ?view=leaderboard on a build without the curated registry
+    // has nothing to show, so fall back to Today rather than opening a blank
+    // section behind a nav entry that renderLeaderboard just hid.
+    if (state.view === "leaderboard" && !state.data.model_card_leaderboard) {
+      state.view = "today";
+    }
     setView(state.view, false);
     byId("build-meta").textContent = `Updated ${formatDate(state.data.generated_at, {
       dateStyle: "medium",

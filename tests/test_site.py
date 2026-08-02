@@ -323,3 +323,116 @@ def test_badge_accessible_names_state_the_action():
     ):
         assert fragment in script
     assert 'badge.setAttribute("aria-label"' in script
+
+
+def test_leaderboard_view_is_a_first_class_dashboard_view():
+    parser = SiteParser()
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    parser.feed(html)
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # Issue #83 step 3: the Model Card Adoption Rank is reachable as
+    # ?view=leaderboard from the homepage nav, not a separate page.
+    assert "leaderboard-view" in parser.ids
+    assert 'data-view="leaderboard"' in html
+    assert '"map", "leaderboard"' in script
+    assert 'if (button.dataset.view === "leaderboard") renderLeaderboard();' in script
+    assert "state.data?.model_card_leaderboard" in script
+
+
+def test_leaderboard_states_what_it_measures_before_the_ranking():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # A reader who takes the order as a quality ranking draws the opposite of
+    # the intended conclusion, so the correction is published data shown in the
+    # heading rather than a restated string in the browser or a footnote.
+    assert 'id="leaderboard-measures"' in html
+    assert 'byId("leaderboard-measures").textContent = board.measures' in script
+    assert "vendor attention, not benchmark quality" not in script
+    # Per-benchmark caveats travel with each row.
+    assert "entry.caveat" in script
+
+
+def test_leaderboard_rows_link_back_to_the_model_cards_they_counted():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'id="leaderboard-cards"' in html
+    assert "adopter-list" in script
+    assert '"Reported by"' in script
+    # Every adopter link opens the source document itself, so any count in the
+    # ranking can be checked against the card it was read from.
+    assert "adopter.url" in script
+    assert 'rel: "noopener noreferrer"' in script
+
+
+def test_leaderboard_filters_use_prefixed_url_keys():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # Prefixed keys let one permalink hold a Today filter and a Leaderboard
+    # filter at once without either view reinterpreting the other's
+    # `organization`.
+    assert 'id="leaderboard-filters"' in html
+    for key in ("lq", "ldomain", "lorg"):
+        assert f'params.set("{key}"' in script
+        assert f'params.get("{key}")' in script
+
+
+def test_leaderboard_filter_handler_reads_controls_not_the_event_target():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # Same <select> "input"-before-"change" hazard as issue #43: reading all
+    # three controls from the DOM makes the event ordering irrelevant.
+    handler = script.split('byId("leaderboard-filters").addEventListener("input"', 1)[1]
+    body = handler.split("});", 1)[0]
+    for control in ("leaderboard-search", "leaderboard-domain", "leaderboard-organization"):
+        assert f'byId("{control}")' in body
+
+
+def test_leaderboard_degrades_when_the_curated_registry_is_absent():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # No registry means no ranking. Hiding the nav entry and redirecting a
+    # ?view=leaderboard permalink beats offering a tab that opens blank.
+    assert "document.querySelector('[data-view=\"leaderboard\"]')" in script
+    assert "navButton.hidden = true" in script
+    assert 'state.view === "leaderboard" && !state.data.model_card_leaderboard' in script
+
+
+def test_leaderboard_names_an_unadopted_benchmark_rather_than_showing_a_bare_zero():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # A tracked benchmark no curated card reports is an observation about the
+    # registry, not an empty row, and the domain summary counts only adopted
+    # benchmarks so it must not claim to be the same figure as the filter.
+    assert '"not yet reported in these cards"' in script
+    assert '"Domains reported at least once"' in script
+
+
+def test_leaderboard_domain_filter_offers_every_tracked_domain():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # board.domains counts only adopted benchmarks, so a domain whose
+    # benchmarks are all unadopted would appear in the table with no way to
+    # filter to it. The options come from the entries themselves.
+    assert "new Set((board.entries || []).map((entry) => entry.domain))" in script
+
+
+def test_filter_forms_do_not_submit_and_reload_the_page():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # Both panels are <form>s whose state lives in the URL query the app builds
+    # itself. Enter in a search field would fire an implicit GET carrying only
+    # the named controls, dropping `view` and dumping the reader into Today.
+    assert 'querySelectorAll("#filters, #leaderboard-filters")' in script
+    assert 'form.addEventListener("submit", (event) => event.preventDefault())' in script
+
+
+def test_a_zero_adoption_bar_has_no_visible_width():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # The 2% floor keeps a one-card benchmark visible, but a bar beside a count
+    # of 0 would contradict the number it encodes.
+    assert "maxCount && entry.card_count" in script

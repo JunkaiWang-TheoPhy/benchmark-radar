@@ -5,9 +5,15 @@ on:
     branches: [main]
     paths:
       - "data/snapshots/**"
+      # The curated Model Card Adoption Rank is a deploy input like the
+      # snapshots are: a maintenance commit that only adds a model card must
+      # rebuild the dashboard, or the published ranking silently stays behind
+      # the registry until some unrelated change happens to trigger Pages.
+      - "data/model_cards.yml"
       - "site/**"
       - "src/benchmark_radar/snapshots.py"
       - "src/benchmark_radar/corpus.py"
+      - "src/benchmark_radar/model_cards.py"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
