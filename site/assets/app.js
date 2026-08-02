@@ -1694,7 +1694,10 @@ function renderLeaderboard() {
           metricLabel(count, "card"),
           allCards
             .filter((card) => card.organization === organization)
-            .sort((a, b) => (a.published || "").localeCompare(b.published || ""))
+            // Newest first, like every other roster on this view. Sorting a
+            // vendor's own history the other way put its oldest release at the
+            // top of the one list where the comparison is easiest to make.
+            .sort(byNewestFirst)
             .map((card) => [`${card.model} — ${card.document_type.replaceAll("_", " ")}`, card.url]),
         ]),
       "No organizations in the registry yet.",
