@@ -1,0 +1,575 @@
+# Model Card Benchmark Registry (issue #83)
+#
+# A hand-curated list of frontier model cards, technical reports and release
+# posts, and the benchmarks each one reports. This file answers one question:
+# which benchmarks do vendors actually put in front of readers when they ship a
+# model?
+#
+# Deliberately NOT in scope here. Issue #83's first comment sketched a six-table
+# registry (per-configuration scores, reasoning budgets, pass@k, judge models,
+# comparison groups, contamination signals). That schema is right, and it is
+# also unbuildable as a first step: it needs a per-vendor PDF parser before it
+# can produce a single row. This file stores a *mention*, not a score. A mention
+# is the one fact that survives every configuration caveat in that comment -- it
+# does not matter whether GPT-5.6 ran AIME at pass@1 or consensus@64, the card
+# still chose to report AIME. Scores can be added later without invalidating
+# anything recorded here.
+#
+# Maintenance contract:
+#   * `benchmarks` lists the canonical benchmark_id, resolved against
+#     `benchmarks:` below. An id used by a card but absent from that block is a
+#     hard error, so a typo cannot quietly invent a benchmark with one adopter.
+#   * `url` must point at the card, report or release post the mentions were
+#     read from, so any row can be checked against its source.
+#   * `retrieved_at` records when a human last read that document. It is not the
+#     model's release date, and it is not automatically refreshed.
+#
+# Adding a model card: append an entry, list its benchmark ids, run
+# `benchmark-radar rebuild`. Adding a benchmark: add it to `benchmarks:` first.
+
+schema_version: 1
+
+# Canonical benchmark records. `aliases` exist so a future extractor can map
+# vendor spellings ("SWE-bench-Verified", "SWE Bench Verified") onto one id
+# without changing the ids the leaderboard is built from.
+benchmarks:
+  - id: hle
+    name: Humanity's Last Exam
+    aliases: ["HLE", "Humanity's Last Exam"]
+    domain: reasoning
+    url: https://lastexam.ai/
+    caveat: >-
+      Tool access and test-time compute budget move this score more than model
+      capability does, so two reported figures are rarely comparable.
+
+  - id: gpqa_diamond
+    name: GPQA Diamond
+    aliases: ["GPQA", "GPQA-Diamond"]
+    domain: science
+    url: https://arxiv.org/abs/2311.12022
+    caveat: >-
+      198 questions in the Diamond split, so run-to-run variance is wide and a
+      single reported number hides it.
+
+  - id: swe_bench_verified
+    name: SWE-bench Verified
+    aliases: ["SWE-bench Verified", "SWE-bench-Verified", "SWE Bench Verified"]
+    domain: coding_agent
+    url: https://openai.com/index/introducing-swe-bench-verified/
+    caveat: >-
+      Scaffold, tool permissions and time limit are part of the result; vendors
+      run their own harnesses.
+
+  - id: swe_bench_pro
+    name: SWE-bench Pro
+    aliases: ["SWE-bench Pro"]
+    domain: coding_agent
+    url: https://github.com/scaleapi/SWE-bench_Pro-os
+    caveat: Harness and split version must be recorded with any score.
+
+  - id: terminal_bench
+    name: Terminal-Bench
+    aliases: ["Terminal-Bench", "Terminal Bench", "TerminalBench", "Terminal-Bench 2.0"]
+    domain: agent
+    url: https://www.tbench.ai/
+    caveat: >-
+      Environment image, timeout and permitted commands change results
+      independently of the model.
+
+  - id: livecodebench
+    name: LiveCodeBench
+    aliases: ["LiveCodeBench", "LCB"]
+    domain: coding
+    url: https://livecodebench.github.io/
+    caveat: >-
+      Time-sliced problem set. A score without its problem window is not
+      comparable to any other score.
+
+  - id: aime
+    name: AIME
+    aliases: ["AIME", "AIME 2024", "AIME 2025", "AIME 2026"]
+    domain: math
+    url: https://maa.org/maa-invitational-competitions/
+    caveat: >-
+      pass@k, majority vote and Python tool access each shift this by double
+      digits.
+
+  - id: mmmu
+    name: MMMU
+    aliases: ["MMMU", "MMMU-Pro"]
+    domain: multimodal
+    url: https://mmmu-benchmark.github.io/
+    caveat: Image preprocessing and chain-of-thought settings affect results.
+
+  - id: mathvista
+    name: MathVista
+    aliases: ["MathVista"]
+    domain: multimodal
+    url: https://mathvista.github.io/
+    caveat: Mixes OCR quality with visual reasoning.
+
+  - id: video_mme
+    name: Video-MME
+    aliases: ["Video-MME", "VideoMME"]
+    domain: multimodal
+    url: https://video-mme.github.io/
+    caveat: Frame sampling rate dominates long-video results.
+
+  - id: tau_bench
+    name: tau-bench
+    aliases: ["tau-bench", "τ-bench", "tau2-bench", "TAU-bench"]
+    domain: tool_use
+    url: https://github.com/sierra-research/tau-bench
+    caveat: >-
+      Depends on a simulated user and policy; the simulator model is part of
+      the measurement.
+
+  - id: browsecomp
+    name: BrowseComp
+    aliases: ["BrowseComp"]
+    domain: agent
+    url: https://openai.com/index/browsecomp/
+    caveat: >-
+      Live web. The result depends on what the internet contained on the day
+      of the run.
+
+  - id: simpleqa
+    name: SimpleQA
+    aliases: ["SimpleQA", "SimpleQA Verified"]
+    domain: factuality
+    url: https://openai.com/index/introducing-simpleqa/
+    caveat: Knowledge cutoff must be recorded alongside the score.
+
+  - id: longbench
+    name: LongBench
+    aliases: ["LongBench", "LongBench v2"]
+    domain: long_context
+    url: https://github.com/THUDM/LongBench
+    caveat: Nominal context length is not effective context length.
+
+  - id: mrcr
+    name: MRCR
+    aliases: ["MRCR", "OpenAI-MRCR", "MRCR v2"]
+    domain: long_context
+    url: https://huggingface.co/datasets/openai/mrcr
+    caveat: Needle position and generation seed change the result.
+
+  - id: mmlu_pro
+    name: MMLU-Pro
+    aliases: ["MMLU-Pro", "MMLU Pro"]
+    domain: knowledge
+    url: https://github.com/TIGER-AI-Lab/MMLU-Pro
+    caveat: Static closed-set multiple choice; contamination risk rises over time.
+
+  - id: mmlu
+    name: MMLU
+    aliases: ["MMLU"]
+    domain: knowledge
+    url: https://github.com/hendrycks/test
+    caveat: >-
+      Saturated at the frontier and heavily contaminated. Useful as a
+      historical baseline, not as a ranking signal.
+
+  - id: livebench
+    name: LiveBench
+    aliases: ["LiveBench"]
+    domain: general
+    url: https://livebench.ai/
+    caveat: Contents change by release date; each date is a different benchmark.
+
+  - id: arena_hard
+    name: Arena-Hard
+    aliases: ["Arena-Hard", "ArenaHard"]
+    domain: human_preference
+    url: https://github.com/lmarena/arena-hard-auto
+    caveat: LLM-judge dependent, with known style and length bias.
+
+  - id: chatbot_arena
+    name: Chatbot Arena
+    aliases: ["Chatbot Arena", "LMArena", "LMSYS Arena"]
+    domain: human_preference
+    url: https://lmarena.ai/
+    caveat: >-
+      Elo from real user traffic; sampling and prompt distribution are outside
+      any vendor's control.
+
+  - id: bfcl
+    name: BFCL
+    aliases: ["BFCL", "Berkeley Function Calling Leaderboard"]
+    domain: tool_use
+    url: https://gorilla.cs.berkeley.edu/leaderboard.html
+    caveat: Schema complexity and execution checking vary by version.
+
+  - id: humaneval
+    name: HumanEval
+    aliases: ["HumanEval", "HumanEval+"]
+    domain: coding
+    url: https://github.com/openai/human-eval
+    caveat: Saturated. Retained because open-weight cards still report it.
+
+  - id: math_500
+    name: MATH-500
+    aliases: ["MATH-500", "MATH 500", "MATH"]
+    domain: math
+    url: https://github.com/openai/prm800k
+    caveat: Largely saturated at the frontier.
+
+  - id: gsm8k
+    name: GSM8K
+    aliases: ["GSM8K"]
+    domain: math
+    url: https://github.com/openai/grade-school-math
+    caveat: Saturated. A legacy baseline for small open models.
+
+  - id: ifeval
+    name: IFEval
+    aliases: ["IFEval"]
+    domain: instruction_following
+    url: https://github.com/google-research/google-research/tree/master/instruction_following_eval
+    caveat: Verifiable-constraint subset only; does not measure answer quality.
+
+  - id: mbpp
+    name: MBPP
+    aliases: ["MBPP", "MBPP+"]
+    domain: coding
+    url: https://github.com/google-research/google-research/tree/master/mbpp
+    caveat: Saturated; short single-function tasks.
+
+  - id: drop
+    name: DROP
+    aliases: ["DROP"]
+    domain: reasoning
+    url: https://allenai.org/data/drop
+    caveat: Legacy reading-comprehension baseline.
+
+  - id: arc_agi
+    name: ARC-AGI
+    aliases: ["ARC-AGI", "ARC-AGI-1", "ARC-AGI-2"]
+    domain: reasoning
+    url: https://arcprize.org/
+    caveat: >-
+      Compute per task is reported alongside score by the maintainers and
+      should not be dropped.
+
+  - id: aider_polyglot
+    name: Aider Polyglot
+    aliases: ["Aider Polyglot", "Aider"]
+    domain: coding
+    url: https://aider.chat/docs/leaderboards/
+    caveat: Edit-format sensitive; whole-file and diff modes differ substantially.
+
+  - id: mmlu_redux
+    name: MMLU-Redux
+    aliases: ["MMLU-Redux"]
+    domain: knowledge
+    url: https://github.com/aryopg/mmlu-redux
+    caveat: Error-corrected MMLU subset; reported mainly by open-weight cards.
+
+  - id: gpqa
+    name: GPQA (full)
+    aliases: ["GPQA main", "GPQA full"]
+    domain: science
+    url: https://arxiv.org/abs/2311.12022
+    caveat: >-
+      The full split, distinct from the Diamond subset most frontier cards
+      report.
+
+  - id: agieval
+    name: AGIEval
+    aliases: ["AGIEval"]
+    domain: knowledge
+    url: https://github.com/ruixiangcui/AGIEval
+    caveat: Human-exam derived; overlaps heavily with MMLU-style coverage.
+
+# Model cards, technical reports and release posts.
+#
+# `organization` is the publisher of the document. `benchmarks` is the set of
+# canonical ids that document reports a result for. It is a set, not a ranking:
+# a card that reports AIME once and a card that reports it in four
+# configurations both contribute exactly one adoption.
+model_cards:
+  - id: openai_gpt_5_system_card
+    organization: OpenAI
+    model: GPT-5
+    document_type: system_card
+    published: 2025-08-07
+    url: https://openai.com/index/gpt-5-system-card/
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - gpqa_diamond
+      - hle
+      - swe_bench_verified
+      - aime
+      - mmmu
+      - simpleqa
+      - browsecomp
+      - tau_bench
+      - livecodebench
+      - mrcr
+
+  - id: openai_o3_o4_mini_system_card
+    organization: OpenAI
+    model: o3 and o4-mini
+    document_type: system_card
+    published: 2025-04-16
+    url: https://openai.com/index/o3-o4-mini-system-card/
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - gpqa_diamond
+      - aime
+      - swe_bench_verified
+      - mmmu
+      - browsecomp
+      - simpleqa
+      - arc_agi
+      - livecodebench
+
+  - id: openai_gpt_4_1
+    organization: OpenAI
+    model: GPT-4.1
+    document_type: release_post
+    published: 2025-04-14
+    url: https://openai.com/index/gpt-4-1/
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - swe_bench_verified
+      - gpqa_diamond
+      - aime
+      - mmlu
+      - mmmu
+      - video_mme
+      - mrcr
+      - ifeval
+      - aider_polyglot
+
+  - id: anthropic_claude_4_system_card
+    organization: Anthropic
+    model: Claude Opus 4 and Sonnet 4
+    document_type: system_card
+    published: 2025-05-22
+    url: https://www.anthropic.com/claude-4
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - swe_bench_verified
+      - terminal_bench
+      - gpqa_diamond
+      - aime
+      - mmmu
+      - tau_bench
+      - mmlu
+      - mrcr
+
+  - id: anthropic_claude_3_7_sonnet
+    organization: Anthropic
+    model: Claude 3.7 Sonnet
+    document_type: system_card
+    published: 2025-02-24
+    url: https://www.anthropic.com/news/claude-3-7-sonnet
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - swe_bench_verified
+      - tau_bench
+      - gpqa_diamond
+      - aime
+      - mmlu_pro
+      - mmmu
+      - math_500
+      - ifeval
+
+  - id: google_gemini_2_5_report
+    organization: Google DeepMind
+    model: Gemini 2.5 Pro
+    document_type: technical_report
+    published: 2025-06-17
+    url: https://storage.googleapis.com/deepmind-media/gemini/gemini_v2_5_report.pdf
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - hle
+      - gpqa_diamond
+      - aime
+      - livecodebench
+      - swe_bench_verified
+      - mmmu
+      - video_mme
+      - mrcr
+      - simpleqa
+      - arc_agi
+      - mathvista
+
+  - id: google_gemini_1_5_report
+    organization: Google DeepMind
+    model: Gemini 1.5
+    document_type: technical_report
+    published: 2024-03-08
+    url: https://arxiv.org/abs/2403.05530
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - mmlu
+      - gsm8k
+      - math_500
+      - humaneval
+      - mmmu
+      - video_mme
+      - mathvista
+      - drop
+
+  - id: meta_llama_4
+    organization: Meta
+    model: Llama 4
+    document_type: model_card
+    published: 2025-04-05
+    url: https://ai.meta.com/blog/llama-4-multimodal-intelligence/
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - mmlu_pro
+      - gpqa_diamond
+      - livecodebench
+      - mmmu
+      - mathvista
+      - chatbot_arena
+      - mrcr
+
+  - id: meta_llama_3_1
+    organization: Meta
+    model: Llama 3.1 405B
+    document_type: model_card
+    published: 2024-07-23
+    url: https://ai.meta.com/blog/meta-llama-3-1/
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - mmlu
+      - mmlu_pro
+      - gpqa
+      - humaneval
+      - mbpp
+      - gsm8k
+      - math_500
+      - ifeval
+      - arena_hard
+      - agieval
+      - bfcl
+      - drop
+
+  - id: qwen3_technical_report
+    organization: Qwen
+    model: Qwen3
+    document_type: technical_report
+    published: 2025-05-14
+    url: https://arxiv.org/abs/2505.09388
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - mmlu_pro
+      - mmlu_redux
+      - gpqa_diamond
+      - aime
+      - livecodebench
+      - arena_hard
+      - ifeval
+      - bfcl
+      - livebench
+      - humaneval
+
+  - id: qwen2_5_coder_report
+    organization: Qwen
+    model: Qwen2.5-Coder
+    document_type: technical_report
+    published: 2024-09-18
+    url: https://arxiv.org/abs/2409.12186
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - humaneval
+      - mbpp
+      - livecodebench
+      - mmlu
+      - gsm8k
+      - math_500
+
+  - id: deepseek_r1_report
+    organization: DeepSeek
+    model: DeepSeek-R1
+    document_type: technical_report
+    published: 2025-01-22
+    url: https://arxiv.org/abs/2501.12948
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - aime
+      - math_500
+      - gpqa_diamond
+      - livecodebench
+      - mmlu
+      - mmlu_pro
+      - mmlu_redux
+      - simpleqa
+      - ifeval
+      - arena_hard
+      - swe_bench_verified
+      - aider_polyglot
+
+  - id: deepseek_v3_report
+    organization: DeepSeek
+    model: DeepSeek-V3
+    document_type: technical_report
+    published: 2024-12-27
+    url: https://arxiv.org/abs/2412.19437
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - mmlu
+      - mmlu_pro
+      - mmlu_redux
+      - gpqa_diamond
+      - humaneval
+      - mbpp
+      - livecodebench
+      - gsm8k
+      - math_500
+      - aime
+      - ifeval
+      - arena_hard
+      - agieval
+      - drop
+
+  - id: mistral_large_2
+    organization: Mistral
+    model: Mistral Large 2
+    document_type: release_post
+    published: 2024-07-24
+    url: https://mistral.ai/news/mistral-large-2407/
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - mmlu
+      - humaneval
+      - mbpp
+      - gsm8k
+      - math_500
+
+  - id: mistral_medium_3
+    organization: Mistral
+    model: Mistral Medium 3
+    document_type: release_post
+    published: 2025-05-07
+    url: https://mistral.ai/news/mistral-medium-3
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - mmlu_pro
+      - gpqa_diamond
+      - humaneval
+      - livecodebench
+      - math_500
+      - ifeval
+      - aider_polyglot
+
+  - id: xai_grok_4_model_card
+    organization: xAI
+    model: Grok 4
+    document_type: model_card
+    published: 2025-07-09
+    url: https://x.ai/news/grok-4
+    retrieved_at: 2026-08-02
+    benchmarks:
+      - hle
+      - gpqa_diamond
+      - aime
+      - livecodebench
+      - arc_agi
+      - swe_bench_verified
+      - mmmu
