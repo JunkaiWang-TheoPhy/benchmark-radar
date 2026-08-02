@@ -15,6 +15,7 @@ from .corpus import (
     exact_artifact_key,
     organizations_for_item,
 )
+from .model_cards import DEFAULT_REGISTRY_PATH, build_adoption_rank
 from .models import RadarRun
 from .pipeline import match_proximity_rule
 from .rubric import (
@@ -417,7 +418,26 @@ def _attach_category_trends(days: list[dict[str, Any]]) -> None:
         day["cumulative_evidence_count"] = len(seen_any)
 
 
-def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
+def _model_card_leaderboard(registry_path: Path | None) -> dict[str, Any] | None:
+    """Build the Model Card Adoption Rank, or omit it if the registry is absent.
+
+    A missing registry file is not an error: the daily radar's own collection is
+    independent of this curated dataset, and a checkout without it should still
+    publish a working dashboard. An *invalid* registry is a different matter and
+    is allowed to fail the build, because a silently-dropped leaderboard would
+    leave the previous ranking on the page with no indication it went stale.
+    """
+    path = registry_path or DEFAULT_REGISTRY_PATH
+    if not path.exists():
+        return None
+    return build_adoption_rank(path)
+
+
+def dashboard_data(
+    snapshots: list[dict[str, Any]],
+    *,
+    registry_path: Path | None = None,
+) -> dict[str, Any]:
     days: list[dict[str, Any]] = []
     categories: set[str] = set()
     sources: set[str] = set()
@@ -546,6 +566,11 @@ def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
         },
         "days": days,
         "corpus": corpus,
+        # Curated and versioned in the repository rather than collected daily:
+        # it answers "which benchmarks do vendors report" from published model
+        # cards, which is a different question from "what was released today"
+        # and moves on a different clock.
+        "model_card_leaderboard": _model_card_leaderboard(registry_path),
         # Keep every rubric required by the history. The browser selects by
         # each record's score_version, so a v1 score is never explained using
         # v2 arithmetic.
@@ -578,8 +603,13 @@ def dashboard_data(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def rebuild_dashboard(snapshot_dir: Path, output: Path) -> dict[str, Any]:
-    value = dashboard_data(load_snapshots(snapshot_dir))
+def rebuild_dashboard(
+    snapshot_dir: Path,
+    output: Path,
+    *,
+    registry_path: Path | None = None,
+) -> dict[str, Any]:
+    value = dashboard_data(load_snapshots(snapshot_dir), registry_path=registry_path)
     _write_json(output, value)
     return value
 

@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from benchmark_radar.model_cards import ModelCardRegistryError
 from benchmark_radar.models import (
     AttentionObservation,
     ProducerHealth,
@@ -629,3 +630,47 @@ def test_later_alias_bridge_does_not_rewrite_earlier_trend(tmp_path):
 
     assert data["days"][0]["cumulative_evidence_count"] == 2
     assert data["days"][1]["cumulative_evidence_count"] == 1
+
+
+def test_dashboard_publishes_the_model_card_adoption_rank(tmp_path):
+    # Issue #83: the curated Model Card Adoption Rank rides along in the same
+    # published file the dashboard already loads, so the browser needs no second
+    # fetch and no second schema.
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(26), snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+    board = data["model_card_leaderboard"]
+
+    assert board["model_card_count"] > 0
+    assert board["entries"][0]["rank"] == 1
+    assert "not benchmark quality" in board["measures"]
+
+
+def test_dashboard_omits_the_leaderboard_when_the_registry_is_absent(tmp_path):
+    # A checkout without the curated file still publishes a working dashboard:
+    # the daily radar's own collection does not depend on this dataset.
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(26), snapshot_dir)
+
+    data = rebuild_dashboard(
+        snapshot_dir,
+        tmp_path / "radar.json",
+        registry_path=tmp_path / "absent.yml",
+    )
+
+    assert data["model_card_leaderboard"] is None
+    assert data["snapshot_count"] == 1
+
+
+def test_dashboard_fails_rather_than_publishing_a_stale_ranking(tmp_path):
+    # An invalid registry must not be swallowed into a missing leaderboard: the
+    # previous ranking would stay on the page with nothing signalling it went
+    # stale, which is worse than a failed build.
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(26), snapshot_dir)
+    broken = tmp_path / "model_cards.yml"
+    broken.write_text("schema_version: 1\nbenchmarks: []\nmodel_cards: []\n", encoding="utf-8")
+
+    with pytest.raises(ModelCardRegistryError):
+        rebuild_dashboard(snapshot_dir, tmp_path / "radar.json", registry_path=broken)

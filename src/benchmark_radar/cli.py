@@ -42,6 +42,16 @@ def main() -> None:
     parser.add_argument("--snapshot-dir", type=Path, default=Path("data/snapshots"))
     parser.add_argument("--dashboard-output", type=Path, default=Path("site/data/radar.json"))
     parser.add_argument(
+        "--model-cards",
+        type=Path,
+        default=Path("data/model_cards.yml"),
+        help=(
+            "Curated model card registry powering the Model Card Adoption Rank "
+            "(issue #83). A missing file omits the leaderboard; an invalid one "
+            "fails the build rather than publishing a stale ranking."
+        ),
+    )
+    parser.add_argument(
         "--target-count",
         type=int,
         default=30,
@@ -53,7 +63,11 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command in {"rebuild", "backfill"}:
-        data = rebuild_dashboard(args.snapshot_dir, args.dashboard_output)
+        data = rebuild_dashboard(
+            args.snapshot_dir,
+            args.dashboard_output,
+            registry_path=args.model_cards,
+        )
         action = "Backfilled" if args.command == "backfill" else "Rebuilt"
         print(f"{action} {args.dashboard_output} from {data['snapshot_count']} daily snapshots")
         return
@@ -93,7 +107,11 @@ def main() -> None:
         skipped = len(runs) - len(written)
         for run in written:
             write_snapshot(run, args.snapshot_dir)
-        dashboard = rebuild_dashboard(args.snapshot_dir, args.dashboard_output)
+        dashboard = rebuild_dashboard(
+            args.snapshot_dir,
+            args.dashboard_output,
+            registry_path=args.model_cards,
+        )
         print(
             f"Simulated {len(written)} historical snapshots with coverage "
             f"({skipped} of {len(runs)} candidate days had no reachable records and were "
@@ -103,7 +121,11 @@ def main() -> None:
         return
     if args.command == "rescore":
         summary = rescore_snapshot_history(config, args.snapshot_dir)
-        dashboard = rebuild_dashboard(args.snapshot_dir, args.dashboard_output)
+        dashboard = rebuild_dashboard(
+            args.snapshot_dir,
+            args.dashboard_output,
+            registry_path=args.model_cards,
+        )
         print(
             f"Rescored {summary['snapshots']} snapshots against the current taxonomy; "
             f"{summary['records_changed']} records changed category"
@@ -122,7 +144,11 @@ def main() -> None:
         return
     if args.command == "migrate":
         snapshots = migrate_snapshot_history(config, args.snapshot_dir)
-        dashboard = rebuild_dashboard(args.snapshot_dir, args.dashboard_output)
+        dashboard = rebuild_dashboard(
+            args.snapshot_dir,
+            args.dashboard_output,
+            registry_path=args.model_cards,
+        )
         print(
             f"Migrated {len(snapshots)} snapshots to schema {dashboard['schema_version']} "
             f"and rebuilt {args.dashboard_output}"
@@ -168,7 +194,11 @@ def main() -> None:
         encoding="utf-8",
     )
     snapshot_path = write_snapshot(run, args.snapshot_dir)
-    dashboard = rebuild_dashboard(args.snapshot_dir, args.dashboard_output)
+    dashboard = rebuild_dashboard(
+        args.snapshot_dir,
+        args.dashboard_output,
+        registry_path=args.model_cards,
+    )
     print(
         f"Wrote {len(run.items)} items, snapshot {snapshot_path}, and dashboard data "
         f"for {dashboard['snapshot_count']} days"
