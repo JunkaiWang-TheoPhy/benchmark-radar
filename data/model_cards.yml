@@ -506,7 +506,10 @@ benchmarks:
 
   - id: healthbench
     name: HealthBench
-    aliases: ["HealthBench", "HealthBench Hard", "HealthBench Consensus", "HealthBench Professional"]
+    # "HealthBench Professional" is deliberately absent: it is a distinct
+    # harder split with its own id, and leaving it here would let an extractor
+    # resolve one spelling to two benchmarks.
+    aliases: ["HealthBench", "HealthBench Hard", "HealthBench Consensus"]
     domain: health
     url: https://openai.com/index/healthbench/
     released: 2025-05-12
@@ -722,14 +725,123 @@ benchmarks:
 
   - id: exploitbench
     name: ExploitBench
-    aliases: ["ExploitBench"]
+    aliases: ["ExploitBench", "ExploitBench (Cap%)"]
     domain: security
     url: https://deploymentsafety.openai.com/gpt-5-6-preview
-    released: 2026-06-26
+    # Unset rather than guessed. This previously carried 2026-06-26, the
+    # publication date of the GPT-5.6 preview the URL points at, which records
+    # when OpenAI reported the benchmark rather than when the instrument was
+    # published. That reading was demonstrably wrong: Anthropic's 2026-06-09
+    # table already measures against it. The earlier date is evidence the
+    # benchmark existed by then, but "first seen" is not a release date, and
+    # this field's contract is to say nothing rather than carry a guess.
+    released: null
     caveat: >-
       Offensive-security capability measured as a risk indicator against a
-      preparedness threshold, not a leaderboard to top. Only OpenAI has
-      published against it so far.
+      preparedness threshold, not a leaderboard to top. Reported as a
+      capability percentage, and no public specification of the task set has
+      been published, so the number cannot be independently reproduced. In use
+      by 2026-06-09; no announced publication date.
+
+  # ---------------------------------------------------------------------------
+  # Instruments first observed in Anthropic's 2026-06-09 Claude Fable 5 /
+  # Mythos 5 comparison table (issue #90). That table is published as an image,
+  # so these names are absent from the page text and were missed by every
+  # text-based pass over the release.
+  #
+  # Several are vendor-internal: Anthropic names them in its own comparison
+  # table without publishing a task specification, so there is nothing to link
+  # to and nothing a third party can reproduce. They are recorded because the
+  # adoption count measures what vendors put in front of readers, and an
+  # unreproducible instrument in a headline table is exactly that. Their
+  # caveats carry the warning the missing URL would otherwise leave implicit.
+  # ---------------------------------------------------------------------------
+
+  - id: frontiercode
+    name: FrontierCode
+    aliases: ["FrontierCode", "FrontierCode (Diamond)"]
+    domain: coding_agent
+    url: https://cognition.ai/blog/frontier-bench
+    # Unset: 2026-05-19 is Frontier-Bench's release date, and assuming this
+    # shares it because both are Cognition's would be a guess about a separate
+    # instrument.
+    released: null
+    caveat: >-
+      Cognition's production-standard coding evaluation, distinct from that
+      vendor's Frontier-Bench despite the shared prefix and blog. Reported per
+      reasoning-effort setting (the Diamond subset at xhigh), so the effort
+      level has to travel with the number. First-party to a competing coding
+      agent's vendor.
+
+  - id: blueprint_bench_2
+    name: Blueprint-Bench 2
+    aliases: ["Blueprint-Bench 2", "Blueprint-Bench", "BlueprintBench 2"]
+    domain: spatial_reasoning
+    url: null
+    released: null
+    caveat: >-
+      Spatial-reasoning set named in Anthropic's comparison table with no
+      published task specification, so scores cannot be reproduced or audited
+      outside the vendor.
+
+  - id: legal_agent_benchmark
+    name: Legal Agent Benchmark
+    aliases: ["Legal Agent Benchmark"]
+    domain: legal
+    url: null
+    released: null
+    caveat: >-
+      Absolute scores are very low across all models (0-13%), so ordering at
+      the top is decided by a handful of tasks and small gaps are noise. No
+      public task specification.
+
+  - id: biomysterybench
+    name: BioMysteryBench
+    aliases: ["BioMysteryBench"]
+    domain: biology
+    url: null
+    released: null
+    caveat: >-
+      Reported in two splits ("hard" and "human solved") that differ by more
+      than 35 points, so a bare score is unreadable without its split.
+      Anthropic notes its own safety refusals depress this number, which means
+      the score mixes capability with policy.
+
+  - id: gdp_pdf
+    name: GDP.pdf
+    aliases: ["GDP.pdf"]
+    domain: multimodal
+    url: null
+    released: null
+    caveat: >-
+      Vision-based knowledge work, reported no-tools. Named in Anthropic's
+      table without a published specification; the name resembles GDPval but
+      the two are separate instruments and must not be merged.
+
+  - id: vibench
+    name: ViBench
+    aliases: ["ViBench"]
+    domain: coding_agent
+    url: null
+    released: null
+    caveat: >-
+      Anthropic's own end-to-end vibe-coding benchmark, described in prose
+      rather than scored in the table. First-party to the vendor reporting it,
+      with no published task set.
+
+  - id: healthbench_professional
+    name: HealthBench Professional
+    aliases: ["HealthBench Professional"]
+    domain: health
+    url: https://openai.com/index/healthbench/
+    # Unset: the Professional split postdates HealthBench's own 2025-05-12
+    # release, but no announcement dates it, and the 2026-06-09 table that
+    # reports it only establishes when it was first seen in use.
+    released: null
+    caveat: >-
+      A distinct, harder split from the HealthBench variants recorded
+      separately in this registry, so its scores are not comparable to them.
+      Graded by an LLM against physician-written rubrics.
 
 # Model cards, technical reports and release posts.
 #
@@ -1073,6 +1185,13 @@ model_cards:
       - swe_bench_pro
       - terminal_bench
 
+  # The headline comparison table in this release is published as an image, so
+  # a text-only reading of the page sees only the benchmarks named in prose.
+  # The first pass recorded five entries, two of which (BrowseComp, SWE-bench
+  # Verified) appear nowhere in the release at all, and missed the thirteen
+  # instruments the table actually leads with. Issue #90 asked for the table to
+  # be read directly; the list below is transcribed from it, plus the three
+  # benchmarks named only in the surrounding prose.
   - id: anthropic_claude_fable_5_mythos_5
     organization: Anthropic
     model: Claude Fable 5 and Mythos 5
@@ -1081,11 +1200,24 @@ model_cards:
     url: https://www.anthropic.com/news/claude-fable-5-mythos-5
     retrieved_at: 2026-08-02
     benchmarks:
+      # From the comparison table, in the order it lists them.
+      - swe_bench_pro
+      - frontiercode
+      - gdpval
+      - gdp_pdf
+      - blueprint_bench_2
+      - automationbench
+      - osworld
+      - legal_agent_benchmark
+      - hle
+      - biomysterybench
+      - terminal_bench
+      - exploitbench
+      - healthbench_professional
+      # Named in prose rather than scored in the table.
       - frontier_bench
       - cursor_bench
-      - browsecomp
-      - terminal_bench
-      - swe_bench_verified
+      - vibench
 
   - id: openai_gpt_5_6_system_card
     organization: OpenAI

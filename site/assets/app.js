@@ -1635,11 +1635,32 @@ function renderLeaderboard() {
     card.url,
   ];
   const benchmarkLink = (entry) => [entry.name, entry.url];
-  // Sorted by publisher then date so an expanded list reads as a roster rather
-  // than as a second implied ranking, matching the model card table below.
-  const byOrganization = (a, b) =>
-    a.organization.localeCompare(b.organization) ||
-    (a.published || "").localeCompare(b.published || "");
+  // Newest first, matching the model card table below (issue #90). This list
+  // and that table are two views of one roster, so they have to agree: sorting
+  // this one by publisher while the table ran by date made the same registry
+  // look like two different registries depending on where you read it.
+  //
+  // A card with no date sorts last here for the same reason it does in
+  // `adoption_rank`: an unknown date is not evidence of recency. Organization
+  // then model break ties so the order is total rather than dependent on the
+  // input sequence.
+  // The trailing document_type and id keys match the backend's: Z.ai's GLM-5
+  // model card and technical report tie on date, organization and model, so
+  // without them the two rosters could disagree on that pair.
+  //
+  // Compared by codepoint rather than with `localeCompare`, because the
+  // backend sorts Python strings and the two disagree on case: `localeCompare`
+  // puts "xAI" before "Xai", Python puts it after. No two registry entries
+  // currently differ only in capitalization, so this changes nothing today --
+  // it stops the same class of split-ordering bug the tie-breakers above fix.
+  const codepoint = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+  const byNewestFirst = (a, b) =>
+    Number(!a.published) - Number(!b.published) ||
+    codepoint(b.published || "", a.published || "") ||
+    codepoint(String(a.organization), String(b.organization)) ||
+    codepoint(String(a.model), String(b.model)) ||
+    codepoint(String(a.document_type), String(b.document_type)) ||
+    codepoint(String(a.model_card_id), String(b.model_card_id));
 
   replaceChildren(byId("leaderboard-insights"), [
     mapInsightCard(
@@ -1648,7 +1669,7 @@ function renderLeaderboard() {
         [
           "Model cards",
           Number(board.model_card_count || 0).toLocaleString(),
-          [...allCards].sort(byOrganization).map(cardLink),
+          [...allCards].sort(byNewestFirst).map(cardLink),
         ],
         [
           "Organizations",
@@ -1685,7 +1706,10 @@ function renderLeaderboard() {
           metricLabel(count, "card"),
           allCards
             .filter((card) => card.organization === organization)
-            .sort((a, b) => (a.published || "").localeCompare(b.published || ""))
+            // Newest first, like every other roster on this view. Sorting a
+            // vendor's own history the other way put its oldest release at the
+            // top of the one list where the comparison is easiest to make.
+            .sort(byNewestFirst)
             .map((card) => [`${card.model} — ${card.document_type.replaceAll("_", " ")}`, card.url]),
         ]),
       "No organizations in the registry yet.",
