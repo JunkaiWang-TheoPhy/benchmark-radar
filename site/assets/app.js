@@ -1647,13 +1647,20 @@ function renderLeaderboard() {
   // The trailing document_type and id keys match the backend's: Z.ai's GLM-5
   // model card and technical report tie on date, organization and model, so
   // without them the two rosters could disagree on that pair.
+  //
+  // Compared by codepoint rather than with `localeCompare`, because the
+  // backend sorts Python strings and the two disagree on case: `localeCompare`
+  // puts "xAI" before "Xai", Python puts it after. No two registry entries
+  // currently differ only in capitalization, so this changes nothing today --
+  // it stops the same class of split-ordering bug the tie-breakers above fix.
+  const codepoint = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
   const byNewestFirst = (a, b) =>
     Number(!a.published) - Number(!b.published) ||
-    (b.published || "").localeCompare(a.published || "") ||
-    a.organization.localeCompare(b.organization) ||
-    String(a.model).localeCompare(String(b.model)) ||
-    String(a.document_type).localeCompare(String(b.document_type)) ||
-    String(a.model_card_id).localeCompare(String(b.model_card_id));
+    codepoint(b.published || "", a.published || "") ||
+    codepoint(String(a.organization), String(b.organization)) ||
+    codepoint(String(a.model), String(b.model)) ||
+    codepoint(String(a.document_type), String(b.document_type)) ||
+    codepoint(String(a.model_card_id), String(b.model_card_id));
 
   replaceChildren(byId("leaderboard-insights"), [
     mapInsightCard(
