@@ -203,6 +203,31 @@ def load_registry(path: Path = DEFAULT_REGISTRY_PATH) -> dict[str, Any]:
             if card.get(field):
                 _require_date(card[field], label=f"{path}: model card {card_id!r} {field}")
 
+        # A card cannot report a benchmark that did not exist when it was
+        # published. Every date here is individually well-formed, so nothing
+        # above catches the contradiction, and the resulting edge is invisible in
+        # the ranking: it just quietly adds one adoption. Three such edges were
+        # in the first draft of the 2026 expansion, each a different mistake --
+        # a wrong `released` date, and two benchmarks attributed to cards that
+        # reported a different instrument. Checking the pair is what tells those
+        # apart from correct data.
+        #
+        # Compared as ISO strings, and only when both dates are present: a
+        # benchmark with no recorded release date cannot be placed on the
+        # timeline, so it is not evidence of anything either way.
+        published = str(card["published"]) if card.get("published") else ""
+        if published:
+            impossible = sorted(
+                f"{ref} (released {by_id[ref]['released']})"
+                for ref in {str(ref) for ref in card["benchmarks"]}
+                if by_id[ref].get("released") and str(by_id[ref]["released"]) > published
+            )
+            if impossible:
+                raise ModelCardRegistryError(
+                    f"{path}: model card {card_id!r} published {published} reports "
+                    f"benchmarks released after it: {', '.join(impossible)}"
+                )
+
     return {"benchmarks": benchmarks, "model_cards": cards}
 
 
@@ -334,11 +359,19 @@ def adoption_rank(registry: dict[str, Any]) -> dict[str, Any]:
                     # in the browser.
                     "reported_benchmarks": [
                         _benchmark_summary(benchmarks[benchmark_id])
+                        # The id is the final key, not decoration: domain and
+                        # lowercased name can both tie between two distinct
+                        # benchmarks, and the input is a set, so without a
+                        # unique tie-breaker their published order would vary
+                        # with PYTHONHASHSEED. The inverse-property test would
+                        # not catch it -- it compares sets -- so the ordering
+                        # has to be total here.
                         for benchmark_id in sorted(
                             {str(ref) for ref in card["benchmarks"]},
                             key=lambda ref: (
                                 benchmarks[ref]["domain"],
                                 str(benchmarks[ref]["name"]).lower(),
+                                ref,
                             ),
                         )
                     ],

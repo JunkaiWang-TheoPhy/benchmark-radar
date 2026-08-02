@@ -376,9 +376,13 @@ input {
 
 /* Model card rows carry no rank number, so they have three children where a
    ranked benchmark row has four. Without its own template the heading lands in
-   the 38px rank column and wraps one character per line. Matching on child
-   count keeps both row types on one rule set rather than forking the class. */
-.record-summary:not(:has(.signal-rank)) {
+   the 38px rank column and wraps one character per line.
+
+   An explicit class rather than `:not(:has(.signal-rank))`: this rule is
+   layout-critical, and a browser without :has() support drops the whole
+   selector, which restores exactly the one-character-per-line wrap it exists to
+   prevent. A class degrades to "unstyled but readable" instead. */
+.record-summary.record-summary-unranked {
   grid-template-columns: 26px minmax(0, 1fr) 170px;
 }
 
@@ -1759,12 +1763,24 @@ footer {
     gap: 0.65rem;
   }
 
+  /* Needed because `.record-summary.record-summary-unranked` carries two
+     classes and so outranks the single-class rule above: without this the
+     unranked rows keep the desktop template on a phone, holding a 170px score
+     column beside the heading and leaving the model name almost no width. */
+  .record-summary.record-summary-unranked {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+
   .record-summary .score,
   .record-summary .attention-activity {
     grid-column: 3;
     justify-self: start;
     max-width: 180px;
     text-align: left;
+  }
+
+  .record-summary.record-summary-unranked .score {
+    grid-column: 2;
   }
 
   .record-detail {

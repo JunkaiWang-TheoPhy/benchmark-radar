@@ -375,7 +375,7 @@ def test_leaderboard_filters_use_prefixed_url_keys():
     # filter at once without either view reinterpreting the other's
     # `organization`.
     assert 'id="leaderboard-filters"' in html
-    for key in ("lq", "ldomain", "lorg"):
+    for key in ("lq", "ldomain", "lorg", "lera"):
         assert f'params.set("{key}"' in script
         assert f'params.get("{key}")' in script
 
@@ -384,11 +384,74 @@ def test_leaderboard_filter_handler_reads_controls_not_the_event_target():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     # Same <select> "input"-before-"change" hazard as issue #43: reading all
-    # three controls from the DOM makes the event ordering irrelevant.
+    # four controls from the DOM makes the event ordering irrelevant.
     handler = script.split('byId("leaderboard-filters").addEventListener("input"', 1)[1]
     body = handler.split("});", 1)[0]
-    for control in ("leaderboard-search", "leaderboard-domain", "leaderboard-organization"):
+    for control in (
+        "leaderboard-search",
+        "leaderboard-domain",
+        "leaderboard-organization",
+        "leaderboard-era",
+    ):
         assert f'byId("{control}")' in body
+
+
+def test_release_date_filter_uses_fixed_eras_not_a_rolling_window():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'id="leaderboard-era"' in html
+    # Fixed boundaries, so a shared "?lera=2026" link keeps meaning "released in
+    # 2026" indefinitely rather than drifting into "the last N months".
+    assert "LEADERBOARD_ERAS" in script
+    assert '"2026-01-01"' in script
+    # "Released in 2026" is bounded at both ends. With only a lower bound it
+    # would silently absorb 2027 benchmarks the moment one is added.
+    assert '"2027-01-01"' in script
+    # ISO strings compare directly; no Date parsing means no timezone can move a
+    # benchmark across a year boundary.
+    assert "entry.released < era.from" in script
+    assert "!entry.released) return false" in script
+
+
+def test_unranked_rows_select_their_grid_by_class_not_has():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    css = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    # This grid template is layout-critical: without it a card heading lands in
+    # the 38px rank column and wraps one character per line. A :has() selector
+    # is dropped whole by browsers that do not support it, restoring exactly
+    # that bug, so the rule is keyed on an explicit class instead.
+    assert "record-summary-unranked" in script
+    assert ".record-summary.record-summary-unranked" in css
+    # Scoped to selectors that set a grid template on a record summary. The
+    # file's other `:has()` use is a hover de-emphasis on the trend chart, which
+    # is cosmetic: a browser that drops it loses an effect, not a layout. This
+    # rule decides column widths, so it must not be droppable.
+    selectors = [
+        line for line in css.splitlines() if line.rstrip().endswith("{") and "*" not in line
+    ]
+    assert not [line for line in selectors if ":has(" in line and "record-summary" in line]
+    # Two classes outrank the single-class mobile rule, so the breakpoint needs
+    # its own override or phones keep the desktop template.
+    mobile = css.split("@media (max-width: 760px)", 1)[1]
+    assert ".record-summary.record-summary-unranked" in mobile
+
+
+def test_model_card_rows_expand_to_the_benchmarks_they_report():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # The reverse direction of the registry link. A reader auditing our data
+    # against a vendor PDF needs the card's full benchmark list in one place,
+    # grouped the way the source groups it, plus a link to the source itself.
+    assert "function modelCardRow(card)" in script
+    assert "card.reported_benchmarks" in script
+    assert '"Benchmarks this document reports"' in script
+    assert "card-benchmark-group" in script
+    assert '"Open source document ↗"' in script
+    # Says a mention is not a score at the point where an expanded list would
+    # otherwise read as an extract of the card's results table.
+    assert "These are mentions, not scores" in script
 
 
 def test_leaderboard_degrades_when_the_curated_registry_is_absent():

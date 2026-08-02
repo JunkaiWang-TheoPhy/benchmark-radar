@@ -103,7 +103,7 @@ benchmarks:
       - "TerminalBench Hard"
     domain: agent
     url: https://www.tbench.ai/
-    released: 2025-05-27
+    released: 2025-05-19
     caveat: >-
       Environment image, timeout and permitted commands change results
       independently of the model. Version and harness both matter: 2.0 and 2.1
@@ -847,13 +847,14 @@ model_cards:
     published: 2024-03-08
     url: https://arxiv.org/abs/2403.05530
     retrieved_at: 2026-08-02
+    # No Video-MME: that benchmark was published 2024-05-31, after this report.
+    # The v1 report's long-video evaluations predate it.
     benchmarks:
       - mmlu
       - gsm8k
       - math_500
       - humaneval
       - mmmu
-      - video_mme
       - mathvista
       - drop
 
@@ -862,6 +863,10 @@ model_cards:
   # MTOB and Multilingual MMLU come from that table's rows; the table also
   # states 0-shot, temperature 0, no majority voting, which is why no score is
   # recorded here.
+  #
+  # No MRCR: that table's long-context rows are MTOB (half book and full book).
+  # OpenAI open-sourced MRCR alongside GPT-4.1 on 2025-04-14, nine days after
+  # this post, so it could not have been reported here.
   - id: meta_llama_4
     organization: Meta
     model: Llama 4
@@ -876,7 +881,6 @@ model_cards:
       - mmmu
       - mathvista
       - chatbot_arena
-      - mrcr
       - chartqa
       - docvqa
       - mtob

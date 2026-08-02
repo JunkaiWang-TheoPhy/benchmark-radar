@@ -296,6 +296,78 @@ def test_benchmark_release_dates_are_published_and_validated(tmp_path):
         load_registry(write_registry(tmp_path, document))
 
 
+def test_a_card_cannot_report_a_benchmark_that_did_not_exist_yet(tmp_path):
+    """A benchmark released after a card cannot have been reported by it.
+
+    Every date involved is individually well-formed, so no other check catches
+    the contradiction, and the bad edge is invisible in the ranking: it just
+    quietly adds one adoption. The first draft of the 2026 expansion contained
+    three such edges, each a different underlying mistake -- one wrong `released`
+    date and two benchmarks attributed to cards that reported a different
+    instrument -- so this is the check that tells a data error from real data.
+    """
+    document = minimal_registry()
+    document["benchmarks"][0]["released"] = "2025-06-01"
+    document["model_cards"][0]["published"] = "2025-01-01"
+
+    with pytest.raises(ModelCardRegistryError, match="reports benchmarks released after it"):
+        load_registry(write_registry(tmp_path, document))
+
+    # A benchmark with no recorded release date cannot be placed on the
+    # timeline, so it is not evidence of a contradiction either way.
+    document = minimal_registry()
+    document["benchmarks"][0].pop("released", None)
+    document["model_cards"][0]["published"] = "2025-01-01"
+    load_registry(write_registry(tmp_path, document))
+
+    # Same-day is legitimate: benchmarks are routinely published alongside the
+    # card that first reports them (MRCR shipped with GPT-4.1).
+    document = minimal_registry()
+    document["benchmarks"][0]["released"] = "2025-01-01"
+    document["model_cards"][0]["published"] = "2025-01-01"
+    load_registry(write_registry(tmp_path, document))
+
+
+def test_shipped_registry_has_no_chronologically_impossible_mention():
+    registry = load_registry(DEFAULT_REGISTRY_PATH)
+    released = {
+        str(benchmark["id"]): str(benchmark["released"])
+        for benchmark in registry["benchmarks"]
+        if benchmark.get("released")
+    }
+
+    for card in registry["model_cards"]:
+        published = str(card["published"]) if card.get("published") else ""
+        if not published:
+            continue
+        for ref in {str(ref) for ref in card["benchmarks"]}:
+            if ref in released:
+                assert released[ref] <= published, (
+                    f"{card['id']} published {published} cannot report {ref} "
+                    f"released {released[ref]}"
+                )
+
+
+def test_reported_benchmark_order_is_total():
+    """Ordering must not depend on set iteration order.
+
+    Domain and lowercased name can tie between two distinct benchmarks, and the
+    input is a set, so without the id as a final key the published order would
+    vary with PYTHONHASHSEED. The inverse-property test cannot catch that -- it
+    compares sets -- so the ordering is asserted directly.
+    """
+    board = build_adoption_rank(DEFAULT_REGISTRY_PATH)
+
+    for card in board["model_cards"]:
+        keys = [
+            (benchmark["domain"], benchmark["name"].lower(), benchmark["benchmark_id"])
+            for benchmark in card["reported_benchmarks"]
+        ]
+        assert keys == sorted(keys)
+        # A total order has no duplicate keys to break.
+        assert len(set(keys)) == len(keys)
+
+
 def test_registry_covers_the_2026_frontier():
     """The ranking has to describe current reporting, not 2025's.
 

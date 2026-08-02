@@ -1382,8 +1382,12 @@ function renderMapInsights(corpus) {
 // next month: "?lera=2026" is always "released in 2026", never "the last N
 // months". A benchmark with no recorded release date is excluded by any era
 // filter, which is the honest outcome -- it cannot be placed on the timeline.
+// "Released in 2026" is bounded at both ends. An open-ended lower bound would
+// silently absorb 2027 benchmarks the moment one is added, contradicting both
+// the label and the permalink promise. "2025 or later" says "or later" and is
+// therefore correctly open-ended.
 const LEADERBOARD_ERAS = [
-  { value: "2026", label: "Released in 2026", from: "2026-01-01" },
+  { value: "2026", label: "Released in 2026", from: "2026-01-01", to: "2027-01-01" },
   { value: "2025", label: "Released 2025 or later", from: "2025-01-01" },
   { value: "pre2024", label: "Released before 2024", to: "2024-01-01" },
 ];
@@ -1645,7 +1649,9 @@ function renderLeaderboard() {
 // what that card contributes to every count in the table above.
 function modelCardRow(card) {
   const benchmarks = card.reported_benchmarks || [];
-  const summary = element("summary", { className: "record-summary" }, [
+  // `record-summary-unranked` selects the three-column grid: these rows carry no
+  // rank number, unlike the ranked benchmark rows above.
+  const summary = element("summary", { className: "record-summary record-summary-unranked" }, [
     element("div", { className: "record-heading" }, [
       element("div", { className: "signal-meta" }, [
         element("span", { text: card.organization }),
