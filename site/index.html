@@ -197,6 +197,10 @@
               Organization
               <select id="leaderboard-organization" name="lorg"></select>
             </label>
+            <label>
+              Benchmark released
+              <select id="leaderboard-era" name="lera"></select>
+            </label>
             <button class="clear-button" id="leaderboard-clear" type="button">
               Clear filters
             </button>
@@ -216,23 +220,12 @@
             <span id="leaderboard-cards-count"></span>
           </div>
           <p class="section-note">
-            The curated source list this ranking is computed from. Every row links to the
-            document the benchmark mentions were read from.
+            The curated source list this ranking is computed from. Expand any card to see
+            every benchmark it reports, grouped the way the source document groups them, so
+            our data can be checked line by line against the original. Each row links to the
+            document the mentions were read from.
           </p>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Organization</th>
-                  <th>Model</th>
-                  <th>Document</th>
-                  <th>Published</th>
-                  <th>Benchmarks</th>
-                </tr>
-              </thead>
-              <tbody id="leaderboard-cards"></tbody>
-            </table>
-          </div>
+          <div class="leaderboard-list" id="leaderboard-cards"></div>
         </section>
       </section>
 

@@ -51,6 +51,22 @@ _REQUIRED_BENCHMARK_FIELDS = ("id", "name", "domain", "caveat")
 _REQUIRED_CARD_FIELDS = ("id", "organization", "model", "url", "benchmarks")
 
 
+def _benchmark_summary(benchmark: dict[str, Any]) -> dict[str, Any]:
+    """The benchmark fields that travel with a card in the card->benchmark link.
+
+    Deliberately the same projection used to build the leaderboard entry, so the
+    two directions of the link cannot describe one benchmark differently.
+    """
+    return {
+        "benchmark_id": str(benchmark["id"]),
+        "name": str(benchmark["name"]),
+        "domain": str(benchmark["domain"]),
+        "url": str(benchmark.get("url") or "") or None,
+        "released": str(benchmark["released"]) if benchmark.get("released") else None,
+        "caveat": (str(benchmark["caveat"]).strip() if benchmark.get("caveat") else None),
+    }
+
+
 class ModelCardRegistryError(ValueError):
     """Raised when the curated registry is internally inconsistent."""
 
@@ -138,6 +154,14 @@ def load_registry(path: Path = DEFAULT_REGISTRY_PATH) -> dict[str, Any]:
             raise ModelCardRegistryError(
                 f"{path}: benchmark {benchmark_id!r} aliases must be a list"
             )
+        # Validated on the same terms as a card's dates: `released` is rendered
+        # by the same browser formatter and is filterable, so an unparseable
+        # value here would take the whole dashboard down exactly as one in
+        # `published` would.
+        if benchmark.get("released"):
+            _require_date(
+                benchmark["released"], label=f"{path}: benchmark {benchmark_id!r} released"
+            )
         by_id[benchmark_id] = benchmark
 
     seen_cards: set[str] = set()
@@ -178,6 +202,52 @@ def load_registry(path: Path = DEFAULT_REGISTRY_PATH) -> dict[str, Any]:
         for field in ("published", "retrieved_at"):
             if card.get(field):
                 _require_date(card[field], label=f"{path}: model card {card_id!r} {field}")
+
+        # A card cannot report a benchmark that did not exist when it was
+        # published. Every date here is individually well-formed, so nothing
+        # above catches the contradiction, and the resulting edge is invisible in
+        # the ranking: it just quietly adds one adoption. Three such edges were
+        # in the first draft of the 2026 expansion, each a different mistake --
+        # a wrong `released` date, and two benchmarks attributed to cards that
+        # reported a different instrument. Checking the pair is what tells those
+        # apart from correct data.
+        #
+        # Compared as ISO strings, and only when both dates are present: a
+        # benchmark with no recorded release date cannot be placed on the
+        # timeline, so it is not evidence of anything either way.
+        #
+        # `revised` is the escape hatch for a document that legitimately gained a
+        # benchmark after first publication: an arXiv report reaching v3, or a
+        # living model card a vendor keeps editing in place. Those are real, and
+        # for them `published` is the original date while the contents are newer.
+        # It is opt-in per card rather than a blanket relaxation, because the
+        # common case is still a data error and silently allowing every later
+        # benchmark would give back the three edges this check just caught. A
+        # card claiming a revision must name the date it was revised to, which is
+        # a checkable claim about the document.
+        published = str(card["published"]) if card.get("published") else ""
+        if card.get("revised"):
+            _require_date(card["revised"], label=f"{path}: model card {card_id!r} revised")
+            if published and str(card["revised"]) < published:
+                raise ModelCardRegistryError(
+                    f"{path}: model card {card_id!r} revised {card['revised']} "
+                    f"precedes its published date {published}"
+                )
+        # The revision date is the cutoff when one is recorded: the document as
+        # read at that point is what the mentions were taken from.
+        cutoff = str(card["revised"]) if card.get("revised") else published
+        if cutoff:
+            impossible = sorted(
+                f"{ref} (released {by_id[ref]['released']})"
+                for ref in {str(ref) for ref in card["benchmarks"]}
+                if by_id[ref].get("released") and str(by_id[ref]["released"]) > cutoff
+            )
+            if impossible:
+                raise ModelCardRegistryError(
+                    f"{path}: model card {card_id!r} ({cutoff}) reports benchmarks "
+                    f"released after it: {', '.join(impossible)}. If the document was "
+                    f"revised after publication, record the revision date as `revised`"
+                )
 
     return {"benchmarks": benchmarks, "model_cards": cards}
 
@@ -237,6 +307,10 @@ def adoption_rank(registry: dict[str, Any]) -> dict[str, Any]:
                 "domain": str(benchmark["domain"]),
                 "url": str(benchmark.get("url") or "") or None,
                 "aliases": [str(alias) for alias in benchmark.get("aliases") or []],
+                # The benchmark's own release date, not any card's. Published so
+                # a reader can separate a newly *adopted* benchmark from a newly
+                # *published* one, and filter the ranking by instrument age.
+                "released": str(benchmark["released"]) if benchmark.get("released") else None,
                 # The caveat travels with the row. A ranking that shows MMLU
                 # high and does not say "saturated and contaminated" invites
                 # exactly the reading issue #83 warns against.
@@ -290,8 +364,42 @@ def adoption_rank(registry: dict[str, Any]) -> dict[str, Any]:
                     "retrieved_at": (
                         str(card["retrieved_at"]) if card.get("retrieved_at") else None
                     ),
+                    # Published so a reader can see that a document reporting a
+                    # benchmark newer than itself is a recorded revision rather
+                    # than a mistake nobody caught.
+                    "revised": str(card["revised"]) if card.get("revised") else None,
                     "benchmark_count": len({str(ref) for ref in card["benchmarks"]}),
                     "benchmarks": sorted({str(ref) for ref in card["benchmarks"]}),
+                    # The reverse of `entries[].adopters`, and the reason this
+                    # registry is a dual link rather than two lists that happen
+                    # to agree. Both directions are derived here from the same
+                    # validated `card["benchmarks"]`, so "which cards report
+                    # benchmark X" and "which benchmarks does card Y report"
+                    # cannot disagree: `test_adoption_rank_links_are_exact
+                    # _inverses` asserts the two edge sets are identical.
+                    #
+                    # The full record travels, not just the id, so a reader
+                    # expanding a card sees each benchmark's domain, release
+                    # date and caveat without having to join against `entries`
+                    # in the browser.
+                    "reported_benchmarks": [
+                        _benchmark_summary(benchmarks[benchmark_id])
+                        # The id is the final key, not decoration: domain and
+                        # lowercased name can both tie between two distinct
+                        # benchmarks, and the input is a set, so without a
+                        # unique tie-breaker their published order would vary
+                        # with PYTHONHASHSEED. The inverse-property test would
+                        # not catch it -- it compares sets -- so the ordering
+                        # has to be total here.
+                        for benchmark_id in sorted(
+                            {str(ref) for ref in card["benchmarks"]},
+                            key=lambda ref: (
+                                benchmarks[ref]["domain"],
+                                str(benchmarks[ref]["name"]).lower(),
+                                ref,
+                            ),
+                        )
+                    ],
                 }
                 for card in cards
             ),

@@ -27,6 +27,7 @@ const state = {
   lq: "",
   ldomain: "",
   lorg: "",
+  lera: "",
 };
 
 function element(tag, options = {}, children = []) {
@@ -108,6 +109,7 @@ function readUrl() {
   state.lq = params.get("lq") || "";
   state.ldomain = params.get("ldomain") || "";
   state.lorg = params.get("lorg") || "";
+  state.lera = params.get("lera") || "";
   state.rubric = new URLSearchParams(window.location.hash.slice(1)).get("rubric") || "";
 }
 
@@ -127,6 +129,7 @@ function writeUrl() {
   if (state.lq) params.set("lq", state.lq);
   if (state.ldomain) params.set("ldomain", state.ldomain);
   if (state.lorg) params.set("lorg", state.lorg);
+  if (state.lera) params.set("lera", state.lera);
   const query = params.toString();
   // The rubric dialog is a hashtag, not a query param, so a shared link like
   // #rubric=2 reads as "jump to this section" rather than another filter.
@@ -1305,6 +1308,32 @@ function rankedCounts(values, limit = 6) {
     .slice(0, limit);
 }
 
+// Rows are `[label, value]`, or `[label, value, detail]` where detail is an
+// array of `[name, url]` pairs naming the records the count is made of. A row
+// with a detail becomes a disclosure; a row without one stays a plain line, so
+// the Trend Map's callers are unaffected.
+//
+// The point is that a summary count should be checkable. "OpenAI: 5 cards" is a
+// claim about five specific documents, and a reader who cannot see which five
+// has to take the number on faith.
+function insightDetailList(detail) {
+  return element(
+    "ul",
+    { className: "insight-detail-list" },
+    detail.map(([name, url]) =>
+      element("li", {}, [
+        url
+          ? element("a", {
+              className: "adopter-link",
+              text: name,
+              attrs: { href: url, target: "_blank", rel: "noopener noreferrer" },
+            })
+          : element("span", { text: name }),
+      ]),
+    ),
+  );
+}
+
 function mapInsightCard(title, entries, emptyText) {
   return element("article", { className: "map-insight-card" }, [
     element("h2", { text: title }),
@@ -1312,11 +1341,21 @@ function mapInsightCard(title, entries, emptyText) {
       ? element(
           "ul",
           {},
-          entries.map(([label, value]) =>
-            element("li", {}, [
-              element("span", { text: label }),
-              element("strong", { text: value }),
-            ]),
+          entries.map(([label, value, detail]) =>
+            detail && detail.length
+              ? element("li", { className: "insight-row-expandable" }, [
+                  element("details", {}, [
+                    element("summary", {}, [
+                      element("span", { text: label }),
+                      element("strong", { text: value }),
+                    ]),
+                    insightDetailList(detail),
+                  ]),
+                ])
+              : element("li", {}, [
+                  element("span", { text: label }),
+                  element("strong", { text: value }),
+                ]),
           ),
         )
       : element("p", { text: emptyText }),
@@ -1374,13 +1413,36 @@ function renderMapInsights(corpus) {
 // every reasoning-budget and pass@k caveat that makes two reported scores
 // incomparable.
 
+// Cut points for the benchmark release-date filter. Chosen as era boundaries
+// rather than rolling windows so a bookmarked URL keeps meaning the same thing
+// next month: "?lera=2026" is always "released in 2026", never "the last N
+// months". A benchmark with no recorded release date is excluded by any era
+// filter, which is the honest outcome -- it cannot be placed on the timeline.
+// "Released in 2026" is bounded at both ends. An open-ended lower bound would
+// silently absorb 2027 benchmarks the moment one is added, contradicting both
+// the label and the permalink promise. "2025 or later" says "or later" and is
+// therefore correctly open-ended.
+const LEADERBOARD_ERAS = [
+  { value: "2026", label: "Released in 2026", from: "2026-01-01", to: "2027-01-01" },
+  { value: "2025", label: "Released 2025 or later", from: "2025-01-01" },
+  { value: "pre2024", label: "Released before 2024", to: "2024-01-01" },
+];
+
 function leaderboardEntries() {
   const board = state.data?.model_card_leaderboard;
   if (!board) return [];
   const query = state.lq.trim().toLowerCase();
+  const era = LEADERBOARD_ERAS.find((candidate) => candidate.value === state.lera);
   return (board.entries || []).filter((entry) => {
     if (state.ldomain && entry.domain !== state.ldomain) return false;
     if (state.lorg && !(entry.organizations || []).includes(state.lorg)) return false;
+    if (era) {
+      // ISO dates compare correctly as strings, so no Date parsing is needed
+      // and no timezone can shift a benchmark across a year boundary.
+      if (!entry.released) return false;
+      if (era.from && entry.released < era.from) return false;
+      if (era.to && entry.released >= era.to) return false;
+    }
     if (!query) return true;
     const haystack = [entry.name, entry.benchmark_id, ...(entry.aliases || [])]
       .join(" ")
@@ -1440,6 +1502,14 @@ function leaderboardRow(entry) {
               }`,
             })
           : element("span", { text: "not yet reported in these cards" }),
+        // The instrument's own age, which the adoption count deliberately does
+        // not encode: a 2020 benchmark with 9 cards and a 2026 benchmark with 9
+        // cards are very different findings about vendor reporting.
+        entry.released
+          ? element("span", {
+              text: `released ${formatDate(entry.released, { dateStyle: "medium" })}`,
+            })
+          : null,
       ]),
       element("h3", { text: entry.name }),
       // The caveat is part of the row, not a footnote. A ranking that puts a
@@ -1518,6 +1588,10 @@ function renderLeaderboardFilters(board) {
       option(organization, organization, organization === state.lorg),
     ),
   ]);
+  replaceChildren(byId("leaderboard-era"), [
+    option("", "Any release date", !state.lera),
+    ...LEADERBOARD_ERAS.map((era) => option(era.value, era.label, era.value === state.lera)),
+  ]);
   if (byId("leaderboard-search").value !== state.lq) {
     byId("leaderboard-search").value = state.lq;
   }
@@ -1539,14 +1613,66 @@ function renderLeaderboard() {
   renderLeaderboardFilters(board);
 
   const topEntries = (board.entries || []).filter((entry) => entry.card_count > 0);
+  const allCards = board.model_cards || [];
+  // One vendor can publish two documents about the same model -- Z.ai shipped a
+  // GLM-5 model card and a GLM-5 technical report -- and both are counted,
+  // correctly, as separate adoptions. Labelling both "Z.ai · GLM-5" makes a
+  // correct count look like a double-counting bug, so the document type
+  // disambiguates whenever the organization and model alone do not.
+  const labelCounts = new Map();
+  for (const card of allCards) {
+    const key = `${card.organization} · ${card.model}`;
+    labelCounts.set(key, (labelCounts.get(key) || 0) + 1);
+  }
+  const cardLabel = (organization, model, documentType) => {
+    const base = `${organization} · ${model}`;
+    return labelCounts.get(base) > 1
+      ? `${base} (${String(documentType).replaceAll("_", " ")})`
+      : base;
+  };
+  const cardLink = (card) => [
+    cardLabel(card.organization, card.model, card.document_type),
+    card.url,
+  ];
+  const benchmarkLink = (entry) => [entry.name, entry.url];
+  // Sorted by publisher then date so an expanded list reads as a roster rather
+  // than as a second implied ranking, matching the model card table below.
+  const byOrganization = (a, b) =>
+    a.organization.localeCompare(b.organization) ||
+    (a.published || "").localeCompare(b.published || "");
+
   replaceChildren(byId("leaderboard-insights"), [
     mapInsightCard(
       "Registry coverage",
       [
-        ["Model cards", Number(board.model_card_count || 0).toLocaleString()],
-        ["Organizations", Number(board.organization_count || 0).toLocaleString()],
-        ["Benchmarks tracked", Number(board.benchmark_count || 0).toLocaleString()],
-        ["Reported at least once", Number(topEntries.length).toLocaleString()],
+        [
+          "Model cards",
+          Number(board.model_card_count || 0).toLocaleString(),
+          [...allCards].sort(byOrganization).map(cardLink),
+        ],
+        [
+          "Organizations",
+          Number(board.organization_count || 0).toLocaleString(),
+          Object.entries(board.organizations || {})
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([organization, count]) => [
+              `${organization} — ${metricLabel(count, "card")}`,
+              null,
+            ]),
+        ],
+        [
+          "Benchmarks tracked",
+          Number(board.benchmark_count || 0).toLocaleString(),
+          (board.entries || []).map(benchmarkLink),
+        ],
+        [
+          "Reported at least once",
+          Number(topEntries.length).toLocaleString(),
+          topEntries.map((entry) => [
+            `${entry.name} — ${metricLabel(entry.card_count, "card")}`,
+            entry.url,
+          ]),
+        ],
       ],
       "No registry entries yet.",
     ),
@@ -1554,7 +1680,14 @@ function renderLeaderboard() {
       "Cards per organization",
       Object.entries(board.organizations || {})
         .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-        .map(([organization, count]) => [organization, metricLabel(count, "card")]),
+        .map(([organization, count]) => [
+          organization,
+          metricLabel(count, "card"),
+          allCards
+            .filter((card) => card.organization === organization)
+            .sort((a, b) => (a.published || "").localeCompare(b.published || ""))
+            .map((card) => [`${card.model} — ${card.document_type.replaceAll("_", " ")}`, card.url]),
+        ]),
       "No organizations in the registry yet.",
     ),
     // Counts only benchmarks at least one card reports, which is deliberately
@@ -1568,6 +1701,12 @@ function renderLeaderboard() {
         .map(([domain, count]) => [
           domain.replaceAll("_", " "),
           metricLabel(count, "benchmark"),
+          topEntries
+            .filter((entry) => entry.domain === domain)
+            .map((entry) => [
+              `${entry.name} — ${metricLabel(entry.card_count, "card")}`,
+              entry.url,
+            ]),
         ]),
       "No domains represented yet.",
     ),
@@ -1575,7 +1714,16 @@ function renderLeaderboard() {
       "Adopted by every organization",
       topEntries
         .filter((entry) => entry.organization_count === board.organization_count)
-        .map((entry) => [entry.name, metricLabel(entry.card_count, "card")]),
+        .map((entry) => [
+          entry.name,
+          metricLabel(entry.card_count, "card"),
+          // The adopting documents themselves: this row's claim is "every
+          // organization reports it", and the list is what substantiates it.
+          (entry.adopters || []).map((adopter) => [
+            cardLabel(adopter.organization, adopter.model, adopter.document_type),
+            adopter.url,
+          ]),
+        ]),
       "No benchmark is reported by every organization in the registry.",
     ),
   ]);
@@ -1599,26 +1747,112 @@ function renderLeaderboard() {
 
   const cards = board.model_cards || [];
   byId("leaderboard-cards-count").textContent = metricLabel(cards.length, "document");
-  replaceChildren(
-    byId("leaderboard-cards"),
-    cards.map((card) =>
-      element("tr", {}, [
-        element("td", { text: card.organization }),
-        element("td", {}, [
-          element("a", {
-            className: "adopter-link",
-            text: card.model,
-            attrs: { href: card.url, target: "_blank", rel: "noopener noreferrer" },
-          }),
-        ]),
-        element("td", { text: String(card.document_type).replaceAll("_", " ") }),
-        element("td", {
-          text: card.published ? formatDate(card.published, { dateStyle: "medium" }) : "Unknown",
+  replaceChildren(byId("leaderboard-cards"), cards.map(modelCardRow));
+}
+
+// The reverse direction of the registry's dual link, rendered as a disclosure so
+// a reader can audit one card against its source document. The forward direction
+// (a benchmark, expanded to its adopters) answers "who reports this?"; this
+// answers "what did this card report?", which is the question you need when
+// checking our data against the ground-truth PDF or blog post. Both are built
+// from the same edge set in `adoption_rank`, so what is listed here is exactly
+// what that card contributes to every count in the table above.
+function modelCardRow(card) {
+  const benchmarks = card.reported_benchmarks || [];
+  // `record-summary-unranked` selects the three-column grid: these rows carry no
+  // rank number, unlike the ranked benchmark rows above.
+  const summary = element("summary", { className: "record-summary record-summary-unranked" }, [
+    element("div", { className: "record-heading" }, [
+      element("div", { className: "signal-meta" }, [
+        element("span", { text: card.organization }),
+        element("span", { text: String(card.document_type).replaceAll("_", " ") }),
+        element("span", {
+          text: card.published
+            ? formatDate(card.published, { dateStyle: "medium" })
+            : "date unknown",
         }),
-        element("td", { text: String(card.benchmark_count) }),
       ]),
-    ),
+      element("h3", { text: card.model }),
+    ]),
+    element("div", { className: "score" }, [
+      element("div", { className: "score-value" }, [
+        element("strong", { text: String(card.benchmark_count) }),
+      ]),
+      element("p", { className: "score-label", text: "Benchmarks" }),
+    ]),
+  ]);
+
+  // Grouped by domain because that is how the source documents are laid out:
+  // a card's own tables are sectioned into reasoning, coding, agentic and
+  // multimodal blocks, so grouping the same way keeps a side-by-side check
+  // against the PDF a matter of reading down one column.
+  const byDomain = new Map();
+  for (const benchmark of benchmarks) {
+    if (!byDomain.has(benchmark.domain)) byDomain.set(benchmark.domain, []);
+    byDomain.get(benchmark.domain).push(benchmark);
+  }
+
+  const groups = [...byDomain.entries()].map(([domain, items]) =>
+    element("div", { className: "card-benchmark-group" }, [
+      element("h4", { text: domain.replaceAll("_", " ") }),
+      element(
+        "ul",
+        { className: "adopter-list" },
+        items.map((benchmark) =>
+          element("li", {}, [
+            benchmark.url
+              ? element("a", {
+                  className: "adopter-link",
+                  text: benchmark.name,
+                  attrs: {
+                    href: benchmark.url,
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                  },
+                })
+              : element("span", { className: "adopter-link", text: benchmark.name }),
+            element("span", {
+              className: "adopter-meta",
+              text: benchmark.released
+                ? `released ${formatDate(benchmark.released, { dateStyle: "medium" })}`
+                : "release date unrecorded",
+            }),
+          ]),
+        ),
+      ),
+    ]),
   );
+
+  return element("details", { className: "record-card" }, [
+    summary,
+    element("div", { className: "record-detail" }, [
+      element("h3", { text: "Benchmarks this document reports" }),
+      element("p", {
+        className: "section-note",
+        // Says what the reader is and is not looking at, at the point of
+        // looking. A mention is not a score, and the expanded list would
+        // otherwise read as if it were an extract of the card's results table.
+        text:
+          "Every benchmark this document puts in front of readers, counted once each. " +
+          "These are mentions, not scores: the source records the configuration, and " +
+          "this registry deliberately does not.",
+      }),
+      ...groups,
+      element("a", {
+        className: "primary-link",
+        text: "Open source document ↗",
+        attrs: { href: card.url, target: "_blank", rel: "noopener noreferrer" },
+      }),
+      card.retrieved_at
+        ? element("p", {
+            className: "adopter-meta",
+            text: `Last read by a human on ${formatDate(card.retrieved_at, {
+              dateStyle: "medium",
+            })}`,
+          })
+        : null,
+    ]),
+  ]);
 }
 
 function renderTrendMap() {
@@ -1846,6 +2080,7 @@ function bindEvents() {
     state.lq = byId("leaderboard-search").value;
     state.ldomain = byId("leaderboard-domain").value;
     state.lorg = byId("leaderboard-organization").value;
+    state.lera = byId("leaderboard-era").value;
     renderLeaderboard();
     writeUrl();
   });
@@ -1853,6 +2088,7 @@ function bindEvents() {
     state.lq = "";
     state.ldomain = "";
     state.lorg = "";
+    state.lera = "";
     byId("leaderboard-search").value = "";
     renderLeaderboard();
     writeUrl();
