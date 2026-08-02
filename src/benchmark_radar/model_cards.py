@@ -67,6 +67,30 @@ def _benchmark_summary(benchmark: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+class _descending:
+    """Sort one key in reverse while its tie-breakers stay ascending.
+
+    `sorted(reverse=True)` reverses the whole tuple, which would also flip
+    organization and model into Z-to-A for cards sharing a date. Negating the
+    key is the usual alternative and is unavailable here: these are ISO date
+    strings, not numbers. Wrapping just the date inverts that one comparison
+    and leaves the rest of the tuple alone.
+    """
+
+    __slots__ = ("value",)
+
+    def __init__(self, value: str) -> None:
+        self.value = value
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, _descending):
+            return NotImplemented
+        return self.value == other.value
+
+    def __lt__(self, other: _descending) -> bool:
+        return other.value < self.value
+
+
 class ModelCardRegistryError(ValueError):
     """Raised when the curated registry is internally inconsistent."""
 
@@ -350,8 +374,17 @@ def adoption_rank(registry: dict[str, Any]) -> dict[str, Any]:
         "organization_count": len(organization_totals),
         "organizations": dict(sorted(organization_totals.items())),
         "domains": dict(sorted(domain_totals.items())),
-        # Sorted by publisher then date so the model list reads as a roster
-        # rather than as a second, implied ranking.
+        # Sorted newest first (issue #90). The previous publisher-then-date
+        # order grouped a vendor's whole history together, which buried this
+        # month's frontier cards under whichever organization sorted first
+        # alphabetically: the newest document in the registry sat halfway down
+        # the list. Date is what a reader scanning this roster is actually
+        # looking for, and it is the one key that is comparable across vendors.
+        #
+        # A card with no published date sorts last rather than first: `None`
+        # means the date was never established, and an unknown date is not
+        # evidence of recency. Organization then model break ties so the order
+        # stays total and deterministic for cards sharing a date.
         "model_cards": sorted(
             (
                 {
@@ -403,7 +436,12 @@ def adoption_rank(registry: dict[str, Any]) -> dict[str, Any]:
                 }
                 for card in cards
             ),
-            key=lambda card: (card["organization"], card["published"] or "", card["model"]),
+            key=lambda card: (
+                card["published"] is None,
+                _descending(card["published"] or ""),
+                card["organization"],
+                card["model"],
+            ),
         ),
         "entries": entries,
         # Stated in the data rather than only in the UI, so any consumer of

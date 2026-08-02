@@ -428,6 +428,110 @@ def test_registry_covers_the_2026_frontier():
     assert {"terminal_bench", "swe_bench_pro", "tau2_bench", "gdpval", "osworld"} <= names
 
 
+def test_model_cards_are_listed_newest_first(tmp_path):
+    """Issue #90: the roster is ordered by date, not by publisher.
+
+    Grouping by organization first buried the newest documents behind whichever
+    vendor sorted earliest alphabetically, which is the opposite of what a
+    reader scanning a registry of frontier releases wants.
+    """
+    document = minimal_registry()
+    # A third card from the alphabetically-first organization, published last.
+    # Under the old publisher-then-date order this sorted second; the date is
+    # what has to decide it now.
+    document["model_cards"].append(
+        {
+            "id": "org_one_newer",
+            "organization": "Org One",
+            "model": "One Point One",
+            "document_type": "model_card",
+            "published": "2025-06-01",
+            "url": "https://example.com/one-newer",
+            "benchmarks": ["beta"],
+        }
+    )
+    board = adoption_rank(load_registry(write_registry(tmp_path, document)))
+
+    assert [card["model_card_id"] for card in board["model_cards"]] == [
+        "org_one_newer",
+        "org_two_card",
+        "org_one_card",
+    ]
+
+
+def test_undated_model_cards_sort_last_not_first(tmp_path):
+    """An unknown date is not evidence of recency.
+
+    A missing `published` normalises to the empty string, which would sort
+    ahead of every real date under a plain descending comparison and put the
+    least-known documents at the top of a list that claims to be newest-first.
+    """
+    document = minimal_registry()
+    document["model_cards"].append(
+        {
+            "id": "undated_card",
+            "organization": "Org Three",
+            "model": "Three",
+            "document_type": "model_card",
+            "url": "https://example.com/three",
+            "benchmarks": ["alpha"],
+        }
+    )
+    board = adoption_rank(load_registry(write_registry(tmp_path, document)))
+
+    assert board["model_cards"][-1]["model_card_id"] == "undated_card"
+    assert board["model_cards"][-1]["published"] is None
+
+
+def test_shipped_registry_is_ordered_by_date():
+    board = build_adoption_rank(DEFAULT_REGISTRY_PATH)
+
+    published = [card["published"] for card in board["model_cards"]]
+    dated = [value for value in published if value]
+    # Every dated card precedes every undated one, and the dated run descends.
+    assert published[: len(dated)] == dated
+    assert dated == sorted(dated, reverse=True)
+
+
+def test_fable_mythos_card_records_its_full_comparison_table():
+    """Issue #90: the release's benchmark table is an image.
+
+    A text-only reading of the page saw three benchmarks named in prose and
+    invented two more that appear nowhere in the release. The table itself
+    carries thirteen, and they are the ones the release leads with, so their
+    absence understated the adoption of every instrument in it.
+    """
+    board = build_adoption_rank(DEFAULT_REGISTRY_PATH)
+
+    card = next(
+        entry
+        for entry in board["model_cards"]
+        if entry["model_card_id"] == "anthropic_claude_fable_5_mythos_5"
+    )
+    reported = set(card["benchmarks"])
+
+    # Transcribed from the comparison table in the release post.
+    assert {
+        "swe_bench_pro",
+        "frontiercode",
+        "gdpval",
+        "gdp_pdf",
+        "blueprint_bench_2",
+        "automationbench",
+        "osworld",
+        "legal_agent_benchmark",
+        "hle",
+        "biomysterybench",
+        "terminal_bench",
+        "exploitbench",
+        "healthbench_professional",
+    } <= reported
+    # Named in the prose but not scored in the table.
+    assert {"frontier_bench", "cursor_bench", "vibench"} <= reported
+    # Recorded by an earlier pass but absent from the release entirely.
+    assert not ({"browsecomp", "swe_bench_verified"} & reported)
+
+
 def test_adopters_link_back_to_the_source_document():
     board = build_adoption_rank(DEFAULT_REGISTRY_PATH)
 

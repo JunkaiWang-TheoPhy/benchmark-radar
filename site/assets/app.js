@@ -1635,11 +1635,20 @@ function renderLeaderboard() {
     card.url,
   ];
   const benchmarkLink = (entry) => [entry.name, entry.url];
-  // Sorted by publisher then date so an expanded list reads as a roster rather
-  // than as a second implied ranking, matching the model card table below.
-  const byOrganization = (a, b) =>
+  // Newest first, matching the model card table below (issue #90). This list
+  // and that table are two views of one roster, so they have to agree: sorting
+  // this one by publisher while the table ran by date made the same registry
+  // look like two different registries depending on where you read it.
+  //
+  // A card with no date sorts last here for the same reason it does in
+  // `adoption_rank`: an unknown date is not evidence of recency. Organization
+  // then model break ties so the order is total rather than dependent on the
+  // input sequence.
+  const byNewestFirst = (a, b) =>
+    Number(!a.published) - Number(!b.published) ||
+    (b.published || "").localeCompare(a.published || "") ||
     a.organization.localeCompare(b.organization) ||
-    (a.published || "").localeCompare(b.published || "");
+    String(a.model).localeCompare(String(b.model));
 
   replaceChildren(byId("leaderboard-insights"), [
     mapInsightCard(
@@ -1648,7 +1657,7 @@ function renderLeaderboard() {
         [
           "Model cards",
           Number(board.model_card_count || 0).toLocaleString(),
-          [...allCards].sort(byOrganization).map(cardLink),
+          [...allCards].sort(byNewestFirst).map(cardLink),
         ],
         [
           "Organizations",
