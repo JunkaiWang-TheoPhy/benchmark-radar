@@ -367,6 +367,32 @@ def test_leaderboard_rows_link_back_to_the_model_cards_they_counted():
     assert 'rel: "noopener noreferrer"' in script
 
 
+def test_summary_counts_expand_to_the_records_behind_them():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    css = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    # A summary count is a claim about specific records. "OpenAI: 5 cards" names
+    # five documents, and a reader who cannot see which five takes it on faith,
+    # so every row in the four registry cards opens to its own contents.
+    assert "insight-row-expandable" in script
+    assert "insightDetailList" in script
+    assert ".map-insight-card li.insight-row-expandable" in css
+    # The plain rows are flex containers; an expandable row has to become a block
+    # so the expanded list can sit beneath its summary rather than beside it.
+    expandable = css.split(".map-insight-card li.insight-row-expandable {", 1)[1]
+    assert "display: block" in expandable.split("}", 1)[0]
+
+
+def test_two_documents_about_one_model_are_labelled_apart():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # Z.ai published both a GLM-5 model card and a GLM-5 technical report. Both
+    # are counted, correctly, as separate adoptions, but labelling both
+    # "Z.ai · GLM-5" makes a correct count look like a double-counting bug.
+    assert "labelCounts" in script
+    assert "cardLabel" in script
+
+
 def test_leaderboard_filters_use_prefixed_url_keys():
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")

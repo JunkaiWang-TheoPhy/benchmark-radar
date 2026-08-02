@@ -1308,6 +1308,32 @@ function rankedCounts(values, limit = 6) {
     .slice(0, limit);
 }
 
+// Rows are `[label, value]`, or `[label, value, detail]` where detail is an
+// array of `[name, url]` pairs naming the records the count is made of. A row
+// with a detail becomes a disclosure; a row without one stays a plain line, so
+// the Trend Map's callers are unaffected.
+//
+// The point is that a summary count should be checkable. "OpenAI: 5 cards" is a
+// claim about five specific documents, and a reader who cannot see which five
+// has to take the number on faith.
+function insightDetailList(detail) {
+  return element(
+    "ul",
+    { className: "insight-detail-list" },
+    detail.map(([name, url]) =>
+      element("li", {}, [
+        url
+          ? element("a", {
+              className: "adopter-link",
+              text: name,
+              attrs: { href: url, target: "_blank", rel: "noopener noreferrer" },
+            })
+          : element("span", { text: name }),
+      ]),
+    ),
+  );
+}
+
 function mapInsightCard(title, entries, emptyText) {
   return element("article", { className: "map-insight-card" }, [
     element("h2", { text: title }),
@@ -1315,11 +1341,21 @@ function mapInsightCard(title, entries, emptyText) {
       ? element(
           "ul",
           {},
-          entries.map(([label, value]) =>
-            element("li", {}, [
-              element("span", { text: label }),
-              element("strong", { text: value }),
-            ]),
+          entries.map(([label, value, detail]) =>
+            detail && detail.length
+              ? element("li", { className: "insight-row-expandable" }, [
+                  element("details", {}, [
+                    element("summary", {}, [
+                      element("span", { text: label }),
+                      element("strong", { text: value }),
+                    ]),
+                    insightDetailList(detail),
+                  ]),
+                ])
+              : element("li", {}, [
+                  element("span", { text: label }),
+                  element("strong", { text: value }),
+                ]),
           ),
         )
       : element("p", { text: emptyText }),
@@ -1577,14 +1613,66 @@ function renderLeaderboard() {
   renderLeaderboardFilters(board);
 
   const topEntries = (board.entries || []).filter((entry) => entry.card_count > 0);
+  const allCards = board.model_cards || [];
+  // One vendor can publish two documents about the same model -- Z.ai shipped a
+  // GLM-5 model card and a GLM-5 technical report -- and both are counted,
+  // correctly, as separate adoptions. Labelling both "Z.ai · GLM-5" makes a
+  // correct count look like a double-counting bug, so the document type
+  // disambiguates whenever the organization and model alone do not.
+  const labelCounts = new Map();
+  for (const card of allCards) {
+    const key = `${card.organization} · ${card.model}`;
+    labelCounts.set(key, (labelCounts.get(key) || 0) + 1);
+  }
+  const cardLabel = (organization, model, documentType) => {
+    const base = `${organization} · ${model}`;
+    return labelCounts.get(base) > 1
+      ? `${base} (${String(documentType).replaceAll("_", " ")})`
+      : base;
+  };
+  const cardLink = (card) => [
+    cardLabel(card.organization, card.model, card.document_type),
+    card.url,
+  ];
+  const benchmarkLink = (entry) => [entry.name, entry.url];
+  // Sorted by publisher then date so an expanded list reads as a roster rather
+  // than as a second implied ranking, matching the model card table below.
+  const byOrganization = (a, b) =>
+    a.organization.localeCompare(b.organization) ||
+    (a.published || "").localeCompare(b.published || "");
+
   replaceChildren(byId("leaderboard-insights"), [
     mapInsightCard(
       "Registry coverage",
       [
-        ["Model cards", Number(board.model_card_count || 0).toLocaleString()],
-        ["Organizations", Number(board.organization_count || 0).toLocaleString()],
-        ["Benchmarks tracked", Number(board.benchmark_count || 0).toLocaleString()],
-        ["Reported at least once", Number(topEntries.length).toLocaleString()],
+        [
+          "Model cards",
+          Number(board.model_card_count || 0).toLocaleString(),
+          [...allCards].sort(byOrganization).map(cardLink),
+        ],
+        [
+          "Organizations",
+          Number(board.organization_count || 0).toLocaleString(),
+          Object.entries(board.organizations || {})
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([organization, count]) => [
+              `${organization} — ${metricLabel(count, "card")}`,
+              null,
+            ]),
+        ],
+        [
+          "Benchmarks tracked",
+          Number(board.benchmark_count || 0).toLocaleString(),
+          (board.entries || []).map(benchmarkLink),
+        ],
+        [
+          "Reported at least once",
+          Number(topEntries.length).toLocaleString(),
+          topEntries.map((entry) => [
+            `${entry.name} — ${metricLabel(entry.card_count, "card")}`,
+            entry.url,
+          ]),
+        ],
       ],
       "No registry entries yet.",
     ),
@@ -1592,7 +1680,14 @@ function renderLeaderboard() {
       "Cards per organization",
       Object.entries(board.organizations || {})
         .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-        .map(([organization, count]) => [organization, metricLabel(count, "card")]),
+        .map(([organization, count]) => [
+          organization,
+          metricLabel(count, "card"),
+          allCards
+            .filter((card) => card.organization === organization)
+            .sort((a, b) => (a.published || "").localeCompare(b.published || ""))
+            .map((card) => [`${card.model} — ${card.document_type.replaceAll("_", " ")}`, card.url]),
+        ]),
       "No organizations in the registry yet.",
     ),
     // Counts only benchmarks at least one card reports, which is deliberately
@@ -1606,6 +1701,12 @@ function renderLeaderboard() {
         .map(([domain, count]) => [
           domain.replaceAll("_", " "),
           metricLabel(count, "benchmark"),
+          topEntries
+            .filter((entry) => entry.domain === domain)
+            .map((entry) => [
+              `${entry.name} — ${metricLabel(entry.card_count, "card")}`,
+              entry.url,
+            ]),
         ]),
       "No domains represented yet.",
     ),
@@ -1613,7 +1714,16 @@ function renderLeaderboard() {
       "Adopted by every organization",
       topEntries
         .filter((entry) => entry.organization_count === board.organization_count)
-        .map((entry) => [entry.name, metricLabel(entry.card_count, "card")]),
+        .map((entry) => [
+          entry.name,
+          metricLabel(entry.card_count, "card"),
+          // The adopting documents themselves: this row's claim is "every
+          // organization reports it", and the list is what substantiates it.
+          (entry.adopters || []).map((adopter) => [
+            cardLabel(adopter.organization, adopter.model, adopter.document_type),
+            adopter.url,
+          ]),
+        ]),
       "No benchmark is reported by every organization in the registry.",
     ),
   ]);

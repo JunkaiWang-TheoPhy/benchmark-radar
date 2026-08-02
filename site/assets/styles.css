@@ -1291,6 +1291,60 @@ td a {
   font-size: 0.78rem;
 }
 
+/* An expandable summary row. The plain rows are flex containers, so the flex
+   layout moves onto the <summary> and the <li> becomes a block that can hold
+   the expanded list beneath it. */
+.map-insight-card li.insight-row-expandable {
+  display: block;
+}
+
+.map-insight-card li.insight-row-expandable summary {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+}
+
+.map-insight-card li.insight-row-expandable summary::-webkit-details-marker {
+  display: none;
+}
+
+/* A caret in place of the default marker, so a row reads as openable before it
+   is opened. Rotates when open, matching the record cards below. */
+.map-insight-card li.insight-row-expandable summary span::before {
+  content: "› ";
+  display: inline-block;
+  color: var(--blue-deep);
+  font-family: var(--utility);
+  transition: transform 140ms ease;
+}
+
+.map-insight-card li.insight-row-expandable summary:hover span,
+.map-insight-card li.insight-row-expandable summary:focus-visible span {
+  color: var(--ink);
+}
+
+.insight-detail-list {
+  margin: 0.4rem 0 0.15rem 0.85rem !important;
+  padding: 0 0 0 0.6rem !important;
+  border-left: 1px solid var(--line);
+  gap: 0.3rem !important;
+}
+
+/* Overrides the flex row the parent list sets: these entries are single links,
+   not label/value pairs, so they should wrap as ordinary text. */
+.map-insight-card .insight-detail-list li {
+  display: block;
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
+}
+
+.map-insight-card .insight-detail-list li span {
+  color: var(--muted);
+}
+
 /* Model Card Adoption Rank (issue #83) */
 
 .leaderboard-filters {
