@@ -25,6 +25,7 @@ from collections import Counter
 from datetime import date
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 import yaml
 
@@ -39,7 +40,14 @@ DEFAULT_REGISTRY_PATH = Path("data/model_cards.yml")
 # Domains carry no ordering: `math` is not above or below `coding`. They exist
 # so a reader can ask "what does this field measure" without the leaderboard
 # implying a hierarchy between fields.
-_REQUIRED_BENCHMARK_FIELDS = ("id", "name", "domain")
+#
+# `caveat` is required, not optional. The ranking's headline risk is being read
+# as a quality ordering, and the per-row caveat is what stops a saturated or
+# contaminated benchmark from sitting near the top with no qualification. A
+# registry that may omit it can publish exactly the misreading this feature is
+# built to prevent, so the guarantee is enforced for any registry rather than
+# spot-checked on the shipped one.
+_REQUIRED_BENCHMARK_FIELDS = ("id", "name", "domain", "caveat")
 _REQUIRED_CARD_FIELDS = ("id", "organization", "model", "url", "benchmarks")
 
 
@@ -50,7 +58,13 @@ class ModelCardRegistryError(ValueError):
 def _require(value: Any, fields: tuple[str, ...], *, label: str) -> None:
     if not isinstance(value, dict):
         raise ModelCardRegistryError(f"{label} must be a mapping")
-    missing = [field for field in fields if not value.get(field)]
+    # A whitespace-only string is a missing field, not a present one: it
+    # satisfies a truthiness check while carrying no information for a reader.
+    missing = [
+        field
+        for field in fields
+        if not value.get(field) or (isinstance(value[field], str) and not value[field].strip())
+    ]
     if missing:
         raise ModelCardRegistryError(f"{label} is missing fields: {', '.join(missing)}")
 
@@ -70,7 +84,11 @@ def _require_date(value: Any, *, label: str) -> None:
     check is therefore against the one format the browser accepts, not against
     the standard.
     """
-    if isinstance(value, date):
+    # `datetime` subclasses `date`, and PyYAML returns one for any value
+    # carrying a time. It would serialize as "2025-08-07 00:00:00+05:30", which
+    # the dashboard's UTC formatter renders as August 6: a silently wrong date
+    # rather than a rejected one. Only a plain calendar date is accepted.
+    if type(value) is date:
         return
     text = str(value)
     if not _ISO_DATE.fullmatch(text):
@@ -135,12 +153,16 @@ def load_registry(path: Path = DEFAULT_REGISTRY_PATH) -> dict[str, Any]:
         # reorder the ranking. A distinct id is not evidence of a distinct
         # document; the URL is what identifies one.
         url = str(card["url"])
-        if url in seen_urls:
+        # Compared without the fragment: `#results` names a location inside a
+        # document, not a different document, so the two forms are one card
+        # and must not each add an adoption.
+        key = urlsplit(url)._replace(fragment="").geturl()
+        if key in seen_urls:
             raise ModelCardRegistryError(
                 f"{path}: model card {card_id!r} repeats the document URL already "
-                f"registered by {seen_urls[url]!r}: {url}"
+                f"registered by {seen_urls[key]!r}: {url}"
             )
-        seen_urls[url] = card_id
+        seen_urls[key] = card_id
         if not isinstance(card["benchmarks"], list):
             raise ModelCardRegistryError(
                 f"{path}: model card {card_id!r} benchmarks must be a list"

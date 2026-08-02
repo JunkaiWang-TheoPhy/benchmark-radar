@@ -22,8 +22,20 @@ def minimal_registry(**overrides) -> dict:
     document = {
         "schema_version": 1,
         "benchmarks": [
-            {"id": "alpha", "name": "Alpha", "domain": "math", "url": "https://example.com/a"},
-            {"id": "beta", "name": "Beta", "domain": "coding", "url": "https://example.com/b"},
+            {
+                "id": "alpha",
+                "name": "Alpha",
+                "domain": "math",
+                "url": "https://example.com/a",
+                "caveat": "Alpha caveat.",
+            },
+            {
+                "id": "beta",
+                "name": "Beta",
+                "domain": "coding",
+                "url": "https://example.com/b",
+                "caveat": "Beta caveat.",
+            },
         ],
         "model_cards": [
             {
@@ -145,7 +157,9 @@ def test_unknown_benchmark_reference_is_rejected(tmp_path):
 
 def test_duplicate_ids_are_rejected(tmp_path):
     document = minimal_registry()
-    document["benchmarks"].append({"id": "alpha", "name": "Alpha again", "domain": "math"})
+    document["benchmarks"].append(
+        {"id": "alpha", "name": "Alpha again", "domain": "math", "caveat": "Dup."}
+    )
     with pytest.raises(ModelCardRegistryError, match="duplicate benchmark id"):
         load_registry(write_registry(tmp_path, document))
 
@@ -184,6 +198,21 @@ def test_every_benchmark_states_what_it_does_not_settle():
         if not str(benchmark.get("caveat") or "").strip()
     ]
     assert not missing
+
+
+def test_a_benchmark_without_a_caveat_is_rejected(tmp_path):
+    # Enforced for any registry, not spot-checked on the shipped one: a custom
+    # --model-cards file could otherwise publish rows with no qualification at
+    # all, which is precisely the misreading the caveat exists to prevent.
+    document = minimal_registry()
+    document["benchmarks"][0].pop("caveat")
+    with pytest.raises(ModelCardRegistryError, match="missing fields: caveat"):
+        load_registry(write_registry(tmp_path, document))
+
+    document = minimal_registry()
+    document["benchmarks"][0]["caveat"] = "   "
+    with pytest.raises(ModelCardRegistryError, match="missing fields: caveat"):
+        load_registry(write_registry(tmp_path, document))
 
 
 def test_measures_statement_travels_with_the_data():
@@ -245,7 +274,7 @@ def test_dates_parsed_by_yaml_into_date_objects_are_accepted(tmp_path):
     path.write_text(
         "schema_version: 1\n"
         "benchmarks:\n"
-        "  - {id: alpha, name: Alpha, domain: math}\n"
+        "  - {id: alpha, name: Alpha, domain: math, caveat: Caveat.}\n"
         "model_cards:\n"
         "  - id: card\n"
         "    organization: Org\n"
@@ -322,3 +351,41 @@ def test_shipped_registry_has_no_repeated_documents_or_scalar_aliases():
     for benchmark in registry["benchmarks"]:
         aliases = benchmark.get("aliases")
         assert aliases is None or isinstance(aliases, list)
+
+
+def test_a_yaml_timestamp_is_rejected_rather_than_shifted_a_day(tmp_path):
+    # datetime subclasses date, and PyYAML returns one for any value carrying a
+    # time. "2025-08-07T00:00:00+05:30" would serialize with its offset and the
+    # dashboard's UTC formatter would render August 6: silently wrong rather
+    # than rejected.
+    path = tmp_path / "model_cards.yml"
+    path.write_text(
+        "schema_version: 1\n"
+        "benchmarks:\n"
+        "  - {id: alpha, name: Alpha, domain: math, caveat: Caveat.}\n"
+        "model_cards:\n"
+        "  - id: card\n"
+        "    organization: Org\n"
+        "    model: One\n"
+        "    published: 2025-08-07T00:00:00+05:30\n"
+        "    url: https://example.com/one\n"
+        "    benchmarks: [alpha]\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ModelCardRegistryError, match="published must be an ISO date"):
+        load_registry(path)
+
+
+def test_a_fragment_does_not_make_one_document_look_like_two(tmp_path):
+    # "#results" names a location inside a document, not another document, so
+    # both forms are one card and must not each add an adoption.
+    document = minimal_registry()
+    document["model_cards"].append(
+        {
+            **document["model_cards"][0],
+            "id": "org_one_card_anchor",
+            "url": f"{document['model_cards'][0]['url']}#results",
+        }
+    )
+    with pytest.raises(ModelCardRegistryError, match="repeats the document URL"):
+        load_registry(write_registry(tmp_path, document))
