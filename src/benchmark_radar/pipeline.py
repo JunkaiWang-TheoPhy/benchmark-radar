@@ -477,6 +477,10 @@ def _score_and_select(
         "lookback_hours": float(settings["lookback_hours"]),
         "score_version": rubric.SCORING_VERSION,
         "score_max": rubric.SCORE_MAX,
+        # Which rules produced this day's categories (issue #72). Recorded
+        # beside the scoring version for the same reason: a category count is
+        # only comparable across days that were classified the same way.
+        "taxonomy_version": rubric.taxonomy_version(config.get("taxonomy") or {}),
     }
     return published, selection
 

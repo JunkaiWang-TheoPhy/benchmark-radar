@@ -8,6 +8,8 @@ the current rubric changes.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any
 
 SCORING_VERSION = 2
@@ -96,6 +98,34 @@ ADOPTION_METRIC_SATURATION: dict[str, float] = {
     "downloads": 100_000.0,
     "likes": 1_000.0,
 }
+
+
+def taxonomy_version(taxonomy: dict[str, Any]) -> str:
+    """A stable fingerprint of the taxonomy that classified a record.
+
+    Issue #72 asked for trend values to be bound to the taxonomy that produced
+    them, after PR #67 moved the cumulative `agentic` count from 3 to 78. That
+    was a rules change, not 75 new agent benchmarks, and nothing in a snapshot
+    recorded which rules had run: two days classified under different taxonomies
+    were indistinguishable, so a measurement fix read as a domain explosion.
+
+    Derived from the taxonomy's own content rather than hand-bumped. A version
+    a maintainer has to remember to increment is a version that silently stops
+    being true the first time someone edits a keyword list and forgets, which
+    is exactly the failure this is meant to detect. Editing any term changes
+    the digest; nothing else can.
+
+    The digest covers the category names, their terms, and the structure of a
+    proximity rule, canonicalized so that reordering keys in `config.yml`
+    without changing what matches does not invent a new version and force a
+    false "not comparable" on every trend.
+    """
+    canonical = json.dumps(taxonomy, sort_keys=True, separators=(",", ":"), default=str)
+    digest = hashlib.sha256(canonical.encode()).hexdigest()
+    # Truncated: this is an equality check between snapshots, not a security
+    # boundary, and a full 64-character digest in every record and on the
+    # dashboard is noise a reader has to scroll past.
+    return f"sha256:{digest[:12]}"
 
 
 def _components(*, lookback_hours: float) -> list[dict[str, Any]]:

@@ -339,6 +339,12 @@ def build_corpus(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
                 "metrics": metrics,
                 "total_score": item.get("total_score"),
                 "score_version": int(item.get("score_version") or 1),
+                # This observation publishes `categories`, so it has to publish
+                # which rules produced them (issue #72). None for a record
+                # classified before the field existed: "unrecorded" and "these
+                # specific rules" are different claims, and only one of them is
+                # checkable.
+                "taxonomy_version": item.get("taxonomy_version"),
             }
             observations.append(observation)
 
