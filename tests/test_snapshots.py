@@ -801,3 +801,39 @@ def test_a_settled_reclassification_marker_does_not_persist(tmp_path):
     # The provenance stamp stays: it says which rules classified the record,
     # which is true on every pass, unlike the marker.
     assert settled["taxonomy_version"]
+
+
+def test_snapshots_predating_the_taxonomy_stamp_still_compare_to_each_other(tmp_path):
+    # Every snapshot already on disk was written before `taxonomy_version`
+    # existed. Gating comparability on a field none of them carry would have
+    # silently emptied the trend history rather than qualifying it.
+    snapshot_dir = tmp_path / "snapshots"
+    for day in (25, 26, 27):
+        write_snapshot(radar_run(day), snapshot_dir)
+    output = tmp_path / "radar.json"
+
+    data = rebuild_dashboard(snapshot_dir, output)
+
+    assert all((day.get("selection") or {}).get("taxonomy_version") is None for day in data["days"])
+    assert any(
+        trend["comparable"] for day in data["days"] for trend in day["category_trends"].values()
+    )
+
+
+def test_the_first_stamped_day_does_not_compare_across_the_boundary(tmp_path):
+    # The transition itself is the risk: the day a taxonomy stamp first appears
+    # is a day whose counts came from rules the previous day cannot vouch for.
+    # It must break comparison exactly once, then resume.
+    snapshot_dir = tmp_path / "snapshots"
+    for day in (25, 26, 27):
+        write_snapshot(radar_run(day), snapshot_dir)
+    paths = sorted(snapshot_dir.glob("*.json"))
+    for path in paths[-1:]:
+        stored = json.loads(path.read_text(encoding="utf-8"))
+        stored["selection"]["taxonomy_version"] = "sha256:newrules"
+        path.write_text(json.dumps(stored), encoding="utf-8")
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    assert not any(trend["comparable"] for trend in data["days"][-1]["category_trends"].values())
+    assert any(trend["comparable"] for trend in data["days"][-2]["category_trends"].values())

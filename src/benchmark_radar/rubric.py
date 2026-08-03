@@ -116,9 +116,16 @@ def taxonomy_version(taxonomy: dict[str, Any]) -> str:
     the digest; nothing else can.
 
     The digest covers the category names, their terms, and the structure of a
-    proximity rule, canonicalized so that reordering keys in `config.yml`
-    without changing what matches does not invent a new version and force a
-    false "not comparable" on every trend.
+    proximity rule, canonicalized so that reordering *categories* in
+    `config.yml` without changing what matches does not invent a new version
+    and force a false "not comparable" on every trend.
+
+    Term order inside a category is deliberately significant, unlike category
+    order. `rescore` records only the first two matching terms in a record's
+    "Matched:" rationale, so listing the same terms in a different order
+    produces different stored evidence for the same artifact. That is a real
+    change in output, and a version that called those two runs identical would
+    be claiming something false.
     """
     canonical = json.dumps(taxonomy, sort_keys=True, separators=(",", ":"), default=str)
     digest = hashlib.sha256(canonical.encode()).hexdigest()
