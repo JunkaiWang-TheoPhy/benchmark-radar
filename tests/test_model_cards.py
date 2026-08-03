@@ -780,9 +780,7 @@ def test_merging_frontier_bench_did_not_double_count_terminal_bench():
     board = build_adoption_rank(DEFAULT_REGISTRY_PATH)
 
     # The merged id is gone, and no card can still reference it.
-    assert all(
-        "frontier_bench" not in card["benchmarks"] for card in board["model_cards"]
-    )
+    assert all("frontier_bench" not in card["benchmarks"] for card in board["model_cards"])
 
     by_card = {card["model_card_id"]: set(card["benchmarks"]) for card in board["model_cards"]}
     # The three cards that named Frontier-Bench, each already reporting the
@@ -794,9 +792,7 @@ def test_merging_frontier_bench_did_not_double_count_terminal_bench():
     ):
         assert "terminal_bench" in by_card[card_id]
 
-    entry = next(
-        row for row in board["entries"] if row["benchmark_id"] == "terminal_bench"
-    )
+    entry = next(row for row in board["entries"] if row["benchmark_id"] == "terminal_bench")
     # One adoption per citing document, not one per alias spelling it used.
     assert entry["card_count"] == len(
         [card for card in board["model_cards"] if "terminal_bench" in card["benchmarks"]]
