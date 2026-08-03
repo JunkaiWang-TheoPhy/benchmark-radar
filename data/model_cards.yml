@@ -124,9 +124,13 @@ benchmarks:
       series' next version rather than a separate benchmark: frontierbench.ai
       now bills it as "Terminal-Bench 3.0 (formerly Frontier-Bench)", built by
       the makers of Harbor and Terminal-Bench, so its mentions are counted
-      here. Being a new version, its task set is not comparable to a 2.x
-      number. Not to be confused with Cognition's FrontierCode, a separate
-      instrument recorded separately despite the shared prefix.
+      here. Merging it did not raise this count: all three cards that named
+      Frontier-Bench (Claude Opus 5, Claude Fable 5 and Mythos 5, Kimi K3)
+      also report Terminal-Bench in the same document, and the counting unit
+      is the document, so each still adds one. Being a new version, its task
+      set is not comparable to a 2.x number. Not to be confused with
+      Cognition's FrontierCode, a separate instrument recorded separately
+      despite the shared prefix.
 
   - id: livecodebench
     name: LiveCodeBench
