@@ -1,3 +1,4 @@
+import sys
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -525,3 +526,48 @@ def test_a_zero_adoption_bar_has_no_visible_width():
     # The 2% floor keeps a one-card benchmark visible, but a bar beside a count
     # of 0 would contradict the number it encodes.
     assert "maxCount && entry.card_count" in script
+
+
+def test_share_card_is_declared_with_an_absolute_url():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+
+    # Open Graph consumers do not resolve relative URLs, so a relative
+    # og:image silently yields the same blank grey card as no tag at all
+    # (issue #88). The failure is invisible from inside the site.
+    assert 'property="og:image"' in html
+    assert "https://ktwu01.github.io/benchmark-radar/assets/og-card.png" in html
+    assert 'name="twitter:card" content="summary_large_image"' in html
+    # Declared dimensions let a consumer reserve the large-image layout before
+    # the file is fetched; without them some fall back to a small thumbnail.
+    assert 'property="og:image:width" content="1200"' in html
+    assert 'property="og:image:height" content="630"' in html
+
+
+def test_share_card_exists_at_the_declared_size():
+    from PIL import Image
+
+    card = Path("site/assets/og-card.png")
+    assert card.exists(), "run scripts/generate_og_image.py"
+
+    with Image.open(card) as image:
+        # 1200x630 is the ratio Open Graph consumers crop to. A card generated
+        # at another size loses its bottom line, which is where the "not
+        # benchmark quality" caveat sits.
+        assert image.size == (1200, 630)
+
+
+def test_share_card_attributes_its_source_without_overlapping_the_caveat():
+    from PIL import Image, ImageDraw
+
+    sys.path.insert(0, "scripts")
+    from generate_og_image import MARGIN, WIDTH, font
+
+    # The card is built to be reposted, and a screenshot of a ranking with no
+    # source is a claim nobody can check. Pillow does not wrap or shrink text:
+    # if the caveat and the attribution stop fitting on one line they silently
+    # draw over each other, and the rendered PNG is the only place that shows.
+    draw = ImageDraw.Draw(Image.new("RGB", (WIDTH, 630)))
+    caveat = draw.textlength("Vendor reporting convention, not benchmark quality", font=font(23))
+    attribution = draw.textlength("github.com/ktwu01/benchmark-radar", font=font(21))
+
+    assert caveat + attribution < WIDTH - 2 * MARGIN
