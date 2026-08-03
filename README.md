@@ -236,9 +236,28 @@ so pagination is bounded by `sources.github.max_requests` and spaced by
 `request_delay_seconds`. Both default by whether `GITHUB_TOKEN` is present; raising
 `max_items_per_source` well beyond the defaults on a tokenless run risks a 403.
 
-Trend comparisons only run between snapshots collected under the same `report_limit`.
-Changing the cap lifts every count at once, and reporting that as domain momentum would
-present a change in collection policy as a change in the field.
+Trend comparisons only run between snapshots collected under the same `report_limit`
+**and classified by the same taxonomy**. Changing the cap lifts every count at once, and
+editing the taxonomy re-tags the whole corpus; reporting either as domain momentum would
+present a change in measurement as a change in the field.
+
+Each snapshot records a `taxonomy_version`, a fingerprint derived from the taxonomy's own
+content rather than a hand-bumped number, so editing any keyword changes it and forgetting
+to bump it is not possible. `benchmark-radar rescore` stamps every record it evaluates and
+marks the ones whose categories actually moved:
+
+```json
+"reclassified": {"from": ["benchmark"], "to": ["benchmark", "agentic"],
+                 "taxonomy_version": "sha256:5ee3bd8146ce"}
+```
+
+This makes a reclassification a third kind of event beside `released` and `updated`. When
+the `agentic` count went from 3 to 78, that was a rules correction rather than 75 new
+agent benchmarks, and nothing in the data distinguished the two. The marker describes only
+the most recent pass: re-running `rescore` with settled rules clears it, because a record
+reclassified weeks ago is not evidence about a trend today. `event_kind` is never rewritten
+by a rescore, since it records what the source announced, not what the radar did to its own
+records.
 
 The `watchlist` block pins named artifacts, matched on title and source id by word
 boundary. A hit is routed to the top and labelled with a one-line note; it never changes

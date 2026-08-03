@@ -674,3 +674,166 @@ def test_dashboard_fails_rather_than_publishing_a_stale_ranking(tmp_path):
 
     with pytest.raises(ModelCardRegistryError):
         rebuild_dashboard(snapshot_dir, tmp_path / "radar.json", registry_path=broken)
+
+
+def test_taxonomy_version_tracks_content_not_a_hand_bumped_constant():
+    from benchmark_radar.rubric import taxonomy_version
+
+    # Issue #72 asked for trend values bound to the taxonomy that produced
+    # them. A version a maintainer has to remember to increment silently stops
+    # being true the first time someone edits a keyword and forgets, which is
+    # the exact failure it exists to detect, so it is derived from content.
+    taxonomy = {"benchmark": ["benchmark"], "agentic": ["agent"]}
+
+    assert taxonomy_version(taxonomy) == taxonomy_version(dict(reversed(list(taxonomy.items()))))
+    assert taxonomy_version(taxonomy) != taxonomy_version(
+        {"benchmark": ["benchmark", "leaderboard"], "agentic": ["agent"]}
+    )
+
+
+def test_rescore_records_which_rules_classified_each_record(tmp_path):
+    # A category count is only comparable across days classified the same way.
+    # Before this, nothing in a snapshot said which rules had run.
+    from benchmark_radar.rubric import taxonomy_version
+
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(27), snapshot_dir)
+    config = {"taxonomy": {"benchmark": ["benchmark"]}}
+
+    summary = rescore_snapshot_history(config, snapshot_dir)
+    stored = load_snapshots(snapshot_dir)[0]
+
+    expected = taxonomy_version(config["taxonomy"])
+    assert summary["taxonomy_version"] == expected
+    # Stamped on every record, not only the ones that moved: a record whose
+    # categories happened not to change was still evaluated by these rules.
+    assert all(item["taxonomy_version"] == expected for item in stored["evidence_items"])
+    # And on the aggregate, so a consumer reading counts rather than records
+    # inherits the same provenance.
+    assert stored["selection"]["taxonomy_version"] == expected
+
+
+def test_rescore_marks_a_reclassified_record_as_a_distinct_event(tmp_path):
+    # Regression for issue #72: PR #67 moved cumulative `agentic` from 3 to 78
+    # in one command. That was a rules change, not 75 new agent benchmarks, and
+    # nothing distinguished the two once written.
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(27, title="A Benchmark for Web Agents"), snapshot_dir)
+
+    # Rescore once under the taxonomy the record was already stored with, so
+    # the second pass is the only thing that moves a category. Re-running the
+    # same rules must leave no marker, or every record would look reclassified
+    # on every pass and the signal would mean nothing.
+    settled = {"taxonomy": {"benchmark": ["benchmark"], "evaluation": ["evaluat"]}}
+    rescore_snapshot_history(settled, snapshot_dir)
+    rescore_snapshot_history(settled, snapshot_dir)
+    unchanged = load_snapshots(snapshot_dir)[0]["evidence_items"][0]
+    assert "reclassified" not in unchanged
+
+    rescore_snapshot_history(
+        {**settled, "taxonomy": {**settled["taxonomy"], "agentic": ["agent"]}}, snapshot_dir
+    )
+    changed = load_snapshots(snapshot_dir)[0]["evidence_items"][0]
+
+    assert changed["reclassified"]["from"] == unchanged["categories"]
+    assert "agentic" in changed["reclassified"]["to"]
+    assert changed["categories"] == changed["reclassified"]["to"]
+    # Two reclassification passes under different taxonomies are different
+    # events, and only the version tells them apart.
+    assert changed["reclassified"]["taxonomy_version"] == changed["taxonomy_version"]
+
+
+def test_rescore_does_not_rewrite_the_event_kind_the_source_announced(tmp_path):
+    # `event_kind` records what the *source* said it did. A reclassification is
+    # something the radar did to its own records, so overwriting event_kind
+    # would destroy a source fact to describe a local one.
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(27), snapshot_dir)
+    before = load_snapshots(snapshot_dir)[0]["evidence_items"][0]["event_kind"]
+
+    rescore_snapshot_history(
+        {"taxonomy": {"benchmark": ["benchmark"], "agentic": ["agent"]}}, snapshot_dir
+    )
+    after = load_snapshots(snapshot_dir)[0]["evidence_items"][0]
+
+    assert after["event_kind"] == before
+
+
+def test_trends_refuse_to_compare_across_a_taxonomy_change():
+    from benchmark_radar.snapshots import _collection_context
+
+    # The same guard already applied to report_limit: a count that moved
+    # because the measurement changed is not domain momentum. A trend line
+    # spanning a rules change would report a fix as an explosion.
+    base = {"coverage_signature": ["x"]}
+    first = {**base, "selection": {"report_limit": 300, "taxonomy_version": "sha256:aaa"}}
+    same = {**base, "selection": {"report_limit": 300, "taxonomy_version": "sha256:aaa"}}
+    other = {**base, "selection": {"report_limit": 300, "taxonomy_version": "sha256:bbb"}}
+    unstamped = {**base, "selection": {"report_limit": 300}}
+
+    assert _collection_context(first) == _collection_context(same)
+    assert _collection_context(first) != _collection_context(other)
+    # A day predating the field was classified by rules nobody recorded. It can
+    # be compared with other such days, but claiming it comparable to a day
+    # whose rules are known would assert something unverifiable.
+    assert _collection_context(unstamped) != _collection_context(first)
+    assert _collection_context(unstamped) == _collection_context({**unstamped})
+
+
+def test_a_settled_reclassification_marker_does_not_persist(tmp_path):
+    # Regression caught while building issue #72's marker: it was written on
+    # change but never cleared. `rescore` is idempotent and re-run routinely,
+    # so a record reclassified once carried that claim forever, and a reader
+    # auditing today's trend would attribute it to a rules change that happened
+    # weeks ago and has since settled.
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(27, title="A Benchmark for Web Agents"), snapshot_dir)
+
+    widened = {"taxonomy": {"benchmark": ["benchmark"], "agentic": ["agent"]}}
+    rescore_snapshot_history(widened, snapshot_dir)
+    assert "reclassified" in load_snapshots(snapshot_dir)[0]["evidence_items"][0]
+
+    # Same rules again: nothing moved, so nothing is reclassified any more.
+    rescore_snapshot_history(widened, snapshot_dir)
+    settled = load_snapshots(snapshot_dir)[0]["evidence_items"][0]
+
+    assert "reclassified" not in settled
+    # The provenance stamp stays: it says which rules classified the record,
+    # which is true on every pass, unlike the marker.
+    assert settled["taxonomy_version"]
+
+
+def test_snapshots_predating_the_taxonomy_stamp_still_compare_to_each_other(tmp_path):
+    # Every snapshot already on disk was written before `taxonomy_version`
+    # existed. Gating comparability on a field none of them carry would have
+    # silently emptied the trend history rather than qualifying it.
+    snapshot_dir = tmp_path / "snapshots"
+    for day in (25, 26, 27):
+        write_snapshot(radar_run(day), snapshot_dir)
+    output = tmp_path / "radar.json"
+
+    data = rebuild_dashboard(snapshot_dir, output)
+
+    assert all((day.get("selection") or {}).get("taxonomy_version") is None for day in data["days"])
+    assert any(
+        trend["comparable"] for day in data["days"] for trend in day["category_trends"].values()
+    )
+
+
+def test_the_first_stamped_day_does_not_compare_across_the_boundary(tmp_path):
+    # The transition itself is the risk: the day a taxonomy stamp first appears
+    # is a day whose counts came from rules the previous day cannot vouch for.
+    # It must break comparison exactly once, then resume.
+    snapshot_dir = tmp_path / "snapshots"
+    for day in (25, 26, 27):
+        write_snapshot(radar_run(day), snapshot_dir)
+    paths = sorted(snapshot_dir.glob("*.json"))
+    for path in paths[-1:]:
+        stored = json.loads(path.read_text(encoding="utf-8"))
+        stored["selection"]["taxonomy_version"] = "sha256:newrules"
+        path.write_text(json.dumps(stored), encoding="utf-8")
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    assert not any(trend["comparable"] for trend in data["days"][-1]["category_trends"].values())
+    assert any(trend["comparable"] for trend in data["days"][-2]["category_trends"].values())
