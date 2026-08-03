@@ -764,3 +764,38 @@ def test_a_fragment_does_not_make_one_document_look_like_two(tmp_path):
     )
     with pytest.raises(ModelCardRegistryError, match="repeats the document URL"):
         load_registry(write_registry(tmp_path, document))
+
+
+def test_merging_frontier_bench_did_not_double_count_terminal_bench():
+    """Issue #94: the merge must absorb those mentions, not add them.
+
+    Frontier-Bench was folded into `terminal_bench` as Terminal-Bench 3.0 under
+    its former name. Three cards had named it, which invites the reading that
+    the merge should lift Terminal-Bench's count by three. It must not: all
+    three also report Terminal-Bench in the same document, and the counting
+    unit is the document, so each contributes exactly one adoption either way.
+    Counting the merged alias separately would put the series above instruments
+    that genuinely appear in more cards.
+    """
+    board = build_adoption_rank(DEFAULT_REGISTRY_PATH)
+
+    # The merged id is gone, and no card can still reference it.
+    assert all("frontier_bench" not in card["benchmarks"] for card in board["model_cards"])
+
+    by_card = {card["model_card_id"]: set(card["benchmarks"]) for card in board["model_cards"]}
+    # The three cards that named Frontier-Bench, each already reporting the
+    # series under its own name -- which is why the merge is absorptive.
+    for card_id in (
+        "anthropic_claude_opus_5_system_card",
+        "anthropic_claude_fable_5_mythos_5",
+        "moonshot_kimi_k3_model_card",
+    ):
+        assert "terminal_bench" in by_card[card_id]
+
+    entry = next(row for row in board["entries"] if row["benchmark_id"] == "terminal_bench")
+    # One adoption per citing document, not one per alias spelling it used.
+    assert entry["card_count"] == len(
+        [card for card in board["model_cards"] if "terminal_bench" in card["benchmarks"]]
+    )
+    # The merged spellings still resolve, so a future extractor can map them.
+    assert {"Frontier-Bench", "Terminal-Bench 3.0"} <= set(entry["aliases"])

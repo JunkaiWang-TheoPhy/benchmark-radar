@@ -170,6 +170,21 @@
             conclusion, so the correction has to arrive before the table does.
           -->
           <p class="heading-note" id="leaderboard-measures"></p>
+          <!--
+            Some cards publish their comparison table as an image, so those rows
+            were read by OCR and can disagree with the document. The honest place
+            to say so is here, next to the counts it affects, with a pointer to
+            the per-card listing below where any row can be checked against its
+            source link.
+          -->
+          <p class="heading-note leaderboard-ocr-note">
+            <strong>Disclaimer:</strong> some model cards publish their benchmark table
+            as an image, and those rows were transcribed by OCR. Transcription can be
+            wrong, so a count here may differ from the source document.
+            <a href="#leaderboard-cards-heading">Model cards in the registry</a>
+            below lists every benchmark we recorded for each card, with a link to the
+            original, so any row can be checked against it.
+          </p>
         </header>
 
         <div class="map-insights" id="leaderboard-insights" aria-label="Registry overview"></div>
