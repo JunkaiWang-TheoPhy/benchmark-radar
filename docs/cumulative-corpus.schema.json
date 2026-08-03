@@ -150,7 +150,13 @@
           "categories",
           "organizations",
           "metrics"
-        ]
+        ],
+        "properties": {
+          "taxonomy_version": {
+            "description": "Fingerprint of the taxonomy that produced this observation's categories (issue #72). Null for a record classified before the field existed: 'unrecorded' and 'these specific rules' are different claims. Category counts are comparable only across observations sharing a version.",
+            "type": ["string", "null"]
+          }
+        }
       }
     },
     "edges": {

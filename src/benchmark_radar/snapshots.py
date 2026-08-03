@@ -22,6 +22,7 @@ from .rubric import (
     SCORING_VERSION,
     legacy_rubric_reference,
     rubric_reference,
+    taxonomy_version,
 )
 
 SCHEMA_VERSION = 2
@@ -325,10 +326,24 @@ def load_snapshots(snapshot_dir: Path) -> list[dict[str, Any]]:
 TREND_BASELINE_DAYS = 7
 
 
-def _collection_context(day: dict[str, Any]) -> tuple[Any, tuple[str, ...]]:
+def _collection_context(day: dict[str, Any]) -> tuple[Any, tuple[str, ...], Any]:
     return (
         (day.get("selection") or {}).get("report_limit"),
         tuple(day.get("coverage_signature") or []),
+        # The taxonomy that produced this day's categories (issue #72). Two days
+        # classified under different rules are not comparable on a category
+        # count, for the same reason two days collected under different report
+        # limits are not: the number moved because the measurement changed.
+        # PR #67 is the worked example -- it took cumulative `agentic` from 3 to
+        # 78 without a single new benchmark, and a trend line spanning that
+        # change would report a rules fix as a domain explosion.
+        #
+        # A day predating this field returns None, which compares equal to
+        # other pre-field days and unequal to stamped ones. That is the honest
+        # answer: unstamped days were classified by rules nobody recorded, so
+        # they can be compared with each other but not asserted comparable to
+        # a day whose rules are known.
+        (day.get("selection") or {}).get("taxonomy_version"),
     )
 
 
@@ -636,6 +651,7 @@ def rescore_snapshot_history(
     score is a property of the run.
     """
     taxonomy = config["taxonomy"]
+    version = taxonomy_version(taxonomy)
     paths = sorted(snapshot_dir.glob("*.json"))
     before: Counter[str] = Counter()
     after: Counter[str] = Counter()
@@ -669,7 +685,38 @@ def rescore_snapshot_history(
             after.update(categories)
             if categories != previous:
                 changed += 1
+                # A rewritten category is a third kind of event, alongside
+                # "released" and "updated" (issue #72). Without this marker a
+                # reclassification is indistinguishable from a fresh sighting
+                # once written: PR #67 moved cumulative `agentic` from 3 to 78
+                # in a single command, and a reader had no way to tell that
+                # from 75 agent benchmarks appearing. `event_kind` is left
+                # alone deliberately -- it records what the *source* announced,
+                # and rewriting it here would destroy that to describe
+                # something the source never did.
+                record["reclassified"] = {
+                    "from": previous,
+                    "to": list(categories),
+                    # Which rules did the rewriting. Two reclassification
+                    # passes under different taxonomies are different events,
+                    # and only the version tells them apart.
+                    "taxonomy_version": version,
+                }
+            else:
+                # Cleared when a later pass leaves the categories alone.
+                # `rescore` is idempotent and gets re-run routinely, so a marker
+                # that is only ever written accumulates: a record reclassified
+                # once would carry that claim forever, and a reader auditing a
+                # trend would attribute today's count to a rules change that
+                # happened weeks ago and has since settled. The marker has to
+                # describe this pass or it describes nothing.
+                record.pop("reclassified", None)
             record["categories"] = categories
+            # Stamped on every record, not only the changed ones. A record
+            # whose categories happened not to move was still evaluated by
+            # these rules, and "classified by taxonomy X" is what makes a
+            # cross-day category count comparable at all.
+            record["taxonomy_version"] = version
             rationale = [
                 reason
                 for reason in record.get("rationale") or []
@@ -678,12 +725,19 @@ def rescore_snapshot_history(
             if matched:
                 rationale.insert(0, f"Matched: {', '.join(sorted(set(matched)))}")
             record["rationale"] = rationale
+        # The snapshot's own selection block records the taxonomy its counts
+        # were computed under, so a consumer reading aggregates rather than
+        # individual records inherits the same provenance.
+        selection = snapshot.get("selection")
+        if isinstance(selection, dict):
+            selection["taxonomy_version"] = version
         validate_snapshot(snapshot, source=str(path))
         _write_json(path, snapshot)
     return {
         "snapshots": len(paths),
         "records_changed": changed,
         "schema_migrated": migrated,
+        "taxonomy_version": version,
         "before": dict(sorted(before.items())),
         "after": dict(sorted(after.items())),
     }

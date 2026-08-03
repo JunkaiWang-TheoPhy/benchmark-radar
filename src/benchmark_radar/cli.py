@@ -202,7 +202,8 @@ def main() -> None:
             registry_path=args.model_cards,
         )
         print(
-            f"Rescored {summary['snapshots']} snapshots against the current taxonomy; "
+            f"Rescored {summary['snapshots']} snapshots against taxonomy "
+            f"{summary['taxonomy_version']}; "
             f"{summary['records_changed']} records changed category"
         )
         for category in sorted({*summary["before"], *summary["after"]}):
