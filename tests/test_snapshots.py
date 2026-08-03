@@ -114,16 +114,96 @@ def test_snapshot_has_version_and_public_evidence_fields():
     )
 
 
-def test_same_utc_day_is_idempotent(tmp_path):
+def test_same_utc_day_unions_both_runs(tmp_path):
+    # Issue #104: the radar runs twice a day into the same dated file. The
+    # second pass used to replace the first, so on 2026-08-02 the published day
+    # lost 21 records the morning pass had already committed. Each pass is
+    # truncated at `max_items_per_source`, so neither is the whole day.
     first = radar_run(title="First run")
-    second = radar_run(title="Replacement run")
+    second = radar_run(title="Second run")
+    second.items[0].source_id = "2607.9999"
+    second.items[0].url = "https://arxiv.org/abs/2607.9999"
+    second.generated_at = first.generated_at + timedelta(hours=6)
+    second.since = second.generated_at - timedelta(hours=12)
+    first.selection = {"fetched": 10, "qualified": 1, "published": 1}
+    second.selection = {"fetched": 12, "qualified": 1, "published": 1}
 
     first_path = write_snapshot(first, tmp_path)
     second_path = write_snapshot(second, tmp_path)
 
     assert first_path == second_path
     assert len(list(tmp_path.glob("*.json"))) == 1
-    assert load_snapshots(tmp_path)[0]["evidence_items"][0]["title"] == "Replacement run"
+    merged = load_snapshots(tmp_path)[0]
+    assert sorted(item["title"] for item in merged["evidence_items"]) == [
+        "First run",
+        "Second run",
+    ]
+    # The union covers the wider of the two windows, so `since` is the earlier.
+    assert merged["since"] == first.since.isoformat()
+    # One count describes the file. Every other counter describes the last
+    # pass alone, and the two scopes stay separate rather than being blended
+    # into a funnel that reads as one chain.
+    assert merged["selection"]["published_total"] == 2
+    assert merged["selection"]["published"] == 1
+    assert merged["selection"]["qualified"] == 1
+    assert merged["selection"]["fetched"] == 12
+    assert merged["selection"]["merged_from"] == sorted(
+        [first.generated_at.isoformat(), second.generated_at.isoformat()]
+    )
+
+
+def test_same_utc_day_prefers_the_newer_record_on_collision(tmp_path):
+    # Both passes see the long-lived artifacts. The newer pass observed them
+    # more recently, so its metrics are the fresher reading, and the artifact
+    # must appear once rather than twice.
+    first = radar_run(title="Stale reading")
+    second = radar_run(title="Fresh reading")
+    second.items[0].metrics = {"citations": 9}
+
+    write_snapshot(first, tmp_path)
+    write_snapshot(second, tmp_path)
+
+    merged = load_snapshots(tmp_path)[0]
+    assert len(merged["evidence_items"]) == 1
+    assert merged["evidence_items"][0]["title"] == "Fresh reading"
+    assert merged["evidence_items"][0]["metrics"] == {"citations": 9}
+
+
+def test_a_pass_that_fetched_nothing_keeps_the_day_and_reports_an_honest_funnel(tmp_path):
+    # A source outage can hand us a pass with no items at all. Merging it must
+    # keep the day's existing records, and must not leave the file claiming it
+    # fetched nothing yet published dozens: the per-pass funnel stays
+    # internally consistent, and the file's own count lives in
+    # `published_total`.
+    first = radar_run(title="Morning run")
+    first.selection = {"fetched": 10, "qualified": 1, "published": 1}
+    write_snapshot(first, tmp_path)
+
+    outage = radar_run(title="Outage run")
+    outage.items = []
+    outage.generated_at = first.generated_at + timedelta(hours=6)
+    outage.since = outage.generated_at - timedelta(hours=12)
+    outage.selection = {"fetched": 0, "qualified": 0, "published": 0}
+    write_snapshot(outage, tmp_path)
+
+    merged = load_snapshots(tmp_path)[0]
+    assert [item["title"] for item in merged["evidence_items"]] == ["Morning run"]
+    selection = merged["selection"]
+    assert selection["published_total"] == 1
+    assert selection["fetched"] == 0
+    # The impossible funnel this guards against: `fetched: 0` sitting beside a
+    # `published` that counts records the pass never saw.
+    assert selection["published"] == 0
+    assert selection["published"] <= selection["fetched"]
+
+
+def test_writing_the_same_run_twice_changes_nothing(tmp_path):
+    write_snapshot(radar_run(), tmp_path)
+    first_bytes = (tmp_path / "2026-07-27.json").read_bytes()
+    write_snapshot(radar_run(), tmp_path)
+
+    assert (tmp_path / "2026-07-27.json").read_bytes() == first_bytes
+    assert len(load_snapshots(tmp_path)[0]["evidence_items"]) == 1
 
 
 def test_rebuild_is_deterministic(tmp_path):

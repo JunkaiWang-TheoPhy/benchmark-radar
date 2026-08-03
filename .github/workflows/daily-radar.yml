@@ -52,7 +52,7 @@ jobs:
             echo "- Runner start UTC: \`$(date -u --date "@${started_at}" --iso-8601=seconds)\`"
             echo "- Trigger latency: **${latency_minutes} minutes**"
           } >> "${GITHUB_STEP_SUMMARY}"
-          if (( latency_minutes >= 30 )); then
+          if (( latency_minutes >= 240 )); then
             echo "::warning title=Delayed scheduled trigger::GitHub started this workflow ${latency_minutes} minutes after its cron target"
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

@@ -303,10 +303,90 @@ def normalize_snapshot(snapshot: dict[str, Any], *, source: str = "snapshot") ->
     return normalized
 
 
+def merge_snapshots(existing: dict[str, Any], incoming: dict[str, Any]) -> dict[str, Any]:
+    """Union two passes over the same UTC day into one snapshot.
+
+    Issue #104: the radar runs twice a day and both passes write the same
+    `data/snapshots/<date>.json`. Last-write-wins silently discarded whatever
+    the earlier pass had already committed. On 2026-08-02 the two passes
+    returned 62 and 68 items with only 41 shared, so the published day lost 21
+    real records.
+
+    The cause is fetch truncation, not a narrow lookback. GitHub saturates
+    `max_items_per_source` on every pass and `sources.py` keeps the newest
+    `[:limit]`, so older-but-still-in-window records fall off the back of one
+    pass and not the other. Widening the window would not recover them; only
+    unioning the passes on write does.
+
+    Item identity is `exact_artifact_key`, the same exact-identifier rule daily
+    dedup and the cumulative corpus already use. On a collision the incoming
+    (newer) record wins: it observed the artifact more recently, so its metrics
+    and scores are the fresher reading.
+    """
+    merged_items: dict[str, Any] = {}
+    for item in existing["evidence_items"]:
+        merged_items[exact_artifact_key(item)] = item
+    for item in incoming["evidence_items"]:
+        merged_items[exact_artifact_key(item)] = item
+    evidence_items = list(merged_items.values())
+
+    # The funnel counters (fetched, deduplicated, scored, qualified,
+    # suppressed_*) each measure rows moving through one pass. They cannot be
+    # reconstructed from the union, and summing them would double-count the
+    # artifacts both passes saw, so they stay as the newer pass's numbers.
+    #
+    # That makes them a different scope from the file's contents, and the two
+    # must not be read as one funnel. A pass that fetches nothing (an outage,
+    # or a quiet day) merged onto a populated file would otherwise report
+    # `fetched: 0` beside `published: 62`, which is not a small inaccuracy but
+    # an impossible funnel a dashboard would render as fact. So `published`
+    # moves out to `published_total`, which is about the file, and the
+    # per-pass block keeps its own internally consistent `published`.
+    selection = dict(incoming.get("selection") or {})
+    existing_selection = existing.get("selection") or {}
+    if selection or existing_selection:
+        # The one number that describes the file rather than a pass. Every
+        # other counter here belongs to the pass named last in `merged_from`.
+        selection["published_total"] = len(evidence_items)
+        selection["merged_from"] = sorted(
+            {
+                *(existing_selection.get("merged_from") or [existing["generated_at"]]),
+                incoming["generated_at"],
+            }
+        )
+
+    merged = {
+        **incoming,
+        "evidence_items": evidence_items,
+        # The union covers everything either pass looked at, so the earlier
+        # `since` is the honest lower bound on the window it describes.
+        "since": min(existing["since"], incoming["since"]),
+    }
+    if selection or existing_selection:
+        merged["selection"] = selection
+    # `discovery_state` and `attention` are already cumulative by construction:
+    # the later pass loads the earlier snapshot and carries the ledger forward.
+    # `ingest_health` and `producer_health` are per-pass and are taken from the
+    # incoming pass unmerged, because concatenating them would emit duplicate
+    # `source` rows and corrupt the coverage_signature derived from them.
+    return merged
+
+
 def write_snapshot(run: RadarRun, snapshot_dir: Path) -> Path:
     snapshot = snapshot_for_run(run)
-    validate_snapshot(snapshot)
     path = snapshot_dir / f"{snapshot['date']}.json"
+    if path.exists():
+        # Issue #104: a second pass on the same UTC day must add to the day's
+        # record, not replace it. A file we cannot read is not an empty day, so
+        # fail rather than overwrite evidence that may still be recoverable.
+        try:
+            existing = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise SnapshotError(f"{path}: cannot read existing snapshot to merge: {error}") from (
+                error
+            )
+        snapshot = merge_snapshots(normalize_snapshot(existing, source=str(path)), snapshot)
+    validate_snapshot(snapshot)
     _write_json(path, snapshot)
     return path
 
