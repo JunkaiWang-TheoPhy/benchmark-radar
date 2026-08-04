@@ -965,6 +965,9 @@ model_cards:
       - simpleqa
       - arc_agi
       - mathvista
+      # Tables 3 and 4 both print Aider Polyglot (82.2% for Gemini 2.5 Pro),
+      # and the methodology section documents it as a 3-trial pass-rate average.
+      - aider_polyglot
 
   - id: google_gemini_1_5_report
     organization: Google DeepMind
@@ -1051,6 +1054,8 @@ model_cards:
       - bfcl
       - livebench
       - humaneval
+      # Table 11 prints "MATH-500 98.0" for Qwen3-235B-A22B (Thinking).
+      - math_500
 
   - id: qwen2_5_coder_report
     organization: Qwen
@@ -1087,6 +1092,8 @@ model_cards:
       - arena_hard
       - swe_bench_verified
       - aider_polyglot
+      # Table 8 prints "DROP (3-shot F1) 92.2" for R1.
+      - drop
 
   - id: deepseek_v3_report
     organization: DeepSeek
@@ -1110,6 +1117,12 @@ model_cards:
       - arena_hard
       - agieval
       - drop
+      # Table 6 of the report also prints "SWE Verified (Resolved) 42.0" and
+      # "SimpleQA (Correct) 24.9" for V3. Both were missing here until the score
+      # layer's provenance check caught a recorded score whose source card did
+      # not list the benchmark.
+      - swe_bench_verified
+      - simpleqa
 
   - id: mistral_large_2
     organization: Mistral

@@ -10,7 +10,7 @@ reading the documents rather than by asking anyone's opinion.
 | Rank | Benchmark | Domain | Model cards | Organizations |
 |---:|---|---|---:|---:|
 | 1 | [GPQA Diamond](https://arxiv.org/abs/2311.12022) | science | 23 | 10 |
-| 2 | [SWE-bench Verified](https://openai.com/index/introducing-swe-bench-verified/) | coding_agent | 17 | 8 |
+| 2 | [SWE-bench Verified](https://openai.com/index/introducing-swe-bench-verified/) | coding_agent | 18 | 8 |
 | 3 | [LiveCodeBench](https://livecodebench.github.io/) | coding | 15 | 7 |
 | 4 | [Humanity's Last Exam](https://lastexam.ai/) | reasoning | 14 | 8 |
 | 5 | [AIME](https://maa.org/maa-invitational-competitions/) | math | 14 | 7 |
