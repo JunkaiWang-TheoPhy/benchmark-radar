@@ -6,7 +6,7 @@
         "categories": [
           "benchmark"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 0.0,
@@ -35,7 +35,7 @@
         "categories": [
           "evaluation"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 0.0,
@@ -64,7 +64,7 @@
         "categories": [
           "benchmark"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 0.0,
@@ -93,7 +93,7 @@
         "categories": [
           "benchmark"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 86.0,
@@ -122,7 +122,7 @@
         "categories": [
           "evaluation"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 0.0,
@@ -152,7 +152,7 @@
           "benchmark",
           "evaluation"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 0.0,
@@ -181,7 +181,7 @@
         "categories": [
           "benchmark"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 0.0,
@@ -210,7 +210,7 @@
         "categories": [
           "benchmark"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 0.0,
@@ -239,7 +239,7 @@
         "categories": [
           "benchmark"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 1.0,
@@ -268,7 +268,7 @@
         "categories": [
           "benchmark"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 0.0,
@@ -297,7 +297,7 @@
         "categories": [
           "benchmark"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 0.0,
@@ -326,7 +326,7 @@
         "categories": [
           "benchmark"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 0.0,
@@ -355,7 +355,7 @@
         "categories": [
           "benchmark"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 0.0,
@@ -384,7 +384,7 @@
         "categories": [
           "evaluation"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 0.0,
@@ -413,7 +413,7 @@
         "categories": [
           "benchmark"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 0.0,
@@ -442,7 +442,7 @@
         "categories": [
           "benchmark"
         ],
-        "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+        "discovered_at": "2026-08-04T14:37:13.096637+00:00",
         "event_kind": "discussed",
         "metrics": {
           "comments": 3.0,
@@ -4743,80 +4743,80 @@
         "observed_at": "2026-07-28T14:33:06.179849+00:00"
       },
       "benchmark-social-signal:hacker-news:49085375": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-07-29T14:29:12.279273+00:00"
       },
       "benchmark-social-signal:hacker-news:49094493": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-07-29T14:29:12.279273+00:00"
       },
       "benchmark-social-signal:hacker-news:49096256": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-07-29T14:29:12.279273+00:00"
       },
       "benchmark-social-signal:hacker-news:49100358": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-07-30T14:28:50.917100+00:00"
       },
       "benchmark-social-signal:hacker-news:49103367": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-07-30T14:28:50.917100+00:00"
       },
       "benchmark-social-signal:hacker-news:49119800": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-07-31T14:31:49.744338+00:00"
       },
       "benchmark-social-signal:hacker-news:49123625": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-08-01T22:18:08.610368+00:00"
       },
       "benchmark-social-signal:hacker-news:49125838": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-08-01T22:18:08.610368+00:00"
       },
       "benchmark-social-signal:hacker-news:49136137": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-08-01T22:18:08.610368+00:00"
       },
       "benchmark-social-signal:hacker-news:49136144": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-08-01T22:18:08.610368+00:00"
       },
       "benchmark-social-signal:hacker-news:49136928": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-08-01T22:18:08.610368+00:00"
       },
       "benchmark-social-signal:hacker-news:49141862": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-08-02T08:36:22.452517+00:00"
       },
       "benchmark-social-signal:hacker-news:49147622": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-08-03T10:04:33.768058+00:00"
       },
       "benchmark-social-signal:hacker-news:49156055": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-08-03T15:12:36.978982+00:00"
       },
       "benchmark-social-signal:hacker-news:49162399": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-08-04T09:05:58.527317+00:00"
       },
       "benchmark-social-signal:hacker-news:49165767": {
-        "last_seen_at": "2026-08-04T09:05:58.527317+00:00",
+        "last_seen_at": "2026-08-04T14:37:13.096637+00:00",
         "observed_at": "2026-08-04T09:05:58.527317+00:00"
       }
     },
     "source_failure_streaks": {
-      "[\"evidence\",\"brave\"]": 3,
-      "[\"evidence\",\"openalex\"]": 3,
-      "[\"evidence\",\"openreview\"]": 3,
-      "[\"evidence\",\"semantic_scholar\"]": 3
+      "[\"evidence\",\"brave\"]": 4,
+      "[\"evidence\",\"openalex\"]": 4,
+      "[\"evidence\",\"openreview\"]": 4,
+      "[\"evidence\",\"semantic_scholar\"]": 4
     }
   },
   "evidence_items": [
     {
-      "adoption_score": 54.45263115395825,
+      "adoption_score": 54.469066129710555,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -4825,11 +4825,11 @@
         "dataset",
         "agentic"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 527.0,
+        "downloads": 528.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -4838,10 +4838,10 @@
         "Matched: agent~benchmark, benchmark, dataset, evaluat",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:29926cdb44af0f01998895585518b2189cf0b2a8bb2d595f71f41fd379081e1f",
-      "recency_score": 97.61775039525463,
+      "raw_payload_hash": "sha256:37dcdb23158ec22fab59b498ef0518640243ac3eb3ded9ecb269475fa99a0f3a",
+      "recency_score": 86.11626352025463,
       "relevance_score": 100.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -4849,14 +4849,14 @@
       "summary": "configs: config name: default data files: path: run-log.json split: train language: en license: cc-by-nc-4.0 tags: ai-agents benchmark evaluation agent-evaluation llm-agents trustworthy-ai product-review c2pa pretty name: Hlido AI Agent Benchmark size categories: n<1K task categories: other Hlido AI Agent Benchmark Independent, cryptographically-attested evaluations of AI agents and products. Hlido reviews AI… See the full description on the dataset page: https://huggingface.co/datasets/hlido-eu/agent-benchmark.",
       "suppression_reasons": [],
       "title": "hlido-eu/agent-benchmark",
-      "total_score": 76.14,
+      "total_score": 73.84,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/hlido-eu/agent-benchmark",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 79.99301096167834,
+      "adoption_score": 80.01355447617546,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -4864,23 +4864,23 @@
         "dataset",
         "agentic"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
         "forks": 452.0,
-        "stars": 1583.0
+        "stars": 1586.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T09:02:28+00:00",
+      "published_at": "2026-08-04T14:23:00+00:00",
       "rationale": [
         "Matched: agent~evaluating, dataset, evaluat",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:1333dbcca17b6e22044b2172e9ec069fb8c547f5298cc4e15b185038f16c8cfb",
-      "recency_score": 99.8781670619213,
+      "raw_payload_hash": "sha256:213d3002b49f15427d15eab4c7855a3592b38994f1f70d33dd4e643fcc19dc22",
+      "recency_score": 99.50630981655092,
       "relevance_score": 75.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -4888,14 +4888,14 @@
       "summary": "Open-source, end-to-end platform for evaluating, observing, and improving LLM and AI agent applications. Tracing · Evals · Simulations · Datasets · Gateway · Guardrails. Self-hostable. Apache 2.0.",
       "suppression_reasons": [],
       "title": "future-agi/future-agi",
-      "total_score": 74.22,
+      "total_score": 74.15,
       "updated_at": null,
       "url": "https://github.com/future-agi/future-agi",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 54.99467854384921,
+      "adoption_score": 54.96371279948836,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -4903,11 +4903,11 @@
         "evaluation",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 561.0,
+        "downloads": 559.0,
         "likes": 2.0
       },
       "parser_version": "huggingface-hub/1",
@@ -4916,10 +4916,10 @@
         "Matched: benchmark, dataset, evaluat, leaderboard",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:0e5ae1068ff20be604b704e51f66edbab222dd71b35ea9f0143f88e2ae66617f",
-      "recency_score": 99.95397724710648,
+      "raw_payload_hash": "sha256:69bc206f8f9c43fb097090f99ea87c16d72537628455edce4672a6e0e5006a58",
+      "recency_score": 88.45249037210648,
       "relevance_score": 80.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -4927,14 +4927,14 @@
       "summary": "P2PCLAW Innovative Benchmark The first benchmark for AI scientific paper writing quality — multi-dimensional evaluation with formal verification. View Live Leaderboard | Platform | API What Makes This Benchmark Unique Feature Description Multi-LLM Granular Scoring 17 independent LLM judges score each paper across 10 quality dimensions Lean4 Formal Verification Machine-verified proofs — no hand-waving Tribunal Examination 8-question cognitive exam… See the full description on the dataset page: https://huggingface.co/datasets/Agnuxo/P2PCLAW-Innovative-Benchmark.",
       "suppression_reasons": [],
       "title": "Agnuxo/P2PCLAW-Innovative-Benchmark",
-      "total_score": 69.74,
+      "total_score": 67.43,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/Agnuxo/P2PCLAW-Innovative-Benchmark",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 30.102973419418362,
+      "adoption_score": 32.66934073550479,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -4943,11 +4943,11 @@
         "dataset",
         "agentic"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 31.0,
+        "downloads": 42.0,
         "likes": 1.0
       },
       "parser_version": "huggingface-hub/1",
@@ -4956,10 +4956,10 @@
         "Matched: agent~benchmark, benchmark, dataset, evaluat",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:ceacddcf5b883e2d65aaa285ca0a58c314f5d991747e24942699b2168d1a23ef",
-      "recency_score": 92.95976428414352,
+      "raw_payload_hash": "sha256:fad300524391e64f562a01c00bae2777f0c1876b3731a23f66e607d185e57000",
+      "recency_score": 81.45827740914352,
       "relevance_score": 100.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -4967,14 +4967,14 @@
       "summary": "Sentinel-Flow (sentinelTris) Sentinel-Flow is a benchmark for evaluating whether large language models can detect multi-step security violations in AI agent interaction traces. This dataset release contains the scenario fixtures and labeled traces used in the SECAI @ ESORICS evaluation. Data-only release. This repository contains benchmark data only (36 scenario files, 900 labeled traces). No evaluation code or model outputs are included here. Synthetic-data and vendor… See the full description on the dataset page: https://huggingface.co/datasets/ihabler/sentinel-flow-benchmark.",
       "suppression_reasons": [],
       "title": "ihabler/sentinel-flow-benchmark",
-      "total_score": 69.12,
+      "total_score": 67.46,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/ihabler/sentinel-flow-benchmark",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 57.110333508198615,
+      "adoption_score": 57.27829778810864,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -4982,23 +4982,23 @@
         "evaluation",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 716.0,
+        "downloads": 730.0,
         "likes": 1.0
       },
       "parser_version": "huggingface-hub/1",
-      "published_at": "2026-08-04T07:26:52+00:00",
+      "published_at": "2026-08-04T13:48:34+00:00",
       "rationale": [
         "Matched: benchmark, dataset, evaluat",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:b075d143cfa10ec9add38a7a865a7771693c4f6d6dacda78a1e1a609fb4154cb",
-      "recency_score": 96.55872261747686,
+      "raw_payload_hash": "sha256:d6cbe0238c3117443506be98eb40f08ab4823207c2fcd1d1fb40daf0c0fd48c3",
+      "recency_score": 98.31070796469908,
       "relevance_score": 75.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -5006,37 +5006,37 @@
       "summary": "RTX 5090 LLM Benchmarks Speed and quality benchmarks for quantized LLMs on NVIDIA RTX 5090 32GB, measured with llm-bench-rig. Quality Benchmarks Generative evaluation through llama-server chat completions. Replicates standard benchmark methodology using custom evaluators — no lm-evaluation-harness dependency. Results are split by reasoning mode: comparing a thinking-on (reasoning) model's quality against a thinking-off model is apples-to-oranges, so the two groups… See the full description on the dataset page: https://huggingface.co/datasets/witcheer/rtx-5090-benchmarks.",
       "suppression_reasons": [],
       "title": "witcheer/rtx-5090-benchmarks",
-      "total_score": 67.84,
+      "total_score": 68.23,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/witcheer/rtx-5090-benchmarks",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 87.59041202780557,
+      "adoption_score": 87.59381608620386,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "evaluation"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
         "forks": 440.0,
-        "stars": 3188.0
+        "stars": 3189.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T08:38:45+00:00",
+      "published_at": "2026-08-04T13:29:18+00:00",
       "rationale": [
         "Matched: benchmark, evaluat",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:809133a105f485c99922a33fb44cdce2a8d1c4ad434008cd2ea5083cd4d4c1fa",
-      "recency_score": 99.05467169155092,
+      "raw_payload_hash": "sha256:a8319f76e2c5badb51acf69c254522a6ce7f24adc1be5dadd6d51e5c8e452680",
+      "recency_score": 97.6417264832176,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -5044,7 +5044,7 @@
       "summary": "A streamlined and customizable framework for efficient large model (LLM, VLM, AIGC) evaluation and performance benchmarking.",
       "suppression_reasons": [],
       "title": "modelscope/evalscope",
-      "total_score": 67.21,
+      "total_score": 66.93,
       "updated_at": null,
       "url": "https://github.com/modelscope/evalscope",
       "watchlist": null,
@@ -5226,18 +5226,18 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 89.86824639916594,
+      "adoption_score": 90.03315480806805,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 31146.0,
+        "downloads": 31743.0,
         "likes": 22.0
       },
       "parser_version": "huggingface-hub/1",
@@ -5246,10 +5246,10 @@
         "Matched: dataset, leaderboard",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:e750aa28c16f8662cfed64e15c53c51bdb19c327ff8041870f3eed8930e4b307",
-      "recency_score": 87.43661613599537,
+      "raw_payload_hash": "sha256:fc4d150d487be23c0c306087bf1cacecfa3ccd658069a95fd9abcbcfe8bbc88c",
+      "recency_score": 75.93512926099537,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -5257,14 +5257,14 @@
       "summary": "Arena Leaderboard Dataset Historical snapshots of the Arena leaderboard. Usage from datasets import load dataset Load all historical text style control data ds = load dataset(\"lmarena-ai/leaderboard-dataset\", \"text style control\", split=\"full\") Load the current text style control leaderboard ds = load dataset(\"lmarena-ai/leaderboard-dataset\", \"text style control\", split=\"latest\") Filter to overall category ds =… See the full description on the dataset page: https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset.",
       "suppression_reasons": [],
       "title": "lmarena-ai/leaderboard-dataset",
-      "total_score": 65.45,
+      "total_score": 63.2,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 41.5684944904096,
+      "adoption_score": 41.801992611716294,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -5272,23 +5272,23 @@
         "evaluation",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
         "forks": 8.0,
-        "stars": 45.0
+        "stars": 46.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T07:51:50+00:00",
+      "published_at": "2026-08-04T14:31:29+00:00",
       "rationale": [
         "Matched: benchmark, dataset, evaluat",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:62e94293e5b356913b1171f18058b279275f5701e3cbbae38cf2cb16fa30f703",
-      "recency_score": 97.425620765625,
+      "raw_payload_hash": "sha256:600af62284f43a7db3d924b2035356379e3acfaea36758d04fac95c390eeb9f5",
+      "recency_score": 99.80087000173612,
       "relevance_score": 75.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -5296,37 +5296,37 @@
       "summary": "Performs benchmarking on two Korean datasets with minimal time and effort.",
       "suppression_reasons": [],
       "title": "daekeun-ml/evaluate-llm-on-korean-dataset",
-      "total_score": 64.13,
+      "total_score": 64.66,
       "updated_at": null,
       "url": "https://github.com/daekeun-ml/evaluate-llm-on-korean-dataset",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 75.90491451622289,
+      "adoption_score": 75.91489818972862,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "evaluation",
         "agentic"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
         "forks": 254.0,
-        "stars": 1086.0
+        "stars": 1087.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T08:09:55+00:00",
+      "published_at": "2026-08-04T14:31:01+00:00",
       "rationale": [
         "Matched: agents~evaluate, evaluat",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:188b59cf7890bfd5827c0a3ebdd822b6926f2e221ea6758eb90d492d61354586",
-      "recency_score": 98.05351428414352,
+      "raw_payload_hash": "sha256:b76f5fd5b12732ad36879f5b9c65a986cfcf40f01a48b926256624176936af8a",
+      "recency_score": 99.7846662980324,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -5334,7 +5334,7 @@
       "summary": "Evaluate and improve models and agents using environments",
       "suppression_reasons": [],
       "title": "NVIDIA-NeMo/Gym",
-      "total_score": 64.09,
+      "total_score": 64.44,
       "updated_at": null,
       "url": "https://github.com/NVIDIA-NeMo/Gym",
       "watchlist": null,
@@ -5380,7 +5380,7 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 56.50847327296563,
+      "adoption_score": 57.93047403227228,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -5388,11 +5388,11 @@
         "evaluation",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 668.0,
+        "downloads": 787.0,
         "likes": 7.0
       },
       "parser_version": "huggingface-hub/1",
@@ -5401,10 +5401,10 @@
         "Matched: benchmark, dataset, evaluat",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:e74adc32e7a662d60e6c6432ecee9ed249a787aab7b134b6e5e16080082cba29",
-      "recency_score": 76.79772724710648,
+      "raw_payload_hash": "sha256:de6de53c8932497ae36ec3ad5b79610414d20b0280a81e662c91f0fc0d9f88bf",
+      "recency_score": 65.29624037210648,
       "relevance_score": 75.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -5412,75 +5412,75 @@
       "summary": "BigFinanceBench Public Release arXiv | Website | GitHub | Blog post Finance answers are only useful when another analyst can audit how they were produced. BigFinanceBench evaluates that full workflow: agents must produce a numerical answer, and their traces are graded against point-weighted rubrics for source choice, period, accounting definition, assumptions, adjustments, and calculation. This release contains a 50-question stratified subset of the 928-item BigFinanceBench… See the full description on the dataset page: https://huggingface.co/datasets/RogoAI/big-finance-benchmark.",
       "suppression_reasons": [],
       "title": "RogoAI/big-finance-benchmark",
-      "total_score": 63.74,
+      "total_score": 61.79,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/RogoAI/big-finance-benchmark",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 72.2024895475479,
+      "adoption_score": 72.09741278834875,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 4074.0,
+        "downloads": 4025.0,
         "likes": 1.0
       },
       "parser_version": "huggingface-hub/1",
-      "published_at": "2026-08-04T08:33:53+00:00",
+      "published_at": "2026-08-04T13:53:24+00:00",
       "rationale": [
         "Matched: dataset, leaderboard",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:7d9ed47136efb8cc9ef6d4e5545262b091dbbfdd0a860c9df167b1d278f17a65",
-      "recency_score": 98.88569021006944,
+      "raw_payload_hash": "sha256:46e79a03c976ad7147bd54796be093a0f5d22181cd4a17e72b24c0212c696d9c",
+      "recency_score": 98.47853203877315,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
       "source_id": "runbenchhub/leaderboards",
-      "summary": "BenchHub leaderboard standings — read-only mirror Auto-generated aggregate standings for 121 public BenchHub leaderboard(s). Source of truth: https://runbenchhub.com. Submissions happen on BenchHub; this dataset is a derived, read-only mirror of public leaderboard standings (already-pooled scores + display metadata). It contains no ground-truth samples, no predictions, and no private data. Last synced: 2026-08-04T08:33:51Z index.json — catalog of mirrored leaderboards.… See the full description on the dataset page: https://huggingface.co/datasets/runbenchhub/leaderboards.",
+      "summary": "BenchHub leaderboard standings — read-only mirror Auto-generated aggregate standings for 121 public BenchHub leaderboard(s). Source of truth: https://runbenchhub.com. Submissions happen on BenchHub; this dataset is a derived, read-only mirror of public leaderboard standings (already-pooled scores + display metadata). It contains no ground-truth samples, no predictions, and no private data. Last synced: 2026-08-04T13:53:22Z index.json — catalog of mirrored leaderboards.… See the full description on the dataset page: https://huggingface.co/datasets/runbenchhub/leaderboards.",
       "suppression_reasons": [],
       "title": "runbenchhub/leaderboards",
-      "total_score": 63.33,
+      "total_score": 63.22,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/runbenchhub/leaderboards",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 86.0248670528477,
+      "adoption_score": 86.37412735512817,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 20009.0,
+        "downloads": 20830.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
-      "published_at": "2026-08-03T23:49:43+00:00",
+      "published_at": "2026-08-04T09:30:08+00:00",
       "rationale": [
         "Matched: benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:c60d52108929718d65884c35811275d7dd345990b62c49388d1b51de3e05c440",
-      "recency_score": 80.68545872858796,
+      "raw_payload_hash": "sha256:0944e5714bd834c95d45bb867d89ce5fc66f7486c4a9d49d99a48d27b82a5f48",
+      "recency_score": 89.33732833506944,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -5488,7 +5488,7 @@
       "summary": "Languages: 简体中文 · English dojo benchmark kline — Benchmark Index Bars Overview Daily OHLCV for major broad and representative indices across US, CN, and HK (e.g. ^SPX, ^HSI, 000300.SS). Each row is one index on one trade date. Files File Description data.parquet Index daily bars Key Fields Field Description symbol Index code (e.g. ^SPX, 000300.SS) kline t Bar interval; \"1D\" for daily bars bar time… See the full description on the dataset page: https://huggingface.co/datasets/AlphaDojo/dojo benchmark kline.",
       "suppression_reasons": [],
       "title": "AlphaDojo/dojo_benchmark_kline",
-      "total_score": 63.14,
+      "total_score": 64.96,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/AlphaDojo/dojo_benchmark_kline",
       "watchlist": null,
@@ -5580,7 +5580,7 @@
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
@@ -5594,9 +5594,9 @@
         "Primary record: Hugging Face"
       ],
       "raw_payload_hash": "sha256:9d9e3da48d929b924d663418a09f34eafccf67a08be598a9d1327b0786db91d8",
-      "recency_score": 95.88974113599537,
+      "recency_score": 84.38825426099537,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -5604,14 +5604,14 @@
       "summary": "Dataset Card for \"resultspublic\" More Information needed",
       "suppression_reasons": [],
       "title": "gaia-benchmark/results_public",
-      "total_score": 62.01,
+      "total_score": 59.71,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/gaia-benchmark/results_public",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 41.510903172118525,
+      "adoption_score": 42.07603787251973,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -5619,11 +5619,11 @@
         "evaluation",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 118.0,
+        "downloads": 126.0,
         "likes": 2.0
       },
       "parser_version": "huggingface-hub/1",
@@ -5632,10 +5632,10 @@
         "Matched: benchmark, dataset, evaluat, leaderboard",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:6ea2790efac1624abbbb02f9a9d695a27238585deba1f80515efa49f82450bcc",
-      "recency_score": 78.10501891377315,
+      "raw_payload_hash": "sha256:93a73c72c7c660340ea22be1b4203a4b4813b285631cb02f9bfc5fefa2ca9cd0",
+      "recency_score": 66.60353203877314,
       "relevance_score": 80.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -5643,7 +5643,7 @@
       "summary": "🗂️ fleurs-fa-benchmark English + فارسی · Part of Shenava 1.0 · Project hub · SLT paper submission 🌟 At a glance | معرفی سریع English فارسی 🎯 Purpose FLEURS-fa benchmark packaging used for leaderboard scoring. بسته‌بندی کامل بخش فارسی FLEURS برای ارزیابی یکسان و قابل بازتولید در جدول رتبه‌بندی. 🧩 Role evaluation and benchmarking asset مصنوع ارزیابی و بنچمارک 📦 Snapshot 11 files; approximately 3.99 GB 11 فایل؛ حدود 3.99 GB 🧱 Packaging 8… See the full description on the dataset page: https://huggingface.co/datasets/Reza2kn/fleurs-fa-benchmark.",
       "suppression_reasons": [],
       "title": "Reza2kn/fleurs-fa-benchmark",
-      "total_score": 62.0,
+      "total_score": 59.84,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/Reza2kn/fleurs-fa-benchmark",
       "watchlist": null,
@@ -5762,7 +5762,7 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 25.575049804961637,
+      "adoption_score": 25.1054282958772,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -5770,11 +5770,11 @@
         "evaluation",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 18.0,
+        "downloads": 17.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -5783,10 +5783,10 @@
         "Matched: benchmark, dataset, evaluat",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:e9b84170b9f9f131fe12122d8f86068177fd6c3738401983ecbd0a44f58abdc9",
-      "recency_score": 99.14089854340278,
+      "raw_payload_hash": "sha256:edc9c82a2ef4a0bf887025d4591035782c3ad0f4b42bb6f0b01c6cd47c0c4a08",
+      "recency_score": 87.63941166840277,
       "relevance_score": 75.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -5794,14 +5794,14 @@
       "summary": "WorldJen Benchmark Dataset WorldJen is an end-to-end multi-dimensional benchmark for generative video models, evaluating text-to-video systems across 16 dimensions spanning semantic adherence, motion quality, physical plausibility, and aesthetic quality. 📄 Paper:WorldJen: An End-to-End Multi-Dimensional Benchmark for Generative Video Models 💻 Code: WorldJen-benchmarking-subsystem Project Page: https://moonmath.ai/worldjen/ Abstract Evaluating generative video… See the full description on the dataset page: https://huggingface.co/datasets/ik6626/WorldJen-benchmarking-subsystem.",
       "suppression_reasons": [],
       "title": "ik6626/WorldJen-benchmarking-subsystem",
-      "total_score": 60.47,
+      "total_score": 58.05,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/ik6626/WorldJen-benchmarking-subsystem",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 41.06153320425215,
+      "adoption_score": 41.868397336998676,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -5809,11 +5809,11 @@
         "evaluation",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 112.0,
+        "downloads": 123.0,
         "likes": 1.0
       },
       "parser_version": "huggingface-hub/1",
@@ -5822,10 +5822,10 @@
         "Matched: benchmark, dataset, evaluat",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:3ce386e0b5c97b6e6f13f9a9e5c2a6856adf6b85cb6302837b28993a40580328",
-      "recency_score": 78.10501891377315,
+      "raw_payload_hash": "sha256:88ab684a5f3a7e7a8a83fb1159c9db1bc36f081a643da8ee9c777a528f152216",
+      "recency_score": 66.60353203877314,
       "relevance_score": 75.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -5833,7 +5833,7 @@
       "summary": "🗂️ visualears-benchmark-269-gold English + فارسی · Part of Shenava 1.0 · Project hub · SLT paper submission 🌟 At a glance | معرفی سریع English فارسی 🎯 Purpose 269-record gold/noisy benchmark dataset. معیار طلایی ۲۶۹ نمونه‌ای برای بررسی سریع خطاهای گفتار نویزی و مقایسهٔ نسخه‌های مدل. 🧩 Role evaluation and benchmarking asset مصنوع ارزیابی و بنچمارک 📦 Snapshot 276 files; approximately 44.35 MB 276 فایل؛ حدود 44.35 MB 🧱 Packaging 1 Parquet… See the full description on the dataset page: https://huggingface.co/datasets/Reza2kn/visualears-benchmark-269-gold.",
       "suppression_reasons": [],
       "title": "Reza2kn/visualears-benchmark-269-gold",
-      "total_score": 60.14,
+      "total_score": 58.04,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/Reza2kn/visualears-benchmark-269-gold",
       "watchlist": null,
@@ -7449,18 +7449,18 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 55.04092114869114,
+      "adoption_score": 54.99467854384921,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 564.0,
+        "downloads": 561.0,
         "likes": 1.0
       },
       "parser_version": "huggingface-hub/1",
@@ -7469,10 +7469,10 @@
         "Matched: benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:8136c9ac7d52f93d05870c2ccf8f40a1e2c669bd3951a77b68ca8ca91f82c9d3",
-      "recency_score": 87.24159298784721,
+      "raw_payload_hash": "sha256:9939b551512e5acd1ad980490f1e17708037aa8fd9d002a46dd28aa634fbff53",
+      "recency_score": 75.74010611284722,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -7480,7 +7480,7 @@
       "summary": "OpenChainBench Crypto Infrastructure Benchmarks Daily snapshots of every public benchmark on openchainbench.com, released as Hive-partitioned Parquet under CC-BY-4.0. OCB measures latency, cost, coverage and accuracy of crypto infrastructure (RPCs, oracles, bridges, data APIs, Polymarket adapters, Hyperliquid builders). Every snapshot here mirrors the /api/citable, /api/stat/ , and /api/series/ JSON feeds at the time of capture. Latest snapshot: 2026-08-04 (captured… See the full description on the dataset page: https://huggingface.co/datasets/OpenChainBench/benchmarks.",
       "suppression_reasons": [],
       "title": "OpenChainBench/benchmarks",
-      "total_score": 56.71,
+      "total_score": 54.4,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/OpenChainBench/benchmarks",
       "watchlist": null,
@@ -7602,30 +7602,30 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 42.254443251861396,
+      "adoption_score": 0.0,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "agentic"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "forks": 1.0,
-        "stars": 48.0
+        "forks": 0.0,
+        "stars": 0.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T07:55:14+00:00",
+      "published_at": "2026-08-04T14:09:13+00:00",
       "rationale": [
         "Matched: agent~benchmarking, benchmark",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:72ff23a5b967a6a2ffca74a75fd1e818e244b88b95d4929f55db6179b2d78386",
-      "recency_score": 97.54367632118056,
+      "raw_payload_hash": "sha256:6a5c4ff09d51ca60057c812c07a3faa6ff964338e2d6cacacb97eb0c5827c028",
+      "recency_score": 99.02772185358796,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -7633,7 +7633,7 @@
       "summary": "aa-loadgen v2026 is a loader and update utility for synthetic load generation and agent benchmarking, with support for multi-turn request traffic and repeatable workload tests.",
       "suppression_reasons": [],
       "title": "owen-colerzty1592/aa-loadgen-loader-2026",
-      "total_score": 55.57,
+      "total_score": 45.31,
       "updated_at": null,
       "url": "https://github.com/owen-colerzty1592/aa-loadgen-loader-2026",
       "watchlist": null,
@@ -7684,7 +7684,7 @@
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
@@ -7698,9 +7698,9 @@
         "Primary record: Hugging Face"
       ],
       "raw_payload_hash": "sha256:ec91c5f4b040033e04b423f8c6ee95c0379f8b76f5d31acde58084bd375f5930",
-      "recency_score": 54.332449469328715,
+      "recency_score": 42.8309625943287,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -7708,24 +7708,24 @@
       "summary": "Huggingface Leaderboard's History Dataset 🏆 This is the history dataset of Huggingface Leaderboard. 🗒️ This dataset contains full dataframes in a CSV file for each time lapse. ⌛ This dataset is automatically updated when space restarts. (Which is approximately every 6 hours) Leaderboard Link 🔗 Weyaxi/huggingface-leaderboard",
       "suppression_reasons": [],
       "title": "Weyaxi/huggingface-leaderboard",
-      "total_score": 54.8,
+      "total_score": 52.5,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/Weyaxi/huggingface-leaderboard",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 73.51183727648362,
+      "adoption_score": 73.57940360845691,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 4737.0,
+        "downloads": 4774.0,
         "likes": 2.0
       },
       "parser_version": "huggingface-hub/1",
@@ -7734,10 +7734,10 @@
         "Matched: leaderboard",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:0e5a17182ed567d8f14f0eb4c0c65d7d4cac29d5d436f9349f4da9ab387d7422",
-      "recency_score": 95.95744946932871,
+      "raw_payload_hash": "sha256:2cc7663f7a1f8fb3364a9fbe7384ab795dc98ecd0c7e3b0735015c9090b2438a",
+      "recency_score": 84.45596259432871,
       "relevance_score": 25.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -7745,36 +7745,36 @@
       "summary": "",
       "suppression_reasons": [],
       "title": "vava22684/song-jury-leaderboard",
-      "total_score": 54.32,
+      "total_score": 52.04,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/vava22684/song-jury-leaderboard",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 68.76445642434128,
+      "adoption_score": 68.92135884998774,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 2742.0,
+        "downloads": 2792.0,
         "likes": 1.0
       },
       "parser_version": "huggingface-hub/1",
-      "published_at": "2026-08-04T08:54:09+00:00",
+      "published_at": "2026-08-04T13:52:37+00:00",
       "rationale": [
         "Matched: benchmark",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:8dd63cc82f50e2017722a75762866ed38eaefa17bdb6394045dbb3f3b83c3e22",
-      "recency_score": 99.58939391377315,
+      "raw_payload_hash": "sha256:3bdec562bb1de74a0ec43b86fdc0311eb2b9cc38c635fbaecb17e9dcb67c9fe0",
+      "recency_score": 98.45133296469908,
       "relevance_score": 25.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -7782,7 +7782,7 @@
       "summary": "",
       "suppression_reasons": [],
       "title": "hf-benchmarks/transformers",
-      "total_score": 53.86,
+      "total_score": 53.67,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/hf-benchmarks/transformers",
       "watchlist": null,
@@ -7828,7 +7828,7 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 32.464957609395114,
+      "adoption_score": 35.70656568604152,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -7836,11 +7836,11 @@
         "dataset",
         "agentic"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 41.0,
+        "downloads": 60.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -7849,10 +7849,10 @@
         "Matched: agents~benchmark, benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:dea83e069661aa9898e7e6e27ec927a519a003dde6de05c30e3dd0099797e6a4",
-      "recency_score": 55.649000395254625,
+      "raw_payload_hash": "sha256:f3167794b1f1e6edb84c4ac554338d6fc131a5f5882a1ba0480b6dc5c85211ee",
+      "recency_score": 44.147513520254634,
       "relevance_score": 75.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -7860,7 +7860,7 @@
       "summary": "An open benchmark for AI agents that investigate breaches in Elasticsearch. Real, labeled attack telemetry in Elasticsearch (ECS) plus a scored task suite — so you can measure how well an agent, or any LLM, does the job of a SOC analyst: follow one alert, pivot across data sources with ES|QL, reconstruct the intrusion, and recommend a proportionate response. DOI (cite this): 10.5281/zenodo.21770551 Code, runner, and full docs:… See the full description on the dataset page: https://huggingface.co/datasets/TocharianOU/secops-es-benchmark.",
       "suppression_reasons": [],
       "title": "TocharianOU/secops-es-benchmark",
-      "total_score": 53.5,
+      "total_score": 52.01,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/TocharianOU/secops-es-benchmark",
       "watchlist": null,
@@ -8103,30 +8103,30 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 22.577004560341646,
+      "adoption_score": 21.127221625930698,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "agentic"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
         "forks": 2.0,
-        "stars": 7.0
+        "stars": 6.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T09:00:40+00:00",
+      "published_at": "2026-08-04T14:30:44+00:00",
       "rationale": [
         "Matched: agent~eval, benchmark",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:994470a39de110c16af1c78e1afc1fca549bd9fa3a8c4c0895d256239687c116",
-      "recency_score": 99.8156670619213,
+      "raw_payload_hash": "sha256:fccda577825bd7c9c2577bff1a9141117380b2ecc64c05c4a9e1f11598dbff20",
+      "recency_score": 99.77482833506944,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -8134,7 +8134,7 @@
       "summary": "Live, open-source benchmark for comparing AI coding agents on real GitHub issues",
       "suppression_reasons": [],
       "title": "linny006/agent-eval-harness",
-      "total_score": 51.11,
+      "total_score": 50.74,
       "updated_at": null,
       "url": "https://github.com/linny006/agent-eval-harness",
       "watchlist": null,
@@ -8179,30 +8179,30 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 17.474060395685793,
+      "adoption_score": 15.051336373561098,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "evaluation"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
         "forks": 0.0,
-        "stars": 4.0
+        "stars": 3.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T09:00:24+00:00",
+      "published_at": "2026-08-04T14:30:27+00:00",
       "rationale": [
         "Matched: benchmark, evaluat",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:020078a0c4e333da2847769d5062afbec7963e1ec6efae0d7d0cfa1ad2407ced",
-      "recency_score": 99.80640780266204,
+      "raw_payload_hash": "sha256:19b2cafad3ab76ea97cae1acf33684f551261d5afe9429f9875defd1bb7d9a96",
+      "recency_score": 99.76499037210648,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -8210,14 +8210,14 @@
       "summary": "Live index of LLM evaluation tools and benchmarks, refreshed every 15 minutes from GitHub",
       "suppression_reasons": [],
       "title": "linny006/llm-eval-tracker",
-      "total_score": 49.83,
+      "total_score": 49.22,
       "updated_at": null,
       "url": "https://github.com/linny006/llm-eval-tracker",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 0.0,
+      "adoption_score": 36.258235639511255,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -8225,11 +8225,11 @@
         "dataset",
         "agentic"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "released",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 0.0,
+        "downloads": 64.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -8238,10 +8238,10 @@
         "Matched: agent~benchmarks, benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:b141f803498b64b0646b7df37d9e5c09bb2ae54c47fe67c630cd783f7b40bd63",
-      "recency_score": 77.07434761747686,
+      "raw_payload_hash": "sha256:a890c66996cd3d89db249ad607b787b78a7072a588631a0a53552b784d8c12a5",
+      "recency_score": 65.57286074247686,
       "relevance_score": 75.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -8249,7 +8249,7 @@
       "summary": "Four MoE models on a DGX Spark: speed, tool-calling, and what actually breaks Full measurement campaign on NVIDIA DGX Spark (GB10, 128 GB unified, ~273 GB/s), vLLM 0.23.1rc1.dev301+g04c2a8dea, arm64/sm121. Every number here is measured on this hardware, with the raw evidence included. The headline: on synthetic tool-calling benchmarks all four models score 91-95 %. In a real coding agent, three of them score 0-1 out of 14 and one scores 11 out of 14. If you pick a model from the… See the full description on the dataset page: https://huggingface.co/datasets/pocharlies/dgx-spark-moe-benchmarks.",
       "suppression_reasons": [],
       "title": "pocharlies/dgx-spark-moe-benchmarks",
-      "total_score": 49.66,
+      "total_score": 56.43,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/pocharlies/dgx-spark-moe-benchmarks",
       "watchlist": null,
@@ -8262,7 +8262,7 @@
       "categories": [
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
@@ -8276,9 +8276,9 @@
         "Primary record: Hugging Face"
       ],
       "raw_payload_hash": "sha256:8ea37dac99aec86a27d3700a6471a9be8adddb117a426e21413edefc2948a61e",
-      "recency_score": 97.61254206192129,
+      "recency_score": 86.11105518692129,
       "relevance_score": 30.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -8286,7 +8286,7 @@
       "summary": "Dataset Card for Magpie Preference Dataset Dataset Description The Magpie Preference Dataset is a crowdsourced collection of human preferences on synthetic instruction-response pairs generated using the Magpie approach. This dataset is continuously updated through user interactions with the Magpie Preference Gradio Space. What is Magpie? Magpie is a very interesting new approach to creating synthetic data which doesn't require any seed data:… See the full description on the dataset page: https://huggingface.co/datasets/davanstrien/magpie-preference.",
       "suppression_reasons": [],
       "title": "davanstrien/magpie-preference",
-      "total_score": 49.53,
+      "total_score": 47.23,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/davanstrien/magpie-preference",
       "watchlist": null,
@@ -9725,18 +9725,18 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 43.287019517249306,
+      "adoption_score": 45.43679266503065,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
-      "event_kind": "released",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 145.0,
+        "downloads": 186.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -9745,10 +9745,10 @@
         "Matched: benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:701f700df1a3c1adab0368dc6c6bf9c51f13f75ebdfbad989953de091c58c02d",
-      "recency_score": 63.23175502488425,
+      "raw_payload_hash": "sha256:69cd869bf83b24a3a6f6fb07a4e7c847c97472f2fb168cac145f7f1e2d12d9de",
+      "recency_score": 51.73026814988426,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -9756,14 +9756,14 @@
       "summary": "Workbook Change Assurance Benchmark (WCAB) WCAB is an open, deterministic benchmark for tools that review changes to Excel workbooks. Each of its 61 synthetic cases supplies fixtures, 63 explicit observable change facts, a reference review disposition, documented coverage boundaries, and—in relevant cases—a machine-matchable coverage expectation. The dataset's machine-readable entry point is manifest.jsonl: one JSON record per case. Every record includes the full truth contract… See the full description on the dataset page: https://huggingface.co/datasets/SybilGambleyyu/workbook-change-benchmark.",
       "suppression_reasons": [],
       "title": "SybilGambleyyu/workbook-change-benchmark",
-      "total_score": 48.97,
+      "total_score": 47.21,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/SybilGambleyyu/workbook-change-benchmark",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 22.922540803398345,
+      "adoption_score": 25.575049804961637,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -9771,11 +9771,11 @@
         "evaluation",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 13.0,
+        "downloads": 18.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -9784,10 +9784,10 @@
         "Matched: benchmark, dataset, evaluat, evaluation suite",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:4ec738535a1c3984c85abcc770a7b54e64270395af972fc8380e1acab6baab44",
-      "recency_score": 35.106755024884265,
+      "raw_payload_hash": "sha256:496fd8068cf05f09163f3a2ca42c4fe53078c91f60e24401e301ae45eca9dac7",
+      "recency_score": 23.60526814988425,
       "relevance_score": 80.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -9795,25 +9795,25 @@
       "summary": "Datasets This repository hosts the datasets for the Latent Inter-Regional Communication (LIRC) Benchmark: a synthetic evaluation suite for evaluating inter-regional communication in multi-region communication models. The datasets are organized by task and observation model: memory network/ gaussian/ data.h5 poisson/ data.h5 pass decision/ gaussian/ ... poisson/ ... multi task/ global latents/ gaussian/ poisson/ partial observations/… See the full description on the dataset page: https://huggingface.co/datasets/lirc-benchmark/lirc.",
       "suppression_reasons": [],
       "title": "lirc-benchmark/lirc",
-      "total_score": 48.75,
+      "total_score": 47.11,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/lirc-benchmark/lirc",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 46.8088416393624,
+      "adoption_score": 47.309718605323994,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 218.0,
+        "downloads": 231.0,
         "likes": 1.0
       },
       "parser_version": "huggingface-hub/1",
@@ -9822,10 +9822,10 @@
         "Matched: benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:c3c56701050274bcef4c7770b2402ea460ad5ba9ce84c12fe3551633b8d17dd3",
-      "recency_score": 56.9574494693287,
+      "raw_payload_hash": "sha256:dd95d4e44338860d000ac93518c61af7d4dc1c6b08f5669258aade69e6749391",
+      "recency_score": 45.4559625943287,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -9833,14 +9833,14 @@
       "summary": "EMERGE: A Benchmark for Updating Knowledge Graphs with Emerging Textual Knowledge 🆕 Latest version adds a KG-aware baseline (2026-08-03) This release now ships KG-aware baseline predictions on every instance, alongside the 13 IE baselines — GPT-5.1 given access to the reference KG snapshot, in three variants (oracle / kg rag@32 / oracle+kg rag), under prediction keys kg-aware/gpt-5.1/{oracle,kg rag 32,oracle kg rag}. Added for the NeurIPS 2026 rebuttal. → jump… See the full description on the dataset page: https://huggingface.co/datasets/klimzaporojets/emerge-benchmark.",
       "suppression_reasons": [],
       "title": "klimzaporojets/emerge-benchmark",
-      "total_score": 48.59,
+      "total_score": 46.42,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/klimzaporojets/emerge-benchmark",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 39.462522795453566,
+      "adoption_score": 40.08639265722868,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -9848,11 +9848,11 @@
         "evaluation",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 93.0,
+        "downloads": 100.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -9861,10 +9861,10 @@
         "Matched: benchmark, dataset, evaluat",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:1432487b1cc864272618818eb0e92e2994101e4ca4c6a2caaae4788f6ac0f55b",
-      "recency_score": 20.839972617476842,
+      "raw_payload_hash": "sha256:8008c91cd46893669fc66ccbd6a780d596876ff0cabaa2f5e9c5a7309b49e171",
+      "recency_score": 9.338485742476843,
       "relevance_score": 75.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -9872,37 +9872,37 @@
       "summary": "Reasoning-Structured Videos: Evaluation Artifacts This page hosts evaluation artifacts for Reasoning-Structured Videos: A Stratified Diagnostic Suite for Compositional Consistency in World Models. The benchmark tests whether action-conditioned video world models respect three trajectory relations: Inverse: a path followed by its inverse should return to the initial state. Loop: a closed path should return to the initial state. Equivalence: two different paths reaching the same… See the full description on the dataset page: https://huggingface.co/datasets/VideoWorldmodel/Evaluation.",
       "suppression_reasons": [],
       "title": "VideoWorldmodel/Evaluation",
-      "total_score": 48.28,
+      "total_score": 46.14,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/VideoWorldmodel/Evaluation",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 11.927901868917349,
+      "adoption_score": 0.0,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "evaluation",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "forks": 1.0,
-        "stars": 2.0
+        "forks": 0.0,
+        "stars": 0.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T07:56:11+00:00",
+      "published_at": "2026-08-04T14:10:07+00:00",
       "rationale": [
         "Matched: dataset, evaluat",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:771137e0ce3f037dc839f9c5cc4b9c737341fb23243056d7db320fede674b76f",
-      "recency_score": 97.57666243229166,
+      "raw_payload_hash": "sha256:bcdaa0539bd83ca1811600769a46729a8f633f15a684b177477366b91a104dd0",
+      "recency_score": 99.05897185358796,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -9910,14 +9910,14 @@
       "summary": "Browser-based testbed for evaluating artificial intelligence models on relevant tasks across diverse datasets, modalities, and domains, with hosted and local options for running the platform.",
       "suppression_reasons": [],
       "title": "bennettmichaeldvg2519/nist-ai-model-evaluation",
-      "total_score": 48.0,
+      "total_score": 45.31,
       "updated_at": null,
       "url": "https://github.com/bennettmichaeldvg2519/nist-ai-model-evaluation",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 38.27624380151762,
+      "adoption_score": 38.88961966407782,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -9925,11 +9925,11 @@
         "evaluation",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 81.0,
+        "downloads": 87.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -9938,10 +9938,10 @@
         "Matched: benchmark, dataset, evaluat",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:ba5cb476277692d4b78e160b4abb19f03579c56a1c85a5ed803806bae08a0cac",
-      "recency_score": 19.95976428414351,
+      "raw_payload_hash": "sha256:6c4b257c7b503ed4c494adf5b7db03d12cdcc278d32afad86b5b5178dfdb6296",
+      "recency_score": 8.458277409143511,
       "relevance_score": 75.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -9949,7 +9949,7 @@
       "summary": "Xournal++ HTR Benchmark A benchmark dataset for evaluating handwritten text recognition (HTR) algorithms on Xournal++ documents (.xopp/.xoj files). Dataset structure Each benchmark sample consists of two files with a shared stem: .xopp or .xoj — the source Xournal++ or Xournal document .gt.json — stroke-level ground truth annotations, following the schema defined in ADR 004 Ground truth is annotated at word level. Annotations reference strokes… See the full description on the dataset page: https://huggingface.co/datasets/PellelNitram/xournalpp htr benchmark.",
       "suppression_reasons": [],
       "title": "PellelNitram/xournalpp_htr_benchmark",
-      "total_score": 47.81,
+      "total_score": 45.66,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/PellelNitram/xournalpp_htr_benchmark",
       "watchlist": null,
@@ -10077,7 +10077,7 @@
         "benchmark",
         "evaluation"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "released",
       "evidence_score": 40.0,
       "metrics": {
@@ -10085,15 +10085,15 @@
         "stars": 1.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T07:33:52+00:00",
+      "published_at": "2026-08-04T14:31:05+00:00",
       "rationale": [
         "Matched: benchmark, evaluat",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:1068dffebe6dc1db162e41c746d4022d3a3ed40cc4df555bb230909c48c4eabc",
-      "recency_score": 96.8017781730324,
+      "raw_payload_hash": "sha256:6c754170004a88411a9fd8d9a5db9c253ec291c02fc5e224ba6e09b1dcdb1454",
+      "recency_score": 99.78698111284722,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -10101,37 +10101,37 @@
       "summary": "An LLM Benchmark evaluation platform for automated model testing and analysis. 面向大语言模型的 Benchmark 自动化评测平台，支持模型测试与结果分析",
       "suppression_reasons": [],
       "title": "NEDONION/evalhub",
-      "total_score": 46.74,
+      "total_score": 47.34,
       "updated_at": null,
       "url": "https://github.com/NEDONION/evalhub",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 7.525668186780549,
+      "adoption_score": 17.474060395685793,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
         "forks": 0.0,
-        "stars": 1.0
+        "stars": 4.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T07:32:13+00:00",
+      "published_at": "2026-08-04T13:02:52+00:00",
       "rationale": [
         "Matched: benchmark, dataset",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:0c74f1bb5f80a371c808684e74b973bece2f6134244578c76abf3a68d6fd57c8",
-      "recency_score": 96.74448650636575,
+      "raw_payload_hash": "sha256:f65f6c5ed1215b3fbb0061199e5f5ae253355615242c8a9902b721f49bf59125",
+      "recency_score": 96.72390240914352,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -10139,25 +10139,25 @@
       "summary": "GEOID-Flood: A Large-Scale Multi-Modal Benchmark Dataset for Flood Segmentation",
       "suppression_reasons": [],
       "title": "links-ads/geoid-flood",
-      "total_score": 46.73,
+      "total_score": 49.21,
       "updated_at": null,
       "url": "https://github.com/links-ads/geoid-flood",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 0.0,
+      "adoption_score": 41.21392100929428,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "released",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 0.0,
+        "downloads": 114.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -10166,10 +10166,10 @@
         "Matched: benchmark, corpus, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:461b6826d20de837b0a5e8d6f0265ea79165965ca4f0ab1692dbbfb26ee893f6",
-      "recency_score": 96.941245765625,
+      "raw_payload_hash": "sha256:4f099c172e2a5ee5ee576f2ffdb7bc05e875a96da3ac4e5e1e2c4fa6d530f685",
+      "recency_score": 85.439758890625,
       "relevance_score": 55.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -10177,7 +10177,7 @@
       "summary": "Document Change Assurance Benchmark (DCAB) This dataset mirrors the deterministic fixture corpus from DCAB v0.31.0. It contains 42 paired synthetic WordprocessingML cases for static document-change assurance. Each case directory provides a baseline package, candidate package, and target-free truth.json. The public truth files describe only a narrow fact category and a reference review convention. They never disclose URI-like targets, field instructions or fragmented field-code… See the full description on the dataset page: https://huggingface.co/datasets/SybilGambleyyu/document-change-assurance-benchmark.",
       "suppression_reasons": [],
       "title": "SybilGambleyyu/document-change-assurance-benchmark",
-      "total_score": 46.64,
+      "total_score": 54.64,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/SybilGambleyyu/document-change-assurance-benchmark",
       "watchlist": null,
@@ -10221,18 +10221,18 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 37.025134814918815,
+      "adoption_score": 36.52146433203428,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 70.0,
+        "downloads": 66.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -10241,10 +10241,10 @@
         "Matched: benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:02a9a1691c6f27f814dc6cc6437a7a3e22a9746d87e7aa8201649a76548cc0eb",
-      "recency_score": 58.58939391377316,
+      "raw_payload_hash": "sha256:dddcc57f8e355db595f4a7fb5861611c06e6c8418b6d7a7277a4f533d6f1a15f",
+      "recency_score": 47.08790703877316,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -10252,7 +10252,7 @@
       "summary": "Diabetes Diagnostic Device Manufacturing QC Benchmark This dataset contains de-identified manufacturing quality-control (QC), calibration, and analytical process records generated during routine production of diabetes diagnostic medical devices (glucose test strips and HbA1c analyzers). It was compiled to support research on leakage-safe, temporally validated AI-enabled quality-management systems (AI-QMS) for predictive process monitoring. The data describe manufacturing and… See the full description on the dataset page: https://huggingface.co/datasets/BekzatK/diabetes-qms-benchmark.",
       "suppression_reasons": [],
       "title": "BekzatK/diabetes-qms-benchmark",
-      "total_score": 46.47,
+      "total_score": 44.05,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/BekzatK/diabetes-qms-benchmark",
       "watchlist": null,
@@ -10265,7 +10265,7 @@
       "categories": [
         "evaluation"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "released",
       "evidence_score": 40.0,
       "metrics": {
@@ -10273,15 +10273,15 @@
         "stars": 38.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T07:46:50+00:00",
+      "published_at": "2026-08-04T13:52:58+00:00",
       "rationale": [
         "Matched: evaluat",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:a629952ede01cb8c157bd1ade67bfdb7b2c104db757b470bd1bc869d68e6bec4",
-      "recency_score": 97.2520096545139,
+      "raw_payload_hash": "sha256:f83ede5b93942a2c89891fc639598f9eb0d55909aa6a5381e041ab0358862fc1",
+      "recency_score": 98.46348574247685,
       "relevance_score": 25.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -10289,7 +10289,7 @@
       "summary": "Extemplary is a browser-based NSDA extemporaneous speaking practice tool with timed preparation, speech recording, AI evaluation, transcription, and vocal delivery feedback in one workspace.",
       "suppression_reasons": [],
       "title": "mlang05/extemplary-speech-coach",
-      "total_score": 46.14,
+      "total_score": 46.39,
       "updated_at": null,
       "url": "https://github.com/mlang05/extemplary-speech-coach",
       "watchlist": null,
@@ -10334,7 +10334,7 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 0.0,
+      "adoption_score": 23.521804750435763,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -10342,11 +10342,11 @@
         "evaluation",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "released",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 0.0,
+        "downloads": 14.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -10355,10 +10355,10 @@
         "Matched: benchmark, dataset, evaluat",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:756813485bbaeb5d79515ef3917a2c36d2cae14a19f16256bf5dd3ee416f8d62",
-      "recency_score": 56.07781983969908,
+      "raw_payload_hash": "sha256:1fd928b67834a1b616894635abc7340604e6ebebb431d68bd285777458e23e07",
+      "recency_score": 44.576332964699084,
       "relevance_score": 75.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -10366,7 +10366,7 @@
       "summary": "JEE/NEET LLM Benchmark Dataset Dataset Description This repository contains a benchmark dataset designed for evaluating the capabilities of Large Language Models (LLMs) on questions from major Indian competitive examinations: JEE (Main & Advanced): Joint Entrance Examination for engineering. NEET: National Eligibility cum Entrance Test for medical fields. The questions are presented in image format (.png) as they appear in the original papers. The dataset… See the full description on the dataset page: https://huggingface.co/datasets/Parth1700/jee-neet-benchmark.",
       "suppression_reasons": [],
       "title": "Parth1700/jee-neet-benchmark",
-      "total_score": 45.47,
+      "total_score": 49.05,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/Parth1700/jee-neet-benchmark",
       "watchlist": null,
@@ -10380,7 +10380,7 @@
         "benchmark",
         "evaluation"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
@@ -10388,15 +10388,15 @@
         "stars": 0.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T08:57:57+00:00",
+      "published_at": "2026-08-04T13:00:19+00:00",
       "rationale": [
         "Matched: benchmark, evaluat",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:59348eceae41f9bcaf7aafc68f1bcd0283fb5e1e0b65b80c6ef5602724ea95de",
-      "recency_score": 99.7213383582176,
+      "raw_payload_hash": "sha256:194746cde4617e1ab60fdb2340081ab64ed35a6d82196be9c6a685f0c4bb750d",
+      "recency_score": 96.63536074247685,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -10404,7 +10404,7 @@
       "summary": "Deterministic synthetic identity graphs and ground-truth benchmarks for privacy-system evaluation",
       "suppression_reasons": [],
       "title": "bluntmachetti/synthworld",
-      "total_score": 45.44,
+      "total_score": 44.83,
       "updated_at": null,
       "url": "https://github.com/bluntmachetti/synthworld",
       "watchlist": null,
@@ -10532,7 +10532,7 @@
         "benchmark",
         "agentic"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
@@ -10540,15 +10540,15 @@
         "stars": 0.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T08:33:38+00:00",
+      "published_at": "2026-08-04T14:05:08+00:00",
       "rationale": [
         "Matched: agent~harness, benchmark",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:37f9fb8b0f6dc74e5cccac6368d7466bcd3456f7a40e57736e3db4fd17d5a44d",
-      "recency_score": 98.8770096545139,
+      "raw_payload_hash": "sha256:23ccc85e9cac4dfd269144163c8721127d6a5c59d209ddd3c3102b99e19af9a0",
+      "recency_score": 98.88593944618056,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -10646,7 +10646,7 @@
         "evaluation",
         "agentic"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
@@ -10654,15 +10654,15 @@
         "stars": 0.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T08:05:14+00:00",
+      "published_at": "2026-08-04T14:00:23+00:00",
       "rationale": [
         "Matched: agent~harness, evaluat",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:f9cf7211dfca124db46c7efbe4e72ab570936b9380b806fa698fb04af4260959",
-      "recency_score": 97.89089854340278,
+      "raw_payload_hash": "sha256:ba60a33fae65a89784fc54a82be3d532d5aad819b0bbae68e9ae8743c92b6ce5",
+      "recency_score": 98.721008890625,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -10670,7 +10670,7 @@
       "summary": "An evaluation harness for reusable AI agent skills: does a skill earn its slot? Runs the same task with and without it and returns KEEP / CUT / CAN'T TELL YET instead of a manufactured score. First-class Claude Code skill support.",
       "suppression_reasons": [],
       "title": "MrBinnacle/skill-harness",
-      "total_score": 45.08,
+      "total_score": 45.24,
       "updated_at": null,
       "url": "https://github.com/MrBinnacle/skill-harness",
       "watchlist": null,
@@ -10683,7 +10683,7 @@
       "categories": [
         "benchmark"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
@@ -10691,15 +10691,15 @@
         "stars": 24.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T08:03:53+00:00",
+      "published_at": "2026-08-04T13:48:16+00:00",
       "rationale": [
         "Matched: benchmark",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:f374147fbaef1e4e1375d9fe68dd8fa1762fcc5bc58e53fe89690b388c1c276d",
-      "recency_score": 97.84402354340278,
+      "raw_payload_hash": "sha256:0ccee98fa1e0e35fa3fe74dde9882ceeb7f752ff42b279dec2f5aea87effe047",
+      "recency_score": 98.3002912980324,
       "relevance_score": 25.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -10707,7 +10707,7 @@
       "summary": "Dual-engine (llama.cpp + vLLM) LLM benchmarking pipeline for GGUF & safetensors on NVIDIA GPUs — speed, quality, live dashboard, publishable cards.",
       "suppression_reasons": [],
       "title": "notwitcheer/llm-bench-rig",
-      "total_score": 45.06,
+      "total_score": 45.15,
       "updated_at": null,
       "url": "https://github.com/notwitcheer/llm-bench-rig",
       "watchlist": null,
@@ -10833,23 +10833,23 @@
       "categories": [
         "benchmark"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "forks": 6.0,
+        "forks": 7.0,
         "stars": 14.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T08:58:02+00:00",
+      "published_at": "2026-08-04T14:36:03+00:00",
       "rationale": [
         "Matched: benchmark",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:ea7ecc167193343958f8fd999b3b978e7689c3dd04c0df34720fa80a07a460f7",
-      "recency_score": 99.72423187673611,
+      "raw_payload_hash": "sha256:20755f2b3b6cd376cc6492da4604477dee4f5c8a77734c6b05389a8a39907d9b",
+      "recency_score": 99.95943481655092,
       "relevance_score": 25.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -10857,7 +10857,7 @@
       "summary": "Universal LLM benchmarking harness for tool use, browser, mobile, coding, and long-horizon evals",
       "suppression_reasons": [],
       "title": "Toloka/tolokaforge",
-      "total_score": 44.05,
+      "total_score": 44.09,
       "updated_at": null,
       "url": "https://github.com/Toloka/tolokaforge",
       "watchlist": null,
@@ -10901,18 +10901,18 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 23.521804750435763,
+      "adoption_score": 31.126022979760872,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "released",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 14.0,
+        "downloads": 35.0,
         "likes": 1.0
       },
       "parser_version": "huggingface-hub/1",
@@ -10921,10 +10921,10 @@
         "Matched: benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:727c0d0ba11f3464230865179805b89f8c0e9ac5c673ac87988b219d34b29ba4",
-      "recency_score": 59.74795872858796,
+      "raw_payload_hash": "sha256:84e684672f4fe7f22be38e3a49595f1a0ef79c4297db0356b43f356e0ca42b1f",
+      "recency_score": 48.24647185358797,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -10932,25 +10932,25 @@
       "summary": "Forg3t RDM on TOFU: measurements and a reproduction Retain-Distribution Matching (RDM) for LLM unlearning, measured against the OpenUnlearning field on TOFU, with a script that reproduces the headline number from a bare machine. Read this first: what changed in this version An earlier version of this dataset carried an OpenUnlearning summary table with three rows presented as forget quality, higher is better. Those rows are withdrawn. The reasons, measured rather… See the full description on the dataset page: https://huggingface.co/datasets/AlvinAgile/forg3t-rdm-tofu-benchmark.",
       "suppression_reasons": [],
       "title": "AlvinAgile/forg3t-rdm-tofu-benchmark",
-      "total_score": 43.33,
+      "total_score": 42.93,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/AlvinAgile/forg3t-rdm-tofu-benchmark",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 39.7354001717674,
+      "adoption_score": 49.600095777262624,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 96.0,
+        "downloads": 301.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -10959,10 +10959,10 @@
         "Matched: benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:f0a26d78bf4a5e17ad875ee6b2360b73703205073ddcbf57c73b62d0e7ada4e7",
-      "recency_score": 39.42272724710648,
+      "raw_payload_hash": "sha256:bd183a8ba7357290ca2df40f8c46cc917c0008e44101b9c2d841fffaeddfdca4",
+      "recency_score": 27.92124037210648,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -10970,7 +10970,7 @@
       "summary": "FAME Benchmark FAME is a benchmark for zero-shot, few-shot, and OOD medical image segmentation. It is introduced in arXiv:2607.27856: Benchmarking Foundation and Large Language Models for Few-Shot Medical Image Segmentation. If you use this benchmark, please cite the FAME paper. The BibTeX entry is provided in the Citation section. This Hugging Face dataset contains the released FAME JSON/JSONL protocols plus all referenced image and mask pixels. To keep the repository usable on… See the full description on the dataset page: https://huggingface.co/datasets/Kimokcheon/FAME benchmark.",
       "suppression_reasons": [],
       "title": "Kimokcheon/FAME_benchmark",
-      "total_score": 43.32,
+      "total_score": 43.48,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/Kimokcheon/FAME_benchmark",
       "watchlist": null,
@@ -10983,7 +10983,7 @@
       "categories": [
         "benchmark"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
@@ -10991,15 +10991,15 @@
         "stars": 10.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T09:04:36+00:00",
+      "published_at": "2026-08-04T12:56:42+00:00",
       "rationale": [
         "Matched: benchmark",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:cc53672de8ee6eb0ef92ea2f26944c3bdc1ee33c3a0933d3a2fcef157aedaf61",
-      "recency_score": 99.95224113599537,
+      "raw_payload_hash": "sha256:d01fa91612d4b464d395c97095b33120f7be1037e8dde2ed4abccfb8dc65099a",
+      "recency_score": 96.50978203877315,
       "relevance_score": 25.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -11007,14 +11007,14 @@
       "summary": "LLM benchmarking, GPU workload orchestration backend server | Deepseek-R1, Qwen2.5, Llama3.1 | 4xRTX-5090 inside PRU2500, 2xH100 inside PRU2500, 8xMI210 in SuperMicro",
       "suppression_reasons": [],
       "title": "corespan/aistudio-server",
-      "total_score": 43.25,
+      "total_score": 42.56,
       "updated_at": null,
       "url": "https://github.com/corespan/aistudio-server",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 0.0,
+      "adoption_score": 19.99998262832267,
       "artifact_urls": [],
       "authors": [],
       "categories": [
@@ -11022,11 +11022,11 @@
         "evaluation",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "released",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 0.0,
+        "downloads": 9.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -11035,10 +11035,10 @@
         "Matched: benchmark, dataset, evaluat",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:6ca86734e5e522800684cbf72dfafb42c137232fe07a5bbdf39809b9875848bd",
-      "recency_score": 44.643213358217594,
+      "raw_payload_hash": "sha256:7aad9c5dac4ae11d8483356d319a95503f39a19af2ac96a8c010bca28182516d",
+      "recency_score": 33.141726483217596,
       "relevance_score": 75.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -11046,25 +11046,25 @@
       "summary": "Odia OCR Benchmark Dataset Description A curated benchmark dataset for evaluating OCR models on Odia (Oriya) text recognition. Contains handwritten, printed, scene text, newspaper, books, and digital categories, including both short samples and long-text examples for OCR evaluation. Dataset Structure id: Unique identifier for each sample image: The input image (PIL Image) ground truth: The correct Odia text transcription category: Type of text… See the full description on the dataset page: https://huggingface.co/datasets/swastikgahukar007/odia-ocr-benchmark.",
       "suppression_reasons": [],
       "title": "swastikgahukar007/odia-ocr-benchmark",
-      "total_score": 43.18,
+      "total_score": 45.88,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/swastikgahukar007/odia-ocr-benchmark",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 0.0,
+      "adoption_score": 16.901946119514673,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "released",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 0.0,
+        "downloads": 6.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -11073,10 +11073,10 @@
         "Matched: benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:4890fe0525f0d5c49ae55adb2b839be3026cef8e65cd026e49eae4857d799bbe",
-      "recency_score": 88.20050502488425,
+      "raw_payload_hash": "sha256:368b7e2fe628626790ab061954f1647f3a85b998754041998c067f18087d6a21",
+      "recency_score": 76.69901814988425,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -11084,7 +11084,7 @@
       "summary": "This dataset was created using LeRobot. Dataset Structure meta/info.json: { \"codebase version\": \"v3.0\", \"fps\": 30, \"features\": { \"observation.images.base rgb letterbox\": { \"dtype\": \"image\", \"shape\": [ 3, 224, 224 ], \"names\": [ \"channels\", \"height\", \"width\" ] }… See the full description on the dataset page: https://huggingface.co/datasets/JennyWWW/eval splatsim approach lever 13 benchmark.",
       "suppression_reasons": [],
       "title": "JennyWWW/eval_splatsim_approach_lever_13_benchmark",
-      "total_score": 43.14,
+      "total_score": 45.07,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/JennyWWW/eval_splatsim_approach_lever_13_benchmark",
       "watchlist": null,
@@ -11128,18 +11128,18 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 21.58360617376411,
+      "adoption_score": 30.102973419418362,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "released",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 11.0,
+        "downloads": 31.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -11148,10 +11148,10 @@
         "Matched: benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:a82706515efcab4cbc6b4fb71a68ecb1daffd1d29e479268fc3a82a367dc46aa",
-      "recency_score": 59.51589854340278,
+      "raw_payload_hash": "sha256:84b07c44988725d81f0d50127748d4554e06a2b6dac2f8f439fdbba5087348da",
+      "recency_score": 48.01441166840278,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -11159,25 +11159,25 @@
       "summary": "SuperMemory-VQA Viewer-ready benchmark manifest for kfkas/supermemory-vqa-imu-benchmark. It contains benchmark annotations and logical local asset hints, not redistributed source media. Status Base dataset: SuperMemory-VQA Aria stream Rows: 4,853 Rows with local RGB+IMU: 4,818 Answer-key status: public=4853 Existing repository refreshed with the common schema. Example video A short, recompressed benchmark-corresponding clip is included for a quick… See the full description on the dataset page: https://huggingface.co/datasets/kfkas/supermemory-vqa-imu-benchmark.",
       "suppression_reasons": [],
       "title": "kfkas/supermemory-vqa-imu-benchmark",
-      "total_score": 42.8,
+      "total_score": 42.63,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/kfkas/supermemory-vqa-imu-benchmark",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 31.36400723904556,
+      "adoption_score": 33.25512774873895,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 36.0,
+        "downloads": 45.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -11186,10 +11186,10 @@
         "Matched: benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:948163ddfae22ce481b9d290ecf0bdb6ea9c187cf519a51010bfdb0856ed1b12",
-      "recency_score": 47.155944839699075,
+      "raw_payload_hash": "sha256:8cf28b2c2967a63dc59252a4e1d72b6800b101589db7ae4c4b5ca515dafd46dd",
+      "recency_score": 35.65445796469907,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -11197,25 +11197,25 @@
       "summary": "Perturb-seq Pseudo-pairing Benchmarks Dataset Summary This repository provides processed single-cell perturbation transcriptomic datasets and representative pseudo-control pairings used to study how pseudo-control construction affects perturbation modeling. Single-cell perturbation assays are destructive: the same cell cannot be observed before and after perturbation. Cell-level modeling therefore requires an estimated or sampled unperturbed counterpart, referred… See the full description on the dataset page: https://huggingface.co/datasets/JFLa/perturb-seq-pseudo-pairing-benchmarks.",
       "suppression_reasons": [],
       "title": "JFLa/perturb-seq-pseudo-pairing-benchmarks",
-      "total_score": 42.77,
+      "total_score": 40.94,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/JFLa/perturb-seq-pseudo-pairing-benchmarks",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 19.99998262832267,
+      "adoption_score": 28.943135487282017,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "released",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 9.0,
+        "downloads": 27.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -11224,10 +11224,10 @@
         "Matched: benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:5f811a2ad56392a9859b5b8945592af83dbd16cb25f08e4eee1ee5f35648b068",
-      "recency_score": 59.521106876736106,
+      "raw_payload_hash": "sha256:af6ea60b5a679fef44c37d894f1496b80052a94e8f6fa40c829e077a1fb0e8c0",
+      "recency_score": 48.01962000173611,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -11235,25 +11235,25 @@
       "summary": "Ego-EXTRA Viewer-ready benchmark manifest for kfkas/ego-extra-imu-benchmark. It contains benchmark annotations and logical local asset hints, not redistributed source media. Status Base dataset: Ego-EXTRA Aria Rows: 14,644 Rows with local RGB+IMU: 12,702 Answer-key status: public=14644 Existing repository refreshed with the common schema. Example video A short, recompressed benchmark-corresponding clip is included for a quick visual check. It is… See the full description on the dataset page: https://huggingface.co/datasets/kfkas/ego-extra-imu-benchmark.",
       "suppression_reasons": [],
       "title": "kfkas/ego-extra-imu-benchmark",
-      "total_score": 42.4,
+      "total_score": 42.34,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/kfkas/ego-extra-imu-benchmark",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 19.99998262832267,
+      "adoption_score": 28.943135487282017,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "released",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 9.0,
+        "downloads": 27.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -11262,10 +11262,10 @@
         "Matched: benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:64d7fc8111644a2df467c946ee9e25c1e1cccb786cf3023611cf219a270c7f57",
-      "recency_score": 59.511268913773144,
+      "raw_payload_hash": "sha256:7f54261c7520ac7cd2a4ec9a9eef2049f4fe0e327cb452ba6c6964229269c3b3",
+      "recency_score": 48.00978203877315,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -11273,7 +11273,7 @@
       "summary": "Ego-R1 Bench / EgoMM-EgoLife Viewer-ready benchmark manifest for kfkas/egor1-egomm-imu-benchmark. It contains benchmark annotations and logical local asset hints, not redistributed source media. Status Base dataset: EgoLife Rows: 295 Rows with local RGB+IMU: 295 Answer-key status: public=295 Existing repository refreshed with the common schema. Example video A short, recompressed benchmark-corresponding clip is included for a quick visual check.… See the full description on the dataset page: https://huggingface.co/datasets/kfkas/egor1-egomm-imu-benchmark.",
       "suppression_reasons": [],
       "title": "kfkas/egor1-egomm-imu-benchmark",
-      "total_score": 42.4,
+      "total_score": 42.34,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/kfkas/egor1-egomm-imu-benchmark",
       "watchlist": null,
@@ -11327,18 +11327,18 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 18.061784051651017,
+      "adoption_score": 35.41700947017314,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "released",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 7.0,
+        "downloads": 58.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -11347,10 +11347,10 @@
         "Matched: benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:22b70e4c25aa5b7884934302d03d213ff638b612b5ad461503af3e0aa43ac46e",
-      "recency_score": 60.243329098958334,
+      "raw_payload_hash": "sha256:78e815866aa3ebc85a57aad12289c955276070dd37477500a67473ed3b7ae853",
+      "recency_score": 48.74184222395833,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -11358,7 +11358,7 @@
       "summary": "Cached benchmark data — length-confound audit Pre-computed residual-stream hidden states and derived features for auditing hallucination detectors. The audit re-runs in under an hour once downloaded, versus roughly 30 hours of forward passes to rebuild from scratch. Contents {model} {dataset} rtraj features.npz — 17 conditions. Keys: labels, responses, questions, proj h reasoning, proj a reasoning, proj m reasoning, reasoning dim.… See the full description on the dataset page: https://huggingface.co/datasets/AnonyJterwe/length-confound-benchmark.",
       "suppression_reasons": [],
       "title": "AnonyJterwe/length-confound-benchmark",
-      "total_score": 42.06,
+      "total_score": 44.1,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/AnonyJterwe/length-confound-benchmark",
       "watchlist": null,
@@ -11718,18 +11718,18 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 0.0,
+      "adoption_score": 15.563011489880436,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "evaluation",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "released",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 0.0,
+        "downloads": 5.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -11738,10 +11738,10 @@
         "Matched: dataset, evaluat",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:f03c9d75b4ee19d29c2617475c7014ce11d340c846a78f69afaccf5d05886dd4",
-      "recency_score": 75.47596798784723,
+      "raw_payload_hash": "sha256:3df001fa59cec310ef51509b337907de979f613743e6daa0c568af76d472cca5",
+      "recency_score": 63.97448111284723,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -11749,25 +11749,25 @@
       "summary": "Ponys.ai Multilingual AI Companion Evaluation Protocols This public collection contains 20 reusable evaluation protocols for AI companion and character experiences. It covers conversation memory, persona consistency, consent recovery, visual continuity, code switching, and regional language behavior across Japanese, Korean, Latin American Spanish, Brazilian Portuguese, Simplified Chinese, Traditional Chinese, and English. Each protocol includes structured metadata and a CSV… See the full description on the dataset page: https://huggingface.co/datasets/wujoe132/ponys-ai-multilingual-companion-evaluation.",
       "suppression_reasons": [],
       "title": "wujoe132/ponys-ai-multilingual-companion-evaluation",
-      "total_score": 40.6,
+      "total_score": 42.19,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/wujoe132/ponys-ai-multilingual-companion-evaluation",
       "watchlist": null,
       "watchlist_note": ""
     },
     {
-      "adoption_score": 0.0,
+      "adoption_score": 23.521804750435763,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "released",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 0.0,
+        "downloads": 14.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -11776,10 +11776,10 @@
         "Matched: benchmark, corpus, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:c34a111c11b225e01c74d2c6940ff3891aa39faa7f8a1e106b5bea853d022a51",
-      "recency_score": 66.37874576562498,
+      "raw_payload_hash": "sha256:80ab69ceaada1e4a801e263a2aeaab96ad8f5a25b2face70d10384834e3da5c1",
+      "recency_score": 54.877258890625,
       "relevance_score": 55.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -11787,7 +11787,7 @@
       "summary": "Presentation Change Assurance Benchmark (PCAB) This is the dataset mirror for PCAB 0.2.0, an open, deterministic corpus for tools that review stored PowerPoint OOXML changes. What is in the dataset 12 paired baseline/candidate PresentationML packages. One public, target-free truth.json per pair. A root manifest.jsonl catalogue. Every pair has fixed visible DrawingML text and exactly one changed ZIP member. The pairs cover click, hover, and mouse-over action… See the full description on the dataset page: https://huggingface.co/datasets/SybilGambleyyu/presentation-change-assurance-benchmark.",
       "suppression_reasons": [],
       "title": "SybilGambleyyu/presentation-change-assurance-benchmark",
-      "total_score": 40.53,
+      "total_score": 44.11,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/SybilGambleyyu/presentation-change-assurance-benchmark",
       "watchlist": null,
@@ -11800,7 +11800,7 @@
       "categories": [
         "evaluation"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "updated",
       "evidence_score": 40.0,
       "metrics": {
@@ -11808,15 +11808,15 @@
         "stars": 3.0
       },
       "parser_version": "github-search/1",
-      "published_at": "2026-08-04T08:52:09+00:00",
+      "published_at": "2026-08-04T14:35:51+00:00",
       "rationale": [
         "Matched: evaluat",
         "Primary record: GitHub"
       ],
-      "raw_payload_hash": "sha256:f3e379590e72051c10f58ade1c84c3c58ff3e5d384e19999c19f563e9cf877fc",
-      "recency_score": 99.51994946932871,
+      "raw_payload_hash": "sha256:cfe2464e7ca8051a9a9b1d2f3294fba5188e6ca738509a8b76e8d99d2a07b9e9",
+      "recency_score": 99.95249037210648,
       "relevance_score": 25.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "GitHub",
@@ -11824,7 +11824,7 @@
       "summary": "A tamper-evident record of what powerful actors quietly erase, verifiable offline by anyone. Seals AI evaluation results into a public registry (questions frozen before any model is queried, no edits after) and runs a live censorship observatory that treats deletion as data. Open source, MIT. Watches the censor, never the censored.",
       "suppression_reasons": [],
       "title": "beepboop2025/palimpsest",
-      "total_score": 40.42,
+      "total_score": 40.5,
       "updated_at": null,
       "url": "https://github.com/beepboop2025/palimpsest",
       "watchlist": null,
@@ -11868,18 +11868,18 @@
       "watchlist_note": ""
     },
     {
-      "adoption_score": 0.0,
+      "adoption_score": 26.020577312206346,
       "artifact_urls": [],
       "authors": [],
       "categories": [
         "benchmark",
         "dataset"
       ],
-      "discovered_at": "2026-08-04T09:05:58.527317+00:00",
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
       "event_kind": "released",
       "evidence_score": 40.0,
       "metrics": {
-        "downloads": 0.0,
+        "downloads": 19.0,
         "likes": 0.0
       },
       "parser_version": "huggingface-hub/1",
@@ -11888,10 +11888,10 @@
         "Matched: benchmark, dataset",
         "Primary record: Hugging Face"
       ],
-      "raw_payload_hash": "sha256:e1c8b883e7729edf13ee521532c1deb2280e5a5a5f577372e512513ff7b77c8e",
-      "recency_score": 74.46265780266204,
+      "raw_payload_hash": "sha256:9a8c975ea1ba6a97933196c4c1587b39a4bc838a740cfc8b84df9077ea2331b6",
+      "recency_score": 62.961170927662025,
       "relevance_score": 50.0,
-      "retrieved_at": "2026-08-04T09:05:58.527317+00:00",
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
       "score_max": 100.0,
       "score_version": 2,
       "source": "Hugging Face",
@@ -11899,14 +11899,1458 @@
       "summary": "CORRECTED 2026-08-03 after red-team review r2. The first version of this card claimed this result 'supports the paper's claim' that DeepSAP improves junction precision. That was overstated and the non-circularity claim was wrong. Both are corrected below. Data rows are unchanged. SCOPE: the 81,904 junctions DeepSAP classified 'Novel' against the Ensembl 113 annotation it was given, in sample 1 of the pantas… See the full description on the dataset page: https://huggingface.co/datasets/depinwang/benchmark-mussel-with-pantas-framework-transformer-discrimination-v1.",
       "suppression_reasons": [],
       "title": "depinwang/benchmark-mussel-with-pantas-framework-transformer-discrimination-v1",
-      "total_score": 40.39,
+      "total_score": 44.6,
       "updated_at": null,
       "url": "https://huggingface.co/datasets/depinwang/benchmark-mussel-with-pantas-framework-transformer-discrimination-v1",
       "watchlist": null,
       "watchlist_note": ""
+    },
+    {
+      "adoption_score": 43.04572949880249,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "evaluation",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "downloads": 141.0,
+        "likes": 0.0
+      },
+      "parser_version": "huggingface-hub/1",
+      "published_at": "2026-08-04T12:31:59+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset, evaluat",
+        "Primary record: Hugging Face"
+      ],
+      "raw_payload_hash": "sha256:db793371dd221d60156450bd050e67eee87517e857db6b26451874918c815bcc",
+      "recency_score": 95.65156444618056,
+      "relevance_score": 75.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "Hugging Face",
+      "source_id": "SaylorTwift/llm-benchmark-usage",
+      "summary": "LLM Benchmark Usage (2023–2026) Which evaluation benchmarks 39 AI labs use to evaluate their models, and how that's changed over time — hand-built from 62 papers, technical reports, system cards, model cards, and blog posts, covering 128 models from 2023-07 to 2026-07. Load either table with load dataset, selecting the config by name: from datasets import load dataset models = load dataset(\"SaylorTwift/llm-benchmark-usage\", \"models\")[\"models\"] sources =… See the full description on the dataset page: https://huggingface.co/datasets/SaylorTwift/llm-benchmark-usage.",
+      "suppression_reasons": [],
+      "title": "SaylorTwift/llm-benchmark-usage",
+      "total_score": 64.14,
+      "updated_at": null,
+      "url": "https://huggingface.co/datasets/SaylorTwift/llm-benchmark-usage",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 70.9652692640734,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "downloads": 3533.0,
+        "likes": 0.0
+      },
+      "parser_version": "huggingface-hub/1",
+      "published_at": "2026-08-04T09:47:54+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset, leaderboard",
+        "Primary record: Hugging Face"
+      ],
+      "raw_payload_hash": "sha256:6d683bd5c40ab3c01f1d417b96782074bf6f24fce919278916dea8f5227c3c68",
+      "recency_score": 89.9542264832176,
+      "relevance_score": 55.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "Hugging Face",
+      "source_id": "hakari-bench/leaderboard_database",
+      "summary": "HAKARI-Bench Leaderboard Database This dataset hosts the DuckDB database used by the HAKARI-Bench leaderboard. It is derived from the raw benchmark result artifacts in hakari-bench/results and is packaged for leaderboard, viewer, notebook, and SQL use. The database is produced by the HAKARI-Bench implementation in hakari-bench/hakari-bench. Because the benchmark code, schema, and build workflow evolve over time, this dataset card intentionally points to the canonical… See the full description on the dataset page: https://huggingface.co/datasets/hakari-bench/leaderboard database.",
+      "suppression_reasons": [],
+      "title": "hakari-bench/leaderboard_database",
+      "total_score": 62.98,
+      "updated_at": null,
+      "url": "https://huggingface.co/datasets/hakari-bench/leaderboard_database",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 35.1174666109584,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "evaluation",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "downloads": 56.0,
+        "likes": 0.0
+      },
+      "parser_version": "huggingface-hub/1",
+      "published_at": "2026-08-04T13:14:51+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset, evaluat",
+        "Primary record: Hugging Face"
+      ],
+      "raw_payload_hash": "sha256:f5858f651866eb54d2fbb1a48e1b7ecfcdc3f3c17787274edbc269eebde0fc70",
+      "recency_score": 97.13999037210648,
+      "relevance_score": 75.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "Hugging Face",
+      "source_id": "eddy-Wang/UVE-Subjective-Benchmark",
+      "summary": "Dataset Card for UVE-Subjective-Benchmark 🌊 Dataset Summary The evaluation of Underwater Video Enhancement (UVE) remains a significant challenge due to the complex visual degradations inherent to aquatic environments and the temporal instability frequently introduced by frame-wise processing. Existing objective metrics (e.g., UIQM, UCIQE) often correlate poorly with human subjective judgement, particularly regarding dynamic artifacts like flickering and color… See the full description on the dataset page: https://huggingface.co/datasets/eddy-Wang/UVE-Subjective-Benchmark.",
+      "suppression_reasons": [],
+      "title": "eddy-Wang/UVE-Subjective-Benchmark",
+      "total_score": 62.46,
+      "updated_at": null,
+      "url": "https://huggingface.co/datasets/eddy-Wang/UVE-Subjective-Benchmark",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 62.747027726311366,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "downloads": 1371.0,
+        "likes": 30.0
+      },
+      "parser_version": "huggingface-hub/1",
+      "published_at": "2026-08-04T11:52:29+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset",
+        "Primary record: Hugging Face"
+      ],
+      "raw_payload_hash": "sha256:975af6d218ba478540ead53fccba3938cffa1d1935a6f7602b8d14fc92f567fc",
+      "recency_score": 94.28003666840277,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "Hugging Face",
+      "source_id": "Rapidata/svg-benchmark",
+      "summary": "Rapidata Static SVG Generation Benchmark Built by Rapidata. This dataset contains 1,499,331 human responses, collected with the Rapidata Python SDK, comparing how well 33 frontier LLMs generate static SVGs from text prompts. Each row is a head-to-head comparison between two models' renders of the same prompt, scored by human annotators on one of three questions (Preference, Coherence, Alignment). The SVGs are produced as raw markup by the models, rasterized to 768×768 PNGs… See the full description on the dataset page: https://huggingface.co/datasets/Rapidata/svg-benchmark.",
+      "suppression_reasons": [],
+      "title": "Rapidata/svg-benchmark",
+      "total_score": 60.04,
+      "updated_at": null,
+      "url": "https://huggingface.co/datasets/Rapidata/svg-benchmark",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 57.081910989600644,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "evaluation",
+        "agentic"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 33.0,
+        "stars": 191.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T14:05:55+00:00",
+      "rationale": [
+        "Matched: agents~evaluating, evaluat",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:7d198a2eefe14f3e870d37ddaf8fb32560f31d8b9c1a77deafffbc77a7d97ca2",
+      "recency_score": 98.91313852025463,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "ServiceNow/eva",
+      "summary": "A New End-to-end Framework for Evaluating Voice Agents",
+      "suppression_reasons": [],
+      "title": "ServiceNow/eva",
+      "total_score": 59.55,
+      "updated_at": null,
+      "url": "https://github.com/ServiceNow/eva",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 81.57225111811239,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 218.0,
+        "stars": 1831.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T13:17:17+00:00",
+      "rationale": [
+        "Matched: dataset",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:2aaf4b6754f0eebeea2521e02b03ae2cdfd4de440487a12d68bc2e82177251fe",
+      "recency_score": 97.22448111284723,
+      "relevance_score": 25.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "ai4s-research/awesome-ai-for-science",
+      "summary": "A curated list of awesome AI tools, libraries, papers, datasets, and frameworks that accelerate scientific discovery — from physics and chemistry to biology, materials, and beyond.",
+      "suppression_reasons": [],
+      "title": "ai4s-research/awesome-ai-for-science",
+      "total_score": 56.59,
+      "updated_at": null,
+      "url": "https://github.com/ai4s-research/awesome-ai-for-science",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 41.32986413352049,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "evaluation",
+        "agentic"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 2.0,
+        "stars": 44.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T13:56:41+00:00",
+      "rationale": [
+        "Matched: agents~evals, evaluat",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:3f549c269e7b24c5d3eddf40238d5e79f696b9d974fbe7b75bcfba42bdfc46de",
+      "recency_score": 98.59253666840277,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "dynatrace-oss/dt-evals",
+      "summary": "AI evaluators CLI for your AI apps and Agents - Dynatrace AI Observability",
+      "suppression_reasons": [],
+      "title": "dynatrace-oss/dt-evals",
+      "total_score": 55.55,
+      "updated_at": null,
+      "url": "https://github.com/dynatrace-oss/dt-evals",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 7.525668186780549,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "evaluation",
+        "agentic"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 0.0,
+        "stars": 1.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T12:51:12+00:00",
+      "rationale": [
+        "Matched: agent~eval, benchmark, evaluat",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:7c8b169ed3fd8c0515f2e483d5902ea2d5f8cc2b76699b18d19949dea2bfc3c5",
+      "recency_score": 96.31880981655092,
+      "relevance_score": 75.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "cuga-project/cuga-eval",
+      "summary": "Evaluation harness for running multiple agent benchmarks against cuga-agent.",
+      "suppression_reasons": [],
+      "title": "cuga-project/cuga-eval",
+      "total_score": 55.4,
+      "updated_at": null,
+      "url": "https://github.com/cuga-project/cuga-eval",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 0.0,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "evaluation",
+        "data_quality"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "released",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 0.0,
+        "stars": 0.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T14:36:09+00:00",
+      "rationale": [
+        "Matched: benchmark, data quality, evaluat",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:19227f1e71c7718d827bd81af4ec56c13f3270f934a2ffc5380be4817e7b83eb",
+      "recency_score": 99.96290703877315,
+      "relevance_score": 75.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "ai-ahadi/arabic-ai-evaluation-portfolio",
+      "summary": "Portfolio for Arabic AI evaluation, language data quality, and benchmark design. www.linkedin.com/in/asef-hadi-b77b333b1",
+      "suppression_reasons": [],
+      "title": "ai-ahadi/arabic-ai-evaluation-portfolio",
+      "total_score": 54.24,
+      "updated_at": null,
+      "url": "https://github.com/ai-ahadi/arabic-ai-evaluation-portfolio",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 0.0,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "evaluation",
+        "agentic"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "released",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 0.0,
+        "stars": 0.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T14:34:37+00:00",
+      "rationale": [
+        "Matched: agent~benchmark, benchmark, evaluat",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:984cf9079cdb5d54303e1998c2604e9834a9db577d9fcf22e8feb33ba3da1317",
+      "recency_score": 99.9096662980324,
+      "relevance_score": 75.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "kcemate/operational-agent-benchmark",
+      "summary": "Operational Agent Benchmark: matched approved/prohibited agent-loop evaluation with deterministic evidence",
+      "suppression_reasons": [],
+      "title": "kcemate/operational-agent-benchmark",
+      "total_score": 54.23,
+      "updated_at": null,
+      "url": "https://github.com/kcemate/operational-agent-benchmark",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 0.0,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "evaluation",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "released",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 0.0,
+        "stars": 0.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T13:41:05+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset, evaluat",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:17c5176f004557adde5864d0b859e9239933a01489124d702da51f80cb48bb80",
+      "recency_score": 98.05087000173612,
+      "relevance_score": 75.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "sajjadaghasijavid/Evaluating-Ensemble-Learning-Diabetes",
+      "summary": "Source code and experimental analysis for evaluating Bagging, Boosting, and Stacking ensemble learning methods for diabetes classification using three benchmark datasets (PID, Frankfurt, and Sylhet), with SMOTE-based imbalance handling, cross-validation, performance evaluation, and statistical significance testing.",
+      "suppression_reasons": [],
+      "title": "sajjadaghasijavid/Evaluating-Ensemble-Learning-Diabetes",
+      "total_score": 53.86,
+      "updated_at": null,
+      "url": "https://github.com/sajjadaghasijavid/Evaluating-Ensemble-Learning-Diabetes",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 22.577004560341646,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "agentic"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 4.0,
+        "stars": 7.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T14:21:19+00:00",
+      "rationale": [
+        "Matched: agent~bench, benchmark",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:4af7d495c219cc20c2a68f1b571d2650c767b51d2d0e5a4e4a0ff3d5f7e79912",
+      "recency_score": 99.44786074247686,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "redhat-et/coding_agent_bench",
+      "summary": "Reproducible benchmarks for coding agents and models using Harbor",
+      "suppression_reasons": [],
+      "title": "redhat-et/coding_agent_bench",
+      "total_score": 51.03,
+      "updated_at": null,
+      "url": "https://github.com/redhat-et/coding_agent_bench",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 17.474060395685793,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 0.0,
+        "stars": 4.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T14:28:07+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:0fb82b9fd3d7ce1ad07e614d164963e7e8ae0e6417b4a9c928b4f773568d1c39",
+      "recency_score": 99.68397185358796,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "qiyang77/BinyangExperiments",
+      "summary": "The Binyang Experiments: A benchmark UAV dataset for estimating phenology, LAI, above-ground biomass, and yield of paddy rice.",
+      "suppression_reasons": [],
+      "title": "qiyang77/BinyangExperiments",
+      "total_score": 49.81,
+      "updated_at": null,
+      "url": "https://github.com/qiyang77/BinyangExperiments",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 15.051336373561098,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 2.0,
+        "stars": 3.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T14:20:49+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:8d5ac23288053f885c435e88741289fc008c965b143f63d5d2ce056e23497563",
+      "recency_score": 99.43049963136575,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "vlbthambawita/ECGBench",
+      "summary": "Reproduciable ECG Benchmark data from Open access datasets",
+      "suppression_reasons": [],
+      "title": "vlbthambawita/ECGBench",
+      "total_score": 49.15,
+      "updated_at": null,
+      "url": "https://github.com/vlbthambawita/ECGBench",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 10.032881506161207,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "released",
+      "evidence_score": 40.0,
+      "metrics": {
+        "downloads": 0.0,
+        "likes": 1.0
+      },
+      "parser_version": "huggingface-hub/1",
+      "published_at": "2026-08-04T09:07:20+00:00",
+      "rationale": [
+        "Matched: benchmark, corpus, dataset",
+        "Primary record: Hugging Face"
+      ],
+      "raw_payload_hash": "sha256:6a02ca895052131c1335298d88dd50658f67e8e7ac00a9e5df34301affea9669",
+      "recency_score": 88.54566166840277,
+      "relevance_score": 55.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "Hugging Face",
+      "source_id": "SybilGambleyyu/document-change-benchmark",
+      "summary": "Document Change Assurance Benchmark (DCAB) This dataset mirrors the deterministic fixture corpus from DCAB v0.32.0. It contains 42 paired synthetic WordprocessingML cases for static document-change assurance. Each case directory provides a baseline package, candidate package, and target-free truth.json. The public truth files describe only a narrow fact category and a reference review convention. They never disclose URI-like targets, field instructions or fragmented field-code… See the full description on the dataset page: https://huggingface.co/datasets/SybilGambleyyu/document-change-benchmark.",
+      "suppression_reasons": [],
+      "title": "SybilGambleyyu/document-change-benchmark",
+      "total_score": 47.47,
+      "updated_at": null,
+      "url": "https://huggingface.co/datasets/SybilGambleyyu/document-change-benchmark",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 10.032881506161207,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "released",
+      "evidence_score": 40.0,
+      "metrics": {
+        "downloads": 0.0,
+        "likes": 1.0
+      },
+      "parser_version": "huggingface-hub/1",
+      "published_at": "2026-08-04T13:02:01+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset",
+        "Primary record: Hugging Face"
+      ],
+      "raw_payload_hash": "sha256:b84a00056ac64192de6cf094a9a99a3d5548c65831cf2d47ba6521131c5a4e85",
+      "recency_score": 96.69438852025462,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "Hugging Face",
+      "source_id": "vasco281204/rollout_benchmark_icra_MIX82_20260804_191403",
+      "summary": "This dataset was created using LeRobot. Dataset Structure meta/info.json: { \"codebase version\": \"v3.0\", \"fps\": 30, \"features\": { \"action\": { \"dtype\": \"float32\", \"names\": [ \"shoulder pan.pos\", \"shoulder lift.pos\", \"elbow flex.pos\", \"wrist flex.pos\", \"wrist roll.pos\", \"gripper.pos\" ], \"shape\": [ 6… See the full description on the dataset page: https://huggingface.co/datasets/vasco281204/rollout benchmark icra MIX82 20260804 191403.",
+      "suppression_reasons": [],
+      "title": "vasco281204/rollout_benchmark_icra_MIX82_20260804_191403",
+      "total_score": 47.35,
+      "updated_at": null,
+      "url": "https://huggingface.co/datasets/vasco281204/rollout_benchmark_icra_MIX82_20260804_191403",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 43.30937379353259,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 4.0,
+        "stars": 53.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T13:37:30+00:00",
+      "rationale": [
+        "Matched: benchmark",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:208beb24a5a5ecb364f1e49184fa3007c28f1b2e57e8745164000bf0e2c04d4d",
+      "recency_score": 97.92644870543981,
+      "relevance_score": 25.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "morganlinton/VulcanBench",
+      "summary": "Open source, clear, transparent, real world llm benchmarks",
+      "suppression_reasons": [],
+      "title": "morganlinton/VulcanBench",
+      "total_score": 47.16,
+      "updated_at": null,
+      "url": "https://github.com/morganlinton/VulcanBench",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 7.525668186780549,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 0.0,
+        "stars": 1.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T14:00:06+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:c37ac50e1f82b88b4a64f101c9b7241c0d42fe5239419c9f89dbfd0bf9497016",
+      "recency_score": 98.71117092766204,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "akdd11/ofdma-spectrum-anomalies-simulation",
+      "summary": "Code for the paper \"Spectrum Anomaly Detection in OFDMA Systems: Simulation Framework and Benchmark Dataset\"",
+      "suppression_reasons": [],
+      "title": "akdd11/ofdma-spectrum-anomalies-simulation",
+      "total_score": 47.12,
+      "updated_at": null,
+      "url": "https://github.com/akdd11/ofdma-spectrum-anomalies-simulation",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 38.16966722398706,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "evaluation",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "released",
+      "evidence_score": 40.0,
+      "metrics": {
+        "downloads": 80.0,
+        "likes": 0.0
+      },
+      "parser_version": "huggingface-hub/1",
+      "published_at": "2026-08-03T16:27:39+00:00",
+      "rationale": [
+        "Matched: dataset, evaluat",
+        "Primary record: Hugging Face"
+      ],
+      "raw_payload_hash": "sha256:680fe45eb08c1cd1d2a772a0d5479ebac4988c5a2ab1d511df1d76d0263bbdb2",
+      "recency_score": 53.834434816550925,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "Hugging Face",
+      "source_id": "Cyber-security-final-project/Evaluation_of_OpenSource_Models_for_PDF_Injection_Recognition",
+      "summary": "Injected PDFs - Model Evaluation This repository holds the model evaluation stage of a project on detecting harmless-but-real attack payloads injected into PDF files, together with the artefacts it produced for the application. Nothing is trained here. Seven off-the-shelf models are measured against the same 1,100 PDFs, and the two winners are exported for the app to load. Question Candidates Winner Part A Which files look like this one? 3 embedding models x 2 inputs… See the full description on the dataset page: https://huggingface.co/datasets/Cyber-security-final-project/Evaluation of OpenSource Models for PDF Injection Recognition.",
+      "suppression_reasons": [],
+      "title": "Cyber-security-final-project/Evaluation_of_OpenSource_Models_for_PDF_Injection_Recognition",
+      "total_score": 45.81,
+      "updated_at": null,
+      "url": "https://huggingface.co/datasets/Cyber-security-final-project/Evaluation_of_OpenSource_Models_for_PDF_Injection_Recognition",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 0.0,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "agentic"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 0.0,
+        "stars": 0.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T14:36:26+00:00",
+      "rationale": [
+        "Matched: agent~benchmarks, benchmark",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:a79d3e2fdccb4bb1b6db8901b2b10bc68c5177d09b9b49d5e0fba3cbe1085893",
+      "recency_score": 99.9727450017361,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "cbizon/brunner",
+      "summary": "Contract-driven runner for isolated agent benchmarks",
+      "suppression_reasons": [],
+      "title": "cbizon/brunner",
+      "total_score": 45.49,
+      "updated_at": null,
+      "url": "https://github.com/cbizon/brunner",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 0.0,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "evaluation",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 0.0,
+        "stars": 0.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T14:33:10+00:00",
+      "rationale": [
+        "Matched: dataset, evaluat",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:f66289d80cf112cda3683e70e1416359be1ecab990125954f66ce6c05835b76b",
+      "recency_score": 99.85931907581018,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "NiklasMelton/vertebrae",
+      "summary": "A Python package for evaluating feature extractors and transfer-learning backbones on labeled datasets.",
+      "suppression_reasons": [],
+      "title": "NiklasMelton/vertebrae",
+      "total_score": 45.47,
+      "updated_at": null,
+      "url": "https://github.com/NiklasMelton/vertebrae",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 0.0,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "agentic"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 1.0,
+        "stars": 0.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T14:28:03+00:00",
+      "rationale": [
+        "Matched: agent~benchmarks, benchmark",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:f991967cc92b0919d9303da6a94a390577ec5cb2ff7195b0d9dd75da568c42db",
+      "recency_score": 99.68165703877315,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "Palo-Alto-AI-Research-Lab/awesome-verified-agents",
+      "summary": "Tools that produce evidence about what an AI agent actually did — gates, attestation, output verification, benchmarks. Inclusion bar: name the artifact a human can inspect later.",
+      "suppression_reasons": [],
+      "title": "Palo-Alto-AI-Research-Lab/awesome-verified-agents",
+      "total_score": 45.44,
+      "updated_at": null,
+      "url": "https://github.com/Palo-Alto-AI-Research-Lab/awesome-verified-agents",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 0.0,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 0.0,
+        "stars": 0.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T14:16:18+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:336b3db4ad60e30a9a30bd8a3fa1bad4e162f5a9970431734baf40d79ba6342e",
+      "recency_score": 99.27367092766204,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "chang-xinhai/Awesome-Robot-Data-Engine",
+      "summary": "Curated papers, datasets, systems, and benchmarks for robot data engines across robot-centric, UMI, human/egocentric, and simulation data.",
+      "suppression_reasons": [],
+      "title": "chang-xinhai/Awesome-Robot-Data-Engine",
+      "total_score": 45.35,
+      "updated_at": null,
+      "url": "https://github.com/chang-xinhai/Awesome-Robot-Data-Engine",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 0.0,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "evaluation"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 0.0,
+        "stars": 0.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T14:08:22+00:00",
+      "rationale": [
+        "Matched: benchmark, evaluat",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:a39d4af4bb8f4d66e8213ea45a6e5621aadc947f956b9cce2ab42f11197e9bfd",
+      "recency_score": 98.99820796469908,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "AInvirion/prompt-injection-benchmark",
+      "summary": "A benchmark tool for evaluating prompt injection detection in AIProxyGuard and similar systems.",
+      "suppression_reasons": [],
+      "title": "AInvirion/prompt-injection-benchmark",
+      "total_score": 45.3,
+      "updated_at": null,
+      "url": "https://github.com/AInvirion/prompt-injection-benchmark",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 0.0,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 0.0,
+        "stars": 0.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T13:48:19+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:5bbef3757862d4994df8e91dd707d60011bd35046d8a14af6edd70aa3024c132",
+      "recency_score": 98.30202740914352,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "SarthakResearch/Cloud-Resource-Allocation-Sample-Dataset",
+      "summary": "This repository contains a synthetically generated benchmark dataset representing IoT task requests and heterogeneous cloud Virtual Machine (VM) offerings, intended for use in research on cloud resource allocation, task scheduling, and auction-based resource provisioning in IoT-cloud environments.",
+      "suppression_reasons": [],
+      "title": "SarthakResearch/Cloud-Resource-Allocation-Sample-Dataset",
+      "total_score": 45.16,
+      "updated_at": null,
+      "url": "https://github.com/SarthakResearch/Cloud-Resource-Allocation-Sample-Dataset",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 0.0,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "evaluation",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "released",
+      "evidence_score": 40.0,
+      "metrics": {
+        "downloads": 0.0,
+        "likes": 0.0
+      },
+      "parser_version": "huggingface-hub/1",
+      "published_at": "2026-08-04T09:35:33+00:00",
+      "rationale": [
+        "Matched: dataset, evaluat, preference data",
+        "Primary record: Hugging Face"
+      ],
+      "raw_payload_hash": "sha256:e690b1402aae382c6bc2c6ee992e35ce9f60e805b9d215b2e9d6ec33fda105df",
+      "recency_score": 89.52540703877315,
+      "relevance_score": 55.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "Hugging Face",
+      "source_id": "shanmukha-dev/code-preference-sample",
+      "summary": "Code Response Preference Pairs — Free Sample (Python & JavaScript) This is a free 120-row sample of a 600-row manually-verified preference dataset. The full set is available separately — see \"Get the full dataset\" below. What this is A preference dataset for fine-tuning and evaluating coding AI models. Each row contains a coding task, two candidate code responses, a label identifying the preferred response, and a detailed technical justification — the standard… See the full description on the dataset page: https://huggingface.co/datasets/shanmukha-dev/code-preference-sample.",
+      "suppression_reasons": [],
+      "title": "shanmukha-dev/code-preference-sample",
+      "total_score": 45.16,
+      "updated_at": null,
+      "url": "https://huggingface.co/datasets/shanmukha-dev/code-preference-sample",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 0.0,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "evaluation"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "released",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 0.0,
+        "stars": 0.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T13:28:07+00:00",
+      "rationale": [
+        "Matched: benchmark, evaluat",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:87a062a1d8ba331fc501b9c9daba99dc72eba67d96445c9562afa9ea366a2bd3",
+      "recency_score": 97.60063852025463,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "memekr/fairbench",
+      "summary": "A fair, open-source benchmark for comparing models and evaluation harnesses under identical conditions.",
+      "suppression_reasons": [],
+      "title": "memekr/fairbench",
+      "total_score": 45.02,
+      "updated_at": null,
+      "url": "https://github.com/memekr/fairbench",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 0.0,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "evaluation",
+        "agentic"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 0.0,
+        "stars": 0.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T13:03:34+00:00",
+      "rationale": [
+        "Matched: agentic~evaluation, evaluat",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:a9cb2835236e2a12fcba24841318c2cccac4095d759473b7673173432f5d6b3c",
+      "recency_score": 96.74820796469908,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "ffaisal93/agentic-ai-evaluation-guide",
+      "summary": "",
+      "suppression_reasons": [],
+      "title": "ffaisal93/agentic-ai-evaluation-guide",
+      "total_score": 44.85,
+      "updated_at": null,
+      "url": "https://github.com/ffaisal93/agentic-ai-evaluation-guide",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 0.0,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "released",
+      "evidence_score": 40.0,
+      "metrics": {
+        "downloads": 0.0,
+        "likes": 0.0
+      },
+      "parser_version": "huggingface-hub/1",
+      "published_at": "2026-08-04T12:04:41+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset",
+        "Primary record: Hugging Face"
+      ],
+      "raw_payload_hash": "sha256:8dcec02f7b8f233bec84a299152dffa3af5fc225e4651406ed5bd79a1a19ce6c",
+      "recency_score": 94.70364777951389,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "Hugging Face",
+      "source_id": "vasco281204/rollout_benchmark_icra_mix_36_sim_64_real_20260804_174053",
+      "summary": "This dataset was created using LeRobot. Dataset Structure meta/info.json: { \"codebase version\": \"v3.0\", \"fps\": 30, \"features\": { \"action\": { \"dtype\": \"float32\", \"names\": [ \"shoulder pan.pos\", \"shoulder lift.pos\", \"elbow flex.pos\", \"wrist flex.pos\", \"wrist roll.pos\", \"gripper.pos\" ], \"shape\": [ 6… See the full description on the dataset page: https://huggingface.co/datasets/vasco281204/rollout benchmark icra mix 36 sim 64 real 20260804 174053.",
+      "suppression_reasons": [],
+      "title": "vasco281204/rollout_benchmark_icra_mix_36_sim_64_real_20260804_174053",
+      "total_score": 44.44,
+      "updated_at": null,
+      "url": "https://huggingface.co/datasets/vasco281204/rollout_benchmark_icra_mix_36_sim_64_real_20260804_174053",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 0.0,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "released",
+      "evidence_score": 40.0,
+      "metrics": {
+        "downloads": 0.0,
+        "likes": 0.0
+      },
+      "parser_version": "huggingface-hub/1",
+      "published_at": "2026-08-04T10:39:50+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset",
+        "Primary record: Hugging Face"
+      ],
+      "raw_payload_hash": "sha256:85bad31e4a07a28968d6561d124ca96733defb9a99172f02e535d70d66a16bb7",
+      "recency_score": 91.75746722395833,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "Hugging Face",
+      "source_id": "vasco281204/rollout_benchmark_icra_mix_20260804_164646",
+      "summary": "This dataset was created using LeRobot. Dataset Structure meta/info.json: { \"codebase version\": \"v3.0\", \"fps\": 30, \"features\": { \"action\": { \"dtype\": \"float32\", \"names\": [ \"shoulder pan.pos\", \"shoulder lift.pos\", \"elbow flex.pos\", \"wrist flex.pos\", \"wrist roll.pos\", \"gripper.pos\" ], \"shape\": [ 6… See the full description on the dataset page: https://huggingface.co/datasets/vasco281204/rollout benchmark icra mix 20260804 164646.",
+      "suppression_reasons": [],
+      "title": "vasco281204/rollout_benchmark_icra_mix_20260804_164646",
+      "total_score": 43.85,
+      "updated_at": null,
+      "url": "https://huggingface.co/datasets/vasco281204/rollout_benchmark_icra_mix_20260804_164646",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 29.401962264603142,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 0.0,
+        "stars": 14.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T13:21:05+00:00",
+      "rationale": [
+        "Matched: benchmark",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:ca6a8289f07d708ef93e8d995bdf3ae6ecdf1a7af303147fb7727352ed42e319",
+      "recency_score": 97.35642555729167,
+      "relevance_score": 25.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "cipher982/llm-benchmarks",
+      "summary": "Benchmarking LLM Inference Speeds",
+      "suppression_reasons": [],
+      "title": "cipher982/llm-benchmarks",
+      "total_score": 43.57,
+      "updated_at": null,
+      "url": "https://github.com/cipher982/llm-benchmarks",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 0.0,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "released",
+      "evidence_score": 40.0,
+      "metrics": {
+        "downloads": 0.0,
+        "likes": 0.0
+      },
+      "parser_version": "huggingface-hub/1",
+      "published_at": "2026-08-04T09:45:54+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset",
+        "Primary record: Hugging Face"
+      ],
+      "raw_payload_hash": "sha256:26618cfb84b12b9e4247f835032d442968a53378b87196452de065479aa21a0f",
+      "recency_score": 89.88478203877315,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "Hugging Face",
+      "source_id": "vasco281204/rollout_benchmark_icra_mix64_35_20260804_155515",
+      "summary": "This dataset was created using LeRobot. Dataset Structure meta/info.json: { \"codebase version\": \"v3.0\", \"fps\": 30, \"features\": { \"action\": { \"dtype\": \"float32\", \"names\": [ \"shoulder pan.pos\", \"shoulder lift.pos\", \"elbow flex.pos\", \"wrist flex.pos\", \"wrist roll.pos\", \"gripper.pos\" ], \"shape\": [ 6… See the full description on the dataset page: https://huggingface.co/datasets/vasco281204/rollout benchmark icra mix64 35 20260804 155515.",
+      "suppression_reasons": [],
+      "title": "vasco281204/rollout_benchmark_icra_mix64_35_20260804_155515",
+      "total_score": 43.48,
+      "updated_at": null,
+      "url": "https://huggingface.co/datasets/vasco281204/rollout_benchmark_icra_mix64_35_20260804_155515",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 26.444362925511438,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "downloads": 20.0,
+        "likes": 1.0
+      },
+      "parser_version": "huggingface-hub/1",
+      "published_at": "2026-08-04T14:14:22+00:00",
+      "rationale": [
+        "Matched: benchmark",
+        "Primary record: Hugging Face"
+      ],
+      "raw_payload_hash": "sha256:cefb59e43c21ecafee4b000f1c0b81f02cc41738445464622d578b68843f23cb",
+      "recency_score": 99.2065412980324,
+      "relevance_score": 25.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "Hugging Face",
+      "source_id": "aurelio-amerio/SBI-benchmarks",
+      "summary": "",
+      "suppression_reasons": [],
+      "title": "aurelio-amerio/SBI-benchmarks",
+      "total_score": 43.2,
+      "updated_at": null,
+      "url": "https://huggingface.co/datasets/aurelio-amerio/SBI-benchmarks",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 26.034534476721447,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "evaluation"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 2.0,
+        "stars": 10.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T14:27:17+00:00",
+      "rationale": [
+        "Matched: evaluat",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:b23c84f4fd091ed4a98bbcad7b30ff185d214fdcd94dcfe0b10dec5cfa753311",
+      "recency_score": 99.65503666840277,
+      "relevance_score": 25.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "awslabs/gen-ai-evaluation-toolkit-on-aws",
+      "summary": "Gen AI Evaluation Toolkit on AWS is a flexible, cloud-native accelerator built on AWS serverless architecture that enables comprehensive evaluation of generative AI applications.",
+      "suppression_reasons": [],
+      "title": "awslabs/gen-ai-evaluation-toolkit-on-aws",
+      "total_score": 43.19,
+      "updated_at": null,
+      "url": "https://github.com/awslabs/gen-ai-evaluation-toolkit-on-aws",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 24.608957052603845,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "released",
+      "evidence_score": 40.0,
+      "metrics": {
+        "downloads": 16.0,
+        "likes": 0.0
+      },
+      "parser_version": "huggingface-hub/1",
+      "published_at": "2026-08-03T13:39:46+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset, leaderboard",
+        "Primary record: Hugging Face"
+      ],
+      "raw_payload_hash": "sha256:c578068446123fa8e88a1a337bff8a7382b0c489023bd4295194355f22605003",
+      "recency_score": 48.00515240914353,
+      "relevance_score": 55.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "Hugging Face",
+      "source_id": "kfkas/egomemreason-imu-benchmark",
+      "summary": "EgoMemReason Viewer-ready benchmark manifest for kfkas/egomemreason-imu-benchmark. It contains benchmark annotations and logical local asset hints, not redistributed source media. Status Base dataset: EgoLife Rows: 500 Rows with local RGB+IMU: 280 Answer-key status: private leaderboard=500 Public annotations do not include answer keys; the official leaderboard is required for scoring. Example video A short, recompressed benchmark-corresponding… See the full description on the dataset page: https://huggingface.co/datasets/kfkas/egomemreason-imu-benchmark.",
+      "suppression_reasons": [],
+      "title": "kfkas/egomemreason-imu-benchmark",
+      "total_score": 43.0,
+      "updated_at": null,
+      "url": "https://huggingface.co/datasets/kfkas/egomemreason-imu-benchmark",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 25.575049804961637,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "released",
+      "evidence_score": 40.0,
+      "metrics": {
+        "downloads": 18.0,
+        "likes": 0.0
+      },
+      "parser_version": "huggingface-hub/1",
+      "published_at": "2026-08-03T13:39:38+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset",
+        "Primary record: Hugging Face"
+      ],
+      "raw_payload_hash": "sha256:ab3670f985937f56938b8b0187cc19de860afe39f0900a762f5fe55df0428609",
+      "recency_score": 48.00052277951389,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "Hugging Face",
+      "source_id": "kfkas/egolifeqa-imu-benchmark",
+      "summary": "EgoLifeQA Viewer-ready benchmark manifest for kfkas/egolifeqa-imu-benchmark. It contains benchmark annotations and logical local asset hints, not redistributed source media. Status Base dataset: EgoLife Rows: 500 Rows with local RGB+IMU: 0 Answer-key status: public=500 The public file currently contains the A1 JAKE 500-row subset. Example video A short, recompressed benchmark-corresponding clip is included for a quick visual check. It is not the… See the full description on the dataset page: https://huggingface.co/datasets/kfkas/egolifeqa-imu-benchmark.",
+      "suppression_reasons": [],
+      "title": "kfkas/egolifeqa-imu-benchmark",
+      "total_score": 41.49,
+      "updated_at": null,
+      "url": "https://huggingface.co/datasets/kfkas/egolifeqa-imu-benchmark",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 17.474060395685793,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "agentic"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "updated",
+      "evidence_score": 40.0,
+      "metrics": {
+        "forks": 0.0,
+        "stars": 4.0
+      },
+      "parser_version": "github-search/1",
+      "published_at": "2026-08-04T14:18:08+00:00",
+      "rationale": [
+        "Matched: agentic~harness",
+        "Primary record: GitHub"
+      ],
+      "raw_payload_hash": "sha256:a25a45c06f9916ca601bbb3095606111733c5c5b55acef39c9106070dee562cb",
+      "recency_score": 99.33732833506944,
+      "relevance_score": 25.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "GitHub",
+      "source_id": "TaylorAmarelTech/gemma4_comp",
+      "summary": "DueCare: Agentic LLM safety harness for migrant-worker protection — Gemma 4 Good Hackathon submission",
+      "suppression_reasons": [],
+      "title": "TaylorAmarelTech/gemma4_comp",
+      "total_score": 40.99,
+      "updated_at": null,
+      "url": "https://github.com/TaylorAmarelTech/gemma4_comp",
+      "watchlist": null,
+      "watchlist_note": ""
+    },
+    {
+      "adoption_score": 12.041189367767345,
+      "artifact_urls": [],
+      "authors": [],
+      "categories": [
+        "benchmark",
+        "dataset"
+      ],
+      "discovered_at": "2026-08-04T14:37:13.096637+00:00",
+      "event_kind": "released",
+      "evidence_score": 40.0,
+      "metrics": {
+        "downloads": 3.0,
+        "likes": 0.0
+      },
+      "parser_version": "huggingface-hub/1",
+      "published_at": "2026-08-03T18:51:40+00:00",
+      "rationale": [
+        "Matched: benchmark, dataset",
+        "Primary record: Hugging Face"
+      ],
+      "raw_payload_hash": "sha256:4cac4c67a96abf85c49dd9a313c989aeaaf2abe5ac7f1ab63cbda7de22b02f23",
+      "recency_score": 58.83501352025464,
+      "relevance_score": 50.0,
+      "retrieved_at": "2026-08-04T14:37:13.096637+00:00",
+      "score_max": 100.0,
+      "score_version": 2,
+      "source": "Hugging Face",
+      "source_id": "hustle-insider/publish-reach-benchmarks",
+      "summary": "Hustle Insider Publish Reach Benchmarks Benchmark dataset of 20 brand publish reach cases with individual scores for publish reach, SEO & GEO, AI visibility, digital PR, founder brand, and distribution reach signals. Built by HustleInsider.it.com. Dataset Description This dataset contains benchmark data for a digital visibility and content distribution platform helping businesses, founders and brands get their news and content in front of the right audience.… See the full description on the dataset page: https://huggingface.co/datasets/hustle-insider/publish-reach-benchmarks.",
+      "suppression_reasons": [],
+      "title": "hustle-insider/publish-reach-benchmarks",
+      "total_score": 40.28,
+      "updated_at": null,
+      "url": "https://huggingface.co/datasets/hustle-insider/publish-reach-benchmarks",
+      "watchlist": null,
+      "watchlist_note": ""
     }
   ],
-  "generated_at": "2026-08-04T09:05:58.527317+00:00",
+  "generated_at": "2026-08-04T14:37:13.096637+00:00",
   "ingest_health": [
     {
       "error": null,
@@ -11917,7 +13361,7 @@
     },
     {
       "error": null,
-      "item_count": 72,
+      "item_count": 81,
       "kind": "evidence",
       "ok": true,
       "source": "huggingface"
@@ -11983,18 +13427,23 @@
   ],
   "schema_version": 2,
   "selection": {
-    "deduplicated": 454,
-    "fetched": 454,
+    "deduplicated": 381,
+    "fetched": 463,
     "lookback_hours": 48.0,
     "max_items_per_source": 300,
+    "merged_from": [
+      "2026-08-04T09:05:58.527317+00:00",
+      "2026-08-04T14:37:13.096637+00:00"
+    ],
     "minimum_score": 40.0,
-    "published": 174,
-    "qualified": 174,
+    "published": 95,
+    "published_total": 212,
+    "qualified": 95,
     "report_limit": 300,
     "score_max": 100.0,
     "score_version": 2,
-    "scored": 454,
-    "suppressed_as_seen": 0,
+    "scored": 381,
+    "suppressed_as_seen": 82,
     "suppressed_future_dated": 0,
     "suppressed_low_value": 1,
     "taxonomy_version": "sha256:5ee3bd8146ce",
