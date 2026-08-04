@@ -528,6 +528,31 @@ def test_a_zero_adoption_bar_has_no_visible_width():
     assert "maxCount && entry.card_count" in script
 
 
+def test_leaderboard_has_an_honest_time_based_adoption_frontier():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'id="adoption-frontier"' in html
+    assert 'id="frontier-benchmark"' in html
+    assert 'id="frontier-chart"' in html
+    assert "function frontierEvents(entry)" in script
+    assert "const advances = !seenOrganizations.has(adopter.organization)" in script
+    assert "A long flat run is reporting saturation" in html
+    assert "not a claim about benchmark score saturation" in html
+
+
+def test_new_benchmarks_are_visually_prioritized_without_changing_the_rank():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    assert "function isNewBenchmark(entry, board)" in script
+    assert "cutoff.setUTCDate(cutoff.getUTCDate() - 548)" in script
+    assert 'text: "new instrument"' in script
+    assert '"New instruments"' in script
+    assert ".benchmark-new" in styles
+    assert "board.entries?.[0]?.card_count" in script
+
+
 def test_share_card_is_declared_with_an_absolute_url():
     html = Path("site/index.html").read_text(encoding="utf-8")
 

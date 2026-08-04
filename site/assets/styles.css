@@ -1347,6 +1347,172 @@ td a {
 
 /* Model Card Adoption Rank (issue #83) */
 
+.frontier-panel {
+  margin: 1.75rem 0;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid var(--ink);
+  background: #0d1519;
+  color: #f3f6f7;
+  box-shadow: var(--shadow);
+}
+
+.frontier-heading-row {
+  display: flex;
+  gap: 2rem;
+  align-items: end;
+  justify-content: space-between;
+}
+
+.frontier-heading-row h2 {
+  margin-bottom: 0;
+  font-size: clamp(1.55rem, 3vw, 2.35rem);
+  text-transform: uppercase;
+}
+
+.frontier-panel .eyebrow {
+  color: #7fc7bc;
+}
+
+.frontier-panel .section-note {
+  max-width: 900px;
+  margin: 1rem 0 1.25rem;
+  color: #aebcc1;
+}
+
+.frontier-picker {
+  display: grid;
+  gap: 0.35rem;
+  min-width: min(340px, 100%);
+  color: #aebcc1;
+  font-family: var(--utility);
+  font-size: 0.68rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.frontier-picker select {
+  width: 100%;
+  padding: 0.7rem 2.2rem 0.7rem 0.75rem;
+  border: 1px solid #536168;
+  border-radius: 0;
+  background: #162228;
+  color: #f3f6f7;
+}
+
+.frontier-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1.2rem;
+  align-items: baseline;
+  padding: 0.75rem 0;
+  border-top: 1px solid #39464c;
+  border-bottom: 1px solid #39464c;
+  font-family: var(--utility);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.frontier-summary strong {
+  color: white;
+  font-size: 0.82rem;
+}
+
+.frontier-summary span {
+  color: #aebcc1;
+}
+
+.frontier-chart {
+  overflow-x: auto;
+}
+
+.frontier-chart svg {
+  display: block;
+  width: 100%;
+  min-width: 720px;
+  height: auto;
+}
+
+.frontier-grid {
+  stroke: #344249;
+  stroke-dasharray: 3 6;
+  stroke-width: 1;
+}
+
+.frontier-line {
+  fill: none;
+  stroke: #7fc7bc;
+  stroke-width: 3;
+}
+
+.frontier-point circle {
+  transition: r 120ms ease, stroke-width 120ms ease;
+}
+
+.frontier-point-advance circle {
+  fill: #f4b65e;
+  stroke: #fff4dd;
+  stroke-width: 2;
+}
+
+.frontier-point-repeat circle {
+  fill: #0d1519;
+  stroke: #91a0a7;
+  stroke-width: 2;
+}
+
+.frontier-point:focus circle,
+.frontier-point:hover circle {
+  r: 11px;
+  stroke-width: 4;
+}
+
+.frontier-label,
+.frontier-release-label,
+.frontier-tick,
+.frontier-axis-label {
+  fill: #aebcc1;
+  font-family: var(--utility);
+}
+
+.frontier-label {
+  fill: #f3f6f7;
+  font-size: 12px;
+}
+
+.frontier-tick,
+.frontier-axis-label {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.frontier-release-line {
+  stroke: #dc633f;
+  stroke-dasharray: 5 5;
+  stroke-width: 1.5;
+}
+
+.frontier-release-label {
+  fill: #ee9b82;
+  font-size: 11px;
+}
+
+.benchmark-new {
+  border-left: 4px solid var(--orange);
+  background: linear-gradient(90deg, rgb(220 99 63 / 8%), transparent 35%);
+}
+
+.benchmark-new-badge {
+  padding: 0.15rem 0.35rem;
+  background: var(--orange);
+  color: white;
+}
+
+.frontier-jump {
+  margin-right: 0.55rem;
+  background: transparent;
+}
+
 .leaderboard-filters {
   margin-bottom: 0.5rem;
 }
@@ -1804,6 +1970,11 @@ footer {
 
   .heading-note {
     text-align: left;
+  }
+
+  .frontier-heading-row {
+    display: grid;
+    align-items: start;
   }
 
   h1 {

@@ -28,6 +28,7 @@ const state = {
   ldomain: "",
   lorg: "",
   lera: "",
+  lfrontier: "",
 };
 
 function element(tag, options = {}, children = []) {
@@ -110,6 +111,7 @@ function readUrl() {
   state.ldomain = params.get("ldomain") || "";
   state.lorg = params.get("lorg") || "";
   state.lera = params.get("lera") || "";
+  state.lfrontier = params.get("lfrontier") || "";
   state.rubric = new URLSearchParams(window.location.hash.slice(1)).get("rubric") || "";
 }
 
@@ -130,6 +132,7 @@ function writeUrl() {
   if (state.ldomain) params.set("ldomain", state.ldomain);
   if (state.lorg) params.set("lorg", state.lorg);
   if (state.lera) params.set("lera", state.lera);
+  if (state.lfrontier) params.set("lfrontier", state.lfrontier);
   const query = params.toString();
   // The rubric dialog is a hashtag, not a query param, so a shared link like
   // #rubric=2 reads as "jump to this section" rather than another filter.
@@ -1480,6 +1483,229 @@ function adoptionBar(entry, maxCount) {
   );
 }
 
+function frontierEvents(entry) {
+  const seenOrganizations = new Set();
+  return (entry.adopters || [])
+    .filter((adopter) => adopter.published)
+    .sort(
+      (a, b) =>
+        a.published.localeCompare(b.published) ||
+        a.organization.localeCompare(b.organization) ||
+        a.model.localeCompare(b.model),
+    )
+    .map((adopter) => {
+      const advances = !seenOrganizations.has(adopter.organization);
+      seenOrganizations.add(adopter.organization);
+      return {
+        ...adopter,
+        advances,
+        organizationCount: seenOrganizations.size,
+      };
+    });
+}
+
+function frontierDefaultEntry(board) {
+  const adopted = (board.entries || []).filter((entry) => entry.card_count > 0);
+  return [...adopted].sort(
+    (a, b) =>
+      (b.released || "").localeCompare(a.released || "") ||
+      b.organization_count - a.organization_count ||
+      a.name.localeCompare(b.name),
+  )[0];
+}
+
+function isNewBenchmark(entry, board) {
+  if (!entry.released) return false;
+  const latestPublished = (board.model_cards || [])
+    .map((card) => card.published)
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+  if (!latestPublished) return false;
+  const cutoff = new Date(`${latestPublished}T00:00:00Z`);
+  cutoff.setUTCDate(cutoff.getUTCDate() - 548);
+  return new Date(`${entry.released}T00:00:00Z`) >= cutoff;
+}
+
+function renderAdoptionFrontier(board) {
+  const adopted = (board.entries || []).filter((entry) => entry.card_count > 0);
+  const defaultEntry = frontierDefaultEntry(board);
+  if (!adopted.length || !defaultEntry) {
+    replaceChildren(byId("frontier-chart"), [
+      element("p", { className: "empty-state", text: "No dated model-card mentions yet." }),
+    ]);
+    return;
+  }
+  if (!adopted.some((entry) => entry.benchmark_id === state.lfrontier)) {
+    state.lfrontier = defaultEntry.benchmark_id;
+  }
+  replaceChildren(byId("frontier-benchmark"), [
+    ...[...adopted]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((entry) =>
+        option(entry.benchmark_id, entry.name, entry.benchmark_id === state.lfrontier),
+      ),
+  ]);
+
+  const entry = adopted.find((candidate) => candidate.benchmark_id === state.lfrontier);
+  const events = frontierEvents(entry);
+  if (!events.length) {
+    replaceChildren(byId("frontier-chart"), [
+      element("p", { className: "empty-state", text: "This benchmark has no dated mentions." }),
+    ]);
+    return;
+  }
+
+  const datedCards = (board.model_cards || []).filter((card) => card.published);
+  const startText = [entry.released, events[0].published].filter(Boolean).sort()[0];
+  const endText = datedCards.map((card) => card.published).sort().at(-1) || events.at(-1).published;
+  const start = new Date(`${startText}T00:00:00Z`).getTime();
+  const rawEnd = new Date(`${endText}T00:00:00Z`).getTime();
+  const end = Math.max(rawEnd, start + 86_400_000);
+  const width = 1000;
+  const height = 440;
+  const margin = { top: 34, right: 42, bottom: 68, left: 64 };
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+  const maxOrganizations = Math.max(1, Number(board.organization_count || 0));
+  const x = (date) =>
+    margin.left +
+    ((new Date(`${date}T00:00:00Z`).getTime() - start) / (end - start)) * plotWidth;
+  const y = (count) => margin.top + plotHeight - (count / maxOrganizations) * plotHeight;
+
+  const svg = svgElement("svg", {
+    viewBox: `0 0 ${width} ${height}`,
+    role: "img",
+    "aria-label": `${entry.name} adoption over time. ${entry.organization_count} of ${board.organization_count} organizations report it.`,
+  });
+  for (let count = 0; count <= maxOrganizations; count += 1) {
+    const yPosition = y(count);
+    svg.append(
+      svgElement("line", {
+        x1: margin.left,
+        y1: yPosition,
+        x2: width - margin.right,
+        y2: yPosition,
+        class: "frontier-grid",
+      }),
+    );
+    svg.append(
+      svgElement(
+        "text",
+        { x: margin.left - 14, y: yPosition + 4, "text-anchor": "end", class: "frontier-tick" },
+        count,
+      ),
+    );
+  }
+
+  const frontier = events.filter((event) => event.advances);
+  let path = `M ${x(startText)} ${y(0)}`;
+  for (const event of frontier) {
+    path += ` H ${x(event.published)} V ${y(event.organizationCount)}`;
+  }
+  path += ` H ${x(endText)}`;
+  svg.append(svgElement("path", { d: path, class: "frontier-line" }));
+
+  for (const event of events) {
+    const group = svgElement("g", {
+      class: `frontier-point${event.advances ? " frontier-point-advance" : " frontier-point-repeat"}`,
+      tabindex: "0",
+      role: "img",
+      "aria-label": `${event.organization}, ${event.model}, ${formatDate(event.published, {
+        dateStyle: "medium",
+      })}${event.advances ? ", advanced the frontier" : ", repeat report"}`,
+    });
+    const pointX = x(event.published);
+    const pointY = y(event.organizationCount);
+    group.append(svgElement("circle", { cx: pointX, cy: pointY, r: event.advances ? 8 : 6 }));
+    if (event.advances) {
+      const labelOnLeft = pointX > width - margin.right - 145;
+      const labelBelow = pointY < margin.top + 28;
+      group.append(
+        svgElement(
+          "text",
+          {
+            x: pointX + (labelOnLeft ? -11 : 11),
+            y: pointY + (labelBelow ? 34 : -11),
+            "text-anchor": labelOnLeft ? "end" : "start",
+            class: "frontier-label",
+          },
+          event.organization,
+        ),
+      );
+    }
+    group.append(svgElement("title", {}, `${event.organization} · ${event.model}`));
+    svg.append(group);
+  }
+
+  const releaseX = entry.released ? x(entry.released) : x(startText);
+  svg.append(
+    svgElement("line", {
+      x1: releaseX,
+      y1: margin.top,
+      x2: releaseX,
+      y2: margin.top + plotHeight,
+      class: "frontier-release-line",
+    }),
+  );
+  svg.append(
+    svgElement(
+      "text",
+      { x: releaseX + 8, y: margin.top + 14, class: "frontier-release-label" },
+      entry.released ? "benchmark released" : "first dated mention",
+    ),
+  );
+  for (const [date, anchor] of [
+    [startText, "start"],
+    [endText, "end"],
+  ]) {
+    svg.append(
+      svgElement(
+        "text",
+        {
+          x: x(date),
+          y: height - 30,
+          "text-anchor": anchor,
+          class: "frontier-tick",
+        },
+        formatDate(date, { month: "short", year: "numeric" }),
+      ),
+    );
+  }
+  svg.append(
+    svgElement(
+      "text",
+      {
+        x: 18,
+        y: margin.top + plotHeight / 2,
+        transform: `rotate(-90 18 ${margin.top + plotHeight / 2})`,
+        "text-anchor": "middle",
+        class: "frontier-axis-label",
+      },
+      "organizations reporting",
+    ),
+  );
+  svg.append(
+    svgElement(
+      "text",
+      { x: margin.left + plotWidth / 2, y: height - 7, "text-anchor": "middle", class: "frontier-axis-label" },
+      "publication time",
+    ),
+  );
+
+  const lastAdvance = frontier.at(-1);
+  replaceChildren(byId("frontier-summary"), [
+    element("strong", { text: entry.name }),
+    element("span", {
+      text: `${metricLabel(entry.card_count, "card")} · ${entry.organization_count} of ${board.organization_count} organizations`,
+    }),
+    element("span", {
+      text: `last frontier advance ${formatDate(lastAdvance.published, { dateStyle: "medium" })}`,
+    }),
+  ]);
+  replaceChildren(byId("frontier-chart"), [svg]);
+}
+
 function leaderboardRow(entry) {
   const board = state.data.model_card_leaderboard;
   const maxCount = board.entries?.[0]?.card_count || 0;
@@ -1554,11 +1780,31 @@ function leaderboardRow(entry) {
     ),
   );
 
-  return element("details", { className: "record-card" }, [
+  const isNew = isNewBenchmark(entry, board);
+  if (isNew) {
+    header.querySelector(".signal-meta").prepend(
+      element("span", { className: "benchmark-new-badge", text: "new instrument" }),
+    );
+  }
+
+  const frontierButton = element("button", {
+    className: "secondary-link frontier-jump",
+    text: "View adoption frontier ↑",
+    attrs: { type: "button" },
+  });
+  frontierButton.addEventListener("click", () => {
+    state.lfrontier = entry.benchmark_id;
+    renderAdoptionFrontier(board);
+    writeUrl();
+    byId("adoption-frontier").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  return element("details", { className: `record-card${isNew ? " benchmark-new" : ""}` }, [
     header,
     element("div", { className: "record-detail" }, [
       element("h3", { text: "Reported by" }),
       adopters,
+      frontierButton,
       entry.url
         ? element("a", {
             className: "primary-link",
@@ -1611,6 +1857,7 @@ function renderLeaderboard() {
 
   byId("leaderboard-measures").textContent = board.measures || "";
   renderLeaderboardFilters(board);
+  renderAdoptionFrontier(board);
 
   const topEntries = (board.entries || []).filter((entry) => entry.card_count > 0);
   const allCards = board.model_cards || [];
@@ -1696,6 +1943,33 @@ function renderLeaderboard() {
         ],
       ],
       "No registry entries yet.",
+    ),
+    mapInsightCard(
+      "New instruments",
+      (board.entries || [])
+        .filter((entry) => isNewBenchmark(entry, board))
+        .sort(
+          (a, b) =>
+            (b.released || "").localeCompare(a.released || "") ||
+            b.organization_count - a.organization_count ||
+            a.name.localeCompare(b.name),
+        )
+        .map((entry) => [
+          entry.name,
+          entry.card_count
+            ? `${metricLabel(entry.card_count, "card")} · ${metricLabel(
+                entry.organization_count,
+                "organization",
+              )}`
+            : "not yet reported",
+          [
+            [
+              `Released ${formatDate(entry.released, { dateStyle: "medium" })}`,
+              entry.url,
+            ],
+          ],
+        ]),
+      "No benchmarks released in the newest 18-month window.",
     ),
     mapInsightCard(
       "Cards per organization",
@@ -2115,6 +2389,11 @@ function bindEvents() {
     state.lera = "";
     byId("leaderboard-search").value = "";
     renderLeaderboard();
+    writeUrl();
+  });
+  byId("frontier-benchmark").addEventListener("change", (event) => {
+    state.lfrontier = event.target.value;
+    renderAdoptionFrontier(state.data.model_card_leaderboard);
     writeUrl();
   });
   byId("today-date").addEventListener("change", (event) => {

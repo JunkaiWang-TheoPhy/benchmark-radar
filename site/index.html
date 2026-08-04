@@ -212,6 +212,27 @@
 
         <div class="map-insights" id="leaderboard-insights" aria-label="Registry overview"></div>
 
+        <section class="frontier-panel" id="adoption-frontier" aria-labelledby="frontier-heading">
+          <div class="frontier-heading-row">
+            <div>
+              <p class="eyebrow">Harbor-inspired timeline</p>
+              <h2 id="frontier-heading">Benchmark adoption frontier</h2>
+            </div>
+            <label class="frontier-picker">
+              Benchmark
+              <select id="frontier-benchmark" name="lfrontier"></select>
+            </label>
+          </div>
+          <p class="section-note" id="frontier-explainer">
+            Each dot is a model card mention. The line advances only when a new
+            organization adopts the benchmark; hollow dots are repeat reports from an
+            organization already on the frontier. A long flat run is reporting saturation,
+            not a claim about benchmark score saturation.
+          </p>
+          <div class="frontier-summary" id="frontier-summary" aria-live="polite"></div>
+          <div class="frontier-chart" id="frontier-chart"></div>
+        </section>
+
         <div class="trend-panel">
           <div class="section-title">
             <h2 id="leaderboard-table-heading">Benchmarks by model card adoption</h2>
