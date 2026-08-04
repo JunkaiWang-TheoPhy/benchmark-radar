@@ -1,0 +1,984 @@
+# Benchmark Score Progression (issue #91)
+#
+# `model_cards.yml` records *mentions*: which benchmarks a vendor chose to put in
+# front of readers. It deliberately stores no score, because a mention survives
+# every configuration caveat that makes two reported scores incomparable. That
+# decision stands. This file is the narrow additive layer that lets the site draw
+# a score progression where -- and only where -- a real number was read out of a
+# real document.
+#
+# WHAT THIS IS NOT
+#
+# Not a saturation metric. A "highest score so far" line rises or stays flat by
+# construction, so it cannot be evidence of saturation; a flat run is equally
+# consistent with the benchmark being saturated, with vendors having stopped
+# reporting it, with a protocol change, or with a version bump. Saturation
+# remains an editorial judgement carried by the per-benchmark `caveat` in
+# model_cards.yml ("Saturated and heavily contaminated" for MMLU), written by a
+# human reading the field. Nothing here computes it.
+#
+# Not a leaderboard. Vendors publish the benchmarks they do well on, so these
+# rows are missing-not-at-random. A progression built from model cards partly
+# measures reporting choice, not capability.
+#
+# THE JOIN RULE
+#
+# `protocol` is the comparability class. Two rows may be connected by a line ONLY
+# if `instrument` AND `protocol` are both identical. The string encodes whatever
+# the source said moves the number. Silence is not agreement: two documents that
+# both omit tool access are not evidence that their setups matched, so an
+# unstated condition is never treated as equal to another unstated condition --
+# it just means those rows do not join.
+#
+# `instrument` is the version identity, separate from `benchmark_id`. Terminal-
+# Bench 2.0 and 2.1 share a benchmark_id and are different instruments (2.1
+# changed 28 of 89 tasks), so a line must break at that boundary rather than
+# attribute a task-set change to model progress. Same for HumanEval vs
+# HumanEval-Mul, LiveCodeBench vs LiveCodeBench v5, GPQA full vs Diamond.
+#
+# PROVENANCE
+#
+# Every row names the `source_id` it was read from, which must exist in
+# model_cards.yml, and `read_from` records how: `pdf_text` and `html_text` were
+# machine-extracted from the document and re-read against the printed table;
+# `table_image` would mean transcribed from a rendered image.
+#
+# `organization` is whose model was measured. `reported_by` is who published the
+# document. When they differ the row is a third-party citation: the publisher is
+# repeating a competitor's self-reported figure, which is weaker evidence than a
+# vendor reporting its own model, and weaker still when the publisher had a stake
+# in the comparison. Those rows are recorded with reported_by set and are marked
+# in the UI rather than silently mixed in.
+#
+# A NOTE ON PRECISION
+#
+# GPQA Diamond has 198 items, so single-run accuracy can only land on multiples
+# of 1/198 (about 0.505 points): 182 correct is 91.9%, 183 is 92.4%. A reported
+# 92.1% therefore cannot be a plain single-run accuracy over the full split -- it
+# implies averaging over runs, a subset, or a transcription error. Values are
+# recorded exactly as printed, and this is why `protocol` carries the run
+# treatment when the source states it.
+#
+# HOW TO ADD A ROW
+#
+# Read the number out of the cited document yourself. Record it exactly as
+# printed. If the document publishes its table as an image and the value cannot
+# be read with certainty, add nothing: an absent row is honest, a guessed row is
+# not. Then run `benchmark-radar rebuild`.
+
+schema_version: 1
+
+# Per-benchmark metric identity. `direction` exists because not every metric
+# improves upward: an edit-distance metric inverts the axis, and a chart that
+# assumed higher-is-better would draw its progression upside down.
+benchmarks:
+  - benchmark_id: mmlu
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: gpqa_diamond
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: swe_bench_verified
+    metric: resolved
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: hle
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: terminal_bench
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: livecodebench
+    metric: pass@1
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: humaneval
+    metric: pass@1
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: gsm8k
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: mmlu_pro
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: aime
+    metric: pass@1
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: math_500
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: simpleqa
+    metric: correct
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: mmlu_redux
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: arena_hard
+    metric: win_rate
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: mbpp
+    metric: pass@1
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: drop
+    metric: f1
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: bfcl
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: mmmu
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: aider_polyglot
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: ifeval
+    metric: prompt_strict
+    direction: higher_is_better
+    unit: percent
+
+results:
+  # ---------------------------------------------------------------------------
+  # Gemini 1.5 technical report (arXiv 2403.05530), Table 11.
+  # Read from pdftotext output. Column order in the source is
+  # 1.0 Pro | 1.0 Ultra | 1.5 Flash | 1.5 Pro; the values below are the last
+  # column. Shot counts are printed under each value and are carried into
+  # `protocol` because they are part of what the number means.
+  # ---------------------------------------------------------------------------
+
+  - benchmark_id: mmlu
+    instrument: mmlu
+    protocol: 5-shot
+    model: Gemini 1.5 Pro
+    organization: Google DeepMind
+    source_id: google_gemini_1_5_report
+    reported_at: 2024-03-08
+    value: 85.9
+    read_from: pdf_text
+
+  - benchmark_id: gsm8k
+    instrument: gsm8k
+    protocol: 11-shot
+    model: Gemini 1.5 Pro
+    organization: Google DeepMind
+    source_id: google_gemini_1_5_report
+    reported_at: 2024-03-08
+    value: 90.8
+    read_from: pdf_text
+
+  # The source labels this row "HumanEval chat preamble*", 0-shot. The preamble
+  # is part of the protocol: the same table's footnote records that finetuning on
+  # the test split moved this metric from 74.4% to 89.0%, which is exactly how
+  # sensitive this instrument is to setup.
+  - benchmark_id: humaneval
+    instrument: humaneval
+    protocol: 0-shot, chat preamble
+    model: Gemini 1.5 Pro
+    organization: Google DeepMind
+    source_id: google_gemini_1_5_report
+    reported_at: 2024-03-08
+    value: 84.1
+    read_from: pdf_text
+
+  # Printed as a bare F1 score, not a percentage with a % sign.
+  - benchmark_id: drop
+    instrument: drop
+    protocol: variable shots, F1
+    model: Gemini 1.5 Pro
+    organization: Google DeepMind
+    source_id: google_gemini_1_5_report
+    reported_at: 2024-03-08
+    value: 74.9
+    read_from: pdf_text
+
+  # ---------------------------------------------------------------------------
+  # DeepSeek-V3 technical report (arXiv 2412.19437), Table 6, "chat models".
+  # DeepSeek-V3 is the last column. The table header states all models are
+  # evaluated with output length limited to 8K, and that benchmarks under 1000
+  # samples are tested multiple times across temperature settings.
+  # ---------------------------------------------------------------------------
+
+  - benchmark_id: mmlu
+    instrument: mmlu
+    protocol: EM, 8K output limit
+    model: DeepSeek-V3
+    organization: DeepSeek
+    source_id: deepseek_v3_report
+    reported_at: 2024-12-27
+    value: 88.5
+    read_from: pdf_text
+
+  - benchmark_id: mmlu_redux
+    instrument: mmlu_redux
+    protocol: EM, 8K output limit
+    model: DeepSeek-V3
+    organization: DeepSeek
+    source_id: deepseek_v3_report
+    reported_at: 2024-12-27
+    value: 89.1
+    read_from: pdf_text
+
+  - benchmark_id: mmlu_pro
+    instrument: mmlu_pro
+    protocol: EM, 8K output limit
+    model: DeepSeek-V3
+    organization: DeepSeek
+    source_id: deepseek_v3_report
+    reported_at: 2024-12-27
+    value: 75.9
+    read_from: pdf_text
+
+  - benchmark_id: gpqa_diamond
+    instrument: gpqa_diamond
+    protocol: Pass@1, 8K output limit
+    model: DeepSeek-V3
+    organization: DeepSeek
+    source_id: deepseek_v3_report
+    reported_at: 2024-12-27
+    value: 59.1
+    read_from: pdf_text
+
+  - benchmark_id: swe_bench_verified
+    instrument: swe_bench_verified
+    protocol: Resolved, vendor harness
+    model: DeepSeek-V3
+    organization: DeepSeek
+    source_id: deepseek_v3_report
+    reported_at: 2024-12-27
+    value: 42.0
+    read_from: pdf_text
+
+  # The source's own label is "LiveCodeBench (Pass@1-COT)"; the same table also
+  # prints a plain Pass@1 of 37.6. Two protocols, recorded separately, because a
+  # chain-of-thought figure and a bare figure are not one series.
+  - benchmark_id: livecodebench
+    instrument: livecodebench
+    protocol: Pass@1-COT
+    model: DeepSeek-V3
+    organization: DeepSeek
+    source_id: deepseek_v3_report
+    reported_at: 2024-12-27
+    value: 40.5
+    read_from: pdf_text
+
+  - benchmark_id: livecodebench
+    instrument: livecodebench
+    protocol: Pass@1
+    model: DeepSeek-V3
+    organization: DeepSeek
+    source_id: deepseek_v3_report
+    reported_at: 2024-12-27
+    value: 37.6
+    read_from: pdf_text
+
+  - benchmark_id: math_500
+    instrument: math_500
+    protocol: EM, 8K output limit
+    model: DeepSeek-V3
+    organization: DeepSeek
+    source_id: deepseek_v3_report
+    reported_at: 2024-12-27
+    value: 90.2
+    read_from: pdf_text
+
+  - benchmark_id: aime
+    instrument: aime_2024
+    protocol: Pass@1
+    model: DeepSeek-V3
+    organization: DeepSeek
+    source_id: deepseek_v3_report
+    reported_at: 2024-12-27
+    value: 39.2
+    read_from: pdf_text
+
+  - benchmark_id: simpleqa
+    instrument: simpleqa
+    protocol: Correct
+    model: DeepSeek-V3
+    organization: DeepSeek
+    source_id: deepseek_v3_report
+    reported_at: 2024-12-27
+    value: 24.9
+    read_from: pdf_text
+
+  - benchmark_id: drop
+    instrument: drop
+    protocol: 3-shot F1
+    model: DeepSeek-V3
+    organization: DeepSeek
+    source_id: deepseek_v3_report
+    reported_at: 2024-12-27
+    value: 91.6
+    read_from: pdf_text
+
+  - benchmark_id: ifeval
+    instrument: ifeval
+    protocol: Prompt Strict
+    model: DeepSeek-V3
+    organization: DeepSeek
+    source_id: deepseek_v3_report
+    reported_at: 2024-12-27
+    value: 86.1
+    read_from: pdf_text
+
+  - benchmark_id: arena_hard
+    instrument: arena_hard
+    protocol: GPT-4-1106 judge
+    model: DeepSeek-V3
+    organization: DeepSeek
+    source_id: deepseek_v3_report
+    reported_at: 2024-12-27
+    value: 85.5
+    read_from: pdf_text
+
+  # HumanEval is NOT recorded for DeepSeek-V3. Table 6 reports
+  # "HumanEval-Mul (Pass@1) 82.6" -- a multilingual variant, a different
+  # instrument from the HumanEval the registry tracks. Recording it under
+  # humaneval would join two different task sets into one line.
+
+  # ---------------------------------------------------------------------------
+  # DeepSeek-R1 technical report (arXiv 2501.12948), Table 8. DeepSeek-R1 is the
+  # last column. The fetched PDF is v2 (revised 2026-01-04); the registry cites
+  # this arXiv id, and `reported_at` below is the registry's publication date for
+  # the document rather than the revision date.
+  # ---------------------------------------------------------------------------
+
+  - benchmark_id: mmlu
+    instrument: mmlu
+    protocol: EM
+    model: DeepSeek-R1
+    organization: DeepSeek
+    source_id: deepseek_r1_report
+    reported_at: 2025-01-22
+    value: 90.8
+    read_from: pdf_text
+
+  - benchmark_id: mmlu_redux
+    instrument: mmlu_redux
+    protocol: EM
+    model: DeepSeek-R1
+    organization: DeepSeek
+    source_id: deepseek_r1_report
+    reported_at: 2025-01-22
+    value: 92.9
+    read_from: pdf_text
+
+  - benchmark_id: mmlu_pro
+    instrument: mmlu_pro
+    protocol: EM
+    model: DeepSeek-R1
+    organization: DeepSeek
+    source_id: deepseek_r1_report
+    reported_at: 2025-01-22
+    value: 84.0
+    read_from: pdf_text
+
+  # The source states GPQA is sampled with k=4 and Pass@1 computed as the
+  # average, so this is not a single-run figure.
+  - benchmark_id: gpqa_diamond
+    instrument: gpqa_diamond
+    protocol: Pass@1, averaged over k=4 samples
+    model: DeepSeek-R1
+    organization: DeepSeek
+    source_id: deepseek_r1_report
+    reported_at: 2025-01-22
+    value: 71.5
+    read_from: pdf_text
+
+  - benchmark_id: swe_bench_verified
+    instrument: swe_bench_verified
+    protocol: Resolved, vendor harness
+    model: DeepSeek-R1
+    organization: DeepSeek
+    source_id: deepseek_r1_report
+    reported_at: 2025-01-22
+    value: 49.2
+    read_from: pdf_text
+
+  - benchmark_id: livecodebench
+    instrument: livecodebench
+    protocol: Pass@1-COT
+    model: DeepSeek-R1
+    organization: DeepSeek
+    source_id: deepseek_r1_report
+    reported_at: 2025-01-22
+    value: 65.9
+    read_from: pdf_text
+
+  - benchmark_id: math_500
+    instrument: math_500
+    protocol: Pass@1
+    model: DeepSeek-R1
+    organization: DeepSeek
+    source_id: deepseek_r1_report
+    reported_at: 2025-01-22
+    value: 97.3
+    read_from: pdf_text
+
+  - benchmark_id: aime
+    instrument: aime_2024
+    protocol: Pass@1
+    model: DeepSeek-R1
+    organization: DeepSeek
+    source_id: deepseek_r1_report
+    reported_at: 2025-01-22
+    value: 79.8
+    read_from: pdf_text
+
+  - benchmark_id: simpleqa
+    instrument: simpleqa
+    protocol: Correct
+    model: DeepSeek-R1
+    organization: DeepSeek
+    source_id: deepseek_r1_report
+    reported_at: 2025-01-22
+    value: 30.1
+    read_from: pdf_text
+
+  - benchmark_id: drop
+    instrument: drop
+    protocol: 3-shot F1
+    model: DeepSeek-R1
+    organization: DeepSeek
+    source_id: deepseek_r1_report
+    reported_at: 2025-01-22
+    value: 92.2
+    read_from: pdf_text
+
+  # Printed as "IF-Eval (Prompt Strict)".
+  - benchmark_id: ifeval
+    instrument: ifeval
+    protocol: Prompt Strict
+    model: DeepSeek-R1
+    organization: DeepSeek
+    source_id: deepseek_r1_report
+    reported_at: 2025-01-22
+    value: 83.3
+    read_from: pdf_text
+
+  - benchmark_id: arena_hard
+    instrument: arena_hard
+    protocol: GPT-4-1106 judge
+    model: DeepSeek-R1
+    organization: DeepSeek
+    source_id: deepseek_r1_report
+    reported_at: 2025-01-22
+    value: 92.3
+    read_from: pdf_text
+
+  - benchmark_id: aider_polyglot
+    instrument: aider_polyglot
+    protocol: Accuracy
+    model: DeepSeek-R1
+    organization: DeepSeek
+    source_id: deepseek_r1_report
+    reported_at: 2025-01-22
+    value: 53.3
+    read_from: pdf_text
+
+  # ---------------------------------------------------------------------------
+  # Qwen2.5-Coder technical report (arXiv 2409.12186), instruct comparison table.
+  # Column order: HumanEval HE | HE+ | MBPP | MBPP+ | BigCodeBench Full | Hard |
+  # LiveCodeBench Pass@1. The values below are from the
+  # Qwen2.5-Coder-32B-Instruct row, taking the base HE and MBPP columns rather
+  # than the + variants, which are different instruments.
+  # ---------------------------------------------------------------------------
+
+  - benchmark_id: humaneval
+    instrument: humaneval
+    protocol: HumanEval base split
+    model: Qwen2.5-Coder-32B-Instruct
+    organization: Qwen
+    source_id: qwen2_5_coder_report
+    reported_at: 2024-09-18
+    value: 92.7
+    read_from: pdf_text
+
+  - benchmark_id: mbpp
+    instrument: mbpp
+    protocol: MBPP base split
+    model: Qwen2.5-Coder-32B-Instruct
+    organization: Qwen
+    source_id: qwen2_5_coder_report
+    reported_at: 2024-09-18
+    value: 90.2
+    read_from: pdf_text
+
+  - benchmark_id: livecodebench
+    instrument: livecodebench
+    protocol: Pass@1
+    model: Qwen2.5-Coder-32B-Instruct
+    organization: Qwen
+    source_id: qwen2_5_coder_report
+    reported_at: 2024-09-18
+    value: 31.4
+    read_from: pdf_text
+
+  # ---------------------------------------------------------------------------
+  # Qwen3 technical report (arXiv 2505.09388), Table 11: Qwen3-235B-A22B
+  # (Thinking), last column.
+  #
+  # The source states GPQA-Diamond is sampled 10 times per query with the
+  # averaged accuracy reported. That is a materially different protocol from a
+  # single-attempt figure and is recorded as such, so these rows do not join to
+  # Google's single-attempt series.
+  # ---------------------------------------------------------------------------
+
+  - benchmark_id: gpqa_diamond
+    instrument: gpqa_diamond
+    protocol: averaged over 10 samples
+    model: Qwen3-235B-A22B (Thinking)
+    organization: Qwen
+    source_id: qwen3_technical_report
+    reported_at: 2025-05-14
+    value: 71.1
+    read_from: pdf_text
+
+  - benchmark_id: mmlu_redux
+    instrument: mmlu_redux
+    protocol: thinking mode
+    model: Qwen3-235B-A22B (Thinking)
+    organization: Qwen
+    source_id: qwen3_technical_report
+    reported_at: 2025-05-14
+    value: 92.7
+    read_from: pdf_text
+
+  # The source's row label is "LiveCodeBench v5 (2024.10-2025.02)". v5 is a
+  # distinct time-sliced instrument: a score without its problem window is not
+  # comparable to another LiveCodeBench score.
+  - benchmark_id: livecodebench
+    instrument: livecodebench_v5
+    protocol: v5, 2024.10-2025.02 window
+    model: Qwen3-235B-A22B (Thinking)
+    organization: Qwen
+    source_id: qwen3_technical_report
+    reported_at: 2025-05-14
+    value: 70.7
+    read_from: pdf_text
+
+  - benchmark_id: math_500
+    instrument: math_500
+    protocol: thinking mode
+    model: Qwen3-235B-A22B (Thinking)
+    organization: Qwen
+    source_id: qwen3_technical_report
+    reported_at: 2025-05-14
+    value: 98.0
+    read_from: pdf_text
+
+  - benchmark_id: aime
+    instrument: aime_2024
+    protocol: thinking mode
+    model: Qwen3-235B-A22B (Thinking)
+    organization: Qwen
+    source_id: qwen3_technical_report
+    reported_at: 2025-05-14
+    value: 85.7
+    read_from: pdf_text
+
+  - benchmark_id: arena_hard
+    instrument: arena_hard
+    protocol: thinking mode
+    model: Qwen3-235B-A22B (Thinking)
+    organization: Qwen
+    source_id: qwen3_technical_report
+    reported_at: 2025-05-14
+    value: 95.6
+    read_from: pdf_text
+
+  - benchmark_id: ifeval
+    instrument: ifeval
+    protocol: strict prompt
+    model: Qwen3-235B-A22B (Thinking)
+    organization: Qwen
+    source_id: qwen3_technical_report
+    reported_at: 2025-05-14
+    value: 83.4
+    read_from: pdf_text
+
+  - benchmark_id: bfcl
+    instrument: bfcl_v3
+    protocol: v3
+    model: Qwen3-235B-A22B (Thinking)
+    organization: Qwen
+    source_id: qwen3_technical_report
+    reported_at: 2025-05-14
+    value: 70.8
+    read_from: pdf_text
+
+  # ---------------------------------------------------------------------------
+  # Gemini 2.5 technical report, Table 3 (Gemini family) and Table 4 (competitor
+  # comparison). Read from pdftotext output.
+  #
+  # The report's own methodology section states: all Gemini scores are pass@1 and
+  # "single attempt" unless specified; non-Gemini results are the providers'
+  # self-reported numbers; HLE figures come from Scale's leaderboard, not from
+  # the vendors. Rows below carry `reported_by` when the measured model is not
+  # Google's, because those are third-party citations.
+  # ---------------------------------------------------------------------------
+
+  - benchmark_id: gpqa_diamond
+    instrument: gpqa_diamond
+    protocol: single attempt, pass@1
+    model: Gemini 2.5 Pro
+    organization: Google DeepMind
+    source_id: google_gemini_2_5_report
+    reported_at: 2025-06-17
+    value: 86.4
+    read_from: pdf_text
+
+  # Single-attempt and multiple-attempts are printed as separate rows in the
+  # source and are separate protocols here. The same table gives 67.2 for
+  # multiple attempts.
+  - benchmark_id: swe_bench_verified
+    instrument: swe_bench_verified
+    protocol: single attempt
+    model: Gemini 2.5 Pro
+    organization: Google DeepMind
+    source_id: google_gemini_2_5_report
+    reported_at: 2025-06-17
+    value: 59.6
+    read_from: pdf_text
+
+  - benchmark_id: swe_bench_verified
+    instrument: swe_bench_verified
+    protocol: multiple attempts
+    model: Gemini 2.5 Pro
+    organization: Google DeepMind
+    source_id: google_gemini_2_5_report
+    reported_at: 2025-06-17
+    value: 67.2
+    read_from: pdf_text
+
+  - benchmark_id: hle
+    instrument: hle
+    protocol: no tools
+    model: Gemini 2.5 Pro
+    organization: Google DeepMind
+    source_id: google_gemini_2_5_report
+    reported_at: 2025-06-17
+    value: 21.6
+    read_from: pdf_text
+
+  - benchmark_id: livecodebench
+    instrument: livecodebench
+    protocol: 1/1/2025-5/1/2025 window
+    model: Gemini 2.5 Pro
+    organization: Google DeepMind
+    source_id: google_gemini_2_5_report
+    reported_at: 2025-06-17
+    value: 74.2
+    read_from: pdf_text
+
+  - benchmark_id: simpleqa
+    instrument: simpleqa
+    protocol: as reported
+    model: Gemini 2.5 Pro
+    organization: Google DeepMind
+    source_id: google_gemini_2_5_report
+    reported_at: 2025-06-17
+    value: 54.0
+    read_from: pdf_text
+
+  - benchmark_id: aider_polyglot
+    instrument: aider_polyglot
+    protocol: pass rate, average of 3 trials
+    model: Gemini 2.5 Pro
+    organization: Google DeepMind
+    source_id: google_gemini_2_5_report
+    reported_at: 2025-06-17
+    value: 82.2
+    read_from: pdf_text
+
+  - benchmark_id: mmmu
+    instrument: mmmu
+    protocol: single attempt
+    model: Gemini 2.5 Pro
+    organization: Google DeepMind
+    source_id: google_gemini_2_5_report
+    reported_at: 2025-06-17
+    value: 82.0
+    read_from: pdf_text
+
+  # Third-party citations from Table 4. `reported_by` differs from
+  # `organization`: Google is repeating figures these vendors reported
+  # themselves, in a table where Google's own model is the subject of comparison.
+  - benchmark_id: gpqa_diamond
+    instrument: gpqa_diamond
+    protocol: single attempt, pass@1
+    model: o3 high
+    organization: OpenAI
+    reported_by: Google DeepMind
+    source_id: google_gemini_2_5_report
+    reported_at: 2025-06-17
+    value: 83.3
+    read_from: pdf_text
+
+  - benchmark_id: gpqa_diamond
+    instrument: gpqa_diamond
+    protocol: single attempt, pass@1
+    model: Claude 4 Opus
+    organization: Anthropic
+    reported_by: Google DeepMind
+    source_id: google_gemini_2_5_report
+    reported_at: 2025-06-17
+    value: 79.6
+    read_from: pdf_text
+
+  - benchmark_id: gpqa_diamond
+    instrument: gpqa_diamond
+    protocol: single attempt, pass@1
+    model: Claude 4 Sonnet
+    organization: Anthropic
+    reported_by: Google DeepMind
+    source_id: google_gemini_2_5_report
+    reported_at: 2025-06-17
+    value: 75.4
+    read_from: pdf_text
+
+  - benchmark_id: gpqa_diamond
+    instrument: gpqa_diamond
+    protocol: single attempt, pass@1
+    model: Grok 3 Beta Extended Thinking
+    organization: xAI
+    reported_by: Google DeepMind
+    source_id: google_gemini_2_5_report
+    reported_at: 2025-06-17
+    value: 80.2
+    read_from: pdf_text
+
+  # HLE competitor figures in this table are sourced from Scale's leaderboard
+  # rather than from the vendors, which the report states explicitly. Recorded
+  # with reported_by as Google since that is the document in the registry.
+  - benchmark_id: hle
+    instrument: hle
+    protocol: no tools, Scale leaderboard
+    model: o3 high
+    organization: OpenAI
+    reported_by: Google DeepMind
+    source_id: google_gemini_2_5_report
+    reported_at: 2025-06-17
+    value: 20.3
+    read_from: pdf_text
+
+  - benchmark_id: hle
+    instrument: hle
+    protocol: no tools, Scale leaderboard
+    model: Claude 4 Opus
+    organization: Anthropic
+    reported_by: Google DeepMind
+    source_id: google_gemini_2_5_report
+    reported_at: 2025-06-17
+    value: 10.7
+    read_from: pdf_text
+
+  - benchmark_id: hle
+    instrument: hle
+    protocol: no tools, Scale leaderboard
+    model: Claude 4 Sonnet
+    organization: Anthropic
+    reported_by: Google DeepMind
+    source_id: google_gemini_2_5_report
+    reported_at: 2025-06-17
+    value: 7.8
+    read_from: pdf_text
+
+  # ---------------------------------------------------------------------------
+  # Anthropic Claude 4 release page. Read from the page's HTML text. The
+  # SWE-bench comparison chart on that page is an image and was not transcribed;
+  # the values below appear in the page's readable benchmark table.
+  # ---------------------------------------------------------------------------
+
+  - benchmark_id: swe_bench_verified
+    instrument: swe_bench_verified
+    protocol: no extended thinking
+    model: Claude Opus 4
+    organization: Anthropic
+    source_id: anthropic_claude_4_system_card
+    reported_at: 2025-05-22
+    value: 72.5
+    read_from: html_text
+
+  - benchmark_id: swe_bench_verified
+    instrument: swe_bench_verified
+    protocol: no extended thinking
+    model: Claude Sonnet 4
+    organization: Anthropic
+    source_id: anthropic_claude_4_system_card
+    reported_at: 2025-05-22
+    value: 72.7
+    read_from: html_text
+
+  - benchmark_id: terminal_bench
+    instrument: terminal_bench_1
+    protocol: no extended thinking
+    model: Claude Opus 4
+    organization: Anthropic
+    source_id: anthropic_claude_4_system_card
+    reported_at: 2025-05-22
+    value: 43.2
+    read_from: html_text
+
+  - benchmark_id: gpqa_diamond
+    instrument: gpqa_diamond
+    protocol: extended thinking up to 64K tokens
+    model: Claude Opus 4
+    organization: Anthropic
+    source_id: anthropic_claude_4_system_card
+    reported_at: 2025-05-22
+    value: 75.9
+    read_from: html_text
+
+  - benchmark_id: gpqa_diamond
+    instrument: gpqa_diamond
+    protocol: extended thinking up to 64K tokens
+    model: Claude Sonnet 4
+    organization: Anthropic
+    source_id: anthropic_claude_4_system_card
+    reported_at: 2025-05-22
+    value: 71.5
+    read_from: html_text
+
+  - benchmark_id: mmlu
+    instrument: mmlu
+    protocol: extended thinking up to 64K tokens
+    model: Claude Opus 4
+    organization: Anthropic
+    source_id: anthropic_claude_4_system_card
+    reported_at: 2025-05-22
+    value: 88.3
+    read_from: html_text
+
+  - benchmark_id: mmlu
+    instrument: mmlu
+    protocol: extended thinking up to 64K tokens
+    model: Claude Sonnet 4
+    organization: Anthropic
+    source_id: anthropic_claude_4_system_card
+    reported_at: 2025-05-22
+    value: 85.8
+    read_from: html_text
+
+  - benchmark_id: mmmu
+    instrument: mmmu
+    protocol: extended thinking up to 64K tokens
+    model: Claude Opus 4
+    organization: Anthropic
+    source_id: anthropic_claude_4_system_card
+    reported_at: 2025-05-22
+    value: 74.8
+    read_from: html_text
+
+  - benchmark_id: mmmu
+    instrument: mmmu
+    protocol: extended thinking up to 64K tokens
+    model: Claude Sonnet 4
+    organization: Anthropic
+    source_id: anthropic_claude_4_system_card
+    reported_at: 2025-05-22
+    value: 72.9
+    read_from: html_text
+
+  - benchmark_id: aime
+    instrument: aime
+    protocol: extended thinking up to 64K tokens
+    model: Claude Opus 4
+    organization: Anthropic
+    source_id: anthropic_claude_4_system_card
+    reported_at: 2025-05-22
+    value: 39.4
+    read_from: html_text
+
+  - benchmark_id: aime
+    instrument: aime
+    protocol: extended thinking up to 64K tokens
+    model: Claude Sonnet 4
+    organization: Anthropic
+    source_id: anthropic_claude_4_system_card
+    reported_at: 2025-05-22
+    value: 33.1
+    read_from: html_text
+
+  # ---------------------------------------------------------------------------
+  # Anthropic Claude 3.7 Sonnet release page. Only SWE-bench Verified was
+  # readable as text; the frontier-reasoning comparison table on that page is an
+  # image, so its GPQA / AIME / MMLU-Pro / MMMU / MATH-500 values are absent
+  # here rather than guessed.
+  # ---------------------------------------------------------------------------
+
+  - benchmark_id: swe_bench_verified
+    instrument: swe_bench_verified
+    protocol: pass@1
+    model: Claude 3.7 Sonnet
+    organization: Anthropic
+    source_id: anthropic_claude_3_7_sonnet
+    reported_at: 2025-02-24
+    value: 63.7
+    read_from: html_text
+
+  - benchmark_id: swe_bench_verified
+    instrument: swe_bench_verified
+    protocol: high compute
+    model: Claude 3.7 Sonnet
+    organization: Anthropic
+    source_id: anthropic_claude_3_7_sonnet
+    reported_at: 2025-02-24
+    value: 70.3
+    read_from: html_text
+
+  # ---------------------------------------------------------------------------
+  # Mistral Large 2 release post. Only the pretrained MMLU figure appears as
+  # text; the code and math benchmark charts on that page are images.
+  # ---------------------------------------------------------------------------
+
+  - benchmark_id: mmlu
+    instrument: mmlu
+    protocol: pretrained
+    model: Mistral Large 2
+    organization: Mistral
+    source_id: mistral_large_2
+    reported_at: 2024-07-24
+    value: 84.0
+    read_from: html_text
+
+# ---------------------------------------------------------------------------
+# UNRESOLVED: documents in the registry whose scores could not be read, and why.
+# Recorded so the gap is visible instead of looking like "not yet curated".
+# Values will be added only when the figure can be read with certainty.
+#
+#   openai_gpt_5_system_card        HTTP 403 -- openai.com blocks automated
+#                                   fetching. Not readable.
+#   openai_o3_o4_mini_system_card   Same. Note that o3 figures DO appear above
+#                                   as third-party citations from Google's
+#                                   Table 4, which is weaker evidence than
+#                                   OpenAI's own document.
+#   openai_gpt_4_1                  Same.
+#   xai_grok_4_model_card           HTTP 403 -- x.ai blocks automated fetching.
+#   meta_llama_3_1                  Benchmark table published as an image.
+#   meta_llama_4                    Benchmark table published as an image.
+#   mistral_medium_3                Benchmark table published as an image.
+#   anthropic_claude_3_7_sonnet     Reasoning table is an image; only the two
+#                                   SWE-bench figures above were text.
+#
+# Every 2026-dated card in the registry (Claude Opus 5, Claude Fable 5 /
+# Mythos 5, GPT-5.6, Gemini 3.1 Pro, Gemma 4, Qwen3.5, DeepSeek-V4, Kimi K3,
+# GLM-5, Grok 4.5, Mistral Large 3) is likewise unrecorded here: none were
+# fetched and verified in this pass, so no value is asserted for them.
+# ---------------------------------------------------------------------------
