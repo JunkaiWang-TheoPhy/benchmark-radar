@@ -29,6 +29,7 @@ const state = {
   lorg: "",
   lera: "",
   lfrontier: "",
+  leaderboardShowAll: false,
 };
 
 function element(tag, options = {}, children = []) {
@@ -1504,16 +1505,6 @@ function frontierEvents(entry) {
     });
 }
 
-function frontierDefaultEntry(board) {
-  const adopted = (board.entries || []).filter((entry) => entry.card_count > 0);
-  return [...adopted].sort(
-    (a, b) =>
-      (b.released || "").localeCompare(a.released || "") ||
-      b.organization_count - a.organization_count ||
-      a.name.localeCompare(b.name),
-  )[0];
-}
-
 function isNewBenchmark(entry, board) {
   if (!entry.released) return false;
   const latestPublished = (board.model_cards || [])
@@ -1527,44 +1518,396 @@ function isNewBenchmark(entry, board) {
   return new Date(`${entry.released}T00:00:00Z`) >= cutoff;
 }
 
-function renderAdoptionFrontier(board) {
+function frontierAdvances(entry) {
+  return frontierEvents(entry).filter((event) => event.advances);
+}
+
+function frontierDefaultEntry(board) {
   const adopted = (board.entries || []).filter((entry) => entry.card_count > 0);
-  const defaultEntry = frontierDefaultEntry(board);
-  if (!adopted.length || !defaultEntry) {
-    replaceChildren(byId("frontier-chart"), [
-      element("p", { className: "empty-state", text: "No dated model-card mentions yet." }),
-    ]);
-    return;
+  const byNewestSignal = (a, b) =>
+    (b.released || "").localeCompare(a.released || "") ||
+    frontierAdvances(b).length - frontierAdvances(a).length ||
+    a.name.localeCompare(b.name);
+  // A one-point plot is technically recent but visually says nothing. Open on
+  // the newest instrument that has already crossed three dated organizations;
+  // the full select still makes every early signal reachable and shareable.
+  const newSharedSignals = adopted.filter(
+    (entry) => isNewBenchmark(entry, board) && frontierAdvances(entry).length >= 3,
+  );
+  if (newSharedSignals.length) return [...newSharedSignals].sort(byNewestSignal)[0];
+  const sharedSignals = adopted.filter((entry) => frontierAdvances(entry).length >= 2);
+  return [...(sharedSignals.length ? sharedSignals : adopted)].sort(byNewestSignal)[0];
+}
+
+function reportingStage(entry, board) {
+  const advances = frontierAdvances(entry).length;
+  const total = Number(board.organization_count || 0);
+  if (advances < 2) {
+    return {
+      id: "early",
+      label: "Early signal",
+      description:
+        "Only one dated organization is visible so far. It is too early to infer a plateau.",
+    };
   }
-  if (!adopted.some((entry) => entry.benchmark_id === state.lfrontier)) {
-    state.lfrontier = defaultEntry.benchmark_id;
+  if (total > 0 && advances / total >= 0.8) {
+    return {
+      id: "saturated",
+      label: "Saturated reporting",
+      description:
+        "At least 80% of organizations in this curated registry report it; that is convention, not quality.",
+    };
   }
-  replaceChildren(byId("frontier-benchmark"), [
-    ...[...adopted]
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((entry) =>
-        option(entry.benchmark_id, entry.name, entry.benchmark_id === state.lfrontier),
-      ),
+  if (isNewBenchmark(entry, board) && advances <= 4) {
+    return {
+      id: "emerging",
+      label: "New & spreading",
+      description:
+        "Released in the newest 18-month window and already reported by several independent organizations.",
+    };
+  }
+  return {
+    id: "established",
+    label: "Established",
+    description:
+      "Reported across multiple organizations, but not yet a corpus-wide convention in this registry.",
+  };
+}
+
+const BENCHMARK_TASK_SHAPES = {
+  apex_agents: {
+    provenance: "Source-paraphrased task shape",
+    title: "Cross-application professional deliverable",
+    example:
+      "Produce a professional work product across supplied files and applications for an investment-banking, consulting, or legal workflow.",
+    scenario:
+      "Complete a long-horizon assignment authored by investment bankers, management consultants, or corporate lawyers while navigating realistic files and tools.",
+    artifact:
+      "A professional deliverable graded against task-specific rubrics, reference outputs, files, and metadata.",
+  },
+  mcp_atlas: {
+    provenance: "Source-paraphrased task shape",
+    title: "Cross-server tool orchestration",
+    example:
+      "Investigate an open-source project's repository and official domain, then calculate the difference between two dates using the available repository and WHOIS tools.",
+    scenario:
+      "Infer the needed tools from a natural-language request, then orchestrate three to six calls across real MCP servers without being told which tools to use.",
+    artifact:
+      "A grounded answer scored against independently verifiable claims, with the tool trajectory retained for diagnostics.",
+  },
+  frontiercode: {
+    provenance: "Source-paraphrased task shape",
+    title: "Maintainer-grade production code change",
+    example:
+      "Implement a concise maintainer request in a production repository while following its testing, linting, style, and scope guidance.",
+    scenario:
+      "Infer maintainer intent from a deliberately concise task description and the repository's own contribution guidelines.",
+    artifact:
+      "A mergeable pull request graded for correctness, test quality, scope discipline, style, and codebase standards.",
+  },
+};
+
+const TASK_SHAPES = {
+  agent: {
+    title: "Multi-step professional workflow",
+    scenario:
+      "Work through a realistic task that may require research, document handling, and tool calls before producing a graded deliverable.",
+    artifact: "A final artifact plus the trajectory used to create it.",
+  },
+  coding_agent: {
+    title: "Repository-level software task",
+    scenario:
+      "Inspect an existing codebase, diagnose a reported problem, edit the implementation, and satisfy executable checks.",
+    artifact: "A code patch evaluated by tests and task-specific criteria.",
+  },
+  tool_use: {
+    title: "Tool-selection episode",
+    scenario:
+      "Choose among available tools, form valid calls, combine returned evidence, and answer the user without inventing results.",
+    artifact: "A tool-call trace and grounded final response.",
+  },
+  computer_use: {
+    title: "Interactive computer task",
+    scenario:
+      "Navigate a visual interface, inspect changing state, and complete a goal through observable clicks and typed actions.",
+    artifact: "A successful end state with an auditable interaction trace.",
+  },
+  coding: {
+    title: "Executable programming problem",
+    scenario:
+      "Write or repair a program from a specification while accounting for hidden cases and runtime constraints.",
+    artifact: "Source code scored against executable tests.",
+  },
+  reasoning: {
+    title: "Structured reasoning question",
+    scenario:
+      "Resolve a question whose answer requires several linked deductions rather than direct factual recall.",
+    artifact: "A selected or generated answer, sometimes with a rationale.",
+  },
+  math: {
+    title: "Competition-style mathematics problem",
+    scenario:
+      "Derive a numerical or symbolic answer from a compact problem statement and verify the final result.",
+    artifact: "A final answer, with evaluation focused on correctness.",
+  },
+  long_context: {
+    title: "Long-document retrieval task",
+    scenario:
+      "Locate and connect evidence distributed across a long input while resisting nearby but irrelevant details.",
+    artifact: "An answer grounded in the supplied context.",
+  },
+  multimodal: {
+    title: "Visual-language question",
+    scenario:
+      "Inspect an image or document together with text and answer using evidence that is not available in either modality alone.",
+    artifact: "A grounded textual answer or structured prediction.",
+  },
+  science: {
+    title: "Scientific problem-solving task",
+    scenario:
+      "Apply domain knowledge and quantitative reasoning to a research-style question with a checkable answer.",
+    artifact: "A conclusion supported by calculations or scientific evidence.",
+  },
+  knowledge: {
+    title: "Broad-knowledge question",
+    scenario:
+      "Answer a question spanning academic and general domains while separating known facts from plausible distractors.",
+    artifact: "A selected or short generated answer.",
+  },
+  instruction_following: {
+    title: "Constraint-following prompt",
+    scenario:
+      "Produce a useful response while satisfying explicit format, content, and exclusion constraints at the same time.",
+    artifact: "A response graded for both usefulness and constraint compliance.",
+  },
+};
+
+function taskShape(entry) {
+  return (
+    BENCHMARK_TASK_SHAPES[entry.benchmark_id] || TASK_SHAPES[entry.domain] || {
+      title: `${entry.domain.replaceAll("_", " ")} evaluation task`,
+      scenario:
+        "Complete a domain-specific prompt under the benchmark's published protocol and return the requested output.",
+      artifact: "An answer or artifact evaluated by the benchmark's own metric.",
+    }
+  );
+}
+
+function renderBenchmarkNavigator(board) {
+  const adopted = (board.entries || []).filter((entry) => entry.card_count > 0);
+  const stageOrder = [
+    ["emerging", "New & spreading"],
+    ["early", "Early signals"],
+    ["established", "Established"],
+    ["saturated", "Saturated reporting"],
+  ];
+  const groups = stageOrder
+    .map(([stageId, label]) => {
+      const entries = adopted
+        .filter((entry) => reportingStage(entry, board).id === stageId)
+        .sort(
+          (a, b) =>
+            Number(b.benchmark_id === state.lfrontier) -
+              Number(a.benchmark_id === state.lfrontier) ||
+            (stageId === "emerging" || stageId === "early"
+              ? (b.released || "").localeCompare(a.released || "")
+              : frontierAdvances(b).length - frontierAdvances(a).length) ||
+            (b.released || "").localeCompare(a.released || "") ||
+            a.name.localeCompare(b.name),
+        )
+        .slice(0, stageId === "emerging" ? 4 : 3);
+      if (!entries.length) return null;
+      return element("section", { className: "benchmark-shortlist-group" }, [
+        element("h3", { text: label }),
+        element(
+          "div",
+          { className: "benchmark-shortlist-buttons" },
+          entries.map((entry) => {
+            const button = element("button", {
+              className: "benchmark-shortlist-button",
+              attrs: {
+                type: "button",
+                "aria-pressed": entry.benchmark_id === state.lfrontier ? "true" : "false",
+              },
+            }, [
+              element("span", { text: entry.name }),
+              element("small", {
+                text: `${metricLabel(frontierAdvances(entry).length, "dated organization")}`,
+              }),
+            ]);
+            button.addEventListener("click", () => {
+              state.lfrontier = entry.benchmark_id;
+              renderAdoptionFrontier(board);
+              writeUrl();
+            });
+            return button;
+          }),
+        ),
+      ]);
+    })
+    .filter(Boolean);
+  replaceChildren(byId("benchmark-shortlist"), groups);
+}
+
+function daysBetween(start, end) {
+  if (!start || !end) return null;
+  return Math.max(
+    0,
+    Math.round(
+      (new Date(`${end}T00:00:00Z`) - new Date(`${start}T00:00:00Z`)) / 86_400_000,
+    ),
+  );
+}
+
+function renderFrontierMilestones(entry, events) {
+  const advances = events.filter((event) => event.advances);
+  const repeats = events.length - advances.length;
+  const list = element(
+    "ol",
+    { className: "frontier-milestone-list" },
+    advances.map((event, index) => {
+      const previousDate = index ? advances[index - 1].published : entry.released;
+      const elapsed = daysBetween(previousDate, event.published);
+      return element("li", {}, [
+        element("span", { className: "milestone-number", text: index + 1 }),
+        element("div", {}, [
+          element("p", {
+            className: "milestone-date",
+            text: `${formatDate(event.published, { dateStyle: "medium" })}${
+              elapsed === null
+                ? ""
+                : ` · ${metricLabel(elapsed, "day")} after ${
+                    index ? "the previous frontier step" : "release"
+                  }`
+            }`,
+          }),
+          element("a", {
+            className: "milestone-source",
+            text: event.organization,
+            attrs: {
+              href: event.url,
+              target: "_blank",
+              rel: "noopener noreferrer",
+            },
+          }),
+          element("span", { className: "milestone-model", text: event.model }),
+        ]),
+      ]);
+    }),
+  );
+  replaceChildren(byId("frontier-milestones"), [
+    entry.released
+      ? element("p", {
+          className: "milestone-release",
+          text: `Released ${formatDate(entry.released, { dateStyle: "medium" })}`,
+        })
+      : null,
+    list,
+    repeats
+      ? element("p", {
+          className: "milestone-repeat-note",
+          text: `${metricLabel(repeats, "repeat report")} did not add a new organization to the frontier.`,
+        })
+      : null,
   ]);
+}
 
-  const entry = adopted.find((candidate) => candidate.benchmark_id === state.lfrontier);
-  const events = frontierEvents(entry);
-  if (!events.length) {
-    replaceChildren(byId("frontier-chart"), [
-      element("p", { className: "empty-state", text: "This benchmark has no dated mentions." }),
-    ]);
-    return;
-  }
+function renderFrontierTaskPreview(entry) {
+  const shape = taskShape(entry);
+  replaceChildren(byId("frontier-task-preview"), [
+    element("p", {
+      className: "eyebrow",
+      text: shape.provenance || "Representative task shape",
+    }),
+    element("h3", { text: shape.title, attrs: { id: "frontier-task-heading" } }),
+    element("div", { className: "task-shape" }, [
+      shape.example ? element("span", { text: "Paraphrased example" }) : null,
+      shape.example ? element("p", { text: shape.example }) : null,
+      element("span", { text: "Scenario" }),
+      element("p", { text: shape.scenario }),
+      element("span", { text: "Evaluated artifact" }),
+      element("p", { text: shape.artifact }),
+    ]),
+    element("p", {
+      className: "task-shape-note",
+      text: shape.provenance
+        ? "Not a verbatim benchmark item. This description paraphrases the official source; open it for exact tasks and protocol."
+        : "Not a verbatim benchmark item. This is an illustrative format based on the recorded domain; use the official source for exact tasks and protocol.",
+    }),
+    entry.caveat
+      ? element("div", { className: "frontier-caveat" }, [
+          element("strong", { text: "Comparison caveat" }),
+          element("p", { text: entry.caveat }),
+        ])
+      : null,
+    entry.url
+      ? element("a", {
+          className: "frontier-source-link",
+          text: "Open official benchmark source ↗",
+          attrs: {
+            href: entry.url,
+            target: "_blank",
+            rel: "noopener noreferrer",
+          },
+        })
+      : null,
+  ]);
+}
 
+function sparseFrontier(entry, events) {
+  const first = events.find((event) => event.advances);
+  const repeatCount = Math.max(0, events.length - 1);
+  return element(
+    "div",
+    {
+      className: "frontier-sparse",
+      attrs: {
+        role: "img",
+        "aria-label": `${entry.name} has only one dated reporting organization; it is too early to infer a plateau.`,
+      },
+    },
+    [
+      element("div", { className: "frontier-sparse-step is-complete" }, [
+        element("span", { text: "01" }),
+        element("strong", { text: "Benchmark released" }),
+        element("small", {
+          text: entry.released
+            ? formatDate(entry.released, { dateStyle: "medium" })
+            : "Release date unrecorded",
+        }),
+      ]),
+      element("div", { className: "frontier-sparse-step is-complete" }, [
+        element("span", { text: "02" }),
+        element("strong", { text: "First reporting organization" }),
+        element("small", {
+          text: first
+            ? `${first.organization} · ${formatDate(first.published, { dateStyle: "medium" })}`
+            : "No dated report",
+        }),
+      ]),
+      element("div", { className: "frontier-sparse-step is-awaiting" }, [
+        element("span", { text: "03" }),
+        element("strong", { text: "Awaiting an independent second organization" }),
+        element("small", {
+          text: repeatCount
+            ? `${metricLabel(repeatCount, "later repeat")} still leaves one frontier step`
+            : "Too early to infer a reporting plateau",
+        }),
+      ]),
+    ],
+  );
+}
+
+function adoptionFrontierChart(entry, board, events) {
   const datedCards = (board.model_cards || []).filter((card) => card.published);
   const startText = [entry.released, events[0].published].filter(Boolean).sort()[0];
   const endText = datedCards.map((card) => card.published).sort().at(-1) || events.at(-1).published;
   const start = new Date(`${startText}T00:00:00Z`).getTime();
   const rawEnd = new Date(`${endText}T00:00:00Z`).getTime();
   const end = Math.max(rawEnd, start + 86_400_000);
-  const width = 1000;
-  const height = 440;
-  const margin = { top: 34, right: 42, bottom: 68, left: 64 };
+  const width = 920;
+  const height = 370;
+  const margin = { top: 32, right: 20, bottom: 62, left: 52 };
   const plotWidth = width - margin.left - margin.right;
   const plotHeight = height - margin.top - margin.bottom;
   const maxOrganizations = Math.max(1, Number(board.organization_count || 0));
@@ -1572,13 +1915,17 @@ function renderAdoptionFrontier(board) {
     margin.left +
     ((new Date(`${date}T00:00:00Z`).getTime() - start) / (end - start)) * plotWidth;
   const y = (count) => margin.top + plotHeight - (count / maxOrganizations) * plotHeight;
+  const advances = events.filter((event) => event.advances);
 
   const svg = svgElement("svg", {
     viewBox: `0 0 ${width} ${height}`,
     role: "img",
-    "aria-label": `${entry.name} adoption over time. ${entry.organization_count} of ${board.organization_count} organizations report it.`,
+    "aria-label": `${entry.name} reporting adoption over time. ${advances.length} of ${board.organization_count} organizations have a dated report.`,
   });
-  for (let count = 0; count <= maxOrganizations; count += 1) {
+  const tickStep = Math.max(1, Math.ceil(maxOrganizations / 5));
+  const tickValues = new Set([0, maxOrganizations]);
+  for (let count = tickStep; count < maxOrganizations; count += tickStep) tickValues.add(count);
+  for (const count of [...tickValues].sort((a, b) => a - b)) {
     const yPosition = y(count);
     svg.append(
       svgElement("line", {
@@ -1592,45 +1939,43 @@ function renderAdoptionFrontier(board) {
     svg.append(
       svgElement(
         "text",
-        { x: margin.left - 14, y: yPosition + 4, "text-anchor": "end", class: "frontier-tick" },
+        { x: margin.left - 12, y: yPosition + 4, "text-anchor": "end", class: "frontier-tick" },
         count,
       ),
     );
   }
 
-  const frontier = events.filter((event) => event.advances);
   let path = `M ${x(startText)} ${y(0)}`;
-  for (const event of frontier) {
+  for (const event of advances) {
     path += ` H ${x(event.published)} V ${y(event.organizationCount)}`;
   }
   path += ` H ${x(endText)}`;
   svg.append(svgElement("path", { d: path, class: "frontier-line" }));
 
   for (const event of events) {
+    const advanceIndex = event.advances ? advances.indexOf(event) + 1 : null;
     const group = svgElement("g", {
       class: `frontier-point${event.advances ? " frontier-point-advance" : " frontier-point-repeat"}`,
       tabindex: "0",
       role: "img",
       "aria-label": `${event.organization}, ${event.model}, ${formatDate(event.published, {
         dateStyle: "medium",
-      })}${event.advances ? ", advanced the frontier" : ", repeat report"}`,
+      })}${event.advances ? `, frontier step ${advanceIndex}` : ", repeat report"}`,
     });
     const pointX = x(event.published);
     const pointY = y(event.organizationCount);
-    group.append(svgElement("circle", { cx: pointX, cy: pointY, r: event.advances ? 8 : 6 }));
-    if (event.advances) {
-      const labelOnLeft = pointX > width - margin.right - 145;
-      const labelBelow = pointY < margin.top + 28;
+    group.append(svgElement("circle", { cx: pointX, cy: pointY, r: event.advances ? 11 : 6 }));
+    if (advanceIndex) {
       group.append(
         svgElement(
           "text",
           {
-            x: pointX + (labelOnLeft ? -11 : 11),
-            y: pointY + (labelBelow ? 34 : -11),
-            "text-anchor": labelOnLeft ? "end" : "start",
-            class: "frontier-label",
+            x: pointX,
+            y: pointY + 4,
+            "text-anchor": "middle",
+            class: "frontier-point-number",
           },
-          event.organization,
+          advanceIndex,
         ),
       );
     }
@@ -1652,7 +1997,7 @@ function renderAdoptionFrontier(board) {
     svgElement(
       "text",
       { x: releaseX + 8, y: margin.top + 14, class: "frontier-release-label" },
-      entry.released ? "benchmark released" : "first dated mention",
+      entry.released ? "release" : "first dated mention",
     ),
   );
   for (const [date, anchor] of [
@@ -1662,12 +2007,7 @@ function renderAdoptionFrontier(board) {
     svg.append(
       svgElement(
         "text",
-        {
-          x: x(date),
-          y: height - 30,
-          "text-anchor": anchor,
-          class: "frontier-tick",
-        },
+        { x: x(date), y: height - 28, "text-anchor": anchor, class: "frontier-tick" },
         formatDate(date, { month: "short", year: "numeric" }),
       ),
     );
@@ -1676,9 +2016,9 @@ function renderAdoptionFrontier(board) {
     svgElement(
       "text",
       {
-        x: 18,
+        x: 15,
         y: margin.top + plotHeight / 2,
-        transform: `rotate(-90 18 ${margin.top + plotHeight / 2})`,
+        transform: `rotate(-90 15 ${margin.top + plotHeight / 2})`,
         "text-anchor": "middle",
         class: "frontier-axis-label",
       },
@@ -1692,23 +2032,91 @@ function renderAdoptionFrontier(board) {
       "publication time",
     ),
   );
+  return svg;
+}
 
+function clearAdoptionFrontier(message) {
+  byId("frontier-stage").textContent = "";
+  replaceChildren(byId("frontier-summary"), []);
+  replaceChildren(byId("frontier-milestones"), []);
+  replaceChildren(byId("frontier-task-preview"), []);
+  replaceChildren(byId("frontier-chart"), [
+    element("p", { className: "empty-state", text: message }),
+  ]);
+}
+
+function renderAdoptionFrontier(board) {
+  const adopted = (board.entries || []).filter((entry) => entry.card_count > 0);
+  const defaultEntry = frontierDefaultEntry(board);
+  if (!adopted.length || !defaultEntry) {
+    clearAdoptionFrontier("No dated model-card mentions yet.");
+    return;
+  }
+  if (!adopted.some((entry) => entry.benchmark_id === state.lfrontier)) {
+    state.lfrontier = defaultEntry.benchmark_id;
+  }
+  replaceChildren(byId("frontier-benchmark"), [
+    ...[...adopted]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((entry) =>
+        option(entry.benchmark_id, entry.name, entry.benchmark_id === state.lfrontier),
+      ),
+  ]);
+  renderBenchmarkNavigator(board);
+
+  const entry = adopted.find((candidate) => candidate.benchmark_id === state.lfrontier);
+  byId("frontier-heading").textContent = `${entry.name} adoption trajectory`;
+  const events = frontierEvents(entry);
+  if (!events.length) {
+    clearAdoptionFrontier("This benchmark has no dated mentions.");
+    return;
+  }
+
+  const frontier = events.filter((event) => event.advances);
   const lastAdvance = frontier.at(-1);
+  const stage = reportingStage(entry, board);
+  const stageElement = byId("frontier-stage");
+  stageElement.className = `frontier-stage frontier-stage-${stage.id}`;
+  stageElement.textContent = `Reporting stage · ${stage.label}`;
   replaceChildren(byId("frontier-summary"), [
     element("strong", { text: entry.name }),
     element("span", {
-      text: `${metricLabel(entry.card_count, "card")} · ${entry.organization_count} of ${board.organization_count} organizations`,
+      text: `${metricLabel(entry.card_count, "card")} · ${frontier.length} of ${board.organization_count} dated organizations`,
     }),
     element("span", {
       text: `last frontier advance ${formatDate(lastAdvance.published, { dateStyle: "medium" })}`,
     }),
+    element("span", { className: "frontier-stage-description", text: stage.description }),
   ]);
-  replaceChildren(byId("frontier-chart"), [svg]);
+  replaceChildren(byId("frontier-chart"), [
+    frontier.length < 2
+      ? sparseFrontier(entry, events)
+      : adoptionFrontierChart(entry, board, events),
+  ]);
+  renderFrontierMilestones(entry, events);
+  renderFrontierTaskPreview(entry);
+}
+
+function modelCardLabelCounts(board) {
+  const labelCounts = new Map();
+  for (const card of board.model_cards || []) {
+    const key = `${card.organization} · ${card.model}`;
+    labelCounts.set(key, (labelCounts.get(key) || 0) + 1);
+  }
+  return labelCounts;
+}
+
+function cardLabel(card, labelCounts) {
+  const base = `${card.organization} · ${card.model}`;
+  return labelCounts.get(base) > 1
+    ? `${base} (${String(card.document_type).replaceAll("_", " ")})`
+    : base;
 }
 
 function leaderboardRow(entry) {
   const board = state.data.model_card_leaderboard;
   const maxCount = board.entries?.[0]?.card_count || 0;
+  const labelCounts = modelCardLabelCounts(board);
   const header = element("summary", { className: "record-summary" }, [
     element("span", {
       className: "signal-rank",
@@ -1763,7 +2171,7 @@ function leaderboardRow(entry) {
         // rather than as one list of sources.
         element("a", {
           className: "adopter-link",
-          text: `${adopter.organization} · ${adopter.model}`,
+          text: cardLabel(adopter, labelCounts),
           attrs: {
             href: adopter.url,
             target: "_blank",
@@ -1860,181 +2268,61 @@ function renderLeaderboard() {
   renderAdoptionFrontier(board);
 
   const topEntries = (board.entries || []).filter((entry) => entry.card_count > 0);
-  const allCards = board.model_cards || [];
-  // One vendor can publish two documents about the same model -- Z.ai shipped a
-  // GLM-5 model card and a GLM-5 technical report -- and both are counted,
-  // correctly, as separate adoptions. Labelling both "Z.ai · GLM-5" makes a
-  // correct count look like a double-counting bug, so the document type
-  // disambiguates whenever the organization and model alone do not.
-  const labelCounts = new Map();
-  for (const card of allCards) {
-    const key = `${card.organization} · ${card.model}`;
-    labelCounts.set(key, (labelCounts.get(key) || 0) + 1);
-  }
-  const cardLabel = (organization, model, documentType) => {
-    const base = `${organization} · ${model}`;
-    return labelCounts.get(base) > 1
-      ? `${base} (${String(documentType).replaceAll("_", " ")})`
-      : base;
-  };
-  const cardLink = (card) => [
-    cardLabel(card.organization, card.model, card.document_type),
-    card.url,
-  ];
-  const benchmarkLink = (entry) => [entry.name, entry.url];
-  // Newest first, matching the model card table below (issue #90). This list
-  // and that table are two views of one roster, so they have to agree: sorting
-  // this one by publisher while the table ran by date made the same registry
-  // look like two different registries depending on where you read it.
-  //
-  // A card with no date sorts last here for the same reason it does in
-  // `adoption_rank`: an unknown date is not evidence of recency. Organization
-  // then model break ties so the order is total rather than dependent on the
-  // input sequence.
-  // The trailing document_type and id keys match the backend's: Z.ai's GLM-5
-  // model card and technical report tie on date, organization and model, so
-  // without them the two rosters could disagree on that pair.
-  //
-  // Compared by codepoint rather than with `localeCompare`, because the
-  // backend sorts Python strings and the two disagree on case: `localeCompare`
-  // puts "xAI" before "Xai", Python puts it after. No two registry entries
-  // currently differ only in capitalization, so this changes nothing today --
-  // it stops the same class of split-ordering bug the tie-breakers above fix.
-  const codepoint = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
-  const byNewestFirst = (a, b) =>
-    Number(!a.published) - Number(!b.published) ||
-    codepoint(b.published || "", a.published || "") ||
-    codepoint(String(a.organization), String(b.organization)) ||
-    codepoint(String(a.model), String(b.model)) ||
-    codepoint(String(a.document_type), String(b.document_type)) ||
-    codepoint(String(a.model_card_id), String(b.model_card_id));
 
+  const newEntries = (board.entries || []).filter((entry) => isNewBenchmark(entry, board));
+  const newSharedSignals = newEntries.filter((entry) => frontierAdvances(entry).length >= 3);
+  const evidenceStat = (value, label, detail) =>
+    element("article", { className: "evidence-stat" }, [
+      element("strong", { text: Number(value || 0).toLocaleString() }),
+      element("span", { text: label }),
+      element("small", { text: detail }),
+    ]);
   replaceChildren(byId("leaderboard-insights"), [
-    mapInsightCard(
-      "Registry coverage",
-      [
-        [
-          "Model cards",
-          Number(board.model_card_count || 0).toLocaleString(),
-          [...allCards].sort(byNewestFirst).map(cardLink),
-        ],
-        [
-          "Organizations",
-          Number(board.organization_count || 0).toLocaleString(),
-          Object.entries(board.organizations || {})
-            .sort((a, b) => a[0].localeCompare(b[0]))
-            .map(([organization, count]) => [
-              `${organization} — ${metricLabel(count, "card")}`,
-              null,
-            ]),
-        ],
-        [
-          "Benchmarks tracked",
-          Number(board.benchmark_count || 0).toLocaleString(),
-          (board.entries || []).map(benchmarkLink),
-        ],
-        [
-          "Reported at least once",
-          Number(topEntries.length).toLocaleString(),
-          topEntries.map((entry) => [
-            `${entry.name} — ${metricLabel(entry.card_count, "card")}`,
-            entry.url,
-          ]),
-        ],
-      ],
-      "No registry entries yet.",
+    evidenceStat(
+      board.model_card_count,
+      "source documents",
+      "Each document counts once per benchmark.",
     ),
-    mapInsightCard(
-      "New instruments",
-      (board.entries || [])
-        .filter((entry) => isNewBenchmark(entry, board))
-        .sort(
-          (a, b) =>
-            (b.released || "").localeCompare(a.released || "") ||
-            b.organization_count - a.organization_count ||
-            a.name.localeCompare(b.name),
-        )
-        .map((entry) => [
-          entry.name,
-          entry.card_count
-            ? `${metricLabel(entry.card_count, "card")} · ${metricLabel(
-                entry.organization_count,
-                "organization",
-              )}`
-            : "not yet reported",
-          [
-            [
-              `Released ${formatDate(entry.released, { dateStyle: "medium" })}`,
-              entry.url,
-            ],
-          ],
-        ]),
-      "No benchmarks released in the newest 18-month window.",
+    evidenceStat(
+      board.organization_count,
+      "organizations",
+      "The denominator for reporting breadth.",
     ),
-    mapInsightCard(
-      "Cards per organization",
-      Object.entries(board.organizations || {})
-        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-        .map(([organization, count]) => [
-          organization,
-          metricLabel(count, "card"),
-          allCards
-            .filter((card) => card.organization === organization)
-            // Newest first, like every other roster on this view. Sorting a
-            // vendor's own history the other way put its oldest release at the
-            // top of the one list where the comparison is easiest to make.
-            .sort(byNewestFirst)
-            .map((card) => [`${card.model} — ${card.document_type.replaceAll("_", " ")}`, card.url]),
-        ]),
-      "No organizations in the registry yet.",
-    ),
-    // Counts only benchmarks at least one card reports, which is deliberately
-    // narrower than the domain filter below. A benchmark tracked but reported
-    // by nobody is a real finding about the registry, so it stays visible in
-    // the list while being excluded from "how much of this domain is in use".
-    mapInsightCard(
+    evidenceStat(
+      Object.keys(board.domains || {}).length,
       "Domains reported at least once",
-      Object.entries(board.domains || {})
-        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-        .map(([domain, count]) => [
-          domain.replaceAll("_", " "),
-          metricLabel(count, "benchmark"),
-          topEntries
-            .filter((entry) => entry.domain === domain)
-            .map((entry) => [
-              `${entry.name} — ${metricLabel(entry.card_count, "card")}`,
-              entry.url,
-            ]),
-        ]),
-      "No domains represented yet.",
+      `${metricLabel(board.benchmark_count, "benchmark")} tracked · ${metricLabel(
+        topEntries.length,
+        "benchmark",
+      )} reported.`,
     ),
-    mapInsightCard(
-      "Adopted by every organization",
-      topEntries
-        .filter((entry) => entry.organization_count === board.organization_count)
-        .map((entry) => [
-          entry.name,
-          metricLabel(entry.card_count, "card"),
-          // The adopting documents themselves: this row's claim is "every
-          // organization reports it", and the list is what substantiates it.
-          (entry.adopters || []).map((adopter) => [
-            cardLabel(adopter.organization, adopter.model, adopter.document_type),
-            adopter.url,
-          ]),
-        ]),
-      "No benchmark is reported by every organization in the registry.",
+    evidenceStat(
+      newSharedSignals.length,
+      "new shared signals",
+      "New instruments crossing three dated organizations.",
     ),
+    element("p", { className: "evidence-thesis" }, [
+      element("strong", { text: "New instruments" }),
+      element("span", {
+        text: ` · ${metricLabel(
+          newSharedSignals.length,
+          "benchmark",
+        )} released in the newest 18-month window already appear across three or more dated organizations. Follow their trajectories before reading the raw rank.`,
+      }),
+    ]),
   ]);
 
   const entries = leaderboardEntries();
-  byId("leaderboard-count").textContent = `${metricLabel(
-    entries.length,
-    "benchmark",
-  )} of ${board.entries.length}`;
+  const filtersActive = Boolean(state.lq || state.ldomain || state.lorg || state.lera);
+  const visibleEntries =
+    filtersActive || state.leaderboardShowAll ? entries : entries.slice(0, 18);
+  byId("leaderboard-count").textContent = filtersActive
+    ? `${metricLabel(entries.length, "benchmark")} of ${board.entries.length}`
+    : `${visibleEntries.length} shown · ${board.entries.length} tracked`;
   replaceChildren(
     byId("leaderboard-list"),
-    entries.length
-      ? entries.map(leaderboardRow)
+    visibleEntries.length
+      ? visibleEntries.map(leaderboardRow)
       : [
           element("p", {
             className: "empty-state",
@@ -2042,6 +2330,11 @@ function renderLeaderboard() {
           }),
         ],
   );
+  const showAllButton = byId("leaderboard-show-all");
+  showAllButton.hidden = filtersActive || entries.length <= 18;
+  showAllButton.textContent = state.leaderboardShowAll
+    ? "Show the first 18 benchmarks"
+    : `Show all ${entries.length} benchmarks`;
 
   const cards = board.model_cards || [];
   byId("leaderboard-cards-count").textContent = metricLabel(cards.length, "document");
@@ -2387,9 +2680,15 @@ function bindEvents() {
     state.ldomain = "";
     state.lorg = "";
     state.lera = "";
+    state.leaderboardShowAll = false;
     byId("leaderboard-search").value = "";
     renderLeaderboard();
     writeUrl();
+  });
+  byId("leaderboard-show-all").addEventListener("click", () => {
+    state.leaderboardShowAll = !state.leaderboardShowAll;
+    renderLeaderboard();
+    byId("leaderboard-table-heading").scrollIntoView({ behavior: "smooth", block: "start" });
   });
   byId("frontier-benchmark").addEventListener("change", (event) => {
     state.lfrontier = event.target.value;

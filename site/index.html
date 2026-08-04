@@ -180,58 +180,89 @@
         aria-labelledby="leaderboard-heading"
         hidden
       >
-        <header class="view-heading">
-          <div>
+        <header class="leaderboard-intro">
+          <div class="leaderboard-title-block">
             <p class="eyebrow">Model Card Adoption Rank</p>
             <h1 id="leaderboard-heading">Which benchmarks do model cards report?</h1>
+            <p class="leaderboard-deck" id="leaderboard-measures"></p>
           </div>
-          <!--
-            The disclaimer sits in the heading, not in a footnote. This ranking
-            counts vendor attention, and a saturated benchmark can top it
-            precisely because reporting it is conventional. Readers who take the
-            order as a quality ranking would draw the opposite of the intended
-            conclusion, so the correction has to arrive before the table does.
-          -->
-          <p class="heading-note" id="leaderboard-measures"></p>
-          <!--
-            Some cards publish their comparison table as an image, so those rows
-            were read by OCR and can disagree with the document. The honest place
-            to say so is here, next to the counts it affects, with a pointer to
-            the per-card listing below where any row can be checked against its
-            source link.
-          -->
-          <p class="heading-note leaderboard-ocr-note">
-            <strong>Disclaimer:</strong> some model cards publish their benchmark table
-            as an image, and those rows were transcribed by OCR. Transcription can be
-            wrong, so a count here may differ from the source document.
-            <a href="#leaderboard-cards-heading">Model cards in the registry</a>
-            below lists every benchmark we recorded for each card, with a link to the
-            original, so any row can be checked against it.
-          </p>
+          <details class="method-note">
+            <summary>How to read this evidence</summary>
+            <p>
+              This ranks reporting convention, not benchmark quality. One model card
+              contributes at most one mention to a benchmark, however many configurations
+              it reports.
+            </p>
+            <p>
+              Some model cards publish their benchmark table as an image, and those rows
+              were transcribed by OCR. A transcription can be wrong. The
+              <a href="#leaderboard-cards-heading">source ledger</a> lists every recorded
+              benchmark with the original document so each count can be checked.
+            </p>
+          </details>
         </header>
 
-        <div class="map-insights" id="leaderboard-insights" aria-label="Registry overview"></div>
+        <div class="evidence-strip" id="leaderboard-insights" aria-label="Registry overview"></div>
 
-        <section class="frontier-panel" id="adoption-frontier" aria-labelledby="frontier-heading">
-          <div class="frontier-heading-row">
-            <div>
-              <p class="eyebrow">Harbor-inspired timeline</p>
-              <h2 id="frontier-heading">Benchmark adoption frontier</h2>
+        <div class="benchmark-workbench">
+          <aside class="benchmark-navigator" aria-labelledby="benchmark-navigator-heading">
+            <p class="eyebrow">Benchmarks to watch</p>
+            <h2 id="benchmark-navigator-heading">Choose a reporting story</h2>
+            <p>
+              Start with signals that distinguish emerging instruments from established
+              standards and saturated conventions.
+            </p>
+            <div id="benchmark-shortlist"></div>
+          </aside>
+
+          <section class="frontier-panel" id="adoption-frontier" aria-labelledby="frontier-heading">
+            <div class="frontier-heading-row">
+              <div>
+                <p class="eyebrow">Reporting over time</p>
+                <h2 id="frontier-heading">Benchmark adoption frontier</h2>
+              </div>
+              <div class="frontier-controls">
+                <span class="frontier-stage" id="frontier-stage"></span>
+                <label class="frontier-picker">
+                  All tracked benchmarks
+                  <select id="frontier-benchmark" name="lfrontier"></select>
+                </label>
+              </div>
             </div>
-            <label class="frontier-picker">
-              Benchmark
-              <select id="frontier-benchmark" name="lfrontier"></select>
-            </label>
-          </div>
-          <p class="section-note" id="frontier-explainer">
-            Each dot is a model card mention. The line advances only when a new
-            organization adopts the benchmark; hollow dots are repeat reports from an
-            organization already on the frontier. A long flat run is reporting saturation,
-            not a claim about benchmark score saturation.
-          </p>
-          <div class="frontier-summary" id="frontier-summary" aria-live="polite"></div>
-          <div class="frontier-chart" id="frontier-chart"></div>
-        </section>
+            <p class="section-note" id="frontier-explainer">
+              Each dot is a model card mention. The line advances only when a new
+              organization adopts the benchmark; hollow dots are repeat reports from an
+              organization already on the frontier. A long flat run is reporting saturation
+              observed within this curated registry, not a claim about benchmark score saturation.
+            </p>
+            <div class="frontier-summary" id="frontier-summary" aria-live="polite"></div>
+            <div class="frontier-chart" id="frontier-chart"></div>
+            <div class="frontier-evidence">
+              <section aria-labelledby="frontier-milestones-heading">
+                <h3 id="frontier-milestones-heading">Frontier milestones</h3>
+                <div id="frontier-milestones"></div>
+              </section>
+              <aside class="frontier-context" aria-labelledby="frontier-task-heading">
+                <div id="frontier-task-preview"></div>
+                <details class="pareto-readiness">
+                  <summary>What would make this a true Pareto frontier?</summary>
+                  <p>
+                    Comparable score observations need the benchmark version and split,
+                    metric direction, model, harness or scaffold, reasoning budget, cost or
+                    latency, publication date, and source. Only compatible configurations can
+                    share a score frontier; this registry currently stores mentions, not those
+                    measurements.
+                  </p>
+                  <p>
+                    With those observations, a Harbor-style view can put cost or latency on the
+                    x-axis and score on the y-axis, connect only nondominated observations, and
+                    use a publication-time slider to reveal how the frontier moved.
+                  </p>
+                </details>
+              </aside>
+            </div>
+          </section>
+        </div>
 
         <div class="trend-panel">
           <div class="section-title">
@@ -271,21 +302,28 @@
             from six vendors is a shared standard, from one vendor a house style.
           </p>
           <div class="leaderboard-list" id="leaderboard-list"></div>
+          <div class="leaderboard-list-actions">
+            <button class="secondary-link" id="leaderboard-show-all" type="button"></button>
+          </div>
         </div>
 
-        <section class="ledger" aria-labelledby="leaderboard-cards-heading">
-          <div class="section-title">
-            <h2 id="leaderboard-cards-heading">Model cards in the registry</h2>
+        <details class="ledger" aria-labelledby="leaderboard-cards-heading">
+          <summary class="ledger-summary">
+            <span>
+              <span class="eyebrow">Audit the counts</span>
+              <strong id="leaderboard-cards-heading">Model cards in the registry</strong>
+            </span>
             <span id="leaderboard-cards-count"></span>
+          </summary>
+          <div class="ledger-body">
+            <p class="section-note">
+              The curated source list this ranking is computed from. Expand any card to see
+              every benchmark it reports, grouped the way the source document groups them, so
+              our data can be checked line by line against the original.
+            </p>
+            <div class="leaderboard-list" id="leaderboard-cards"></div>
           </div>
-          <p class="section-note">
-            The curated source list this ranking is computed from. Expand any card to see
-            every benchmark it reports, grouped the way the source document groups them, so
-            our data can be checked line by line against the original. Each row links to the
-            document the mentions were read from.
-          </p>
-          <div class="leaderboard-list" id="leaderboard-cards"></div>
-        </section>
+        </details>
       </section>
 
       <section class="view" id="map-view" aria-labelledby="map-heading" hidden>
