@@ -515,6 +515,16 @@ def _attach_category_trends(days: list[dict[str, Any]]) -> None:
         day["cumulative_evidence_count"] = len(seen_any)
 
 
+def _same_file(left: Path, right: Path) -> bool:
+    """Whether two paths name one file, comparing resolved forms.
+
+    `Path.samefile` needs both to exist, and the whole point of this check is that
+    one of them may not, so it compares resolved paths instead. `strict=False`
+    keeps a nonexistent path comparable rather than raising.
+    """
+    return left.resolve(strict=False) == right.resolve(strict=False)
+
+
 def _curated_layers(
     registry_path: Path | None,
     scores_path: Path | None,
@@ -550,8 +560,13 @@ def _curated_layers(
     # Compared by path, not against None: the CLI always supplies a
     # `--model-cards` value (it has a default), so "the caller passed nothing"
     # and "the caller passed the default" have to be treated alike here.
+    #
+    # Resolved before comparing, because `--model-cards "$PWD/data/model_cards.yml"`
+    # names the same file as the relative default and would otherwise be treated
+    # as a custom registry, silently dropping scores and insights from a build
+    # that should have carried them.
     scores_file = scores_path
-    if scores_file is None and registry_file == DEFAULT_REGISTRY_PATH:
+    if scores_file is None and _same_file(registry_file, DEFAULT_REGISTRY_PATH):
         scores_file = DEFAULT_SCORES_PATH
     # The score layer cites `source_id`s that must exist in the registry, so it
     # is only built when the registry it cites is present. Publishing scores

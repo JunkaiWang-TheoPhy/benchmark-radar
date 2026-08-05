@@ -1,5 +1,6 @@
 import json
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -789,6 +790,23 @@ def test_a_custom_registry_does_not_inherit_the_default_score_file(tmp_path):
     assert data["model_card_leaderboard"] is not None
     assert data["benchmark_score_progression"] is None
     assert data["benchmark_insights"] is None
+
+
+def test_the_default_registry_is_recognized_through_an_equivalent_path(tmp_path):
+    # Codex P2. `--model-cards "$PWD/data/model_cards.yml"` names the same file as
+    # the relative default, so treating it as a custom registry silently dropped
+    # scores and insights from a build that should have carried them.
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(26), snapshot_dir)
+
+    data = rebuild_dashboard(
+        snapshot_dir,
+        tmp_path / "radar.json",
+        registry_path=Path("data/model_cards.yml").resolve(),
+    )
+
+    assert data["benchmark_score_progression"] is not None
+    assert data["benchmark_insights"] is not None
 
 
 def test_the_default_registry_still_carries_the_default_scores(tmp_path):
