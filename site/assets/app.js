@@ -2028,11 +2028,9 @@ function renderScoreReadout(entry) {
 function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
   const datedCards = (board.model_cards || []).filter((card) => card.published);
   const record = scoreRecord(entry.benchmark_id);
-  const startText = [
-    entry.released,
-    events[0].published,
-    record?.first_reported_at,
-  ]
+  // `events` may be empty when only the score track is being drawn, so both
+  // bounds are computed from whatever dates exist rather than indexing into it.
+  const startText = [entry.released, events[0]?.published, record?.first_reported_at]
     .filter(Boolean)
     .sort()[0];
   // Symmetric with `startText`: the range has to cover the score track as well
@@ -2040,8 +2038,8 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
   // when a card carries a later `revised` date -- lands outside the viewBox and
   // is silently clipped. Both ends therefore consider both layers.
   const endText = [
-    datedCards.map((card) => card.published).sort().at(-1),
-    events.at(-1).published,
+    events.length ? datedCards.map((card) => card.published).sort().at(-1) : null,
+    events.at(-1)?.published,
     record?.last_reported_at,
   ]
     .filter(Boolean)
@@ -2092,11 +2090,16 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
     viewBox: `0 0 ${width} ${height}`,
     role: "img",
     "aria-label":
-      `${entry.name} reporting adoption over time. ${advances.length} of ` +
-      `${board.organization_count} organizations have a dated report.` +
+      (events.length
+        ? `${entry.name} reporting adoption over time. ${advances.length} of ` +
+          `${board.organization_count} organizations have a dated report.`
+        : `${entry.name} readable scores over time. No mention of it carries a date, so no ` +
+          "adoption timeline is shown.") +
       (record
-        ? ` Below it, ${metricLabel(record.observation_count, "readable score")} from ` +
-          `${formatDate(record.first_reported_at, { dateStyle: "medium" })} to ` +
+        ? ` ${events.length ? "Below it, " : ""}${metricLabel(
+            record.observation_count,
+            "readable score",
+          )} from ${formatDate(record.first_reported_at, { dateStyle: "medium" })} to ` +
           `${formatDate(record.last_reported_at, { dateStyle: "medium" })}, best ` +
           `${record.saturation.best_value}.`
         : " No readable score for this benchmark."),
@@ -2274,8 +2277,20 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
     // manufactured a flat tail out of missing data. That is the exact failure
     // this marker exists to prevent, so the span is now purely horizontal: it
     // says "no reading here", not "the reading stayed at N".
+    // Bounded by the newest dated mention of *this* benchmark, not by the newest
+    // card in the registry. An unrelated vendor's recent document is not evidence
+    // that this benchmark went unread: shipped Arena-Hard and Aider Polyglot have
+    // no adopter newer than their last score, so ending at the global date drew a
+    // long gap that nothing about those benchmarks supported.
+    const lastMention = events
+      .map((event) => event.published)
+      .filter(Boolean)
+      .sort()
+      .at(-1);
     const lastScoreX = x(record.last_reported_at);
-    const endX = x(endText);
+    const endX = x(
+      lastMention && lastMention > record.last_reported_at ? lastMention : record.last_reported_at,
+    );
     if (endX - lastScoreX > 24) {
       const floorY = scoreTop + scoreHeight;
       svg.append(
@@ -2345,7 +2360,11 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
     svgElement(
       "text",
       { x: releaseX + 8, y: margin.top + 14, class: "frontier-release-label" },
-      entry.released ? "release" : "first dated mention",
+      entry.released
+        ? "release"
+        : events.length
+          ? "first dated mention"
+          : "first readable score",
     ),
   );
   for (const [date, anchor] of [
@@ -2385,6 +2404,22 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
   return svg;
 }
 
+// The score track alone, for a benchmark whose every mention is undated. Delegates
+// to the same renderer with no adoption events rather than duplicating the score
+// geometry: two implementations of one axis would be free to disagree about the
+// join rule, which is the one thing this chart must not do.
+function scoreOnlyChart(entry) {
+  return adoptionFrontierChart(
+    entry,
+    // `organization_count` is only read for the adoption axis, which is suppressed
+    // here, and `model_cards` only to bound the range -- which the score dates now
+    // supply. An empty board keeps this call from depending on either.
+    { organization_count: 0, model_cards: [] },
+    [],
+    { sparse: true },
+  );
+}
+
 function clearAdoptionFrontier(message) {
   byId("frontier-stage").textContent = "";
   replaceChildren(byId("frontier-summary"), []);
@@ -2422,8 +2457,13 @@ function renderAdoptionFrontier(board) {
     // No dated mention means no adoption timeline can be drawn. The score
     // reading is independent of that, though: the registry permits a card
     // without a `published` date, and clearing the panel outright would hide
-    // every readable score because the *other* layer had no usable date.
+    // every readable score because the *other* layer had no usable date. So the
+    // score track still draws, on its own, with the points and comparable series
+    // intact rather than reduced to the aggregate readout.
     clearAdoptionFrontier("This benchmark has no dated mentions.");
+    if (scoreRecord(entry.benchmark_id)) {
+      replaceChildren(byId("frontier-chart"), [scoreOnlyChart(entry)]);
+    }
     renderScoreReadout(entry);
     return;
   }

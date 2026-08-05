@@ -153,15 +153,41 @@ def test_the_time_range_covers_the_score_track_at_both_ends():
 
 
 def test_scores_still_render_when_no_mention_carries_a_date():
-    # Codex P2, second pass. The registry permits a card without `published`, so
-    # a scored benchmark can have zero dated adoption events. Clearing the panel
-    # outright hid every readable score because the *other* layer had no date.
+    # Codex P2, second and third pass. The registry permits a card without
+    # `published`, so a scored benchmark can have zero dated adoption events.
+    # Clearing the panel hid every readable score because the *other* layer had no
+    # date -- and restoring only the aggregate readout still hid the individual
+    # points and comparable series, so a real chart is drawn.
     script = source("site/assets/app.js")
-    guard = script.split("if (!events.length) {", 1)[1].split("return;", 1)[0]
+    guard = script.split("if (!events.length) {", 1)[1].split("\n  }", 1)[0]
 
     # Ordering matters: clearAdoptionFrontier empties the readout, so the score
     # render has to come after it.
     assert guard.index("clearAdoptionFrontier") < guard.index("renderScoreReadout(entry)")
+    assert "scoreOnlyChart(entry)" in guard
+
+
+def test_the_score_only_chart_reuses_the_one_score_renderer():
+    # Two implementations of one axis would be free to disagree about the join
+    # rule, which is the single thing this chart must not do.
+    script = source("site/assets/app.js")
+    helper = script.split("function scoreOnlyChart(entry)", 1)[1].split("\n}", 1)[0]
+
+    assert "adoptionFrontierChart(" in helper
+    assert "sparse: true" in helper
+
+
+def test_the_reading_gap_ends_at_this_benchmarks_own_latest_mention():
+    # Codex P2, third pass. `endText` comes from the newest card anywhere in the
+    # registry, so shipped Arena-Hard and Aider Polyglot -- which have no adopter
+    # newer than their last score -- drew a long gap nothing supported.
+    script = source("site/assets/app.js")
+    gap = script.split("const lastMention = events", 1)[1].split(
+        "no readable score in this window", 1
+    )[0]
+
+    assert "lastMention > record.last_reported_at" in gap
+    assert "x(endText)" not in gap, "the gap must not extend to the registry-wide end date"
 
 
 def test_the_score_axis_says_it_is_zoomed():
