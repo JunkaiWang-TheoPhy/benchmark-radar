@@ -31,6 +31,21 @@ def test_report_contains_evidence_and_health():
     assert "Source health" in report
 
 
+def test_empty_report_explains_eligibility_not_recommendation_threshold():
+    report = render_markdown(
+        RadarRun(
+            generated_at=datetime(2026, 7, 27, tzinfo=UTC),
+            since=datetime(2026, 7, 25, tzinfo=UTC),
+            items=[],
+            health=[],
+        )
+    )
+
+    assert "## No eligible signals" in report
+    assert "suppressed or lacked a taxonomy or watchlist match" in report
+    assert "relevance threshold" not in report
+
+
 def _record(index: int, **overrides) -> RadarItem:
     values = {
         "source": "GitHub",
@@ -200,3 +215,45 @@ def test_the_funnel_omits_qualification_reasons_on_older_snapshots():
 
     assert "below 40 →" not in markdown
     assert "uncategorized →" not in markdown
+
+
+def test_current_funnel_reports_recommendation_without_dropping_records():
+    run = _run([_record(1, recommended=True), _record(2)])
+    run.selection = {
+        "fetched": 3,
+        "deduplicated": 3,
+        "scored": 3,
+        "eligible": 2,
+        "qualified": 2,
+        "published": 2,
+        "suppressed_uncategorized": 1,
+        "recommended": 1,
+        "not_recommended": 1,
+        "recommendation_score": 40,
+        "minimum_score": 40,
+    }
+
+    markdown = render_markdown(run)
+
+    assert "**2** eligible → **2** retained" in markdown
+    assert "**1** score 40 or above; **1** retained without the badge" in markdown
+    assert "below 40 →" not in markdown
+
+
+def test_merged_report_counts_badges_over_the_daily_union():
+    run = _run([_record(1, recommended=True)])
+    run.selection = {
+        "fetched": 0,
+        "deduplicated": 0,
+        "eligible": 0,
+        "published": 0,
+        "published_total": 1,
+        "recommended": 0,
+        "not_recommended": 0,
+        "recommendation_score": 40,
+    }
+
+    markdown = render_markdown(run)
+
+    assert "**1** ranked evidence items" in markdown
+    assert "Recommendation: **1** score 40 or above; **0** retained without the badge" in markdown

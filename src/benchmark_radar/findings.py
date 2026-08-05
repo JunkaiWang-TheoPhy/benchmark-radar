@@ -325,9 +325,9 @@ def _trailing_run(days: list[dict[str, Any]], usable) -> list[dict[str, Any]]:
 
 
 # Every setting that changes which items a day contains or how they are
-# classified. `report_limit` truncates the ranked selection directly
-# (`pipeline.py`), so a change to it moves category shares without anything
-# happening in the feed.
+# classified. Historical snapshots record a positive `report_limit`; current
+# uncapped snapshots record zero, so the transition is explicit rather than a
+# missing value the conflict check would ignore.
 MEASUREMENT_KEYS = ("taxonomy_version", "max_items_per_source", "report_limit")
 
 
@@ -335,8 +335,8 @@ def measurement_conflict(window: list[dict[str, Any]]) -> bool:
     """Whether the window spans a change in how the corpus was measured.
 
     Category shares are only comparable across days classified by the same
-    taxonomy, capped the same way, and truncated at the same ranked limit. Any
-    of those changing reclassifies or re-selects artifacts wholesale, which can
+    taxonomy and collected under the same historical caps. Any of those changing
+    reclassifies or re-selects artifacts wholesale, which can
     produce a fully separated share change that reflects the instrument rather
     than the feed.
 

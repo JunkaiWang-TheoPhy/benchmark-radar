@@ -228,30 +228,32 @@ pytest -q
 
 ## Configure
 
-Edit [`config.yml`](config.yml) to change the lookback, threshold, queries, taxonomy, and
-report size. Copy `.env.example` to `.env` only for local use; never commit credentials.
+Edit [`config.yml`](config.yml) to change the lookback, recommendation threshold, queries,
+taxonomy, and Issue size. Copy `.env.example` to `.env` only for local use; never commit
+credentials.
 
-Record volume is controlled by three separate keys, so the daily Issue stays readable
-without discarding the corpus behind it:
+Record volume and presentation are controlled separately, so the daily Issue stays
+readable without discarding eligible records from the corpus:
 
 | Key | Effect |
 |---|---|
 | `max_items_per_source` | Upper bound on records fetched from each source |
-| `report_limit` | Records scored, snapshotted, and published to the dashboard |
 | `issue_item_limit` | Records written into the daily Issue body |
+| `minimum_score` | Adds the **Recommended** badge; never controls inclusion |
 
-Every run records its own drop-off (`fetched → deduplicated → qualified → published`) in
-the snapshot and at the top of the Issue, so the gap between what a source returned and
-what was published is always auditable.
+Every taxonomy-matching, non-suppressed record is retained. Explicitly watchlisted records
+are retained even without a taxonomy match. Every run records its drop-off
+(`fetched → deduplicated → eligible → retained`) plus the recommended/not-recommended split
+in the snapshot and at the top of the Issue.
 
 GitHub search is rate-limited to 10 requests per minute without a token and 30 with one,
 so pagination is bounded by `sources.github.max_requests` and spaced by
 `request_delay_seconds`. Both default by whether `GITHUB_TOKEN` is present; raising
 `max_items_per_source` well beyond the defaults on a tokenless run risks a 403.
 
-Trend comparisons only run between snapshots collected under the same `report_limit`
-**and classified by the same taxonomy**. Changing the cap lifts every count at once, and
-editing the taxonomy re-tags the whole corpus; reporting either as domain momentum would
+Trend comparisons do not cross the transition from historically capped snapshots to the
+uncapped eligible corpus, and only compare snapshots classified by the same taxonomy.
+Editing the taxonomy re-tags the whole corpus; reporting that as domain momentum would
 present a change in measurement as a change in the field.
 
 Each snapshot records a `taxonomy_version`, a fingerprint derived from the taxonomy's own

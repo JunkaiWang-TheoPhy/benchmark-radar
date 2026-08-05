@@ -405,18 +405,19 @@ def _score_and_select(
 
     Split out of `run_pipeline` so a backfill replay can reuse the exact same
     scoring and selection a live run applies, evaluated at a simulated `now`
-    instead of the real one, without duplicating the threshold/watchlist/sort
+    instead of the real one, without duplicating the eligibility/watchlist/sort
     logic a second time.
     """
     settings = config["radar"]
-    # Resolved once, above the predicate and the counters that decompose it, so
-    # the two can never read different values. A NaN threshold makes every
-    # comparison false, which would drop records from the predicate while
-    # entering none of the counters and silently break the funnel identity.
-    # `float()` accepts `.nan` from YAML happily, so the check must be explicit.
-    minimum_score = float(settings["minimum_score"])
-    if not math.isfinite(minimum_score):
-        raise ValueError(f"minimum_score must be a finite number, got {minimum_score!r}")
+    # `minimum_score` is the legacy config name. It now controls only the
+    # Recommended presentation badge; it never decides whether a record is
+    # retained. `float()` accepts `.nan` from YAML, so validate it explicitly.
+    recommendation_score = float(settings["minimum_score"])
+    if not math.isfinite(recommendation_score):
+        raise ValueError(
+            f"minimum_score must be a finite recommendation threshold, "
+            f"got {recommendation_score!r}"
+        )
     unique = deduplicate(items)
     scored = apply_watchlist(
         [
@@ -430,6 +431,8 @@ def _score_and_select(
         ],
         config.get("watchlist") or [],
     )
+    for item in scored:
+        item.recommended = item.total_score >= recommendation_score
     selected = [
         item
         for item in scored
@@ -438,47 +441,35 @@ def _score_and_select(
         # short-circuits, so a watchlisted record published even when it matched
         # a suppress rule, which made every "hard" filter advisory.
         if not item.suppression_reasons
-        # A watchlist hit is published even when the generic score or taxonomy
-        # would have dropped it: the reader asked for these by name.
-        and (item.watchlist or (item.total_score >= minimum_score and item.categories))
+        # A watchlist hit is retained even without a taxonomy category: the
+        # reader asked for it by name. Scores do not participate in eligibility.
+        and (item.watchlist or item.categories)
     ]
     selected.sort(
         key=lambda item: (bool(item.watchlist), item.total_score, item.published_at),
         reverse=True,
     )
-    published = selected[: int(settings["report_limit"])]
+    # The snapshot is the corpus, not the digest. Retain every eligible record;
+    # `issue_item_limit` bounds the Markdown issue separately.
+    published = selected
     assert_no_boilerplate_summaries(published)
     # The dashboard previously showed "228 found" beside 8 published records
     # with nothing to explain the gap. Persist each stage so the drop-off is
     # auditable rather than looking like lost data.
     #
-    # Issue #124: recording the stage boundaries was not enough. `scored` to
-    # `qualified` is the largest single drop in the funnel, 585 of 686 records on
-    # 2026-08-05, and the only counter describing it reported 1, because
-    # `suppressed_low_value` counts explicit suppression rules while the
-    # qualification predicate also drops records on score and on category.
-    # Nothing attributed the other 584. That is worse than an absent counter: it
-    # reads as "the threshold barely fires" and cannot be distinguished from
-    # "the threshold fires constantly and is not counted here", which is exactly
-    # the wrong conclusion a reader drew from it.
-    #
-    # These three mirror the predicate above in its own precedence order, so
-    # each record is attributed to the first reason that dropped it and the
-    # three sum to `scored - qualified`. `test_pipeline` asserts that identity.
+    # These counters mirror the eligibility predicate above in its own
+    # precedence order, so each excluded record has one reason and the two sum
+    # to `scored - eligible`. Recommendation is reported alongside the funnel,
+    # never as a drop reason.
     suppressed_low_value = sum(1 for item in scored if item.suppression_reasons)
-    below_minimum = sum(
-        1
-        for item in scored
-        if not item.suppression_reasons and not item.watchlist and item.total_score < minimum_score
-    )
     uncategorized = sum(
         1
         for item in scored
         if not item.suppression_reasons
         and not item.watchlist
-        and item.total_score >= minimum_score
         and not item.categories
     )
+    recommended = sum(1 for item in selected if item.recommended)
     selection = {
         "fetched": fetched_count,
         # arXiv records already seen in a previous run, dropped before dedupe.
@@ -488,32 +479,36 @@ def _score_and_select(
         "suppressed_future_dated": future_dated_count,
         "deduplicated": len(unique),
         "scored": len(scored),
+        "eligible": len(selected),
+        # Deprecated compatibility alias for consumers of snapshots written
+        # before score stopped participating in eligibility.
         "qualified": len(selected),
-        # Qualified purely by a watchlist match, so the threshold wording in
-        # the report stays true for the records that did clear the bar.
+        # Retained purely by a watchlist match rather than taxonomy.
         "watchlisted": sum(
-            1
-            for item in selected
-            if item.watchlist and not (item.total_score >= minimum_score and item.categories)
+            1 for item in selected if item.watchlist and not item.categories
         ),
         # Suppression now applies to watchlisted records too, so the count is
         # every suppressed record rather than only the un-watchlisted ones.
         "suppressed_low_value": suppressed_low_value,
-        # Scored below `minimum_score`: a quality judgment about the record.
-        "suppressed_below_minimum": below_minimum,
-        # Cleared the score but matched no taxonomy category. A different kind of
-        # finding from the one above: a large count here is a statement about
-        # taxonomy coverage, not about the records.
+        # Deprecated compatibility field. Scores no longer suppress records.
+        "suppressed_below_minimum": 0,
+        # Matched no taxonomy category and was not explicitly watchlisted.
         "suppressed_uncategorized": uncategorized,
-        # This pass only, and never more than `report_limit`. The whole day can
-        # hold more, because two or more passes merge into one snapshot and their
-        # unions are counted by `published_total` in `merge_snapshots`. The two
-        # are different scopes, not a discrepancy: `published` belongs to the
-        # per-pass funnel below it, `published_total` describes the file. On
-        # 2026-08-05 they read 101 and 272 for exactly that reason.
+        # Presentation split across eligible records. Both groups are retained.
+        "recommended": recommended,
+        "not_recommended": len(selected) - recommended,
+        # This pass only. The whole day can hold more because two or more passes
+        # merge into one snapshot and their unions are counted by
+        # `published_total` in `merge_snapshots`.
         "published": len(published),
-        "minimum_score": minimum_score,
-        "report_limit": int(settings["report_limit"]),
+        # The old key remains readable by historical tooling; the new key names
+        # its actual role for current consumers.
+        "minimum_score": recommendation_score,
+        "recommendation_score": recommendation_score,
+        # Zero is the explicit uncapped marker. Historical snapshots carry the
+        # numeric truncation limit (usually 300), so trend code can reject a
+        # comparison across this measurement-policy transition.
+        "report_limit": 0,
         # A per-source fetch that returned exactly this many rows was truncated,
         # so "300 found" is a ceiling rather than a total. Publishing the cap
         # lets the dashboard say which counts are limits.

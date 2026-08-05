@@ -86,6 +86,27 @@ def test_current_day_snapshot_reranks_the_merged_items():
     ]
 
 
+def test_current_day_snapshot_recomputes_badges_when_the_threshold_changes():
+    morning_item = _item(1)
+    morning_item.total_score = 45
+    morning_item.recommended = True
+    morning_run = _run([morning_item])
+    morning_run.selection["recommendation_score"] = 40
+
+    afternoon_item = _item(2)
+    afternoon_item.total_score = 55
+    afternoon_run = _run([afternoon_item])
+    afternoon_run.selection["recommendation_score"] = 50
+
+    merged = current_day_snapshot([snapshot_for_run(morning_run)], afternoon_run)
+
+    recommended = {
+        item["source_id"]: item["recommended"] for item in merged["evidence_items"]
+    }
+    assert recommended == {"org/repo-1": False, "org/repo-2": True}
+    assert merged["selection"]["recommendation_score"] == 50
+
+
 def test_current_day_snapshot_unions_attention_from_both_passes():
     morning_run = _run([_item(1)])
     morning_run.attention = [_attention(1)]

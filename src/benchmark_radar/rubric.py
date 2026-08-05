@@ -217,7 +217,6 @@ def priority_formula() -> str:
 
 def rubric_reference(
     *,
-    minimum_score: float | None = None,
     lookback_hours: float = DEFAULT_LOOKBACK_HOURS,
 ) -> dict[str, Any]:
     """Return the current rubric as a browser-safe published reference."""
@@ -236,13 +235,11 @@ def rubric_reference(
             "the selection funnel reports how many were removed.",
             "Adoption measures attention, not correctness.",
             "Attention observations are shown separately and are never quality-scored.",
-            "Watchlisted artifacts publish whatever they score and sort first. Their "
+            "Watchlisted artifacts are retained whatever they score and sort first. Their "
             "rank reflects that request, not a higher score.",
         ],
         "lookback_hours": float(lookback_hours),
     }
-    if minimum_score is not None:
-        value["minimum_score"] = float(minimum_score)
     return value
 
 

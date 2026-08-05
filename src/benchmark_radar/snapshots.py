@@ -114,6 +114,10 @@ def _validate_evidence_items(items: Any, *, source: str) -> None:
             raise SnapshotError(
                 f"{source}: evidence item {index} must not expose raw source payloads"
             )
+        if "recommended" in item and not isinstance(item["recommended"], bool):
+            raise SnapshotError(
+                f"{source}: evidence item {index} recommended must be a boolean"
+            )
         item_missing = sorted(item_fields - item.keys())
         if item_missing:
             raise SnapshotError(
@@ -379,7 +383,7 @@ def merge_snapshots(existing: dict[str, Any], incoming: dict[str, Any]) -> dict[
     for observation in (incoming.get("attention") or {}).get("observations") or []:
         merged_attention[observation["observation_id"]] = observation
 
-    # The funnel counters (fetched, deduplicated, scored, qualified,
+    # The funnel counters (fetched, deduplicated, scored, eligible,
     # suppressed_*) each measure rows moving through one pass. They cannot be
     # reconstructed from the union, and summing them would double-count the
     # artifacts both passes saw, so they stay as the newer pass's numbers.
@@ -394,6 +398,20 @@ def merge_snapshots(existing: dict[str, Any], incoming: dict[str, Any]) -> dict[
     selection = dict(incoming.get("selection") or {})
     existing_selection = existing.get("selection") or {}
     if selection or existing_selection:
+        # A day has one active recommendation policy. If its threshold changes
+        # between scheduled passes, recompute the union so first-pass-only
+        # records cannot keep a badge produced by an obsolete threshold while
+        # the dashboard explains the badge using the newer one.
+        recommendation_score = selection.get("recommendation_score")
+        if recommendation_score is not None:
+            evidence_items = [
+                {
+                    **item,
+                    "recommended": float(item.get("total_score") or 0)
+                    >= float(recommendation_score),
+                }
+                for item in evidence_items
+            ]
         # The one number that describes the file rather than a pass. Every
         # other counter here belongs to the pass named last in `merged_from`.
         selection["published_total"] = len(evidence_items)
@@ -796,12 +814,6 @@ def dashboard_data(
         "rubrics": {
             "1": legacy_rubric_reference(),
             str(SCORING_VERSION): rubric_reference(
-                minimum_score=(
-                    (days[-1].get("selection") or {}).get("minimum_score")
-                    if days
-                    and (days[-1].get("selection") or {}).get("score_version") == SCORING_VERSION
-                    else None
-                ),
                 lookback_hours=(
                     (days[-1].get("selection") or {}).get("lookback_hours") or 48 if days else 48
                 ),
@@ -809,12 +821,6 @@ def dashboard_data(
         },
         # Backward-compatible alias for the global information button.
         "rubric": rubric_reference(
-            minimum_score=(
-                (days[-1].get("selection") or {}).get("minimum_score")
-                if days
-                and (days[-1].get("selection") or {}).get("score_version") == SCORING_VERSION
-                else None
-            ),
             lookback_hours=(
                 (days[-1].get("selection") or {}).get("lookback_hours") or 48 if days else 48
             ),

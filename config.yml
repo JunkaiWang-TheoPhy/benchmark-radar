@@ -7,12 +7,12 @@ radar:
   # pair discarded most of them before anyone could see them, so the dashboard
   # claimed "228 found" while publishing 8 GitHub records.
   max_items_per_source: 300
-  # Cap the daily Issue, not the corpus: the snapshot and dashboard keep every
-  # scored record, and only the Markdown digest is truncated to this many.
-  report_limit: 300
+  # Only the Markdown digest is truncated. Every eligible record is retained
+  # in the snapshot and dashboard.
   issue_item_limit: 40
-  # Rubric v2 uses an explainable 0-100 scale. Forty keeps multi-signal
-  # releases while explicit low-value patterns fall below the cutoff.
+  # Legacy setting name retained for config compatibility. This is a
+  # recommendation threshold, not a publication cutoff: eligible records below
+  # 40 remain visible without the Recommended badge.
   minimum_score: 40
 
 taxonomy:
