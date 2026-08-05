@@ -1721,6 +1721,275 @@ td a {
   font-weight: 800;
 }
 
+/* Stated findings (issue #91). Sits above the workbench on the light canvas:
+   the findings are the conclusion, so they are read before the charts that
+   support them rather than discovered underneath. */
+.findings-panel {
+  margin: 1.5rem 0;
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  border: 1px solid var(--ink);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.findings-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+.finding-card {
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.finding-head {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.finding-kind {
+  justify-self: start;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  font-family: var(--utility);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.finding-kind-stale_scores {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.finding-kind-closing_headroom {
+  border-color: var(--gold);
+  color: #8a651a;
+}
+
+.finding-kind-fast_gain {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.finding-kind-third_party_only {
+  border-color: var(--violet);
+  color: var(--violet);
+}
+
+.finding-card h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.1rem;
+  line-height: 1.25;
+}
+
+.finding-detail {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+/* The evidence line is what makes a finding auditable rather than asserted, so
+   it is set apart from the prose above it instead of running on from it. */
+.finding-evidence {
+  margin: 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  font-family: var(--utility);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.finding-evidence span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.finding-jump {
+  justify-self: start;
+}
+
+.findings-limits {
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+/* Score progression (issue #91). Sea green throughout, deliberately distinct
+   from the gold of an adoption advance: the two layers share an x axis and must
+   never share a colour, or a reader will connect a score point to a mention. */
+.score-line {
+  fill: none;
+  stroke: #6ea8dc;
+  stroke-width: 2.5;
+}
+
+/* A single-organization run is one vendor's own model line, which is weaker
+   evidence about the field. Dashed rather than a different hue: the dash says
+   "provisional" without implying a third measurement type. */
+.score-line-single-org {
+  stroke-dasharray: 7 4;
+}
+
+.score-point circle {
+  fill: #6ea8dc;
+  stroke: #0d1519;
+  stroke-width: 2;
+  transition: r 120ms ease;
+}
+
+/* A third-party citation is a publisher repeating a competitor's figure. The
+   ring marks it on the chart so it is not read as a first-party report. */
+.score-point-third-party circle {
+  fill: #0d1519;
+  stroke: #6ea8dc;
+  stroke-width: 2.5;
+}
+
+.score-point:focus circle,
+.score-point:hover circle {
+  r: 8px;
+}
+
+.score-best-line {
+  stroke: #8fd0c4;
+  stroke-dasharray: 2 4;
+  stroke-width: 1.5;
+}
+
+.score-best-label {
+  fill: #8fd0c4;
+  font-family: var(--utility);
+  font-size: 11px;
+}
+
+/* The reading gap, not a plateau. Sparse dots rather than a solid line so it
+   reads as absence of data instead of a measured flat run. */
+.score-gap-line {
+  stroke: #7a8890;
+  stroke-dasharray: 1 7;
+  stroke-width: 2;
+}
+
+.score-gap-label {
+  fill: #97a5ac;
+  font-family: var(--utility);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.score-readout {
+  margin-top: 1rem;
+}
+
+.score-readout-inner {
+  display: grid;
+  gap: 1rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid #39464c;
+  background: #101a1f;
+}
+
+.score-readout-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 1rem;
+}
+
+.score-readout-figure {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.score-readout-figure span {
+  color: #aebcc1;
+  font-family: var(--utility);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.score-readout-figure strong {
+  color: #cfe4f5;
+  font-family: var(--display);
+  font-size: 1.6rem;
+  line-height: 1.1;
+}
+
+.score-readout-figure small {
+  color: #97a5ac;
+  font-size: 0.76rem;
+}
+
+/* The evidence grade. Printed rather than tucked behind a disclosure: the
+   honest scope of a two-point chart is the first thing a reader needs, not an
+   optional footnote. */
+.score-evidence {
+  padding: 0.85rem 1rem;
+  border-left: 3px solid #6ea8dc;
+  background: #16232a;
+}
+
+.score-evidence-single_reading,
+.score-evidence-unjoinable {
+  border-left-color: #c98a4b;
+}
+
+.score-evidence strong {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-family: var(--utility);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d6e0e3;
+}
+
+.score-evidence p {
+  margin: 0.3rem 0 0;
+  color: #c3cfd4;
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+.score-evidence-yes {
+  color: #8fd0c4;
+  font-weight: 700;
+}
+
+.score-evidence-no {
+  color: #e0a288;
+  font-weight: 700;
+}
+
+.score-readout-note,
+.score-readout-empty {
+  margin: 0;
+  color: #aebcc1;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.score-readout-empty {
+  padding: 1rem 1.2rem;
+  border: 1px dashed #39464c;
+  background: #101a1f;
+}
+
 .frontier-evidence {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(260px, 0.95fr);
@@ -2603,7 +2872,9 @@ footer {
 
   .frontier-tick,
   .frontier-axis-label,
-  .frontier-release-label {
+  .frontier-release-label,
+  .score-best-label,
+  .score-gap-label {
     font-size: 20px;
   }
 
