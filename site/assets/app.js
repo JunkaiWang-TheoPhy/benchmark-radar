@@ -29,6 +29,7 @@ const state = {
   lorg: "",
   lera: "",
   lfrontier: "",
+  lfrontierExplicit: false,
   leaderboardShowAll: false,
 };
 
@@ -113,6 +114,7 @@ function readUrl() {
   state.lorg = params.get("lorg") || "";
   state.lera = params.get("lera") || "";
   state.lfrontier = params.get("lfrontier") || "";
+  state.lfrontierExplicit = Boolean(state.lfrontier);
   state.rubric = new URLSearchParams(window.location.hash.slice(1)).get("rubric") || "";
 }
 
@@ -133,7 +135,9 @@ function writeUrl() {
   if (state.ldomain) params.set("ldomain", state.ldomain);
   if (state.lorg) params.set("lorg", state.lorg);
   if (state.lera) params.set("lera", state.lera);
-  if (state.lfrontier) params.set("lfrontier", state.lfrontier);
+  if (state.lfrontierExplicit && state.lfrontier) {
+    params.set("lfrontier", state.lfrontier);
+  }
   const query = params.toString();
   // The rubric dialog is a hashtag, not a query param, so a shared link like
   // #rubric=2 reads as "jump to this section" rather than another filter.
@@ -160,6 +164,11 @@ function setView(view, update = true) {
     }
   });
   if (update) writeUrl();
+}
+
+function selectFrontier(benchmarkId) {
+  state.lfrontier = benchmarkId;
+  state.lfrontierExplicit = true;
 }
 
 function categoryColor(category, index = 0) {
@@ -1765,7 +1774,7 @@ function renderBenchmarkNavigator(board) {
               }),
             ]);
             button.addEventListener("click", () => {
-              state.lfrontier = entry.benchmark_id;
+              selectFrontier(entry.benchmark_id);
               renderAdoptionFrontier(board);
               writeUrl();
             });
@@ -2639,6 +2648,7 @@ function renderAdoptionFrontier(board) {
   }
   if (!adopted.some((entry) => entry.benchmark_id === state.lfrontier)) {
     state.lfrontier = defaultEntry.benchmark_id;
+    state.lfrontierExplicit = false;
   }
   replaceChildren(byId("frontier-benchmark"), [
     ...[...adopted]
@@ -2758,7 +2768,7 @@ function findingCard(finding, board) {
       attrs: { type: "button" },
     });
     jump.addEventListener("click", () => {
-      state.lfrontier = target.benchmark_id;
+      selectFrontier(target.benchmark_id);
       renderAdoptionFrontier(board);
       writeUrl();
       byId("adoption-frontier").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2894,7 +2904,7 @@ function leaderboardRow(entry) {
     attrs: { type: "button" },
   });
   frontierButton.addEventListener("click", () => {
-    state.lfrontier = entry.benchmark_id;
+    selectFrontier(entry.benchmark_id);
     renderAdoptionFrontier(board);
     writeUrl();
     byId("adoption-frontier").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -3385,7 +3395,7 @@ function bindEvents() {
     byId("leaderboard-table-heading").scrollIntoView({ behavior: "smooth", block: "start" });
   });
   byId("frontier-benchmark").addEventListener("change", (event) => {
-    state.lfrontier = event.target.value;
+    selectFrontier(event.target.value);
     renderAdoptionFrontier(state.data.model_card_leaderboard);
     writeUrl();
   });

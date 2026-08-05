@@ -65,6 +65,16 @@ def test_scan_date_select_is_not_reset_by_the_shared_filters_input_handler():
     assert "return" in handler_body
 
 
+def test_automatic_frontier_default_does_not_leak_into_unrelated_urls():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert "lfrontierExplicit: false" in script
+    assert "state.lfrontierExplicit = Boolean(state.lfrontier)" in script
+    assert "if (state.lfrontierExplicit && state.lfrontier)" in script
+    assert "state.lfrontierExplicit = false" in script
+    assert "function selectFrontier(benchmarkId)" in script
+
+
 def test_rubric_dialog_is_linkable_by_url_hash():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 

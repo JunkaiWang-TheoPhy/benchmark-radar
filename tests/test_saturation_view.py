@@ -382,7 +382,7 @@ def test_a_finding_can_move_the_chart_to_the_benchmark_it_is_about():
         "\nfunction renderBenchmarkFindings", 1
     )[0]
 
-    assert "state.lfrontier = target.benchmark_id" in card
+    assert "selectFrontier(target.benchmark_id)" in card
     assert "renderAdoptionFrontier(board)" in card
     # Corpus-scope findings name no benchmark, so there is nothing to focus.
     assert "finding.benchmark_id" in card
