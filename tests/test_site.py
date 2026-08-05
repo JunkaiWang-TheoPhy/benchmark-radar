@@ -531,14 +531,17 @@ def test_a_zero_adoption_bar_has_no_visible_width():
 def test_leaderboard_has_an_honest_time_based_adoption_frontier():
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    # Whitespace-normalized: these are prose guarantees, and HTML collapses the
+    # line wrapping, so a reflowed paragraph must not read as a lost disclaimer.
+    prose = " ".join(html.split())
 
     assert 'id="adoption-frontier"' in html
     assert 'id="frontier-benchmark"' in html
     assert 'id="frontier-chart"' in html
     assert "function frontierEvents(entry)" in script
     assert "const advances = !seenOrganizations.has(adopter.organization)" in script
-    assert "A long flat run is reporting saturation" in html
-    assert "not a claim about benchmark score saturation" in html
+    assert "A long flat run is reporting saturation" in prose
+    assert "not a claim about benchmark score saturation" in prose
 
 
 def test_new_benchmarks_are_visually_prioritized_without_changing_the_rank():

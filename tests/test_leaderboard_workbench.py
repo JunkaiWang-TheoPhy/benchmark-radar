@@ -47,7 +47,9 @@ def test_frontier_svg_fits_the_viewport_without_horizontal_scrolling():
     assert "width: 100%" in rule
     assert "height: auto" in rule
     assert "min-width" not in rule
-    assert ".frontier-point-number" in styles
+    # The marker styling this used to check (`.frontier-point-number`) is gone with
+    # the numbers themselves; the advance marker is now a diamond (issue #91).
+    assert ".frontier-point-advance polygon" in styles
 
 
 def test_task_preview_distinguishes_source_paraphrase_from_domain_fallback():
