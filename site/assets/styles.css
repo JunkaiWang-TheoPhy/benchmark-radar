@@ -1666,25 +1666,46 @@ td a {
   stroke-width: 3;
 }
 
-.frontier-point circle {
-  transition: r 120ms ease, stroke-width 120ms ease;
-}
-
-.frontier-point-advance circle {
+/* A diamond, not a numbered circle. The shape carries the meaning "the count
+   stepped up here" on its own, so it reads without the digit that used to sit
+   inside it restating the y-axis (issue #91). */
+.frontier-point-advance polygon {
   fill: #f4b65e;
   stroke: #fff4dd;
   stroke-width: 2;
+  transition: stroke-width 120ms ease;
 }
 
-.frontier-point-repeat circle {
-  fill: #0d1519;
-  stroke: #91a0a7;
+.frontier-point:focus polygon,
+.frontier-point:hover polygon {
+  stroke-width: 4;
+}
+
+/* Card events live on their own band. A tick per card means several cards on one
+   date sit side by side instead of stacking into an unreadable pile on the
+   staircase, which is what made the old chart look like numbered records. */
+.card-rug-baseline {
+  stroke: #2c383e;
+  stroke-width: 1;
+}
+
+.card-rug-tick line {
+  stroke-linecap: butt;
+  transition: stroke-width 120ms ease;
+}
+
+.card-rug-tick-first line {
+  stroke: #f4b65e;
+  stroke-width: 2.5;
+}
+
+.card-rug-tick-repeat line {
+  stroke: #89969e;
   stroke-width: 2;
 }
 
-.frontier-point:focus circle,
-.frontier-point:hover circle {
-  r: 11px;
+.card-rug-tick:focus line,
+.card-rug-tick:hover line {
   stroke-width: 4;
 }
 
@@ -1713,12 +1734,65 @@ td a {
   font-size: 11px;
 }
 
-.frontier-point-number {
-  pointer-events: none;
-  fill: #162228;
-  font-family: var(--utility);
-  font-size: 10px;
-  font-weight: 800;
+/* Legend, keyed to the marks on the chart and sitting directly above it rather
+   than being described several lines away in the prose explainer. */
+.frontier-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.4rem;
+  margin: 0.9rem 0 0.2rem;
+}
+
+.frontier-legend-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.frontier-legend-item strong {
+  color: #e8eef0;
+  font-weight: 600;
+}
+
+.frontier-legend-item > span:last-child {
+  color: #97a5ac;
+}
+
+.legend-swatch {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.legend-swatch-diamond {
+  width: 11px;
+  height: 11px;
+  background: #f4b65e;
+  border: 1px solid #fff4dd;
+  transform: rotate(45deg);
+}
+
+.legend-swatch-tick-first,
+.legend-swatch-tick-repeat {
+  width: 3px;
+  background: #f4b65e;
+}
+
+.legend-swatch-tick-first {
+  height: 15px;
+}
+
+.legend-swatch-tick-repeat {
+  height: 8px;
+  background: #89969e;
+}
+
+.legend-swatch-score {
+  width: 11px;
+  height: 11px;
+  background: #6ea8dc;
+  border-radius: 50%;
 }
 
 /* Stated findings (issue #91). Sits above the workbench on the light canvas:
@@ -2684,6 +2758,15 @@ footer {
     width: min(100% - 28px, 1440px);
   }
 
+  /* `width: 100%` on a wide viewBox scales the height down with it, so at 390px
+     the chart collapsed to roughly 90px and the staircase became unreadable --
+     worse once the card rug was added. The fix is a narrower viewBox (set in
+     app.js from the viewport width), which scales the same content up instead of
+     squashing it; distorting the ratio here would stretch the axis text. */
+  .frontier-chart svg {
+    min-height: 300px;
+  }
+
   .masthead {
     min-height: 76px;
   }
@@ -2876,10 +2959,6 @@ footer {
   .score-best-label,
   .score-gap-label {
     font-size: 20px;
-  }
-
-  .frontier-point-number {
-    font-size: 16px;
   }
 
   .ledger-summary {

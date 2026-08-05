@@ -26,8 +26,9 @@ def test_both_readings_share_one_time_axis():
         "\nfunction clearAdoptionFrontier", 1
     )[0]
 
-    # One x() for both plots, and a score y that offsets below the adoption plot.
-    assert "const scoreTop = margin.top + plotHeight + bandGap" in chart
+    # One x() for both plots, and a score y that offsets below the adoption plot
+    # and the card rug that now sits between them (issue #91 legibility pass).
+    assert "const scoreTop = margin.top + plotHeight + rugGap + rugHeight + bandGap" in chart
     assert "scoreY(observation.value)" in chart
     assert "x(observation.reported_at)" in chart
 
@@ -188,6 +189,128 @@ def test_the_reading_gap_ends_at_this_benchmarks_own_latest_mention():
 
     assert "lastMention > record.last_reported_at" in gap
     assert "x(endText)" not in gap, "the gap must not extend to the registry-wide end date"
+
+
+def test_card_events_live_on_their_own_band_not_the_count_axis():
+    # Issue #91 legibility pass. Repeat cards were plotted at `y(organizationCount)`,
+    # putting a marker at a height the card did not cause: a card that changed
+    # nothing sat at the same y as the advance that did, and several cards sharing
+    # a date stacked into each other. Card events now get their own rug band.
+    script = source("site/assets/app.js")
+    chart = script.split("function adoptionFrontierChart(", 1)[1].split(
+        "\nfunction clearAdoptionFrontier", 1
+    )[0]
+
+    assert "const rugTop = margin.top + plotHeight + rugGap" in chart
+    assert "card-rug-tick" in chart
+    # The staircase loop iterates advances only; nothing else may touch y().
+    staircase = chart.split("for (const event of advances) {", 1)[1].split("\n  }", 1)[0]
+    assert "for (const event of events)" not in staircase
+
+
+def test_the_advance_marker_carries_no_number():
+    # The digit inside the circle restated the y-axis value the marker already sat
+    # at, and a number in a circle reads as a record id, so readers took the
+    # staircase for a numbered list rather than a cumulative count.
+    script = source("site/assets/app.js")
+    styles = source("site/assets/styles.css")
+
+    assert "frontier-point-number" not in script
+    assert "frontier-point-number" not in styles
+    assert "advanceIndex" not in script
+    # A diamond, whose shape says "stepped up here" without a digit.
+    assert "frontier-point-advance" in script
+    assert ".frontier-point-advance polygon" in styles
+
+
+def test_a_legend_names_each_mark_and_its_effect_on_the_count():
+    # "New organization" alone does not say that the other kind leaves the
+    # staircase flat, so each entry states the mark AND what it does to the count.
+    html = source("site/index.html")
+    script = source("site/assets/app.js")
+
+    assert 'id="frontier-legend"' in html
+    assert "function renderFrontierLegend(" in script
+    assert "cumulative count increases" in script
+    assert "count unchanged" in script
+
+
+def test_the_axis_and_header_name_distinct_organizations():
+    # "Organizations reporting" invited the reading that a repeat card adds to it,
+    # and "23 cards · 10 of 10 dated organizations" read as one ratio about a
+    # single quantity rather than two different counts.
+    script = source("site/assets/app.js")
+
+    assert "cumulative distinct organizations" in script
+    assert '"distinct organization"' in script
+    # Asserted on the strings that actually render, not on a source slice: "dated
+    # organizations" legitimately survives in comments (including the one
+    # documenting this very change) and in the navigator copy, so a
+    # substring-absence check over source text tests the wrong thing.
+    assert 'metricLabel(entry.card_count, "model card")' in script
+    assert 'metricLabel(frontier.length, "distinct organization")' in script
+    # And the organization count is qualified when some card carries no date, since
+    # card_count includes those while the plotted count cannot.
+    assert '" with a dated card"' in script
+
+
+def test_the_chart_does_not_collapse_on_a_narrow_viewport():
+    # `width: 100%` scales height with width, so a 920-unit viewBox at 390px
+    # rendered the chart about 90px tall. A narrower viewBox scales the same
+    # content up; distorting the aspect ratio would stretch the axis text.
+    #
+    # The width selection itself is asserted, not just the breakpoint expression:
+    # an earlier version of this test passed even with `width` reverted to a
+    # constant 920, because `narrow` stayed in use for the axis labels.
+    script = source("site/assets/app.js")
+    styles = source("site/assets/styles.css")
+
+    assert 'const narrow = typeof window !== "undefined" && window.innerWidth <= 760' in script
+    assert "const width = narrow ? 520 : 920;" in script
+    assert 'preserveAspectRatio: "none"' not in script
+    narrow_rule = styles.split("@media (max-width: 760px) {", 1)[1]
+    assert "min-height" in narrow_rule.split(".frontier-chart svg {", 1)[1].split("}", 1)[0]
+    # Crossing the breakpoint has to redraw, or a resized page keeps a stale box.
+    assert "if (isNarrow === wasNarrow) return;" in script
+
+
+def test_rug_ticks_never_overpaint_each_other():
+    # Codex P1, twice. Two earlier versions were wrong the same way at different
+    # scales: x(date) alone overpainted cards sharing a date, and fanning each date
+    # independently then pushed those ticks into a *neighbouring* date's -- 0.04
+    # units apart on shipped GPQA Diamond at the narrow viewBox, inside a 2.5-unit
+    # stroke. Positions are therefore allocated across every card at once.
+    script = source("site/assets/app.js")
+    rug = script.split("const MIN_TICK_GAP", 1)[1].split("\n  }", 1)[0]
+
+    # A single sweep enforcing a minimum gap, not a per-date fan.
+    assert "Math.max(ideal, previous + MIN_TICK_GAP)" in rug
+    # Recentred afterwards so the run still sits on the dates it represents.
+    assert "const shift = drift / 2;" in rug
+    # The gap has to exceed the widest tick stroke (2.5) or ticks still touch.
+    gap = float(script.split("const MIN_TICK_GAP = ", 1)[1].split(";", 1)[0])
+    assert gap > 2.5, "the minimum gap must exceed the tick stroke width"
+
+
+def test_the_zoom_marker_survives_a_narrow_viewport():
+    # Codex P2. Dropping it on small screens left no indication that the score axis
+    # is magnified, and the justification (that the readout states the band bounds)
+    # was false -- the bounds appear only as the two axis ticks.
+    script = source("site/assets/app.js")
+
+    assert "(zoom)" in script
+    assert "(zoomed)" in script
+
+
+def test_the_legend_omits_marks_that_sparse_mode_suppresses():
+    # Codex P2. `sparse` replaces the staircase and rug with the step list, so a
+    # key describing diamonds and ticks that are not on screen is worse than none.
+    script = source("site/assets/app.js")
+    legend = script.split("function renderFrontierLegend(", 1)[1].split("\n}", 1)[0]
+
+    assert "sparse" in legend
+    assert "const items = sparse" in legend
+    assert "renderFrontierLegend(entry, scoreRecord(entry.benchmark_id), { sparse })" in script
 
 
 def test_the_score_axis_says_it_is_zoomed():

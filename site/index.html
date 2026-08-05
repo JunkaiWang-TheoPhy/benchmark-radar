@@ -243,16 +243,21 @@
               </div>
             </div>
             <p class="section-note" id="frontier-explainer">
-              Two readings on one time axis. The step line is adoption: it advances only when a
-              new organization reports the benchmark, and hollow dots are repeat reports from an
-              organization already on the frontier. A long flat run is reporting saturation
-              observed within this curated registry, not a claim about benchmark score saturation.
+              Three readings on one time axis. Each orange diamond marks an organization's first
+              report of this benchmark, which is the only event that raises the cumulative count.
+              The rug beneath it puts one tick per dated model card, so later cards from an
+              organization already counted appear as gray ticks and leave the staircase flat. A card
+              with no publication date cannot be placed on the timeline and is absent from both
+              bands, though it is still counted in the totals above. A long flat run is
+              reporting saturation observed within this curated registry, not a claim about
+              benchmark score saturation.
               The score track below it is a separate reading: every value that could be read
               verbatim from a cited document, connected only where the instrument and protocol
               are identical. A flat score tail usually means no newer number could be read, which
               is why the gap is marked rather than drawn through.
             </p>
             <div class="frontier-summary" id="frontier-summary" aria-live="polite"></div>
+            <div class="frontier-legend" id="frontier-legend" aria-label="Chart legend"></div>
             <div class="frontier-chart" id="frontier-chart"></div>
             <div class="score-readout" id="frontier-score-readout"></div>
             <div class="frontier-evidence">
