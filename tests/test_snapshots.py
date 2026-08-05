@@ -351,9 +351,30 @@ def test_dashboard_publishes_the_rubric_that_scored_its_records(tmp_path):
         "recency",
         "adoption",
     ]
-    # The reader is looking at a filtered corpus, so the cutoff that filtered it
-    # belongs with the rubric that scored it.
-    assert published["minimum_score"] == 40.0
+    # Selection policy belongs to the originating day, not the shared scoring
+    # rubric used by every v2 record.
+    assert "minimum_score" not in published
+    assert data["days"][0]["selection"]["minimum_score"] == 40.0
+
+
+def test_dashboard_publishes_current_threshold_as_recommendation_metadata(tmp_path):
+    snapshot_dir = tmp_path / "snapshots"
+    run = radar_run(27)
+    run.selection = {
+        "minimum_score": 40.0,
+        "recommendation_score": 40.0,
+        "score_version": 2,
+        "score_max": 100,
+        "lookback_hours": 48,
+    }
+    write_snapshot(run, snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+    published = data["rubric"]
+
+    assert "recommendation_score" not in published
+    assert "minimum_score" not in published
+    assert data["days"][0]["selection"]["recommendation_score"] == 40.0
     assert published["limits"]
 
 

@@ -45,6 +45,13 @@ def test_published_rubric_describes_every_scored_component():
     assert reference["limits"]
 
 
+def test_selection_policy_is_not_embedded_in_the_shared_scoring_rubric():
+    reference = rubric.rubric_reference()
+
+    assert "recommendation_score" not in reference
+    assert "minimum_score" not in reference
+
+
 def test_worked_example_reproduces_the_total_the_pipeline_published():
     """The dialog shows weight x component for each row and claims it sums to
     the total. If `score_item` ever weighted the components differently, that

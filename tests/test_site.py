@@ -52,6 +52,20 @@ def test_priority_score_is_reachably_explained():
     assert "How is this scored?" in script
 
 
+def test_recommendation_threshold_is_a_badge_not_an_inclusion_gate():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'className: "recommendation-badge"' in script
+    assert 'text: "Recommended"' in script
+    assert "Recommended to review" in script
+    assert "not an endorsement" in script
+    assert "it does not control inclusion" in script
+    assert "Every record matching at least one taxonomy category is retained" in script
+    assert "This historical scan used" in script
+    assert "Records below it were not retained" in script
+    assert "selectedDay?.selection?.minimum_score" in script
+
+
 def test_scan_date_select_is_not_reset_by_the_shared_filters_input_handler():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 

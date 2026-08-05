@@ -427,6 +427,14 @@ def test_a_changed_report_limit_inside_the_window_suppresses_the_claim():
     assert composition_shift(history, CONFIG) is None
 
 
+def test_capped_and_uncapped_days_are_not_compared():
+    history = _history(10, 30)
+    for index, day in enumerate(history):
+        day["selection"]["report_limit"] = 0 if index >= 9 else 300
+
+    assert composition_shift(history, CONFIG) is None
+
+
 def test_noise_in_other_sources_cannot_certify_a_one_source_change():
     # One source moves 10% -> 70% while three drift 10% -> 11%. Counting any
     # directional change would pass the breadth gate on ~95% single-source

@@ -124,28 +124,22 @@ def render_markdown(
         selection = run.selection
         daily_total = selection.get("published_total")
         watchlisted = int(selection.get("watchlisted") or 0)
-        # Watchlist hits bypass the threshold on purpose and are already inside
-        # `qualified`, so subtract them before claiming how many cleared the
-        # bar. Otherwise a lone bypass reads as "1 qualified (at or above 99)".
-        by_threshold = int(selection.get("qualified", 0)) - watchlisted
-        qualified = (
-            f"**{selection.get('qualified', 0)}** qualified "
-            f"({by_threshold} at or above {selection.get('minimum_score', 0):g}"
-            + (f", {watchlisted} by watchlist" if watchlisted else "")
-            + ")"
-        )
         suppressed = int(selection.get("suppressed_as_seen") or 0)
         suppressed_future = int(selection.get("suppressed_future_dated") or 0)
         suppressed_low_value = int(selection.get("suppressed_low_value") or 0)
-        # Issue #124: persisting these was not enough. Without them the rendered
-        # funnel stepped from "after dedupe" straight to "qualified" and left the
-        # largest drop in the whole pipeline, 585 of 686 records on 2026-08-05,
-        # with nothing to explain it. Absent on snapshots written before the
-        # counters existed, where the gap simply cannot be attributed.
-        below_minimum = int(selection.get("suppressed_below_minimum") or 0)
         uncategorized = int(selection.get("suppressed_uncategorized") or 0)
-        lines.extend(
-            [
+        if "eligible" in selection:
+            eligible = int(selection.get("eligible") or 0)
+            # The Issue renders the merged UTC-day union, while the funnel
+            # counters intentionally describe only the latest collection pass.
+            # Count badges from the records actually shown so the summary can
+            # never say zero recommendations above a non-empty merged list.
+            recommended = sum(item.recommended for item in run.items)
+            not_recommended = len(run.items) - recommended
+            recommendation_score = float(
+                selection.get("recommendation_score", selection.get("minimum_score", 0))
+            )
+            funnel = (
                 ("- Latest-pass selection: " if daily_total is not None else "- Selection: ")
                 + f"**{selection.get('fetched', 0)}** fetched → "
                 + (f"**{suppressed}** already seen → " if suppressed else "")
@@ -160,22 +154,67 @@ def render_markdown(
                     if suppressed_low_value
                     else ""
                 )
-                + (
-                    f"**{below_minimum}** below {selection.get('minimum_score', 0):g} → "
-                    if below_minimum
-                    else ""
-                )
                 + (f"**{uncategorized}** uncategorized → " if uncategorized else "")
-                + qualified
-                + f" → **{selection.get('published', 0)}** published"
+                + f"**{eligible}** eligible"
+                + (f" ({watchlisted} by watchlist)" if watchlisted else "")
+                + f" → **{selection.get('published', 0)}** retained"
                 + (
-                    f"; **{daily_total}** across today's collection passes"
+                    f"; **{daily_total}** retained across today's collection passes"
                     if daily_total is not None
                     else ""
-                ),
-                "",
-            ]
-        )
+                )
+            )
+            lines.extend(
+                [
+                    funnel,
+                    f"- Recommendation: **{recommended}** score {recommendation_score:g} or "
+                    f"above; **{not_recommended}** retained without the badge",
+                    "",
+                ]
+            )
+        else:
+            # Historical snapshots used the threshold as an eligibility gate.
+            # Keep their report legible without relabelling what those runs did.
+            by_threshold = int(selection.get("qualified", 0)) - watchlisted
+            qualified = (
+                f"**{selection.get('qualified', 0)}** qualified "
+                f"({by_threshold} at or above {selection.get('minimum_score', 0):g}"
+                + (f", {watchlisted} by watchlist" if watchlisted else "")
+                + ")"
+            )
+            below_minimum = int(selection.get("suppressed_below_minimum") or 0)
+            lines.extend(
+                [
+                    ("- Latest-pass selection: " if daily_total is not None else "- Selection: ")
+                    + f"**{selection.get('fetched', 0)}** fetched → "
+                    + (f"**{suppressed}** already seen → " if suppressed else "")
+                    + (
+                        f"**{suppressed_future}** future-dated records quarantined → "
+                        if suppressed_future
+                        else ""
+                    )
+                    + f"**{selection.get('deduplicated', 0)}** after dedupe → "
+                    + (
+                        f"**{suppressed_low_value}** low-value artifacts suppressed → "
+                        if suppressed_low_value
+                        else ""
+                    )
+                    + (
+                        f"**{below_minimum}** below {selection.get('minimum_score', 0):g} → "
+                        if below_minimum
+                        else ""
+                    )
+                    + (f"**{uncategorized}** uncategorized → " if uncategorized else "")
+                    + qualified
+                    + f" → **{selection.get('published', 0)}** published"
+                    + (
+                        f"; **{daily_total}** across today's collection passes"
+                        if daily_total is not None
+                        else ""
+                    ),
+                    "",
+                ]
+            )
     tracked = [item for item in run.items if item.watchlist]
     if tracked:
         lines.extend(["## Watchlist", ""])
@@ -208,9 +247,10 @@ def render_markdown(
     else:
         lines.extend(
             [
-                "## No qualifying signals",
+                "## No eligible signals",
                 "",
-                "The scan completed but no records met the configured relevance threshold.",
+                "The scan completed, but every record was explicitly suppressed or lacked "
+                "a taxonomy or watchlist match.",
                 "",
             ]
         )

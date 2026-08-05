@@ -200,6 +200,10 @@ function scoreBlock(item) {
   const score = Number(item.total_score || 0);
   const max = scoreMax(item);
   const width = Math.max(0, Math.min(100, (score / max) * 100));
+  const recommendationScore = Number(item.recommendation_score);
+  const recommendationExplanation = Number.isFinite(recommendationScore)
+    ? `Priority score meets this scan's ${recommendationScore.toFixed(0)}-point triage threshold; not an endorsement.`
+    : "Priority score meets this scan's triage threshold; not an endorsement.";
   const trackFill = element("span", {});
   const track = element("div", { className: "score-track" }, [trackFill]);
   trackFill.style.width = `${width}%`;
@@ -224,6 +228,18 @@ function scoreBlock(item) {
     openRubric(item);
   });
   return element("div", { className: "score" }, [
+    ...(item.recommended
+      ? [
+          element("span", {
+            className: "recommendation-badge",
+            text: "Recommended",
+            attrs: {
+              title: recommendationExplanation,
+              "aria-label": `Recommended to review. ${recommendationExplanation}`,
+            },
+          }),
+        ]
+      : []),
     element("div", { className: "score-value" }, [
       element("strong", { text: score.toFixed(2) }),
       element("span", { text: `/ ${max.toFixed(2)}` }),
@@ -927,6 +943,15 @@ function allObservations() {
   const evidence = state.data.days.flatMap((day) =>
     day.evidence_items.map((item) => ({
       ...item,
+      recommended:
+        item.recommended ??
+        (day.selection?.recommendation_score !== undefined &&
+          Number(item.total_score || 0) >=
+          Number(
+            day.selection.recommendation_score,
+          )),
+      recommendation_score: day.selection?.recommendation_score,
+      minimum_score: day.selection?.minimum_score,
       snapshot_date: day.date,
       observation_kind: "evidence",
     })),
@@ -1123,16 +1148,35 @@ function openRubric(item = null, versionOverride = null) {
         ])
       : null;
 
+  // Selection policy belongs to the record's scan, not its shared scoring
+  // rubric version. Older v2 records were genuinely filtered at 40, while new
+  // v2 records retain everything eligible and use 40 only for this badge.
+  const selectedDay = dailySnapshot();
+  const recommendationScore = item
+    ? item.recommendation_score
+    : selectedDay?.selection?.recommendation_score;
+  const historicalMinimum = recommendationScore === undefined
+    ? item
+      ? item.minimum_score
+      : selectedDay?.selection?.minimum_score
+    : undefined;
   const cutoff =
-    data.minimum_score !== undefined && data.minimum_score !== null
+    recommendationScore !== undefined && recommendationScore !== null
       ? element("p", {
           className: "discovery-note",
           text:
-            `A record is reported only if it matches at least one taxonomy category and ` +
-            `scores ${Number(data.minimum_score).toFixed(2)} or above, or if it names a ` +
-            "watchlisted artifact, which is published regardless of score.",
+            `Every record matching at least one taxonomy category is retained. A score of ` +
+            `${Number(recommendationScore).toFixed(2)} or above adds the Recommended ` +
+            "badge; it does not control inclusion. Watchlisted artifacts are also retained.",
         })
-      : null;
+      : historicalMinimum !== undefined && historicalMinimum !== null
+        ? element("p", {
+            className: "discovery-note",
+            text:
+              `This historical scan used ${Number(historicalMinimum).toFixed(2)} as an ` +
+              "inclusion cutoff. Records below it were not retained.",
+          })
+        : null;
 
   replaceChildren(byId("rubric-content"), [
     ...header,

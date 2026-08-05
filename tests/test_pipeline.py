@@ -408,7 +408,7 @@ def test_watchlist_record_publishes_below_threshold(monkeypatch):
     assert [record.watchlist for record in run.items] == ["MLE-bench"]
 
 
-def test_selection_counts_expose_the_published_gap(monkeypatch):
+def test_all_eligible_records_are_retained_without_a_snapshot_cap(monkeypatch):
     records = [
         item(
             source="GitHub",
@@ -438,9 +438,9 @@ def test_selection_counts_expose_the_published_gap(monkeypatch):
     run = run_pipeline(config, datetime(2026, 7, 27, tzinfo=UTC))
 
     assert run.selection["fetched"] == 5
-    assert run.selection["qualified"] == 5
-    assert run.selection["published"] == 2
-    assert len(run.items) == 2
+    assert run.selection["eligible"] == 5
+    assert run.selection["published"] == 5
+    assert len(run.items) == 5
 
 
 def test_pipeline_quarantines_future_dated_records_before_scoring(monkeypatch):
@@ -754,8 +754,9 @@ def test_funnel_names_watchlist_bypasses_separately(monkeypatch):
 
     run = run_pipeline(config, datetime(2026, 7, 27, tzinfo=UTC))
 
-    assert run.selection["qualified"] == 1
+    assert run.selection["eligible"] == 1
     assert run.selection["watchlisted"] == 1
+    assert run.selection["recommended"] == 0
 
 
 def test_every_required_source_must_return_records(monkeypatch):
@@ -1126,11 +1127,7 @@ def _select(items, **radar):
     )[1]
 
 
-def test_the_qualification_counters_sum_to_the_drop():
-    # Issue #124: `scored` to `qualified` is the largest single drop in the
-    # funnel, and the only counter describing it reported 1 of 585 on real data.
-    # A reader concluded the score threshold barely fired, which the metadata
-    # could not distinguish from the opposite. The three reasons must reconcile.
+def test_the_eligibility_counters_sum_to_the_drop():
     items = [
         # On topic and well above the threshold.
         _fresh(source_id="keep-1", title="A New Benchmark Dataset For Evaluation"),
@@ -1144,41 +1141,56 @@ def test_the_qualification_counters_sum_to_the_drop():
             metrics={"stars": 900},
             authors=["A", "B", "C"],
         ),
-        # Thin enough to fall below the score threshold.
-        _fresh(source_id="drop-thin", title="x", summary=""),
+        # On topic but thin enough to fall below the recommendation threshold.
+        # It remains eligible and is retained without a badge.
+        _fresh(source_id="keep-thin", title="benchmark", summary=""),
     ]
 
     selection = _select(items)
 
-    gap = selection["scored"] - selection["qualified"]
-    parts = (
-        selection["suppressed_low_value"]
-        + selection["suppressed_below_minimum"]
-        + selection["suppressed_uncategorized"]
-    )
+    gap = selection["scored"] - selection["eligible"]
+    parts = selection["suppressed_low_value"] + selection["suppressed_uncategorized"]
     assert gap == parts
-    # Both drop reasons fire, and each is attributed to its own counter rather
-    # than collapsing into one number.
     assert selection["suppressed_uncategorized"] == 1
-    assert selection["suppressed_below_minimum"] == 1
-    assert gap == 2
+    assert selection["recommended"] == 1
+    assert selection["not_recommended"] == 1
+    assert gap == 1
 
 
-def test_the_funnel_reconciles_when_nothing_qualifies():
+def test_score_threshold_only_marks_recommendation():
+    high = _fresh(source_id="high", title="A New Benchmark Dataset For Evaluation")
+    low = _fresh(source_id="low", title="benchmark", summary="")
+
+    retained, selection = _score_and_select(
+        [high, low],
+        _funnel_config(),
+        now=FUNNEL_NOW,
+        fetched_count=2,
+        suppressed_count=0,
+        future_dated_count=0,
+    )
+
+    assert [item.source_id for item in retained] == ["high", "low"]
+    assert [item.recommended for item in retained] == [True, False]
+    assert selection["eligible"] == 2
+    assert selection["recommended"] == 1
+    assert selection["not_recommended"] == 1
+    assert selection["report_limit"] == 0
+
+
+def test_the_funnel_reconciles_when_nothing_is_eligible():
     items = [_fresh(source_id=f"thin-{index}", title="x", summary="") for index in range(12)]
 
     selection = _select(items)
 
-    assert selection["qualified"] == 0
+    assert selection["eligible"] == 0
     assert (
-        selection["suppressed_low_value"]
-        + selection["suppressed_below_minimum"]
-        + selection["suppressed_uncategorized"]
+        selection["suppressed_low_value"] + selection["suppressed_uncategorized"]
         == selection["scored"]
     )
 
 
-def test_the_funnel_reconciles_when_everything_qualifies():
+def test_the_funnel_reconciles_when_everything_is_eligible():
     items = [
         _fresh(
             source_id=f"keep-{index}",
@@ -1192,16 +1204,13 @@ def test_the_funnel_reconciles_when_everything_qualifies():
 
     selection = _select(items)
 
-    assert selection["qualified"] == selection["scored"]
+    assert selection["eligible"] == selection["scored"]
     assert selection["suppressed_below_minimum"] == 0
     assert selection["suppressed_uncategorized"] == 0
     assert selection["suppressed_low_value"] == 0
 
 
-def test_below_minimum_and_uncategorized_are_counted_separately():
-    # They are different findings. A record under the threshold is a quality
-    # judgment; a record with no category is a statement about taxonomy
-    # coverage, and a large count there would be a finding about the taxonomy.
+def test_uncategorized_records_are_the_only_score_independent_soft_drop():
     uncategorized = _fresh(
         source_id="off-topic",
         title="Assorted Utilities For Unrelated Work",
@@ -1232,9 +1241,10 @@ def test_a_watchlisted_record_is_not_counted_as_dropped():
         future_dated_count=0,
     )[1]
 
-    assert selection["qualified"] == 1
+    assert selection["eligible"] == 1
     assert selection["suppressed_below_minimum"] == 0
     assert selection["suppressed_uncategorized"] == 0
+    assert selection["recommended"] == 0
 
 
 def test_a_non_finite_minimum_score_is_rejected():
