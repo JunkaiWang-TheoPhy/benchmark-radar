@@ -8,7 +8,15 @@ from pathlib import Path
 
 import yaml
 
+from .briefing import (
+    BriefingError,
+    current_day_snapshot,
+    daily_report_run,
+    generate_daily_briefing,
+    previous_calendar_day,
+)
 from .export import DEFAULT_TABLE_LIMIT, write_exports
+from .http import RequestError
 from .pipeline import _failure_streak_key, run_pipeline, simulate_backfill
 from .report import render_markdown
 from .snapshots import (
@@ -258,11 +266,24 @@ def main() -> None:
     args.json_output.parent.mkdir(parents=True, exist_ok=True)
     dashboard_url = config.get("publish", {}).get("dashboard_url")
     issue_item_limit = config.get("radar", {}).get("issue_item_limit")
+    daily_snapshot = current_day_snapshot(snapshots, run)
+    report_run = daily_report_run(daily_snapshot, run)
+    daily_briefing = None
+    if api_key := os.getenv("OPENAI_API_KEY"):
+        try:
+            daily_briefing = generate_daily_briefing(
+                daily_snapshot,
+                previous_calendar_day(snapshots, run),
+                api_key,
+            )
+        except (BriefingError, RequestError, ValueError) as error:
+            print(f"::warning title=Daily briefing omitted::{error}")
     args.output.write_text(
         render_markdown(
-            run,
+            report_run,
             dashboard_url=dashboard_url,
             issue_item_limit=int(issue_item_limit) if issue_item_limit else None,
+            daily_briefing=daily_briefing,
         ),
         encoding="utf-8",
     )

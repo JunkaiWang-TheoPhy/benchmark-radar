@@ -131,3 +131,30 @@ def test_report_links_to_date_filtered_dashboard():
     assert (
         "[Explore this day on the dashboard](https://example.test/radar/?date=2026-07-27)" in report
     )
+
+
+def test_report_places_escaped_daily_briefing_before_counts():
+    report = render_markdown(
+        _run([_record(1)]),
+        daily_briefing=["One new benchmark | from GitHub", "Evidence rose by 1."],
+    )
+
+    assert "- One new benchmark \\| from GitHub" in report
+    assert report.index("## Daily briefing") < report.index("## At a glance")
+
+
+def test_report_distinguishes_latest_pass_from_merged_daily_total():
+    run = _run([_record(1), _record(2)])
+    run.selection = {
+        "fetched": 4,
+        "deduplicated": 3,
+        "qualified": 1,
+        "published": 1,
+        "published_total": 2,
+        "minimum_score": 40,
+    }
+
+    report = render_markdown(run)
+
+    assert "Latest-pass selection" in report
+    assert "**2** across today's collection passes" in report

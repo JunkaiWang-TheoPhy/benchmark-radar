@@ -59,6 +59,7 @@ def render_markdown(
     dashboard_url: str | None = None,
     *,
     issue_item_limit: int | None = None,
+    daily_briefing: list[str] | None = None,
 ) -> str:
     date = run.generated_at.astimezone(UTC).date().isoformat()
     category_counts = Counter(category for item in run.items for category in item.categories)
@@ -87,6 +88,10 @@ def render_markdown(
                 "",
             ]
         )
+    if daily_briefing:
+        lines.extend(
+            ["## Daily briefing", "", *[f"- {_escape(bullet)}" for bullet in daily_briefing], ""]
+        )
     lines.extend(
         [
             "## At a glance",
@@ -109,6 +114,7 @@ def render_markdown(
     )
     if run.selection:
         selection = run.selection
+        daily_total = selection.get("published_total")
         watchlisted = int(selection.get("watchlisted") or 0)
         # Watchlist hits bypass the threshold on purpose and are already inside
         # `qualified`, so subtract them before claiming how many cleared the
@@ -125,8 +131,8 @@ def render_markdown(
         suppressed_low_value = int(selection.get("suppressed_low_value") or 0)
         lines.extend(
             [
-                "- Selection: "
-                f"**{selection.get('fetched', 0)}** fetched → "
+                ("- Latest-pass selection: " if daily_total is not None else "- Selection: ")
+                + f"**{selection.get('fetched', 0)}** fetched → "
                 + (f"**{suppressed}** already seen → " if suppressed else "")
                 + (
                     f"**{suppressed_future}** future-dated records quarantined → "
@@ -140,7 +146,12 @@ def render_markdown(
                     else ""
                 )
                 + qualified
-                + f" → **{selection.get('published', 0)}** published",
+                + f" → **{selection.get('published', 0)}** published"
+                + (
+                    f"; **{daily_total}** across today's collection passes"
+                    if daily_total is not None
+                    else ""
+                ),
                 "",
             ]
         )
