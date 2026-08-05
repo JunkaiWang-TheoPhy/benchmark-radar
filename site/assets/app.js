@@ -121,7 +121,9 @@ function readUrl() {
 function writeUrl() {
   const params = new URLSearchParams();
   if (state.view !== "today") params.set("view", state.view);
-  if (state.todayDate && state.todayDate !== state.data?.latest_date) {
+  if (state.todayDate === "all") {
+    params.set("date", "all");
+  } else if (state.todayDate && state.todayDate !== state.data?.latest_date) {
     params.set("date", state.todayDate);
   }
   if (state.q) params.set("q", state.q);
@@ -279,10 +281,9 @@ function renderDailyBriefing(day) {
 }
 
 function renderToday() {
-  const day = dailySnapshot();
+  const day = dailySnapshot(state.todayDate === "all" ? state.data.latest_date : state.todayDate);
   if (!day) return;
-  state.todayDate = day.date;
-  byId("today-date").value = day.date;
+  byId("today-date").value = state.todayDate;
 
   renderDailyBriefing(day);
 
@@ -964,7 +965,7 @@ function filteredObservations() {
   return allObservations().filter((item) => {
     const haystack = `${item.title} ${item.summary} ${item.source}`.toLowerCase();
     return (
-      item.snapshot_date === state.todayDate &&
+      (state.todayDate === "all" || item.snapshot_date === state.todayDate) &&
       (!state.kind || item.observation_kind === state.kind) &&
       (!state.category || (item.categories || []).includes(state.category)) &&
       (!state.source || item.source === state.source) &&
@@ -3454,6 +3455,7 @@ function bindEvents() {
     form.addEventListener("submit", (event) => event.preventDefault());
   });
   byId("clear-filters").addEventListener("click", () => {
+    state.todayDate = "all";
     state.q = "";
     state.kind = "";
     state.category = "";
@@ -3578,16 +3580,17 @@ async function initialize() {
     ) {
       throw new Error("No compatible snapshots");
     }
-    if (!state.data.facets.dates.includes(state.todayDate)) {
+    if (state.todayDate !== "all" && !state.data.facets.dates.includes(state.todayDate)) {
       state.todayDate = state.data.latest_date;
     }
     replaceChildren(
       byId("today-date"),
-      [...state.data.facets.dates]
-        .reverse()
-        .map((date) =>
+      [
+        option("all", "All dates", state.todayDate === "all"),
+        ...[...state.data.facets.dates].reverse().map((date) =>
           option(date, formatDate(date, { dateStyle: "medium" }), date === state.todayDate),
         ),
+      ],
     );
     renderToday();
     renderLeaderboard();

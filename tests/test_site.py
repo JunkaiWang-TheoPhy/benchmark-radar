@@ -65,6 +65,15 @@ def test_scan_date_select_is_not_reset_by_the_shared_filters_input_handler():
     assert "return" in handler_body
 
 
+def test_scan_date_can_be_reset_to_all_dates():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'option("all", "All dates", state.todayDate === "all")' in script
+    assert 'state.todayDate === "all" || item.snapshot_date === state.todayDate' in script
+    assert 'state.todayDate = "all";' in script
+    assert 'params.set("date", "all")' in script
+
+
 def test_automatic_frontier_default_does_not_leak_into_unrelated_urls():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
