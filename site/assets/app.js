@@ -2035,7 +2035,18 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
   ]
     .filter(Boolean)
     .sort()[0];
-  const endText = datedCards.map((card) => card.published).sort().at(-1) || events.at(-1).published;
+  // Symmetric with `startText`: the range has to cover the score track as well
+  // as the adoption track, or a score dated after the newest card -- reachable
+  // when a card carries a later `revised` date -- lands outside the viewBox and
+  // is silently clipped. Both ends therefore consider both layers.
+  const endText = [
+    datedCards.map((card) => card.published).sort().at(-1),
+    events.at(-1).published,
+    record?.last_reported_at,
+  ]
+    .filter(Boolean)
+    .sort()
+    .at(-1);
   const start = new Date(`${startText}T00:00:00Z`).getTime();
   const rawEnd = new Date(`${endText}T00:00:00Z`).getTime();
   const end = Math.max(rawEnd, start + 86_400_000);
@@ -2408,7 +2419,12 @@ function renderAdoptionFrontier(board) {
   byId("frontier-heading").textContent = `${entry.name} adoption trajectory`;
   const events = frontierEvents(entry);
   if (!events.length) {
+    // No dated mention means no adoption timeline can be drawn. The score
+    // reading is independent of that, though: the registry permits a card
+    // without a `published` date, and clearing the panel outright would hide
+    // every readable score because the *other* layer had no usable date.
     clearAdoptionFrontier("This benchmark has no dated mentions.");
+    renderScoreReadout(entry);
     return;
   }
 

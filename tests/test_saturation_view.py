@@ -139,6 +139,31 @@ def test_a_sparse_adoption_layer_does_not_hide_a_readable_score():
     assert "const plotHeight = sparse ? 0 : 370 - margin.top - margin.bottom;" in chart
 
 
+def test_the_time_range_covers_the_score_track_at_both_ends():
+    # Codex P2, second pass. `startText` already considered the first score date
+    # while `endText` derived only from adoption dates, so a score newer than
+    # every card -- reachable when a card carries a later `revised` date -- landed
+    # outside the viewBox and was silently clipped.
+    script = source("site/assets/app.js")
+    chart = script.split("function adoptionFrontierChart(", 1)[1]
+    range_block = chart.split("const start = new Date(", 1)[0]
+
+    assert "record?.first_reported_at" in range_block
+    assert "record?.last_reported_at" in range_block
+
+
+def test_scores_still_render_when_no_mention_carries_a_date():
+    # Codex P2, second pass. The registry permits a card without `published`, so
+    # a scored benchmark can have zero dated adoption events. Clearing the panel
+    # outright hid every readable score because the *other* layer had no date.
+    script = source("site/assets/app.js")
+    guard = script.split("if (!events.length) {", 1)[1].split("return;", 1)[0]
+
+    # Ordering matters: clearAdoptionFrontier empties the readout, so the score
+    # render has to come after it.
+    assert guard.index("clearAdoptionFrontier") < guard.index("renderScoreReadout(entry)")
+
+
 def test_the_score_axis_says_it_is_zoomed():
     # Every value in this corpus sits in the upper part of its scale, so the
     # band is padded around the observed range instead of running 0-100. A
