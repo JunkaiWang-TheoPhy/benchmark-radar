@@ -9,13 +9,15 @@ from pathlib import Path
 from typing import Any
 
 from .attention import fetch_attention_feeds
+from .benchmark_scores import DEFAULT_SCORES_PATH, load_scores, score_progression
 from .corpus import (
     artifact_alias_map,
     build_corpus,
     exact_artifact_key,
     organizations_for_item,
 )
-from .model_cards import DEFAULT_REGISTRY_PATH, build_adoption_rank
+from .insights import build_insights
+from .model_cards import DEFAULT_REGISTRY_PATH, adoption_rank, load_registry
 from .models import RadarRun
 from .pipeline import match_proximity_rule
 from .rubric import (
@@ -513,25 +515,50 @@ def _attach_category_trends(days: list[dict[str, Any]]) -> None:
         day["cumulative_evidence_count"] = len(seen_any)
 
 
-def _model_card_leaderboard(registry_path: Path | None) -> dict[str, Any] | None:
-    """Build the Model Card Adoption Rank, or omit it if the registry is absent.
+def _curated_layers(
+    registry_path: Path | None,
+    scores_path: Path | None,
+) -> dict[str, Any]:
+    """Build the three curated layers that share one registry read.
 
-    A missing registry file is not an error: the daily radar's own collection is
-    independent of this curated dataset, and a checkout without it should still
-    publish a working dashboard. An *invalid* registry is a different matter and
-    is allowed to fail the build, because a silently-dropped leaderboard would
-    leave the previous ranking on the page with no indication it went stale.
+    A missing file is not an error: the daily radar's own collection is
+    independent of these curated datasets, and a checkout without them should
+    still publish a working dashboard. An *invalid* file is a different matter
+    and is allowed to fail the build, because a silently-dropped layer would
+    leave the previous version on the page with no indication it went stale.
+
+    The registry is read once and passed to both consumers. Reading it twice
+    would let the score layer's cross-check pass against a different revision of
+    the file than the ranking was built from, which is exactly the disagreement
+    the cross-check exists to prevent.
     """
-    path = registry_path or DEFAULT_REGISTRY_PATH
-    if not path.exists():
-        return None
-    return build_adoption_rank(path)
+    registry_file = registry_path or DEFAULT_REGISTRY_PATH
+    registry = load_registry(registry_file) if registry_file.exists() else None
+    leaderboard = adoption_rank(registry) if registry else None
+
+    scores_file = scores_path or DEFAULT_SCORES_PATH
+    # The score layer cites `source_id`s that must exist in the registry, so it
+    # is only built when the registry it cites is present. Publishing scores
+    # whose provenance cannot be checked would break the one promise this
+    # dataset makes about itself.
+    progression = (
+        score_progression(load_scores(scores_file), registry)
+        if scores_file.exists() and registry
+        else None
+    )
+
+    return {
+        "model_card_leaderboard": leaderboard,
+        "benchmark_score_progression": progression,
+        "benchmark_insights": build_insights(leaderboard, progression),
+    }
 
 
 def dashboard_data(
     snapshots: list[dict[str, Any]],
     *,
     registry_path: Path | None = None,
+    scores_path: Path | None = None,
 ) -> dict[str, Any]:
     days: list[dict[str, Any]] = []
     categories: set[str] = set()
@@ -662,10 +689,11 @@ def dashboard_data(
         "days": days,
         "corpus": corpus,
         # Curated and versioned in the repository rather than collected daily:
-        # it answers "which benchmarks do vendors report" from published model
-        # cards, which is a different question from "what was released today"
-        # and moves on a different clock.
-        "model_card_leaderboard": _model_card_leaderboard(registry_path),
+        # they answer "which benchmarks do vendors report", "how have the
+        # readable scores moved", and "what do those two together say", which
+        # are different questions from "what was released today" and move on a
+        # different clock.
+        **_curated_layers(registry_path, scores_path),
         # Keep every rubric required by the history. The browser selects by
         # each record's score_version, so a v1 score is never explained using
         # v2 arithmetic.
@@ -703,8 +731,13 @@ def rebuild_dashboard(
     output: Path,
     *,
     registry_path: Path | None = None,
+    scores_path: Path | None = None,
 ) -> dict[str, Any]:
-    value = dashboard_data(load_snapshots(snapshot_dir), registry_path=registry_path)
+    value = dashboard_data(
+        load_snapshots(snapshot_dir),
+        registry_path=registry_path,
+        scores_path=scores_path,
+    )
     _write_json(output, value)
     return value
 
