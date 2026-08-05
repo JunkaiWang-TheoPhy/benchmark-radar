@@ -240,13 +240,40 @@ def test_a_gain_is_only_attributed_to_a_vendor_when_the_run_has_one(tmp_path):
     assert gain["organization"] is None
 
 
+def test_cross_check_rejects_a_score_cited_to_a_card_that_never_reported_it(tmp_path):
+    # Codex P2. Existence of the cited card is not enough: a source_id mistyped to
+    # a different real card passes an existence check while attributing the score
+    # to a document that never reported that benchmark. That publishes a number
+    # with false provenance, which is worse than a missing one because it looks
+    # checkable.
+    path = write_scores(tmp_path, minimal_scores(results=[result(source_id="card_two")]))
+    registry = {
+        "benchmarks": [{"id": "alpha"}],
+        "model_cards": [
+            {"id": "card_one", "benchmarks": ["alpha"]},
+            {"id": "card_two", "benchmarks": ["beta"]},
+        ],
+    }
+    with pytest.raises(BenchmarkScoreError, match="does not report"):
+        score_progression(load_scores(path), registry)
+
+
+def test_cross_check_accepts_a_score_cited_to_a_card_that_reports_it(tmp_path):
+    path = write_scores(tmp_path, minimal_scores(results=[result(source_id="card_one")]))
+    registry = {
+        "benchmarks": [{"id": "alpha"}],
+        "model_cards": [{"id": "card_one", "benchmarks": ["alpha"]}],
+    }
+    assert score_progression(load_scores(path), registry)["observation_count"] == 1
+
+
 def test_cross_check_rejects_a_score_citing_an_unknown_document(tmp_path):
     # Provenance is this layer's whole claim to be readable-out-of-a-document.
     # A source_id with no card is a citation to nothing.
     path = write_scores(tmp_path, minimal_scores(results=[result(source_id="nowhere")]))
     registry = {
         "benchmarks": [{"id": "alpha"}],
-        "model_cards": [{"id": "card_one"}],
+        "model_cards": [{"id": "card_one", "benchmarks": ["alpha"]}],
     }
     with pytest.raises(BenchmarkScoreError, match="absent from the model card registry"):
         score_progression(load_scores(path), registry)

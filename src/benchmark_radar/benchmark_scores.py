@@ -245,8 +245,11 @@ def _cross_check_sources(scores: dict[str, Any], registry: dict[str, Any]) -> No
     card is a citation to nothing: it would render as a linkless number that a
     reader cannot check, which is the one thing this dataset promises not to do.
     """
-    known = {str(card["id"]) for card in registry["model_cards"]}
-    unknown = sorted({row["source_id"] for row in scores["results"]} - known)
+    reported: dict[str, set[str]] = {
+        str(card["id"]): {str(ref) for ref in card["benchmarks"]}
+        for card in registry["model_cards"]
+    }
+    unknown = sorted({row["source_id"] for row in scores["results"]} - reported.keys())
     if unknown:
         raise BenchmarkScoreError(
             f"score rows cite source_ids absent from the model card registry: {', '.join(unknown)}"
@@ -257,6 +260,23 @@ def _cross_check_sources(scores: dict[str, Any], registry: dict[str, Any]) -> No
         raise BenchmarkScoreError(
             "score file declares benchmarks absent from the model card registry: "
             f"{', '.join(stray)}"
+        )
+
+    # Existence of the cited card is not enough. A `source_id` mistyped to a
+    # different real card passes the check above while attributing the score to a
+    # document that never reported that benchmark -- a published number with false
+    # provenance, which is worse than a missing one because it looks checkable.
+    # The registry already records which benchmarks each card reports, so the pair
+    # is verifiable rather than taken on trust.
+    mismatched = sorted(
+        f"{row['source_id']} does not report {row['benchmark_id']}"
+        for row in scores["results"]
+        if row["benchmark_id"] not in reported[row["source_id"]]
+    )
+    if mismatched:
+        raise BenchmarkScoreError(
+            "score rows cite documents that do not report the benchmark they score: "
+            f"{', '.join(dict.fromkeys(mismatched))}"
         )
 
 
