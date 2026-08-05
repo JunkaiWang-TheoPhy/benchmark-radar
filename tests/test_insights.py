@@ -1,3 +1,5 @@
+from datetime import date
+
 from benchmark_radar.benchmark_scores import DEFAULT_SCORES_PATH, build_score_progression
 from benchmark_radar.insights import build_insights
 from benchmark_radar.model_cards import DEFAULT_REGISTRY_PATH, adoption_rank, load_registry
@@ -163,6 +165,88 @@ def test_reading_coverage_is_stated_once_rather_than_per_benchmark():
     assert "3 benchmarks" in stale[0]["headline"]
     # Corpus scope, so it belongs to no single benchmark's chart.
     assert stale[0]["benchmark_id"] == ""
+
+
+def test_reading_coverage_measures_each_lag_against_its_own_benchmark():
+    # Codex P2, third pass. Measuring against the newest card *anywhere* let an
+    # unrelated benchmark's recent document supply the lag. Shipped MBPP is only
+    # 100 days behind its own newest adopter and was counted anyway, and the
+    # published "smallest gap" described a benchmark that was never in the set.
+    #
+    # `fresh` has a 2026 adopter and belongs. `own_lag_is_small` has a recent score
+    # and an adopter only days later, so it must be excluded even though another
+    # benchmark's card is a year newer.
+    entries = [
+        {
+            "benchmark_id": "fresh",
+            "name": "Fresh",
+            "organization_count": 2,
+            "card_count": 2,
+            "adopters": [{"published": "2026-06-01"}],
+        },
+        {
+            "benchmark_id": "own_lag_is_small",
+            "name": "Small",
+            "organization_count": 2,
+            "card_count": 2,
+            "adopters": [{"published": "2025-01-10"}],
+        },
+    ]
+    benchmarks = {
+        "fresh": record(last_reported_at="2025-01-01"),
+        "own_lag_is_small": record(last_reported_at="2025-01-01"),
+    }
+    insights = build_insights(leaderboard(entries), progression(benchmarks))
+    stale = next(item for item in insights["findings"] if item["kind"] == "stale_scores")
+    assert "1 benchmark" in stale["headline"]
+    # The reported gap must belong to a benchmark actually in the set.
+    assert "516 days" in stale["evidence"]
+    assert "2026-06-01" in stale["evidence"]
+
+
+def test_a_benchmark_with_no_later_report_of_its_own_is_not_stale():
+    # Shipped Arena-Hard and Aider Polyglot have no adopter newer than their last
+    # score. Nothing about them supports "kept gaining reporting documents".
+    entries = [
+        {
+            "benchmark_id": "alpha",
+            "name": "Alpha",
+            "organization_count": 2,
+            "card_count": 2,
+            "adopters": [{"published": "2024-01-01"}],
+        }
+    ]
+    insights = build_insights(
+        leaderboard(entries), progression({"alpha": record(last_reported_at="2025-01-01")})
+    )
+    assert not [item for item in insights["findings"] if item["kind"] == "stale_scores"]
+
+
+def test_shipped_reading_coverage_excludes_benchmarks_inside_the_threshold():
+    # The end-to-end guard. Every benchmark counted must genuinely be at least
+    # _STALE_SCORE_DAYS behind a later report of itself.
+    registry = load_registry(DEFAULT_REGISTRY_PATH)
+    progression_data = build_score_progression(DEFAULT_SCORES_PATH, registry)
+    board = adoption_rank(registry)
+    insights = build_insights(board, progression_data)
+    stale = next(item for item in insights["findings"] if item["kind"] == "stale_scores")
+
+    adoption = {entry["benchmark_id"]: entry for entry in board["entries"]}
+    genuinely_lagging = 0
+    for benchmark_id, rec in progression_data["benchmarks"].items():
+        own = [
+            adopter["published"]
+            for adopter in adoption.get(benchmark_id, {}).get("adopters") or []
+            if adopter.get("published")
+        ]
+        if not own:
+            continue
+        latest = max(own)
+        if latest > rec["last_reported_at"]:
+            lag = (date.fromisoformat(latest) - date.fromisoformat(rec["last_reported_at"])).days
+            if lag >= 180:
+                genuinely_lagging += 1
+    assert f"{genuinely_lagging} benchmarks" in stale["headline"]
 
 
 def test_reading_coverage_leads_even_against_competing_findings():

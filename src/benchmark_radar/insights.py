@@ -305,29 +305,47 @@ def _stale_scores(
 
     It stays first in the ordering regardless: a reader about to interpret a flat
     score tail as a plateau needs this before any other claim on the page.
+
+    Each lag is measured against the benchmark's *own* latest dated adopter, not
+    against the newest card anywhere in the registry. Using the global date let an
+    unrelated benchmark's recent card supply the lag: shipped MBPP is only 100
+    days behind its own newest adopter and was counted anyway despite the
+    threshold, and the published "smallest gap" described a benchmark that was
+    never in the set. A claim about one benchmark's reading coverage has to be
+    computed from that benchmark's documents.
     """
-    latest_card = _latest_card_date(leaderboard)
     records = progression.get("benchmarks") or {}
-    if not latest_card or not records:
+    if not records:
         return []
 
     adoption = _adoption_by_id(leaderboard)
     lagging = []
     for benchmark_id, record in records.items():
-        lag = _days_between(record["last_reported_at"], latest_card)
         entry = adoption.get(benchmark_id)
-        if lag < _STALE_SCORE_DAYS or not entry:
+        if not entry:
             continue
-        if any(
-            adopter.get("published") and adopter["published"] > record["last_reported_at"]
+        own_dates = [
+            adopter["published"]
             for adopter in entry.get("adopters") or []
-        ):
-            lagging.append((benchmark_id, record, lag))
+            if adopter.get("published")
+        ]
+        if not own_dates:
+            continue
+        own_latest = max(own_dates)
+        # A later report of *this* benchmark is what makes its flat tail a reading
+        # gap rather than the end of its record.
+        if own_latest <= record["last_reported_at"]:
+            continue
+        lag = _days_between(record["last_reported_at"], own_latest)
+        if lag < _STALE_SCORE_DAYS:
+            continue
+        lagging.append((benchmark_id, record, lag, own_latest))
     if not lagging:
         return []
 
-    newest_score = max(record["last_reported_at"] for _, record, _ in lagging)
-    smallest_lag = min(lag for _, _, lag in lagging)
+    newest_score = max(record["last_reported_at"] for _, record, _, _ in lagging)
+    smallest_lag = min(lag for _, _, lag, _ in lagging)
+    newest_relevant_card = max(own_latest for _, _, _, own_latest in lagging)
     return [
         _finding(
             "stale_scores",
@@ -347,8 +365,8 @@ def _stale_scores(
                 "documents and are absent rather than zero."
             ),
             evidence=(
-                f"Newest readable score {newest_score}; newest model card {latest_card}; "
-                f"smallest gap {_count(smallest_lag, 'day')}"
+                f"Newest readable score {newest_score}; newest card reporting one of them "
+                f"{newest_relevant_card}; smallest gap {_count(smallest_lag, 'day')}"
             ),
         )
     ]
