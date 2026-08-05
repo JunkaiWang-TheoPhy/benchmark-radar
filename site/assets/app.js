@@ -1898,29 +1898,179 @@ function sparseFrontier(entry, events) {
   );
 }
 
+// --- Score progression (issue #91) ------------------------------------------
+//
+// The saturation half of the panel. `benchmark_score_progression` carries only
+// values read verbatim out of cited documents, grouped into series the join rule
+// permits a line through: identical instrument AND identical protocol. Anything
+// else stays an unconnected point, because two numbers taken under unstated and
+// possibly different conditions are not a measurement of change.
+//
+// Under that rule this corpus yields very few multi-date runs, and most are one
+// vendor reporting its own successive models. That is a real property of vendor
+// reporting rather than something to engineer around, so the chart draws what
+// exists and `evidence` states what it can support.
+
+function scoreRecord(benchmarkId) {
+  return state.data?.benchmark_score_progression?.benchmarks?.[benchmarkId] || null;
+}
+
+// The plotted band for a score axis. Percent metrics are NOT drawn 0-100: every
+// value in this corpus sits in the upper half, so a full-height axis compresses
+// the interesting movement into a sliver. The band is padded around the observed
+// range instead, and the axis is labelled with its real bounds so a reader
+// cannot mistake a zoomed axis for a full one.
+function scoreBand(record) {
+  const values = record.observations.map((observation) => observation.value);
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const pad = Math.max(2, (high - low) * 0.18);
+  const bound = record.saturation.bound;
+  return {
+    low: bound === null ? low - pad : Math.max(0, low - pad),
+    high: bound === null ? high + pad : Math.min(bound, high + pad),
+  };
+}
+
+function scoreReadout(entry, record) {
+  const saturation = record.saturation;
+  const evidence = record.evidence;
+  const rows = [
+    element("div", { className: "score-readout-figure" }, [
+      element("span", { text: "Best on record" }),
+      element("strong", {
+        text: `${saturation.best_value}${record.unit === "percent" ? "%" : ""}`,
+      }),
+      element("small", {
+        text: `${saturation.best_model} · ${saturation.best_organization} · ${formatDate(
+          saturation.best_reported_at,
+          { dateStyle: "medium" },
+        )}`,
+      }),
+    ]),
+  ];
+  if (saturation.headroom !== null) {
+    rows.push(
+      element("div", { className: "score-readout-figure" }, [
+        element("span", { text: "Headroom left" }),
+        element("strong", { text: `${saturation.headroom}` }),
+        element("small", {
+          text: `points to the ${saturation.bound}-point bound of this metric`,
+        }),
+      ]),
+    );
+  }
+  rows.push(
+    element("div", { className: "score-readout-figure" }, [
+      element("span", { text: "Readable values" }),
+      element("strong", { text: String(record.observation_count) }),
+      element("small", {
+        text: `${metricLabel(record.dated_observation_count, "date")} · ${metricLabel(
+          record.comparable_series_count,
+          "comparable run",
+        )}`,
+      }),
+    ]),
+  );
+
+  return element("div", { className: "score-readout-inner" }, [
+    element("div", { className: "score-readout-figures" }, rows),
+    element("div", { className: `score-evidence score-evidence-${evidence.id}` }, [
+      element("strong", { text: evidence.label }),
+      element("p", {}, [
+        element("span", { className: "score-evidence-yes", text: "Supports: " }),
+        document.createTextNode(evidence.supports),
+      ]),
+      element("p", {}, [
+        element("span", { className: "score-evidence-no", text: "Does not support: " }),
+        document.createTextNode(evidence.does_not_support),
+      ]),
+    ]),
+    record.third_party_count
+      ? element("p", {
+          className: "score-readout-note",
+          text: `${metricLabel(
+            record.third_party_count,
+            "value",
+          )} here is a third party quoting another vendor's figure, marked with a ring on the chart.`,
+        })
+      : null,
+  ]);
+}
+
+function renderScoreReadout(entry) {
+  const host = byId("frontier-score-readout");
+  if (!host) return;
+  const record = scoreRecord(entry.benchmark_id);
+  if (!record) {
+    replaceChildren(host, [
+      element("p", {
+        className: "score-readout-empty",
+        text:
+          "No score for this benchmark could be read verbatim from the cited documents, so the " +
+          "chart shows adoption only. An absent value is not a zero and not a plateau.",
+      }),
+    ]);
+    return;
+  }
+  replaceChildren(host, [scoreReadout(entry, record)]);
+}
+
 function adoptionFrontierChart(entry, board, events) {
   const datedCards = (board.model_cards || []).filter((card) => card.published);
-  const startText = [entry.released, events[0].published].filter(Boolean).sort()[0];
+  const record = scoreRecord(entry.benchmark_id);
+  const startText = [
+    entry.released,
+    events[0].published,
+    record?.first_reported_at,
+  ]
+    .filter(Boolean)
+    .sort()[0];
   const endText = datedCards.map((card) => card.published).sort().at(-1) || events.at(-1).published;
   const start = new Date(`${startText}T00:00:00Z`).getTime();
   const rawEnd = new Date(`${endText}T00:00:00Z`).getTime();
   const end = Math.max(rawEnd, start + 86_400_000);
   const width = 920;
-  const height = 370;
-  const margin = { top: 32, right: 20, bottom: 62, left: 52 };
+  // The score band is only reserved when there is a score to draw. A benchmark
+  // with no readable value gets the original single-plot height rather than an
+  // empty lower half, which would read as "scores went to zero here".
+  const band = record ? scoreBand(record) : null;
+  const scoreHeight = record ? 132 : 0;
+  const bandGap = record ? 34 : 0;
+  const height = 370 + scoreHeight + bandGap;
+  // The left margin widens when a score band is present: its axis label is a
+  // metric name ("resolved", "pass@1") rather than the fixed "organizations
+  // reporting", and a 52px gutter clipped the longer ones at the viewBox edge.
+  const margin = { top: 32, right: 20, bottom: 62, left: record ? 68 : 52 };
   const plotWidth = width - margin.left - margin.right;
-  const plotHeight = height - margin.top - margin.bottom;
+  const plotHeight = 370 - margin.top - margin.bottom;
   const maxOrganizations = Math.max(1, Number(board.organization_count || 0));
   const x = (date) =>
     margin.left +
     ((new Date(`${date}T00:00:00Z`).getTime() - start) / (end - start)) * plotWidth;
   const y = (count) => margin.top + plotHeight - (count / maxOrganizations) * plotHeight;
+  // The score plot sits below the adoption plot and shares its x scale, which is
+  // the whole point: the two readings are only comparable if a vertical line
+  // through the chart means one date in both.
+  const scoreTop = margin.top + plotHeight + bandGap;
+  const scoreY = (value) =>
+    band && band.high > band.low
+      ? scoreTop + scoreHeight - ((value - band.low) / (band.high - band.low)) * scoreHeight
+      : scoreTop + scoreHeight / 2;
   const advances = events.filter((event) => event.advances);
 
   const svg = svgElement("svg", {
     viewBox: `0 0 ${width} ${height}`,
     role: "img",
-    "aria-label": `${entry.name} reporting adoption over time. ${advances.length} of ${board.organization_count} organizations have a dated report.`,
+    "aria-label":
+      `${entry.name} reporting adoption over time. ${advances.length} of ` +
+      `${board.organization_count} organizations have a dated report.` +
+      (record
+        ? ` Below it, ${metricLabel(record.observation_count, "readable score")} from ` +
+          `${formatDate(record.first_reported_at, { dateStyle: "medium" })} to ` +
+          `${formatDate(record.last_reported_at, { dateStyle: "medium" })}, best ` +
+          `${record.saturation.best_value}.`
+        : " No readable score for this benchmark."),
   });
   const tickStep = Math.max(1, Math.ceil(maxOrganizations / 5));
   const tickValues = new Set([0, maxOrganizations]);
@@ -1983,13 +2133,154 @@ function adoptionFrontierChart(entry, board, events) {
     svg.append(group);
   }
 
+  if (record) {
+    // Band bounds, not 0-100: every value in this corpus sits in the upper part
+    // of its scale, so the axis is zoomed and says so on both ticks.
+    for (const value of [band.high, band.low]) {
+      const yPosition = scoreY(value);
+      svg.append(
+        svgElement("line", {
+          x1: margin.left,
+          y1: yPosition,
+          x2: width - margin.right,
+          y2: yPosition,
+          class: "frontier-grid",
+        }),
+      );
+      svg.append(
+        svgElement(
+          "text",
+          {
+            x: margin.left - 12,
+            y: yPosition + 4,
+            "text-anchor": "end",
+            class: "frontier-tick",
+          },
+          Number(value.toFixed(1)),
+        ),
+      );
+    }
+
+    // One polyline per comparable series, and only for series the join rule
+    // permits a line through. A series confined to one date draws no line: its
+    // points are a comparison table from one document, and connecting them
+    // would turn a single publication into an apparent trend.
+    for (const series of record.series) {
+      if (!series.connectable) continue;
+      const points = series.points
+        .map((point) => `${x(point.reported_at)},${scoreY(point.value)}`)
+        .join(" ");
+      svg.append(
+        svgElement("polyline", {
+          points,
+          class: `score-line${series.single_organization ? " score-line-single-org" : ""}`,
+        }),
+      );
+    }
+
+    // The best-on-record marker. Drawn as a horizontal rule rather than a point
+    // because it is a fact about the whole corpus to date, not about one date.
+    const bestY = scoreY(record.saturation.best_value);
+    svg.append(
+      svgElement("line", {
+        x1: margin.left,
+        y1: bestY,
+        x2: width - margin.right,
+        y2: bestY,
+        class: "score-best-line",
+      }),
+    );
+    svg.append(
+      svgElement(
+        "text",
+        { x: width - margin.right, y: bestY - 6, "text-anchor": "end", class: "score-best-label" },
+        `best on record ${record.saturation.best_value}`,
+      ),
+    );
+
+    for (const observation of record.observations) {
+      const group = svgElement("g", {
+        class: `score-point${observation.reported_by ? " score-point-third-party" : ""}`,
+        tabindex: "0",
+        role: "img",
+        "aria-label":
+          `${observation.value} ${record.metric} by ${observation.model} ` +
+          `(${observation.organization}), ${formatDate(observation.reported_at, {
+            dateStyle: "medium",
+          })}, protocol ${observation.protocol}` +
+          (observation.reported_by ? `, cited by ${observation.reported_by}` : ""),
+      });
+      group.append(
+        svgElement("circle", {
+          cx: x(observation.reported_at),
+          cy: scoreY(observation.value),
+          r: 5,
+        }),
+      );
+      group.append(
+        svgElement(
+          "title",
+          {},
+          `${observation.model} · ${observation.value} · ${observation.protocol}` +
+            (observation.reported_by ? ` · cited by ${observation.reported_by}` : ""),
+        ),
+      );
+      svg.append(group);
+    }
+
+    // The reading gap. Scores in this corpus stop well before mentions do, and
+    // an unmarked flat tail is exactly what invites "saturated" as the
+    // explanation when "nothing newer could be read" is the actual one.
+    const lastScoreX = x(record.last_reported_at);
+    const endX = x(endText);
+    if (endX - lastScoreX > 24) {
+      svg.append(
+        svgElement("line", {
+          x1: lastScoreX,
+          y1: scoreY(record.saturation.best_value),
+          x2: endX,
+          y2: scoreY(record.saturation.best_value),
+          class: "score-gap-line",
+        }),
+      );
+      svg.append(
+        svgElement(
+          "text",
+          {
+            x: (lastScoreX + endX) / 2,
+            y: scoreTop + scoreHeight + 16,
+            "text-anchor": "middle",
+            class: "score-gap-label",
+          },
+          "no readable score in this window",
+        ),
+      );
+    }
+
+    svg.append(
+      svgElement(
+        "text",
+        {
+          x: 17,
+          y: scoreTop + scoreHeight / 2,
+          transform: `rotate(-90 17 ${scoreTop + scoreHeight / 2})`,
+          "text-anchor": "middle",
+          class: "frontier-axis-label",
+        },
+        `${record.metric} (zoomed)`,
+      ),
+    );
+  }
+
   const releaseX = entry.released ? x(entry.released) : x(startText);
   svg.append(
     svgElement("line", {
       x1: releaseX,
       y1: margin.top,
+      // Spans both plots when a score band exists, so the release date reads as
+      // one moment in the benchmark's life rather than as two unrelated marks.
       x2: releaseX,
-      y2: margin.top + plotHeight,
+      y2: record ? scoreTop + scoreHeight : margin.top + plotHeight,
       class: "frontier-release-line",
     }),
   );
@@ -2040,6 +2331,7 @@ function clearAdoptionFrontier(message) {
   replaceChildren(byId("frontier-summary"), []);
   replaceChildren(byId("frontier-milestones"), []);
   replaceChildren(byId("frontier-task-preview"), []);
+  replaceChildren(byId("frontier-score-readout"), []);
   replaceChildren(byId("frontier-chart"), [
     element("p", { className: "empty-state", text: message }),
   ]);
@@ -2093,8 +2385,90 @@ function renderAdoptionFrontier(board) {
       ? sparseFrontier(entry, events)
       : adoptionFrontierChart(entry, board, events),
   ]);
+  // Rendered for every benchmark, including those whose adoption is too sparse
+  // to plot: the score reading is a separate question from the adoption reading,
+  // and a benchmark with one adopter can still have a readable score.
+  renderScoreReadout(entry);
   renderFrontierMilestones(entry, events);
   renderFrontierTaskPreview(entry);
+}
+
+// --- Stated findings (issue #91) --------------------------------------------
+//
+// The issue's third point: the project kept adding charts while the real gap --
+// surfacing insight -- stayed open. Every sentence here is derived in Python by
+// `insights.build_insights`, where it is tested, rather than phrased in the
+// browser. This function only lays them out.
+//
+// A finding carries its own evidence line, and clicking one moves the chart to
+// the benchmark it is about, so a claim is never more than one interaction away
+// from the data behind it.
+
+const FINDING_LABELS = {
+  adopted_without_scores: "Adopted, unscored",
+  stale_scores: "Reading coverage",
+  closing_headroom: "Closing headroom",
+  fast_gain: "Fast gain",
+  third_party_only: "Third-party only",
+};
+
+function findingCard(finding, board) {
+  const children = [
+    element("div", { className: "finding-head" }, [
+      element("span", {
+        className: `finding-kind finding-kind-${finding.kind}`,
+        text: FINDING_LABELS[finding.kind] || finding.kind,
+      }),
+      element("h3", { text: finding.headline }),
+    ]),
+    element("p", { className: "finding-detail", text: finding.detail }),
+    element("p", { className: "finding-evidence" }, [
+      element("span", { text: "Evidence" }),
+      document.createTextNode(finding.evidence),
+    ]),
+  ];
+
+  // Corpus-scope findings carry no benchmark_id, so there is nothing to focus.
+  const target = finding.benchmark_id
+    ? (board.entries || []).find((entry) => entry.benchmark_id === finding.benchmark_id)
+    : null;
+  if (target) {
+    const jump = element("button", {
+      className: "secondary-link finding-jump",
+      text: `Show ${target.name} on the chart ↑`,
+      attrs: { type: "button" },
+    });
+    jump.addEventListener("click", () => {
+      state.lfrontier = target.benchmark_id;
+      renderAdoptionFrontier(board);
+      writeUrl();
+      byId("adoption-frontier").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    children.push(jump);
+  }
+
+  return element("article", { className: "finding-card" }, children);
+}
+
+function renderBenchmarkFindings(board) {
+  const panel = byId("benchmark-findings");
+  if (!panel) return;
+  const insights = state.data?.benchmark_insights;
+  // Hidden entirely rather than shown empty. An empty findings panel reads as
+  // "we looked and the field is uneventful", which is a claim this corpus is not
+  // in a position to make.
+  if (!insights || !insights.findings?.length) {
+    panel.hidden = true;
+    return;
+  }
+  panel.hidden = false;
+  byId("findings-count").textContent = metricLabel(insights.finding_count, "finding");
+  byId("findings-measures").textContent = insights.measures || "";
+  byId("findings-limits").textContent = `Does not measure: ${insights.does_not_measure}`;
+  replaceChildren(
+    byId("findings-list"),
+    insights.findings.map((finding) => findingCard(finding, board)),
+  );
 }
 
 function modelCardLabelCounts(board) {
@@ -2265,6 +2639,7 @@ function renderLeaderboard() {
 
   byId("leaderboard-measures").textContent = board.measures || "";
   renderLeaderboardFilters(board);
+  renderBenchmarkFindings(board);
   renderAdoptionFrontier(board);
 
   const topEntries = (board.entries || []).filter((entry) => entry.card_count > 0);

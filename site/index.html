@@ -204,6 +204,19 @@
 
         <div class="evidence-strip" id="leaderboard-insights" aria-label="Registry overview"></div>
 
+        <section class="findings-panel" id="benchmark-findings" aria-labelledby="findings-heading" hidden>
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">What the two layers say</p>
+              <h2 id="findings-heading">Stated findings</h2>
+            </div>
+            <span id="findings-count" aria-live="polite"></span>
+          </div>
+          <p class="section-note" id="findings-measures"></p>
+          <div class="findings-list" id="findings-list"></div>
+          <p class="section-note findings-limits" id="findings-limits"></p>
+        </section>
+
         <div class="benchmark-workbench">
           <aside class="benchmark-navigator" aria-labelledby="benchmark-navigator-heading">
             <p class="eyebrow">Benchmarks to watch</p>
@@ -230,13 +243,18 @@
               </div>
             </div>
             <p class="section-note" id="frontier-explainer">
-              Each dot is a model card mention. The line advances only when a new
-              organization adopts the benchmark; hollow dots are repeat reports from an
+              Two readings on one time axis. The step line is adoption: it advances only when a
+              new organization reports the benchmark, and hollow dots are repeat reports from an
               organization already on the frontier. A long flat run is reporting saturation
               observed within this curated registry, not a claim about benchmark score saturation.
+              The score track below it is a separate reading: every value that could be read
+              verbatim from a cited document, connected only where the instrument and protocol
+              are identical. A flat score tail usually means no newer number could be read, which
+              is why the gap is marked rather than drawn through.
             </p>
             <div class="frontier-summary" id="frontier-summary" aria-live="polite"></div>
             <div class="frontier-chart" id="frontier-chart"></div>
+            <div class="score-readout" id="frontier-score-readout"></div>
             <div class="frontier-evidence">
               <section aria-labelledby="frontier-milestones-heading">
                 <h3 id="frontier-milestones-heading">Frontier milestones</h3>
