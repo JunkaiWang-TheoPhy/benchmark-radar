@@ -230,7 +230,7 @@ def test_a_legend_names_each_mark_and_its_effect_on_the_count():
     script = source("site/assets/app.js")
 
     assert 'id="frontier-legend"' in html
-    assert "function renderFrontierLegend(entry, record)" in script
+    assert "function renderFrontierLegend(" in script
     assert "cumulative count increases" in script
     assert "count unchanged" in script
 
@@ -243,25 +243,67 @@ def test_the_axis_and_header_name_distinct_organizations():
 
     assert "cumulative distinct organizations" in script
     assert '"distinct organization"' in script
-    # Asserted on the template literal that actually renders, not on a source
-    # slice: "dated organizations" legitimately survives in comments (including the
-    # one documenting this very change) and in the navigator copy, so a
+    # Asserted on the strings that actually render, not on a source slice: "dated
+    # organizations" legitimately survives in comments (including the one
+    # documenting this very change) and in the navigator copy, so a
     # substring-absence check over source text tests the wrong thing.
-    assert '"model card")} · ${metricLabel(' in script
-    assert '"distinct organization",' in script
+    assert 'metricLabel(entry.card_count, "model card")' in script
+    assert 'metricLabel(frontier.length, "distinct organization")' in script
+    # And the organization count is qualified when some card carries no date, since
+    # card_count includes those while the plotted count cannot.
+    assert '" with a dated card"' in script
 
 
 def test_the_chart_does_not_collapse_on_a_narrow_viewport():
     # `width: 100%` scales height with width, so a 920-unit viewBox at 390px
     # rendered the chart about 90px tall. A narrower viewBox scales the same
     # content up; distorting the aspect ratio would stretch the axis text.
+    #
+    # The width selection itself is asserted, not just the breakpoint expression:
+    # an earlier version of this test passed even with `width` reverted to a
+    # constant 920, because `narrow` stayed in use for the axis labels.
     script = source("site/assets/app.js")
     styles = source("site/assets/styles.css")
 
-    assert "window.innerWidth <= 760" in script
+    assert 'const narrow = typeof window !== "undefined" && window.innerWidth <= 760' in script
+    assert "const width = narrow ? 520 : 920;" in script
     assert 'preserveAspectRatio: "none"' not in script
     narrow_rule = styles.split("@media (max-width: 760px) {", 1)[1]
     assert "min-height" in narrow_rule.split(".frontier-chart svg {", 1)[1].split("}", 1)[0]
+    # Crossing the breakpoint has to redraw, or a resized page keeps a stale box.
+    assert "if (isNarrow === wasNarrow) return;" in script
+
+
+def test_same_date_cards_do_not_overpaint_in_the_rug():
+    # Codex P1. x(date) alone gave every card on one date an identical coordinate,
+    # so they overpainted: the visible tick count came out short and only the last
+    # drawn was hoverable. Seven shipped benchmarks have a same-day pair, and
+    # "cards on one date stay visible" is the rug's whole reason for existing.
+    script = source("site/assets/app.js")
+    rug = script.split("const sameDateCounts = new Map();", 1)[1].split("\n  }", 1)[0]
+
+    assert "(index - (total - 1) / 2) * spread" in rug
+
+
+def test_the_zoom_marker_survives_a_narrow_viewport():
+    # Codex P2. Dropping it on small screens left no indication that the score axis
+    # is magnified, and the justification (that the readout states the band bounds)
+    # was false -- the bounds appear only as the two axis ticks.
+    script = source("site/assets/app.js")
+
+    assert "(zoom)" in script
+    assert "(zoomed)" in script
+
+
+def test_the_legend_omits_marks_that_sparse_mode_suppresses():
+    # Codex P2. `sparse` replaces the staircase and rug with the step list, so a
+    # key describing diamonds and ticks that are not on screen is worse than none.
+    script = source("site/assets/app.js")
+    legend = script.split("function renderFrontierLegend(", 1)[1].split("\n}", 1)[0]
+
+    assert "sparse" in legend
+    assert "const items = sparse" in legend
+    assert "renderFrontierLegend(entry, scoreRecord(entry.benchmark_id), { sparse })" in script
 
 
 def test_the_score_axis_says_it_is_zoomed():

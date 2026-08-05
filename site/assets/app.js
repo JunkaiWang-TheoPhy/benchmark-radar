@@ -2029,17 +2029,34 @@ function renderScoreReadout(entry) {
 // the two for equivalent kinds of point. Each entry names the mark AND what it
 // does to the count, because "new organization" alone does not say that the other
 // kind leaves the staircase flat.
-function renderFrontierLegend(entry, record) {
+// `sparse` suppresses the staircase and the rug in favour of the step list, so
+// their legend entries are suppressed with them: a key describing marks that are
+// not on screen is worse than no key, and many shipped benchmarks take that path.
+function renderFrontierLegend(entry, record, { sparse = false } = {}) {
   const host = byId("frontier-legend");
   if (!host) return;
   const swatch = (className) => element("span", { className: `legend-swatch ${className}` });
-  const items = [
-    ["legend-swatch-diamond", "New organization", "cumulative count increases"],
-    ["legend-swatch-tick-first", "First card from that organization", "the tick under the jump"],
-    ["legend-swatch-tick-repeat", "Later card, organization already counted", "count unchanged"],
-  ];
+  const items = sparse
+    ? []
+    : [
+        ["legend-swatch-diamond", "New organization", "cumulative count increases"],
+        [
+          "legend-swatch-tick-first",
+          "First card from that organization",
+          "the tick under the jump",
+        ],
+        [
+          "legend-swatch-tick-repeat",
+          "Later card, organization already counted",
+          "count unchanged",
+        ],
+      ];
   if (record) {
-    items.push(["legend-swatch-score", "Readable score", "connected only at one instrument and protocol"]);
+    items.push([
+      "legend-swatch-score",
+      "Readable score",
+      "connected only at one instrument and protocol",
+    ]);
   }
   replaceChildren(
     host,
@@ -2234,8 +2251,27 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
         class: "card-rug-baseline",
       }),
     );
+    // Cards sharing a publication date are fanned apart by a fixed offset. Using
+    // x(date) alone gave them identical coordinates, so they overpainted: the
+    // visible tick count came out short and only the last one drawn was
+    // hoverable. Seven shipped benchmarks have a same-day pair (2026-02-11), so
+    // this is the common case, not an edge one -- and "cards on one date stay
+    // visible" is the rug's entire reason for existing.
+    const sameDateCounts = new Map();
     for (const event of events) {
-      const tickX = x(event.published);
+      sameDateCounts.set(event.published, (sameDateCounts.get(event.published) || 0) + 1);
+    }
+    const sameDateSeen = new Map();
+    for (const event of events) {
+      const total = sameDateCounts.get(event.published);
+      const index = sameDateSeen.get(event.published) || 0;
+      sameDateSeen.set(event.published, index + 1);
+      // Centred on the true date so the group still reads at the right position:
+      // two cards straddle it rather than one hiding the other. The offset exceeds
+      // the tick's own stroke width, or the pair would abut into what looks like a
+      // single thick tick and defeat the point.
+      const spread = 4.5;
+      const tickX = x(event.published) + (total > 1 ? (index - (total - 1) / 2) * spread : 0);
       const group = svgElement("g", {
         class: `card-rug-tick${event.advances ? " card-rug-tick-first" : " card-rug-tick-repeat"}`,
         tabindex: "0",
@@ -2453,10 +2489,13 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
           "text-anchor": "middle",
           class: "frontier-axis-label",
         },
-        // The band is only 132 units tall, so the "(zoomed)" qualifier is dropped
-        // on a narrow viewport where the rotated text would overrun it. The
-        // readout below the chart still states the band bounds either way.
-        narrow ? record.metric : `${record.metric} (zoomed)`,
+        // The zoom marker is never dropped. An earlier version omitted it on
+        // narrow viewports and justified that by saying the readout states the
+        // band bounds -- it does not; the bounds appear only as the two axis
+        // ticks. Removing it left small screens with no indication that the axis
+        // is magnified, which is the one thing about this band a reader must not
+        // misjudge. Abbreviated instead, so it still fits the rotated label.
+        narrow ? `${record.metric} (zoom)` : `${record.metric} (zoomed)`,
       ),
     );
   }
@@ -2601,11 +2640,16 @@ function renderAdoptionFrontier(board) {
     element("strong", { text: entry.name }),
     // "23 cards · 10 of 10 dated organizations" read as one ratio about a single
     // quantity. They are two different counts, so they are now named separately.
+    //
+    // The organization count is qualified as "dated" when some card carries no
+    // publication date: `card_count` includes those cards but `frontier` cannot,
+    // so an unqualified "distinct organizations" beside the card total would imply
+    // the two were counted over the same set of documents.
     element("span", {
-      text: `${metricLabel(entry.card_count, "model card")} · ${metricLabel(
-        frontier.length,
-        "distinct organization",
-      )}`,
+      text:
+        `${metricLabel(entry.card_count, "model card")} · ` +
+        `${metricLabel(frontier.length, "distinct organization")}` +
+        ((entry.adopters || []).some((adopter) => !adopter.published) ? " with a dated card" : ""),
     }),
     element("span", {
       text: `last new organization ${formatDate(lastAdvance.published, { dateStyle: "medium" })}`,
@@ -2618,7 +2662,7 @@ function renderAdoptionFrontier(board) {
   // *different* layer was thin.
   const sparse = frontier.length < 2;
   const scored = Boolean(scoreRecord(entry.benchmark_id));
-  renderFrontierLegend(entry, scoreRecord(entry.benchmark_id));
+  renderFrontierLegend(entry, scoreRecord(entry.benchmark_id), { sparse });
   replaceChildren(byId("frontier-chart"), [
     sparse ? sparseFrontier(entry, events) : null,
     sparse && !scored ? null : adoptionFrontierChart(entry, board, events, { sparse }),
@@ -3322,6 +3366,20 @@ function bindEvents() {
     passive: true,
   });
   window.addEventListener("resize", repositionDayTooltip);
+  // The frontier chart picks its viewBox width from the viewport, so crossing the
+  // 760px breakpoint has to redraw it. Without this a page loaded wide and then
+  // narrowed (or a rotated phone) keeps the 920-unit box until some unrelated
+  // rerender, and the CSS min-height only letterboxes the collapsed chart rather
+  // than fixing it. Re-rendered only on an actual crossing, not on every resize
+  // event, since redrawing every SVG mid-drag would be wasteful.
+  let wasNarrow = window.innerWidth <= 760;
+  window.addEventListener("resize", () => {
+    const isNarrow = window.innerWidth <= 760;
+    if (isNarrow === wasNarrow) return;
+    wasNarrow = isNarrow;
+    const board = state.data?.model_card_leaderboard;
+    if (board) renderAdoptionFrontier(board);
+  });
   document.addEventListener("keydown", (event) => {
     // Do not swallow Escape unless a card is actually open to close.
     if (event.key === "Escape" && dismissDayTooltip()) event.preventDefault();
