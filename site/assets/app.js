@@ -1954,8 +1954,14 @@ function scoreReadout(entry, record) {
       element("div", { className: "score-readout-figure" }, [
         element("span", { text: "Headroom left" }),
         element("strong", { text: `${saturation.headroom}` }),
+        // On a lower-is-better metric the backend measures headroom to zero, not
+        // to `bound`. Naming the bound in both cases would print "10 points to
+        // the 100-point bound" for a score of 10, which is arithmetically false.
         element("small", {
-          text: `points to the ${saturation.bound}-point bound of this metric`,
+          text:
+            record.direction === "lower_is_better"
+              ? "points to zero, the floor of this metric"
+              : `points to the ${saturation.bound}-point bound of this metric`,
         }),
       ]),
     );
@@ -2016,7 +2022,10 @@ function renderScoreReadout(entry) {
   replaceChildren(host, [scoreReadout(entry, record)]);
 }
 
-function adoptionFrontierChart(entry, board, events) {
+// `sparse` means the adoption stepper is being rendered separately because it has
+// fewer than two frontier advances. The score track still draws, on its own axis,
+// so a thin adoption layer never hides a readable score.
+function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
   const datedCards = (board.model_cards || []).filter((card) => card.published);
   const record = scoreRecord(entry.benchmark_id);
   const startText = [
@@ -2037,13 +2046,15 @@ function adoptionFrontierChart(entry, board, events) {
   const band = record ? scoreBand(record) : null;
   const scoreHeight = record ? 132 : 0;
   const bandGap = record ? 34 : 0;
-  const height = 370 + scoreHeight + bandGap;
   // The left margin widens when a score band is present: its axis label is a
   // metric name ("resolved", "pass@1") rather than the fixed "organizations
   // reporting", and a 52px gutter clipped the longer ones at the viewBox edge.
   const margin = { top: 32, right: 20, bottom: 62, left: record ? 68 : 52 };
   const plotWidth = width - margin.left - margin.right;
-  const plotHeight = 370 - margin.top - margin.bottom;
+  // The adoption plot collapses to nothing when its stepper is drawn separately,
+  // so the SVG carries no empty region where the step line would have been.
+  const plotHeight = sparse ? 0 : 370 - margin.top - margin.bottom;
+  const height = margin.top + plotHeight + bandGap + scoreHeight + margin.bottom;
   const maxOrganizations = Math.max(1, Number(board.organization_count || 0));
   const x = (date) =>
     margin.left +
@@ -2053,10 +2064,17 @@ function adoptionFrontierChart(entry, board, events) {
   // the whole point: the two readings are only comparable if a vertical line
   // through the chart means one date in both.
   const scoreTop = margin.top + plotHeight + bandGap;
-  const scoreY = (value) =>
-    band && band.high > band.low
-      ? scoreTop + scoreHeight - ((value - band.low) / (band.high - band.low)) * scoreHeight
-      : scoreTop + scoreHeight / 2;
+  // Better is always up. `direction` exists in the schema precisely so a metric
+  // where lower wins (an edit distance, an error rate) does not render its
+  // improvements as a downward slope; consulting it here is what makes the axis
+  // mean "better" rather than "larger".
+  const scoreDescends = record?.direction === "lower_is_better";
+  const scoreY = (value) => {
+    if (!band || band.high <= band.low) return scoreTop + scoreHeight / 2;
+    const fraction = (value - band.low) / (band.high - band.low);
+    const fromFloor = scoreDescends ? 1 - fraction : fraction;
+    return scoreTop + scoreHeight - fromFloor * scoreHeight;
+  };
   const advances = events.filter((event) => event.advances);
 
   const svg = svgElement("svg", {
@@ -2072,65 +2090,71 @@ function adoptionFrontierChart(entry, board, events) {
           `${record.saturation.best_value}.`
         : " No readable score for this benchmark."),
   });
-  const tickStep = Math.max(1, Math.ceil(maxOrganizations / 5));
-  const tickValues = new Set([0, maxOrganizations]);
-  for (let count = tickStep; count < maxOrganizations; count += tickStep) tickValues.add(count);
-  for (const count of [...tickValues].sort((a, b) => a - b)) {
-    const yPosition = y(count);
-    svg.append(
-      svgElement("line", {
-        x1: margin.left,
-        y1: yPosition,
-        x2: width - margin.right,
-        y2: yPosition,
-        class: "frontier-grid",
-      }),
-    );
-    svg.append(
-      svgElement(
-        "text",
-        { x: margin.left - 12, y: yPosition + 4, "text-anchor": "end", class: "frontier-tick" },
-        count,
-      ),
-    );
-  }
-
-  let path = `M ${x(startText)} ${y(0)}`;
-  for (const event of advances) {
-    path += ` H ${x(event.published)} V ${y(event.organizationCount)}`;
-  }
-  path += ` H ${x(endText)}`;
-  svg.append(svgElement("path", { d: path, class: "frontier-line" }));
-
-  for (const event of events) {
-    const advanceIndex = event.advances ? advances.indexOf(event) + 1 : null;
-    const group = svgElement("g", {
-      class: `frontier-point${event.advances ? " frontier-point-advance" : " frontier-point-repeat"}`,
-      tabindex: "0",
-      role: "img",
-      "aria-label": `${event.organization}, ${event.model}, ${formatDate(event.published, {
-        dateStyle: "medium",
-      })}${event.advances ? `, frontier step ${advanceIndex}` : ", repeat report"}`,
-    });
-    const pointX = x(event.published);
-    const pointY = y(event.organizationCount);
-    group.append(svgElement("circle", { cx: pointX, cy: pointY, r: event.advances ? 11 : 6 }));
-    if (advanceIndex) {
-      group.append(
+  // The adoption plot. Skipped entirely when its stepper is rendered separately:
+  // a step line with fewer than two advances says nothing a reader can use.
+  if (!sparse) {
+    const tickStep = Math.max(1, Math.ceil(maxOrganizations / 5));
+    const tickValues = new Set([0, maxOrganizations]);
+    for (let count = tickStep; count < maxOrganizations; count += tickStep) {
+      tickValues.add(count);
+    }
+    for (const count of [...tickValues].sort((a, b) => a - b)) {
+      const yPosition = y(count);
+      svg.append(
+        svgElement("line", {
+          x1: margin.left,
+          y1: yPosition,
+          x2: width - margin.right,
+          y2: yPosition,
+          class: "frontier-grid",
+        }),
+      );
+      svg.append(
         svgElement(
           "text",
-          {
-            x: pointX,
-            y: pointY + 4,
-            "text-anchor": "middle",
-            class: "frontier-point-number",
-          },
-          advanceIndex,
+          { x: margin.left - 12, y: yPosition + 4, "text-anchor": "end", class: "frontier-tick" },
+          count,
         ),
       );
     }
-    group.append(svgElement("title", {}, `${event.organization} · ${event.model}`));
-    svg.append(group);
+
+    let path = `M ${x(startText)} ${y(0)}`;
+    for (const event of advances) {
+      path += ` H ${x(event.published)} V ${y(event.organizationCount)}`;
+    }
+    path += ` H ${x(endText)}`;
+    svg.append(svgElement("path", { d: path, class: "frontier-line" }));
+
+    for (const event of events) {
+      const advanceIndex = event.advances ? advances.indexOf(event) + 1 : null;
+      const group = svgElement("g", {
+        class: `frontier-point${event.advances ? " frontier-point-advance" : " frontier-point-repeat"}`,
+        tabindex: "0",
+        role: "img",
+        "aria-label": `${event.organization}, ${event.model}, ${formatDate(event.published, {
+          dateStyle: "medium",
+        })}${event.advances ? `, frontier step ${advanceIndex}` : ", repeat report"}`,
+      });
+      const pointX = x(event.published);
+      const pointY = y(event.organizationCount);
+      group.append(svgElement("circle", { cx: pointX, cy: pointY, r: event.advances ? 11 : 6 }));
+      if (advanceIndex) {
+        group.append(
+          svgElement(
+            "text",
+            {
+              x: pointX,
+              y: pointY + 4,
+              "text-anchor": "middle",
+              class: "frontier-point-number",
+            },
+            advanceIndex,
+          ),
+        );
+      }
+      group.append(svgElement("title", {}, `${event.organization} · ${event.model}`));
+      svg.append(group);
+    }
   }
 
   if (record) {
@@ -2231,24 +2255,46 @@ function adoptionFrontierChart(entry, board, events) {
     // The reading gap. Scores in this corpus stop well before mentions do, and
     // an unmarked flat tail is exactly what invites "saturated" as the
     // explanation when "nothing newer could be read" is the actual one.
+    //
+    // Drawn on the plot floor, carrying no y-value. An earlier version put this
+    // line at the best-on-record height, which asserted that value at a date
+    // where nothing was recorded -- and on shipped data the best often predates
+    // the last observation (AIME, SWE-bench Verified, MMLU-Redux, IFEval), so it
+    // manufactured a flat tail out of missing data. That is the exact failure
+    // this marker exists to prevent, so the span is now purely horizontal: it
+    // says "no reading here", not "the reading stayed at N".
     const lastScoreX = x(record.last_reported_at);
     const endX = x(endText);
     if (endX - lastScoreX > 24) {
+      const floorY = scoreTop + scoreHeight;
       svg.append(
         svgElement("line", {
           x1: lastScoreX,
-          y1: scoreY(record.saturation.best_value),
+          y1: floorY,
           x2: endX,
-          y2: scoreY(record.saturation.best_value),
+          y2: floorY,
           class: "score-gap-line",
         }),
       );
+      // Ticks at both ends so the span reads as a bounded interval on the time
+      // axis rather than as a series that happens to sit at the floor.
+      for (const edge of [lastScoreX, endX]) {
+        svg.append(
+          svgElement("line", {
+            x1: edge,
+            y1: floorY - 5,
+            x2: edge,
+            y2: floorY + 5,
+            class: "score-gap-line",
+          }),
+        );
+      }
       svg.append(
         svgElement(
           "text",
           {
             x: (lastScoreX + endX) / 2,
-            y: scoreTop + scoreHeight + 16,
+            y: scoreTop + scoreHeight + 18,
             "text-anchor": "middle",
             class: "score-gap-label",
           },
@@ -2303,19 +2349,21 @@ function adoptionFrontierChart(entry, board, events) {
       ),
     );
   }
-  svg.append(
-    svgElement(
-      "text",
-      {
-        x: 15,
-        y: margin.top + plotHeight / 2,
-        transform: `rotate(-90 15 ${margin.top + plotHeight / 2})`,
-        "text-anchor": "middle",
-        class: "frontier-axis-label",
-      },
-      "organizations reporting",
-    ),
-  );
+  if (!sparse) {
+    svg.append(
+      svgElement(
+        "text",
+        {
+          x: 15,
+          y: margin.top + plotHeight / 2,
+          transform: `rotate(-90 15 ${margin.top + plotHeight / 2})`,
+          "text-anchor": "middle",
+          class: "frontier-axis-label",
+        },
+        "organizations reporting",
+      ),
+    );
+  }
   svg.append(
     svgElement(
       "text",
@@ -2380,10 +2428,15 @@ function renderAdoptionFrontier(board) {
     }),
     element("span", { className: "frontier-stage-description", text: stage.description }),
   ]);
+  // A single-advance adoption step line says nothing visually, which is why the
+  // sparse stepper replaces it. The score track is a separate reading though, so
+  // when one exists it is still drawn: dropping it would hide real data because a
+  // *different* layer was thin.
+  const sparse = frontier.length < 2;
+  const scored = Boolean(scoreRecord(entry.benchmark_id));
   replaceChildren(byId("frontier-chart"), [
-    frontier.length < 2
-      ? sparseFrontier(entry, events)
-      : adoptionFrontierChart(entry, board, events),
+    sparse ? sparseFrontier(entry, events) : null,
+    sparse && !scored ? null : adoptionFrontierChart(entry, board, events, { sparse }),
   ]);
   // Rendered for every benchmark, including those whose adoption is too sparse
   // to plot: the score reading is a separate question from the adoption reading,

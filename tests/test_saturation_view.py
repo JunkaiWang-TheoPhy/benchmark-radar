@@ -9,6 +9,9 @@ labelled as a reading gap rather than left to be read as a plateau.
 
 from pathlib import Path
 
+from benchmark_radar.benchmark_scores import DEFAULT_SCORES_PATH, build_score_progression
+from benchmark_radar.model_cards import DEFAULT_REGISTRY_PATH, load_registry
+
 
 def source(path: str) -> str:
     return Path(path).read_text(encoding="utf-8")
@@ -19,7 +22,7 @@ def test_both_readings_share_one_time_axis():
     # a reader compare adoption against score at a given date, which is the
     # comparison the issue asked for.
     script = source("site/assets/app.js")
-    chart = script.split("function adoptionFrontierChart(entry, board, events)", 1)[1].split(
+    chart = script.split("function adoptionFrontierChart(", 1)[1].split(
         "\nfunction clearAdoptionFrontier", 1
     )[0]
 
@@ -33,7 +36,7 @@ def test_the_score_layer_only_draws_lines_the_join_rule_permits():
     # Two values taken under unstated and possibly different conditions are not
     # a measurement of change, so an unconnectable series must draw no line.
     script = source("site/assets/app.js")
-    chart = script.split("function adoptionFrontierChart(entry, board, events)", 1)[1].split(
+    chart = script.split("function adoptionFrontierChart(", 1)[1].split(
         "\nfunction clearAdoptionFrontier", 1
     )[0]
 
@@ -70,6 +73,72 @@ def test_the_reading_gap_is_labelled_rather_than_drawn_through():
     assert "score-gap-line" in script
 
 
+def test_the_reading_gap_encodes_no_score_value():
+    # Codex P1. An earlier version drew this span at the best-on-record height,
+    # asserting that value at a date where nothing was recorded. On shipped data
+    # the best often predates the last observation (AIME, SWE-bench Verified,
+    # MMLU-Redux, IFEval), so it manufactured a flat tail out of missing data --
+    # the exact failure the marker exists to prevent. The span must be purely
+    # horizontal on the plot floor, carrying no y-value.
+    script = source("site/assets/app.js")
+    gap = script.split("const lastScoreX = x(record.last_reported_at);", 1)[1].split(
+        "no readable score in this window", 1
+    )[0]
+
+    assert "scoreY(" not in gap, "the gap span must not be positioned by any score value"
+    assert "const floorY = scoreTop + scoreHeight;" in gap
+
+
+def test_shipped_data_has_benchmarks_whose_best_predates_their_last_score():
+    # Guards the premise of the test above. If curation ever made every best the
+    # newest observation, the P1 geometry would stop being reachable and that test
+    # would silently become vacuous rather than protective.
+    progression = build_score_progression(DEFAULT_SCORES_PATH, load_registry(DEFAULT_REGISTRY_PATH))
+    stale_best = [
+        benchmark_id
+        for benchmark_id, record in progression["benchmarks"].items()
+        if record["saturation"]["best_reported_at"] < record["last_reported_at"]
+    ]
+    assert stale_best, "expected at least one benchmark whose best is not its newest reading"
+
+
+def test_better_is_up_even_when_lower_is_the_better_score():
+    # Codex P2. `direction` exists in the schema so an error-rate metric does not
+    # render its improvements as a downward slope. The renderer has to consult it.
+    script = source("site/assets/app.js")
+    chart = script.split("function adoptionFrontierChart(", 1)[1].split(
+        "\nfunction clearAdoptionFrontier", 1
+    )[0]
+
+    assert 'record?.direction === "lower_is_better"' in chart
+    assert "scoreDescends ? 1 - fraction : fraction" in chart
+
+
+def test_lower_is_better_headroom_is_described_against_zero():
+    # Codex P2. The backend measures headroom to zero for an inverted metric, so
+    # naming `bound` in both cases would print "10 points to the 100-point bound"
+    # for a score of 10.
+    script = source("site/assets/app.js")
+
+    assert "points to zero, the floor of this metric" in script
+
+
+def test_a_sparse_adoption_layer_does_not_hide_a_readable_score():
+    # Codex P2. The sparse stepper replaces a one-advance step line because that
+    # line says nothing visually. The score track is a separate reading, so
+    # dropping it would hide real data because a different layer was thin.
+    script = source("site/assets/app.js")
+    render = script.split("const sparse = frontier.length < 2;", 1)[1].split(
+        "renderScoreReadout(entry)", 1
+    )[0]
+
+    assert "scoreRecord(entry.benchmark_id)" in render
+    assert "sparse && !scored ? null : adoptionFrontierChart" in render
+    # And the chart collapses the empty adoption band rather than padding with it.
+    chart = script.split("function adoptionFrontierChart(", 1)[1]
+    assert "const plotHeight = sparse ? 0 : 370 - margin.top - margin.bottom;" in chart
+
+
 def test_the_score_axis_says_it_is_zoomed():
     # Every value in this corpus sits in the upper part of its scale, so the
     # band is padded around the observed range instead of running 0-100. A
@@ -88,7 +157,7 @@ def test_a_benchmark_with_no_readable_score_says_so_instead_of_plotting_zero():
     )[0]
     assert "not a zero and not a plateau" in readout
     # And the chart reserves no empty band for it, which would read as a drop.
-    chart = script.split("function adoptionFrontierChart(entry, board, events)", 1)[1]
+    chart = script.split("function adoptionFrontierChart(", 1)[1]
     assert "const scoreHeight = record ? 132 : 0;" in chart
 
 
