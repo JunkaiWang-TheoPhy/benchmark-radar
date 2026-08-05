@@ -76,6 +76,10 @@ benchmarks:
     metric: accuracy
     direction: higher_is_better
     unit: percent
+  - benchmark_id: mmmlu
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
   - benchmark_id: gpqa_diamond
     metric: accuracy
     direction: higher_is_better
@@ -389,11 +393,12 @@ results:
     value: 84.0
     read_from: pdf_text
 
-  # The source states GPQA is sampled with k=4 and Pass@1 computed as the
-  # average, so this is not a single-run figure.
+  # The source states GPQA is sampled with k=64 and Pass@1 computed as the
+  # average, so this is not a single-run figure. Sampling uses temperature 0.6,
+  # top-p 0.95, and a maximum generation length of 32,768 tokens.
   - benchmark_id: gpqa_diamond
     instrument: gpqa_diamond
-    protocol: Pass@1, averaged over k=4 samples
+    protocol: Pass@1, averaged over k=64 samples, temperature 0.6, top-p 0.95, 32K output limit
     model: DeepSeek-R1
     organization: DeepSeek
     source_id: deepseek_r1_report
@@ -838,42 +843,42 @@ results:
 
   - benchmark_id: gpqa_diamond
     instrument: gpqa_diamond
-    protocol: extended thinking up to 64K tokens
+    protocol: extended thinking up to 64K tokens, no parallel test-time compute
     model: Claude Opus 4
     organization: Anthropic
     source_id: anthropic_claude_4_system_card
     reported_at: 2025-05-22
-    value: 75.9
+    value: 79.6
     read_from: html_text
 
   - benchmark_id: gpqa_diamond
     instrument: gpqa_diamond
-    protocol: extended thinking up to 64K tokens
+    protocol: extended thinking up to 64K tokens, no parallel test-time compute
     model: Claude Sonnet 4
     organization: Anthropic
     source_id: anthropic_claude_4_system_card
     reported_at: 2025-05-22
-    value: 71.5
+    value: 75.4
     read_from: html_text
 
-  - benchmark_id: mmlu
-    instrument: mmlu
-    protocol: extended thinking up to 64K tokens
+  - benchmark_id: mmmlu
+    instrument: mmmlu_14_non_english_languages
+    protocol: 14 non-English languages, extended thinking up to 64K tokens
     model: Claude Opus 4
     organization: Anthropic
     source_id: anthropic_claude_4_system_card
     reported_at: 2025-05-22
-    value: 88.3
+    value: 88.8
     read_from: html_text
 
-  - benchmark_id: mmlu
-    instrument: mmlu
-    protocol: extended thinking up to 64K tokens
+  - benchmark_id: mmmlu
+    instrument: mmmlu_14_non_english_languages
+    protocol: 14 non-English languages, extended thinking up to 64K tokens
     model: Claude Sonnet 4
     organization: Anthropic
     source_id: anthropic_claude_4_system_card
     reported_at: 2025-05-22
-    value: 85.8
+    value: 86.5
     read_from: html_text
 
   - benchmark_id: mmmu
@@ -883,7 +888,7 @@ results:
     organization: Anthropic
     source_id: anthropic_claude_4_system_card
     reported_at: 2025-05-22
-    value: 74.8
+    value: 76.5
     read_from: html_text
 
   - benchmark_id: mmmu
@@ -893,27 +898,27 @@ results:
     organization: Anthropic
     source_id: anthropic_claude_4_system_card
     reported_at: 2025-05-22
-    value: 72.9
+    value: 74.4
     read_from: html_text
 
   - benchmark_id: aime
-    instrument: aime
-    protocol: extended thinking up to 64K tokens
+    instrument: aime_2025
+    protocol: extended thinking up to 64K tokens, top-p 0.95, no parallel test-time compute
     model: Claude Opus 4
     organization: Anthropic
     source_id: anthropic_claude_4_system_card
     reported_at: 2025-05-22
-    value: 39.4
+    value: 75.5
     read_from: html_text
 
   - benchmark_id: aime
-    instrument: aime
-    protocol: extended thinking up to 64K tokens
+    instrument: aime_2025
+    protocol: extended thinking up to 64K tokens, top-p 0.95, no parallel test-time compute
     model: Claude Sonnet 4
     organization: Anthropic
     source_id: anthropic_claude_4_system_card
     reported_at: 2025-05-22
-    value: 33.1
+    value: 70.5
     read_from: html_text
 
   # ---------------------------------------------------------------------------
@@ -924,8 +929,8 @@ results:
   # ---------------------------------------------------------------------------
 
   - benchmark_id: swe_bench_verified
-    instrument: swe_bench_verified
-    protocol: pass@1
+    instrument: swe_bench_verified_anthropic_489
+    protocol: vanilla pass@1, 489-task infrastructure-compatible subset
     model: Claude 3.7 Sonnet
     organization: Anthropic
     source_id: anthropic_claude_3_7_sonnet
@@ -934,8 +939,8 @@ results:
     read_from: html_text
 
   - benchmark_id: swe_bench_verified
-    instrument: swe_bench_verified
-    protocol: high compute
+    instrument: swe_bench_verified_anthropic_489
+    protocol: parallel attempts plus internal ranker, 489-task infrastructure-compatible subset
     model: Claude 3.7 Sonnet
     organization: Anthropic
     source_id: anthropic_claude_3_7_sonnet

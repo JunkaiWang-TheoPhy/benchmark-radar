@@ -917,7 +917,7 @@ model_cards:
     model: Claude Opus 4 and Sonnet 4
     document_type: system_card
     published: 2025-05-22
-    url: https://www.anthropic.com/claude-4
+    url: https://www.anthropic.com/news/claude-4
     retrieved_at: 2026-08-02
     benchmarks:
       - swe_bench_verified
@@ -926,7 +926,7 @@ model_cards:
       - aime
       - mmmu
       - tau_bench
-      - mmlu
+      - mmmlu
       - mrcr
 
   - id: anthropic_claude_3_7_sonnet
