@@ -2251,27 +2251,35 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
         class: "card-rug-baseline",
       }),
     );
-    // Cards sharing a publication date are fanned apart by a fixed offset. Using
-    // x(date) alone gave them identical coordinates, so they overpainted: the
-    // visible tick count came out short and only the last one drawn was
-    // hoverable. Seven shipped benchmarks have a same-day pair (2026-02-11), so
-    // this is the common case, not an edge one -- and "cards on one date stay
-    // visible" is the rug's entire reason for existing.
-    const sameDateCounts = new Map();
+    // Tick positions are allocated across every card at once, not per date. Two
+    // earlier versions were wrong in the same way at different scales: x(date)
+    // alone overpainted cards sharing a date, and fanning each date independently
+    // then pushed those ticks into a *neighbouring* date's -- on shipped GPQA
+    // Diamond at the narrow viewBox a fanned 2026-02-11 tick landed 0.04 units
+    // from the 2026-02-16 tick, inside a 2.5-unit stroke, so one still vanished
+    // and swallowed the other's hover target. One-day-apart pairs collided at
+    // desktop width too.
+    //
+    // So this is a single left-to-right sweep that keeps every tick at least a
+    // stroke-width apart, then shifts the whole run back by half its total drift
+    // to keep the group centred on the dates it represents. Ticks stay in date
+    // order and no two can occupy the same pixel, which is the guarantee the rug
+    // exists to make; a tick may sit a fraction of a unit off its exact date, and
+    // that is the honest trade, since a hidden card is a lost observation while a
+    // 3px nudge is not.
+    const MIN_TICK_GAP = 3.5;
+    const positions = [];
+    let previous = -Infinity;
     for (const event of events) {
-      sameDateCounts.set(event.published, (sameDateCounts.get(event.published) || 0) + 1);
+      const ideal = x(event.published);
+      const placed = Math.max(ideal, previous + MIN_TICK_GAP);
+      positions.push(placed);
+      previous = placed;
     }
-    const sameDateSeen = new Map();
-    for (const event of events) {
-      const total = sameDateCounts.get(event.published);
-      const index = sameDateSeen.get(event.published) || 0;
-      sameDateSeen.set(event.published, index + 1);
-      // Centred on the true date so the group still reads at the right position:
-      // two cards straddle it rather than one hiding the other. The offset exceeds
-      // the tick's own stroke width, or the pair would abut into what looks like a
-      // single thick tick and defeat the point.
-      const spread = 4.5;
-      const tickX = x(event.published) + (total > 1 ? (index - (total - 1) / 2) * spread : 0);
+    const drift = positions.length ? positions[positions.length - 1] - x(events[events.length - 1].published) : 0;
+    const shift = drift / 2;
+    for (const [index, event] of events.entries()) {
+      const tickX = positions[index] - shift;
       const group = svgElement("g", {
         class: `card-rug-tick${event.advances ? " card-rug-tick-first" : " card-rug-tick-repeat"}`,
         tabindex: "0",

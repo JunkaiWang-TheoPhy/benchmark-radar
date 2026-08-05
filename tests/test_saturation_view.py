@@ -274,15 +274,22 @@ def test_the_chart_does_not_collapse_on_a_narrow_viewport():
     assert "if (isNarrow === wasNarrow) return;" in script
 
 
-def test_same_date_cards_do_not_overpaint_in_the_rug():
-    # Codex P1. x(date) alone gave every card on one date an identical coordinate,
-    # so they overpainted: the visible tick count came out short and only the last
-    # drawn was hoverable. Seven shipped benchmarks have a same-day pair, and
-    # "cards on one date stay visible" is the rug's whole reason for existing.
+def test_rug_ticks_never_overpaint_each_other():
+    # Codex P1, twice. Two earlier versions were wrong the same way at different
+    # scales: x(date) alone overpainted cards sharing a date, and fanning each date
+    # independently then pushed those ticks into a *neighbouring* date's -- 0.04
+    # units apart on shipped GPQA Diamond at the narrow viewBox, inside a 2.5-unit
+    # stroke. Positions are therefore allocated across every card at once.
     script = source("site/assets/app.js")
-    rug = script.split("const sameDateCounts = new Map();", 1)[1].split("\n  }", 1)[0]
+    rug = script.split("const MIN_TICK_GAP", 1)[1].split("\n  }", 1)[0]
 
-    assert "(index - (total - 1) / 2) * spread" in rug
+    # A single sweep enforcing a minimum gap, not a per-date fan.
+    assert "Math.max(ideal, previous + MIN_TICK_GAP)" in rug
+    # Recentred afterwards so the run still sits on the dates it represents.
+    assert "const shift = drift / 2;" in rug
+    # The gap has to exceed the widest tick stroke (2.5) or ticks still touch.
+    gap = float(script.split("const MIN_TICK_GAP = ", 1)[1].split(";", 1)[0])
+    assert gap > 2.5, "the minimum gap must exceed the tick stroke width"
 
 
 def test_the_zoom_marker_survives_a_narrow_viewport():
