@@ -536,14 +536,30 @@ def _curated_layers(
     registry = load_registry(registry_file) if registry_file.exists() else None
     leaderboard = adoption_rank(registry) if registry else None
 
-    scores_file = scores_path or DEFAULT_SCORES_PATH
+    # The two curated files are a matched pair: every score cites a `source_id`
+    # that must be a document in the registry beside it. Defaulting the score
+    # file under a *custom* registry therefore pairs scores with a registry that
+    # was never meant to hold them, and the provenance cross-check correctly
+    # rejects it -- which broke `--model-cards` for every alternate registry that
+    # does not happen to contain all nine default score sources.
+    #
+    # So the default score file is only assumed when the registry is also the
+    # default one. A caller supplying a custom registry opts into scores
+    # explicitly via `--benchmark-scores`, and gets a working adoption-only
+    # rebuild otherwise.
+    # Compared by path, not against None: the CLI always supplies a
+    # `--model-cards` value (it has a default), so "the caller passed nothing"
+    # and "the caller passed the default" have to be treated alike here.
+    scores_file = scores_path
+    if scores_file is None and registry_file == DEFAULT_REGISTRY_PATH:
+        scores_file = DEFAULT_SCORES_PATH
     # The score layer cites `source_id`s that must exist in the registry, so it
     # is only built when the registry it cites is present. Publishing scores
     # whose provenance cannot be checked would break the one promise this
     # dataset makes about itself.
     progression = (
         score_progression(load_scores(scores_file), registry)
-        if scores_file.exists() and registry
+        if scores_file is not None and scores_file.exists() and registry
         else None
     )
 

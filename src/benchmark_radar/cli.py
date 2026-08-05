@@ -88,6 +88,19 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--benchmark-scores",
+        type=Path,
+        default=None,
+        help=(
+            "Curated score observations powering the saturation reading (issue "
+            "#91). Every row cites a source_id that must be a document in the "
+            "registry beside it, so the two files are a matched pair: this "
+            "defaults to data/benchmark_scores.yml only when --model-cards is "
+            "also the default. Pass it explicitly to pair scores with a custom "
+            "registry; omit it there for an adoption-only rebuild."
+        ),
+    )
+    parser.add_argument(
         "--export-dir",
         type=Path,
         default=Path("site/data"),
@@ -123,6 +136,7 @@ def main() -> None:
             args.snapshot_dir,
             args.dashboard_output,
             registry_path=args.model_cards,
+            scores_path=args.benchmark_scores,
         )
         action = "Backfilled" if args.command == "backfill" else "Rebuilt"
         print(f"{action} {args.dashboard_output} from {data['snapshot_count']} daily snapshots")
@@ -186,6 +200,7 @@ def main() -> None:
             args.snapshot_dir,
             args.dashboard_output,
             registry_path=args.model_cards,
+            scores_path=args.benchmark_scores,
         )
         print(
             f"Simulated {len(written)} historical snapshots with coverage "
@@ -200,6 +215,7 @@ def main() -> None:
             args.snapshot_dir,
             args.dashboard_output,
             registry_path=args.model_cards,
+            scores_path=args.benchmark_scores,
         )
         print(
             f"Rescored {summary['snapshots']} snapshots against taxonomy "
@@ -224,6 +240,7 @@ def main() -> None:
             args.snapshot_dir,
             args.dashboard_output,
             registry_path=args.model_cards,
+            scores_path=args.benchmark_scores,
         )
         print(
             f"Migrated {len(snapshots)} snapshots to schema {dashboard['schema_version']} "
@@ -275,6 +292,7 @@ def main() -> None:
         args.snapshot_dir,
         args.dashboard_output,
         registry_path=args.model_cards,
+        scores_path=args.benchmark_scores,
     )
     print(
         f"Wrote {len(run.items)} items, snapshot {snapshot_path}, and dashboard data "

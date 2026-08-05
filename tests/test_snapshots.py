@@ -756,6 +756,54 @@ def test_dashboard_fails_rather_than_publishing_a_stale_ranking(tmp_path):
         rebuild_dashboard(snapshot_dir, tmp_path / "radar.json", registry_path=broken)
 
 
+def test_a_custom_registry_does_not_inherit_the_default_score_file(tmp_path):
+    # Codex P2. The two curated files are a matched pair: every score cites a
+    # source_id that must be a document in the registry beside it. Defaulting the
+    # score file under a custom registry paired them with a registry never meant
+    # to hold them, so the provenance cross-check correctly refused and every
+    # `--model-cards` rebuild against an alternate registry failed.
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(26), snapshot_dir)
+    registry = tmp_path / "cards.yml"
+    registry.write_text(
+        "schema_version: 1\n"
+        "benchmarks:\n"
+        "  - id: alpha\n"
+        "    name: Alpha\n"
+        "    domain: math\n"
+        "    caveat: Test caveat.\n"
+        "model_cards:\n"
+        "  - id: some_card\n"
+        "    organization: Org\n"
+        "    model: M\n"
+        "    url: https://example.com/card\n"
+        "    published: '2025-01-01'\n"
+        "    benchmarks: [alpha]\n",
+        encoding="utf-8",
+    )
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json", registry_path=registry)
+
+    # The adoption ranking still builds; the score layer is simply absent rather
+    # than crashing the run or being cited to the wrong documents.
+    assert data["model_card_leaderboard"] is not None
+    assert data["benchmark_score_progression"] is None
+    assert data["benchmark_insights"] is None
+
+
+def test_the_default_registry_still_carries_the_default_scores(tmp_path):
+    # The other half of the pairing rule: omitting both paths must still publish
+    # all three layers, or the shipped dashboard would silently lose its scores.
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(26), snapshot_dir)
+
+    data = rebuild_dashboard(snapshot_dir, tmp_path / "radar.json")
+
+    assert data["model_card_leaderboard"] is not None
+    assert data["benchmark_score_progression"] is not None
+    assert data["benchmark_insights"] is not None
+
+
 def test_taxonomy_version_tracks_content_not_a_hand_bumped_constant():
     from benchmark_radar.rubric import taxonomy_version
 
