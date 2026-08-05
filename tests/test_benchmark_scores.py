@@ -78,6 +78,61 @@ def test_load_scores_rejects_a_percent_outside_its_own_range(tmp_path):
         load_scores(path)
 
 
+def test_load_scores_rejects_a_non_finite_value(tmp_path):
+    # Codex P2. YAML's `.nan` and `.inf` parse as floats, and NaN fails every
+    # range comparison silently rather than tripping the percent check. Either
+    # would reach json.dumps as the bare tokens NaN / Infinity, which are not
+    # valid JSON: the browser's response.json() rejects the file and the
+    # dashboard's init catch then hides every view. One value takes the site down.
+    # Written as real float values so PyYAML emits the bare `.nan` / `.inf`
+    # tokens: a quoted string would be caught by float() instead, which is a
+    # different code path from the one under test.
+    for value in (float("nan"), float("inf"), float("-inf")):
+        document = minimal_scores(results=[result(value=value)])
+        # An unbounded unit, so the percent range check cannot be what catches it.
+        document["benchmarks"][0]["unit"] = "elo"
+        path = write_scores(tmp_path, document)
+        assert ".nan" in path.read_text() or ".inf" in path.read_text()
+        with pytest.raises(BenchmarkScoreError, match="must be a finite number"):
+            load_scores(path)
+
+
+def test_the_published_payload_contains_no_non_finite_tokens():
+    # The end-to-end consequence: radar.json has to be parseable by the browser.
+    import json
+
+    progression = build_score_progression(DEFAULT_SCORES_PATH, load_registry(DEFAULT_REGISTRY_PATH))
+    encoded = json.dumps(progression)
+    assert "NaN" not in encoded
+    assert "Infinity" not in encoded
+
+
+def test_a_gain_endpoint_does_not_depend_on_a_model_name(tmp_path):
+    # Codex P2. `points` is ordered by (date, organization, model), so when a date
+    # carries several models the endpoint fell out lexically: renaming a model
+    # could change `improvement` while every value and date stayed identical.
+    # The policy is the best value on each endpoint date.
+    def gain_for(late_model_name: str) -> float:
+        path = write_scores(
+            tmp_path,
+            minimal_scores(
+                results=[
+                    result(model="Start", reported_at="2025-01-01", value=40.0),
+                    # Two models share the closing date; the stronger one is the
+                    # endpoint regardless of how either is named.
+                    result(model="Zeta", reported_at="2025-02-01", value=90.0),
+                    result(model=late_model_name, reported_at="2025-02-01", value=50.0),
+                ]
+            ),
+        )
+        record = score_progression(load_scores(path))["benchmarks"]["alpha"]
+        return record["saturation"]["best_gain"]["improvement"]
+
+    # "Alpha" sorts before "Zeta" and "Zzz" sorts after, so a name-ordered
+    # endpoint would return two different gains here.
+    assert gain_for("Alpha") == gain_for("Zzz") == 50.0
+
+
 def test_load_scores_rejects_a_date_the_browser_cannot_format(tmp_path):
     # These strings reach Intl.DateTimeFormat, which throws on an unparseable
     # value and takes every view on the page down with it.

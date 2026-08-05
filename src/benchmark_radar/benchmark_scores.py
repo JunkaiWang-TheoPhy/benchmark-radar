@@ -51,6 +51,7 @@ actual one.
 
 from __future__ import annotations
 
+import math
 import re
 from collections import defaultdict
 from datetime import date
@@ -191,6 +192,14 @@ def load_scores(path: Path = DEFAULT_SCORES_PATH) -> dict[str, Any]:
             value = float(result["value"])
         except (TypeError, ValueError) as error:
             raise BenchmarkScoreError(f"{label} value must be a number") from error
+        # YAML's `.nan` and `.inf` parse as floats, and NaN fails every range
+        # comparison silently rather than tripping the percent check below. Either
+        # would reach `json.dumps` as the bare tokens `NaN` / `Infinity`, which are
+        # not valid JSON: the browser's `response.json()` rejects the file and the
+        # dashboard's init catch then hides *every* view. One unusable value would
+        # take the whole site down, so it is refused here.
+        if not math.isfinite(value):
+            raise BenchmarkScoreError(f"{label} value must be a finite number")
         unit = metrics[benchmark_id]["unit"]
         # A percent outside 0-100 is a transcription error, and it is worth
         # catching here rather than on the axis: a 964 would rescale the whole
@@ -278,6 +287,11 @@ def _cross_check_sources(scores: dict[str, Any], registry: dict[str, Any]) -> No
             "score rows cite documents that do not report the benchmark they score: "
             f"{', '.join(dict.fromkeys(mismatched))}"
         )
+
+
+def _rows_on(rows: list[dict[str, Any]], reported_at: str) -> list[dict[str, Any]]:
+    """The rows sharing one date, for picking a series endpoint by value."""
+    return [row for row in rows if row["reported_at"] == reported_at]
 
 
 def _best_row(rows: list[dict[str, Any]], direction: str) -> dict[str, Any]:
@@ -448,8 +462,16 @@ def _saturation(
     for item in series:
         if not item["connectable"]:
             continue
-        first = item["points"][0]
-        last = item["points"][-1]
+        # Endpoints are chosen by a stated policy, not by list position. `points`
+        # is ordered by (date, organization, model), so when a date carries more
+        # than one model -- a document comparing several at once -- the endpoint
+        # fell out lexically: renaming a model could change `improvement` and
+        # trigger or suppress a `fast_gain` finding while every value and date
+        # stayed identical. The policy is the best value on each endpoint date,
+        # which is reproducible from the data alone and is the reading a
+        # progression is asking for.
+        first = _best_row(_rows_on(item["points"], item["first_reported_at"]), direction)
+        last = _best_row(_rows_on(item["points"], item["last_reported_at"]), direction)
         delta = last["value"] - first["value"]
         if direction == "lower_is_better":
             delta = -delta
