@@ -415,8 +415,7 @@ def _score_and_select(
     recommendation_score = float(settings["minimum_score"])
     if not math.isfinite(recommendation_score):
         raise ValueError(
-            f"minimum_score must be a finite recommendation threshold, "
-            f"got {recommendation_score!r}"
+            f"minimum_score must be a finite recommendation threshold, got {recommendation_score!r}"
         )
     unique = deduplicate(items)
     scored = apply_watchlist(
@@ -465,9 +464,7 @@ def _score_and_select(
     uncategorized = sum(
         1
         for item in scored
-        if not item.suppression_reasons
-        and not item.watchlist
-        and not item.categories
+        if not item.suppression_reasons and not item.watchlist and not item.categories
     )
     recommended = sum(1 for item in selected if item.recommended)
     selection = {
@@ -484,9 +481,7 @@ def _score_and_select(
         # before score stopped participating in eligibility.
         "qualified": len(selected),
         # Retained purely by a watchlist match rather than taxonomy.
-        "watchlisted": sum(
-            1 for item in selected if item.watchlist and not item.categories
-        ),
+        "watchlisted": sum(1 for item in selected if item.watchlist and not item.categories),
         # Suppression now applies to watchlisted records too, so the count is
         # every suppressed record rather than only the un-watchlisted ones.
         "suppressed_low_value": suppressed_low_value,

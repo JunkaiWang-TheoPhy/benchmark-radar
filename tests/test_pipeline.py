@@ -1185,8 +1185,7 @@ def test_the_funnel_reconciles_when_nothing_is_eligible():
 
     assert selection["eligible"] == 0
     assert (
-        selection["suppressed_low_value"]
-        + selection["suppressed_uncategorized"]
+        selection["suppressed_low_value"] + selection["suppressed_uncategorized"]
         == selection["scored"]
     )
 

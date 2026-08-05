@@ -115,9 +115,7 @@ def _validate_evidence_items(items: Any, *, source: str) -> None:
                 f"{source}: evidence item {index} must not expose raw source payloads"
             )
         if "recommended" in item and not isinstance(item["recommended"], bool):
-            raise SnapshotError(
-                f"{source}: evidence item {index} recommended must be a boolean"
-            )
+            raise SnapshotError(f"{source}: evidence item {index} recommended must be a boolean")
         item_missing = sorted(item_fields - item.keys())
         if item_missing:
             raise SnapshotError(

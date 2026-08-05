@@ -100,9 +100,7 @@ def test_current_day_snapshot_recomputes_badges_when_the_threshold_changes():
 
     merged = current_day_snapshot([snapshot_for_run(morning_run)], afternoon_run)
 
-    recommended = {
-        item["source_id"]: item["recommended"] for item in merged["evidence_items"]
-    }
+    recommended = {item["source_id"]: item["recommended"] for item in merged["evidence_items"]}
     assert recommended == {"org/repo-1": False, "org/repo-2": True}
     assert merged["selection"]["recommendation_score"] == 50
 
