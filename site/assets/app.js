@@ -6,6 +6,7 @@ const CATEGORY_COLORS = {
   agentic: "#756aa8",
 };
 const FALLBACK_COLORS = ["#756aa8", "#397f9a", "#a4576d", "#70833d"];
+const ALL_DATES_PAGE_SIZE = 100;
 
 const byId = (id) => document.getElementById(id);
 const state = {
@@ -29,7 +30,10 @@ const state = {
   lorg: "",
   lera: "",
   lfrontier: "",
+  lfrontierExplicit: false,
   leaderboardShowAll: false,
+  todayResultsKey: "",
+  todayResultsLimit: ALL_DATES_PAGE_SIZE,
 };
 
 function element(tag, options = {}, children = []) {
@@ -113,13 +117,16 @@ function readUrl() {
   state.lorg = params.get("lorg") || "";
   state.lera = params.get("lera") || "";
   state.lfrontier = params.get("lfrontier") || "";
+  state.lfrontierExplicit = Boolean(state.lfrontier);
   state.rubric = new URLSearchParams(window.location.hash.slice(1)).get("rubric") || "";
 }
 
 function writeUrl() {
   const params = new URLSearchParams();
   if (state.view !== "today") params.set("view", state.view);
-  if (state.todayDate && state.todayDate !== state.data?.latest_date) {
+  if (state.todayDate === "all") {
+    params.set("date", "all");
+  } else if (state.todayDate && state.todayDate !== state.data?.latest_date) {
     params.set("date", state.todayDate);
   }
   if (state.q) params.set("q", state.q);
@@ -133,7 +140,9 @@ function writeUrl() {
   if (state.ldomain) params.set("ldomain", state.ldomain);
   if (state.lorg) params.set("lorg", state.lorg);
   if (state.lera) params.set("lera", state.lera);
-  if (state.lfrontier) params.set("lfrontier", state.lfrontier);
+  if (state.lfrontierExplicit && state.lfrontier) {
+    params.set("lfrontier", state.lfrontier);
+  }
   const query = params.toString();
   // The rubric dialog is a hashtag, not a query param, so a shared link like
   // #rubric=2 reads as "jump to this section" rather than another filter.
@@ -160,6 +169,11 @@ function setView(view, update = true) {
     }
   });
   if (update) writeUrl();
+}
+
+function selectFrontier(benchmarkId) {
+  state.lfrontier = benchmarkId;
+  state.lfrontierExplicit = true;
 }
 
 function categoryColor(category, index = 0) {
@@ -270,15 +284,43 @@ function renderDailyBriefing(day) {
 }
 
 function renderToday() {
-  const day = dailySnapshot();
+  const showingAllDates = state.todayDate === "all";
+  const day = dailySnapshot(showingAllDates ? state.data.latest_date : state.todayDate);
   if (!day) return;
-  state.todayDate = day.date;
-  byId("today-date").value = day.date;
+  byId("today-date").value = state.todayDate;
+
+  // The briefing and connector health describe one scan, not an archive-wide
+  // result set. Hiding them in All dates mode keeps latest-day context from
+  // appearing to explain observations collected across the full history.
+  byId("daily-briefing").hidden = showingAllDates;
+  byId("source-health-panel").hidden = showingAllDates;
 
   renderDailyBriefing(day);
 
   syncFilters();
   const observations = filteredObservations();
+  const resultsKey = [
+    state.todayDate,
+    state.q,
+    state.kind,
+    state.category,
+    state.source,
+    state.organization,
+    state.event,
+  ].join("\u0000");
+  if (resultsKey !== state.todayResultsKey) {
+    state.todayResultsKey = resultsKey;
+    state.todayResultsLimit = ALL_DATES_PAGE_SIZE;
+  }
+  const visibleObservations = showingAllDates
+    ? observations.slice(0, state.todayResultsLimit)
+    : observations;
+  const remainingResults = observations.length - visibleObservations.length;
+  const showMore = byId("today-show-more");
+  showMore.hidden = remainingResults <= 0;
+  showMore.textContent = remainingResults > 0
+    ? `Show ${Math.min(ALL_DATES_PAGE_SIZE, remainingResults)} more · ${remainingResults} remaining`
+    : "Show more results";
   const evidenceCount = observations.filter(
     (item) => item.observation_kind === "evidence",
   ).length;
@@ -288,8 +330,8 @@ function renderToday() {
     `${evidenceCount} evidence · ${attentionCount} attention`;
   replaceChildren(
     byId("today-list"),
-    observations.length
-      ? observations.map(observationCard)
+    visibleObservations.length
+      ? visibleObservations.map(observationCard)
       : [
           element("p", {
             className: "empty-state",
@@ -955,7 +997,7 @@ function filteredObservations() {
   return allObservations().filter((item) => {
     const haystack = `${item.title} ${item.summary} ${item.source}`.toLowerCase();
     return (
-      item.snapshot_date === state.todayDate &&
+      (state.todayDate === "all" || item.snapshot_date === state.todayDate) &&
       (!state.kind || item.observation_kind === state.kind) &&
       (!state.category || (item.categories || []).includes(state.category)) &&
       (!state.source || item.source === state.source) &&
@@ -1765,7 +1807,7 @@ function renderBenchmarkNavigator(board) {
               }),
             ]);
             button.addEventListener("click", () => {
-              state.lfrontier = entry.benchmark_id;
+              selectFrontier(entry.benchmark_id);
               renderAdoptionFrontier(board);
               writeUrl();
             });
@@ -2639,6 +2681,7 @@ function renderAdoptionFrontier(board) {
   }
   if (!adopted.some((entry) => entry.benchmark_id === state.lfrontier)) {
     state.lfrontier = defaultEntry.benchmark_id;
+    state.lfrontierExplicit = false;
   }
   replaceChildren(byId("frontier-benchmark"), [
     ...[...adopted]
@@ -2758,7 +2801,7 @@ function findingCard(finding, board) {
       attrs: { type: "button" },
     });
     jump.addEventListener("click", () => {
-      state.lfrontier = target.benchmark_id;
+      selectFrontier(target.benchmark_id);
       renderAdoptionFrontier(board);
       writeUrl();
       byId("adoption-frontier").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2894,7 +2937,7 @@ function leaderboardRow(entry) {
     attrs: { type: "button" },
   });
   frontierButton.addEventListener("click", () => {
-    state.lfrontier = entry.benchmark_id;
+    selectFrontier(entry.benchmark_id);
     renderAdoptionFrontier(board);
     writeUrl();
     byId("adoption-frontier").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -3385,12 +3428,16 @@ function bindEvents() {
     byId("leaderboard-table-heading").scrollIntoView({ behavior: "smooth", block: "start" });
   });
   byId("frontier-benchmark").addEventListener("change", (event) => {
-    state.lfrontier = event.target.value;
+    selectFrontier(event.target.value);
     renderAdoptionFrontier(state.data.model_card_leaderboard);
     writeUrl();
   });
   byId("today-date").addEventListener("change", (event) => {
     state.todayDate = event.target.value;
+    renderToday();
+  });
+  byId("today-show-more").addEventListener("click", () => {
+    state.todayResultsLimit += ALL_DATES_PAGE_SIZE;
     renderToday();
   });
   byId("trend-released-only").addEventListener("change", (event) => {
@@ -3444,6 +3491,7 @@ function bindEvents() {
     form.addEventListener("submit", (event) => event.preventDefault());
   });
   byId("clear-filters").addEventListener("click", () => {
+    state.todayDate = "all";
     state.q = "";
     state.kind = "";
     state.category = "";
@@ -3568,16 +3616,17 @@ async function initialize() {
     ) {
       throw new Error("No compatible snapshots");
     }
-    if (!state.data.facets.dates.includes(state.todayDate)) {
+    if (state.todayDate !== "all" && !state.data.facets.dates.includes(state.todayDate)) {
       state.todayDate = state.data.latest_date;
     }
     replaceChildren(
       byId("today-date"),
-      [...state.data.facets.dates]
-        .reverse()
-        .map((date) =>
+      [
+        option("all", "All dates", state.todayDate === "all"),
+        ...[...state.data.facets.dates].reverse().map((date) =>
           option(date, formatDate(date, { dateStyle: "medium" }), date === state.todayDate),
         ),
+      ],
     );
     renderToday();
     renderLeaderboard();

@@ -65,6 +65,32 @@ def test_scan_date_select_is_not_reset_by_the_shared_filters_input_handler():
     assert "return" in handler_body
 
 
+def test_scan_date_can_be_reset_to_all_dates():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    html = Path("site/index.html").read_text(encoding="utf-8")
+
+    assert 'option("all", "All dates", state.todayDate === "all")' in script
+    assert 'state.todayDate === "all" || item.snapshot_date === state.todayDate' in script
+    assert 'state.todayDate = "all";' in script
+    assert 'params.set("date", "all")' in script
+    assert 'id="today-show-more"' in html
+    assert 'id="source-health-panel"' in html
+    assert "observations.slice(0, state.todayResultsLimit)" in script
+    assert "state.todayResultsLimit += ALL_DATES_PAGE_SIZE" in script
+    assert 'byId("daily-briefing").hidden = showingAllDates' in script
+    assert 'byId("source-health-panel").hidden = showingAllDates' in script
+
+
+def test_automatic_frontier_default_does_not_leak_into_unrelated_urls():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert "lfrontierExplicit: false" in script
+    assert "state.lfrontierExplicit = Boolean(state.lfrontier)" in script
+    assert "if (state.lfrontierExplicit && state.lfrontier)" in script
+    assert "state.lfrontierExplicit = false" in script
+    assert "function selectFrontier(benchmarkId)" in script
+
+
 def test_rubric_dialog_is_linkable_by_url_hash():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
@@ -111,7 +137,7 @@ def test_today_view_has_one_filterable_observation_list_and_one_source_status():
     assert 'id="today-list"' in html
     assert 'id="filters"' in html
     assert 'id="kind-filter"' in html
-    assert "observations.map(observationCard)" in script
+    assert "visibleObservations.map(observationCard)" in script
     assert "Daily field note" not in html
     assert "What entered the field?" not in html
     assert "today-overview" not in html

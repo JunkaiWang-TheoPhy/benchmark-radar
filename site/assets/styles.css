@@ -2704,6 +2704,11 @@ dialog::backdrop {
   text-transform: uppercase;
 }
 
+.today-show-more {
+  margin-top: 1.5rem;
+  background: transparent;
+}
+
 .stale-banner {
   margin: 0;
   padding: 0.6rem 0;
