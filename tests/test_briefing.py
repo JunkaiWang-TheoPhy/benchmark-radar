@@ -238,7 +238,12 @@ def test_request_budget_has_an_offline_multibyte_fallback(monkeypatch):
 def test_model_output_is_not_cut_mid_sentence_after_generation():
     complete = "A" * 420 + " complete ending."
 
-    assert _output_text(complete) == complete
+    assert _output_text(complete, field="finding", max_chars=800) == complete
+
+
+def test_output_text_rejects_oversize_prose_instead_of_cutting_it() -> None:
+    with pytest.raises(BriefingError, match="overlong finding"):
+        _output_text("A" * 801, field="finding", max_chars=800)
 
 
 def test_generate_daily_briefing_uses_real_responses_contract_and_records_usage(monkeypatch):

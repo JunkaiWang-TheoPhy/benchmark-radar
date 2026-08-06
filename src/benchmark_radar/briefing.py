@@ -104,9 +104,12 @@ def _plain(value: Any, limit: int) -> str:
     return " ".join(str(value or "").split())[:limit]
 
 
-def _output_text(value: Any) -> str:
-    """Normalize model prose without cutting a sentence after generation."""
-    return " ".join(str(value or "").split())
+def _output_text(value: Any, *, field: str, max_chars: int) -> str:
+    """Normalize model prose and reject oversize fields without cutting sentences."""
+    text = " ".join(str(value or "").split())
+    if len(text) > max_chars:
+        raise BriefingError(f"OpenAI returned an overlong {field}")
+    return text
 
 
 def _evidence_records(history: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -320,7 +323,8 @@ _INSTRUCTIONS = (
     "supports no material insight, return no_material_insight and say what is missing "
     "instead of forcing a story.\n\n"
     "Output: at most three non-overlapping insights. Keep each finding and why_it_matters "
-    "concrete, at most 80 words each, and end each with a complete sentence. Use the caveat "
+    "concrete, at most 80 words each, and end each with a complete sentence. Keep the caveat "
+    "at most 100 words and end it with a complete sentence. Use the caveat "
     "for the most material coverage or measurement limitation."
 )
 
@@ -460,8 +464,8 @@ def generate_daily_briefing(
         ):
             raise BriefingError("OpenAI cited evidence outside the injected packet")
         cited_ids.extend(value for value in ids if value not in cited_ids)
-        finding = _output_text(insight.get("finding"))
-        why = _output_text(insight.get("why_it_matters"))
+        finding = _output_text(insight.get("finding"), field="finding", max_chars=800)
+        why = _output_text(insight.get("why_it_matters"), field="why_it_matters", max_chars=800)
         confidence = str(insight.get("confidence") or "low").capitalize()
         if not finding or not why:
             raise BriefingError("OpenAI returned an empty finding")
@@ -469,7 +473,7 @@ def generate_daily_briefing(
             f"{finding} Why it matters: {why} Evidence: {', '.join(ids)}. {confidence} confidence."
         )
 
-    caveat = _output_text(parsed.get("caveat"))
+    caveat = _output_text(parsed.get("caveat"), field="caveat", max_chars=1_000)
     if not bullets:
         if not caveat:
             raise BriefingError("OpenAI returned neither an insight nor a caveat")
