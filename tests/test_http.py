@@ -44,6 +44,53 @@ def test_http_retries_rate_limits_then_succeeds(monkeypatch):
     assert sleeps == [0.0, 0.0]
 
 
+def test_http_honors_decimal_retry_after(monkeypatch):
+    sleeps = []
+    calls = 0
+
+    def fake_urlopen(request, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise urllib.error.HTTPError(
+                request.full_url,
+                429,
+                "rate limited",
+                {"Retry-After": "1.5"},
+                io.BytesIO(),
+            )
+        return Response(b'{"ok": true}')
+
+    monkeypatch.setattr("benchmark_radar.http.urllib.request.urlopen", fake_urlopen)
+    monkeypatch.setattr("benchmark_radar.http.time.sleep", sleeps.append)
+
+    assert get_json("https://example.test/data", attempts=2) == {"ok": True}
+    assert sleeps == [1.5]
+
+
+def test_openai_failure_exposes_codes_without_error_prose(monkeypatch):
+    def fake_urlopen(request, **kwargs):
+        raise urllib.error.HTTPError(
+            request.full_url,
+            429,
+            "rate limited",
+            {},
+            io.BytesIO(
+                b'{"error":{"message":"secret-looking prose","type":"insufficient_quota",'
+                b'"code":"insufficient_quota"}}'
+            ),
+        )
+
+    monkeypatch.setattr("benchmark_radar.http.urllib.request.urlopen", fake_urlopen)
+
+    with pytest.raises(RequestError) as captured:
+        post_json("https://api.openai.com/v1/responses", {"input": "private"}, attempts=1)
+
+    assert "type=insufficient_quota" in str(captured.value)
+    assert "code=insufficient_quota" in str(captured.value)
+    assert "secret-looking prose" not in str(captured.value)
+
+
 @pytest.mark.parametrize(
     ("error", "expected"),
     [
