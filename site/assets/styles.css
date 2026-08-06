@@ -1077,7 +1077,7 @@ input {
 
 .attention-swatch,
 .attention-volume {
-  background: #756aa8;
+  background: var(--ink);
 }
 
 .trend-filter {
@@ -1118,50 +1118,37 @@ input {
 
 .day-column {
   display: grid;
-  flex: 1 0 44px;
+  flex: 1 0 64px;
   gap: 0.6rem;
-  min-width: 44px;
+  min-width: 64px;
   border: 0;
   background: transparent;
   transition: opacity 180ms ease;
 }
 
-.bar-stack {
-  display: flex;
-  flex-direction: column-reverse;
-  justify-content: flex-start;
-  height: 260px;
-  border-bottom: 1px solid var(--ink);
-}
-
 .series-bars {
   display: flex;
-  gap: 5px;
+  gap: clamp(1px, 0.25vw, 4px);
   align-items: end;
   justify-content: center;
   height: 260px;
   border-bottom: 1px solid var(--ink);
 }
 
-.series-bars .bar-stack {
-  width: min(22px, 60%);
-  border-bottom: 0;
-}
-
-.attention-volume {
-  width: min(10px, 30%);
-  min-height: 2px;
+.attention-volume,
+.bar-segment {
+  width: min(10px, 13%);
   transition: filter 180ms ease;
 }
 
 .bar-segment {
-  min-height: 2px;
   background: var(--bar-color);
-  transition: filter 180ms ease;
 }
 
 .day-column:hover .bar-segment,
-.day-column:focus-visible .bar-segment {
+.day-column:hover .attention-volume,
+.day-column:focus-visible .bar-segment,
+.day-column:focus-visible .attention-volume {
   filter: saturate(1.35) brightness(0.93);
 }
 

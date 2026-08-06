@@ -710,10 +710,7 @@ function renderTrends() {
   const maxTotal = Math.max(
     1,
     ...state.data.days.map((day) =>
-      Math.max(
-        Object.values(countsFor(day)).reduce((sum, count) => sum + count, 0),
-        day.attention.active_count,
-      ),
+      Math.max(...Object.values(countsFor(day)), day.attention.active_count),
     ),
   );
   replaceChildren(
@@ -733,13 +730,10 @@ function renderTrends() {
         className: "day-column",
         attrs: {
           type: "button",
-          "aria-label": `${formatDate(day.date)}: ${total} evidence category matches across ${day.evidence_count} evidence records and ${day.attention.active_count} attention signals`,
+          "aria-label": `${formatDate(day.date)}: ${total} overlapping evidence category matches across ${day.evidence_count} evidence records and ${day.attention.active_count} attention signals`,
         },
       }, [
-        element("span", { className: "series-bars" }, [
-          element("span", { className: "bar-stack" }, segments),
-          attentionBar,
-        ]),
+        element("span", { className: "series-bars" }, [...segments, attentionBar]),
         element("span", { className: "day-label", text: day.date.slice(5) }),
       ]);
       const previous = state.data.days[dayIndex - 1];

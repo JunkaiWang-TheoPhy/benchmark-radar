@@ -286,6 +286,20 @@ def test_trend_chart_can_filter_to_releases_only():
     assert "also updated (not counted above)" in script
 
 
+def test_trend_chart_does_not_stack_overlapping_categories():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    assert "Category tags overlap. Each bar is an independent count" in html
+    assert 'className: "series-bars" }, [...segments, attentionBar]' in script
+    assert 'className: "bar-stack"' not in script
+    assert "overlapping evidence category matches" in script
+    assert "Math.max(...Object.values(countsFor(day)), day.attention.active_count)" in script
+    assert ".bar-stack" not in styles
+    assert ".attention-volume {\n  background: var(--ink);" in styles
+
+
 def test_static_html_references_existing_local_assets():
     parser = SiteParser()
     parser.feed(Path("site/index.html").read_text(encoding="utf-8"))
