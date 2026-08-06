@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import http.client
 import json
 import ssl
 import time
@@ -30,7 +31,7 @@ def _safe_openai_error_detail(url: str, error: urllib.error.HTTPError) -> str:
         return ""
     try:
         payload = json.loads(error.read(16_384).decode("utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+    except (OSError, http.client.HTTPException, UnicodeDecodeError, json.JSONDecodeError):
         return ""
     detail = payload.get("error") if isinstance(payload, dict) else None
     if not isinstance(detail, dict):

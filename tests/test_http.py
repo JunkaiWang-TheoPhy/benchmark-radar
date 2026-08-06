@@ -1,3 +1,4 @@
+import http.client
 import io
 import urllib.error
 
@@ -18,6 +19,14 @@ class Response:
 
     def read(self):
         return self.body
+
+
+class TruncatedResponse:
+    def read(self, *args):
+        raise http.client.IncompleteRead(b'{"error":')
+
+    def close(self):
+        pass
 
 
 def test_http_retries_rate_limits_then_succeeds(monkeypatch):
@@ -89,6 +98,22 @@ def test_openai_failure_exposes_codes_without_error_prose(monkeypatch):
     assert "type=insufficient_quota" in str(captured.value)
     assert "code=insufficient_quota" in str(captured.value)
     assert "secret-looking prose" not in str(captured.value)
+
+
+def test_truncated_openai_error_body_stays_a_request_error(monkeypatch):
+    def fake_urlopen(request, **kwargs):
+        raise urllib.error.HTTPError(
+            request.full_url,
+            429,
+            "rate limited",
+            {},
+            TruncatedResponse(),
+        )
+
+    monkeypatch.setattr("benchmark_radar.http.urllib.request.urlopen", fake_urlopen)
+
+    with pytest.raises(RequestError, match="HTTP 429"):
+        post_json("https://api.openai.com/v1/responses", {"input": "private"}, attempts=1)
 
 
 @pytest.mark.parametrize(
