@@ -49,7 +49,7 @@ def _run(items=None) -> RadarRun:
         since=datetime(2026, 8, 2, 12, tzinfo=UTC),
         items=items or [],
         health=[],
-        selection={"taxonomy_version": "taxonomy-v2"},
+        selection={"taxonomy_version": "taxonomy-v2", "lookback_hours": 48},
     )
 
 
@@ -160,6 +160,7 @@ def test_gpt_input_includes_descriptions_history_health_and_stable_evidence_ids(
     assert value["first_observed_evidence"][0]["id"] == "E001"
     assert "preserve user preferences" in value["first_observed_evidence"][0]["summary"]
     assert value["daily_series"][0]["measurement"]["taxonomy_version"] == "taxonomy-v2"
+    assert value["daily_series"][0]["measurement"]["lookback_hours"] == 48
     assert value["daily_series"][0]["unavailable_sources"] == ["openreview"]
     assert value["daily_series"][0]["collection_signature"] == [
         "attention:hacker-news:ok",
@@ -189,6 +190,22 @@ def test_gpt_input_excludes_summaryless_keyword_false_positives():
 
     assert relevant.title in titles
     assert false_positive.title not in titles
+
+
+def test_gpt_input_prioritizes_fresh_attention_before_the_cap():
+    run = _run([_item(1)])
+    old = [_attention(index) for index in range(1, 22)]
+    for item in old:
+        item.observed_at = datetime(2026, 8, 3, tzinfo=UTC)
+    fresh = _attention(99)
+    run.attention = [*old, fresh]
+    current = snapshot_for_run(run)
+
+    signals = briefing_input([current], current, ["guardrail"])["attention_signals"]
+
+    assert len(signals) == 20
+    assert signals[0]["title"] == "Discussion 99"
+    assert signals[0]["observed_today"] is True
 
 
 def test_generate_daily_briefing_uses_real_responses_contract_and_records_usage(monkeypatch):

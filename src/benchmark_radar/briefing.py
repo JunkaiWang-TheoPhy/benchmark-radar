@@ -198,6 +198,7 @@ def briefing_input(
                     "taxonomy_version": selection.get("taxonomy_version"),
                     "report_limit": selection.get("report_limit"),
                     "max_items_per_source": selection.get("max_items_per_source"),
+                    "lookback_hours": selection.get("lookback_hours"),
                 },
             }
         )
@@ -205,6 +206,14 @@ def briefing_input(
     current_items = list(current.get("evidence_items") or [])
     current_attention = list((current.get("attention") or {}).get("observations") or [])
     current_date = str(current.get("date") or "")
+    current_attention.sort(
+        key=lambda item: (
+            str(item.get("observed_at") or "").startswith(current_date),
+            str(item.get("observed_at") or ""),
+            str(item.get("published_at") or ""),
+        ),
+        reverse=True,
+    )
     value: dict[str, Any] = {
         "scope": (
             "A keyword-filtered radar feed, not a representative sample of the AI field. "
