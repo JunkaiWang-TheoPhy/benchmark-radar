@@ -18,7 +18,7 @@ from .corpus import (
     organizations_for_item,
 )
 from .insights import build_insights
-from .kw_bench_tracks import classification_layer
+from .kw_bench_tracks import classification_layer, derive_tracks
 from .model_cards import DEFAULT_REGISTRY_PATH, adoption_rank, load_registry
 from .models import RadarRun
 from .pipeline import match_proximity_rule
@@ -697,7 +697,11 @@ def _curated_layers(
     }
 
 
-def kw_bench_layer(store_path: Path | None) -> dict[str, Any]:
+def kw_bench_layer(
+    store_path: Path | None,
+    *,
+    tracks: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     """The KW-Bench capability layer, or an explicit empty state.
 
     A missing store is normal before the first backfill and must not fail the
@@ -717,7 +721,7 @@ def kw_bench_layer(store_path: Path | None) -> dict[str, Any]:
             "reference": kw_bench.kw_bench_reference(),
             "track_count": 0,
         }
-    return classification_layer(store_path)
+    return classification_layer(store_path, tracks=tracks)
 
 
 def dashboard_data(
@@ -864,7 +868,10 @@ def dashboard_data(
         # level distribution can be audited against the real corpus before the
         # visible chart switches over. The payload marks itself `shadow: true`;
         # the browser does not read it yet.
-        "kw_bench": kw_bench_layer(kw_bench_store_path),
+        "kw_bench": kw_bench_layer(
+            kw_bench_store_path,
+            tracks=derive_tracks(snapshots),
+        ),
         # Curated and versioned in the repository rather than collected daily:
         # they answer "which benchmarks do vendors report", "how have the
         # readable scores moved", and "what do those two together say", which

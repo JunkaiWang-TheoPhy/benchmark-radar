@@ -324,7 +324,18 @@ def classification_layer(
     chart switches over.  `shadow: True` states that in the payload itself so a
     reader of `radar.json` cannot mistake it for the live chart source.
     """
-    records = list(kw_bench_store.current_records(store_path).values())
+    current_tracks = list(tracks) if tracks is not None else None
+    records = [
+        record
+        for record in kw_bench_store.current_records(store_path).values()
+        if record.get("kw_bench_version") == kw_bench.KW_BENCH_VERSION
+    ]
+    if current_tracks is not None:
+        active_keys = {
+            (str(track["canonical_artifact_id"]), str(track["track_id"]))
+            for track in current_tracks
+        }
+        records = [record for record in records if kw_bench_store.record_key(record) in active_keys]
     return {
         "shadow": True,
         "schema_version": kw_bench.CLASSIFICATION_SCHEMA_VERSION,
@@ -334,5 +345,8 @@ def classification_layer(
         "level_counts_released": kw_bench.level_counts(records, released_only=True),
         "coverage": kw_bench.coverage(records),
         "reference": kw_bench.kw_bench_reference(),
-        "track_count": len(list(tracks)) if tracks is not None else len(records),
+        # Candidate tracks and currently classified records are deliberately
+        # separate: during a bounded rubric-version migration, coverage shows
+        # how much of this candidate total has reached the current version.
+        "track_count": len(current_tracks) if current_tracks is not None else len(records),
     }

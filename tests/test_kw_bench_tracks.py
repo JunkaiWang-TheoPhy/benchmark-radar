@@ -418,3 +418,52 @@ def test_classification_layer_is_json_serializable(tmp_path):
     backfill([snapshot("2026-07-28", item())], store_path=store, classified_at=CLASSIFIED_AT)
 
     assert json.loads(json.dumps(classification_layer(store)))
+
+
+def test_classification_layer_excludes_superseded_canonical_identities(tmp_path):
+    """A later exact-identifier link must not leave the old identity counted."""
+    store = tmp_path / "kw.jsonl"
+    first = [snapshot("2026-07-28", item())]
+    backfill(first, store_path=store, classified_at=CLASSIFIED_AT)
+    linked = [
+        *first,
+        snapshot(
+            "2026-07-29",
+            item(
+                url="https://doi.org/10.1/example",
+                artifact_urls=["https://arxiv.org/abs/2607.12345"],
+            ),
+        ),
+    ]
+    current_tracks = derive_tracks(linked)
+    backfill(linked, store_path=store, classified_at=CLASSIFIED_AT)
+
+    layer = classification_layer(store, tracks=current_tracks)
+
+    assert len(current_tracks) == 1
+    assert len(kw_bench_store.current_records(store)) == 2
+    assert layer["track_count"] == 1
+    assert layer["level_counts"][kw_bench.UNCLASSIFIED] == 1
+
+
+def test_classification_layer_never_mixes_rubric_versions(tmp_path, monkeypatch):
+    store = tmp_path / "kw.jsonl"
+    snapshots = [
+        snapshot(
+            "2026-07-28",
+            item(url="https://arxiv.org/abs/2607.00001"),
+            item(source_id="p2", url="https://arxiv.org/abs/2607.00002"),
+        )
+    ]
+    tracks = derive_tracks(snapshots)
+    backfill(snapshots, store_path=store, classified_at=CLASSIFIED_AT)
+    monkeypatch.setattr(kw_bench_store, "KW_BENCH_VERSION", "0.2")
+    monkeypatch.setattr(kw_bench, "KW_BENCH_VERSION", "0.2")
+    backfill(snapshots, store_path=store, classified_at=CLASSIFIED_AT, limit=1)
+
+    layer = classification_layer(store, tracks=tracks)
+
+    assert layer["kw_bench_version"] == "0.2"
+    assert layer["track_count"] == 2
+    assert layer["coverage"]["track_count"] == 1
+    assert layer["level_counts"][kw_bench.UNCLASSIFIED] == 1
