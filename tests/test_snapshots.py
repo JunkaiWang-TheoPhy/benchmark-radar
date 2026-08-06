@@ -1048,6 +1048,32 @@ def test_validate_snapshot_accepts_a_day_without_a_briefing():
     validate_snapshot(snapshot_for_run(radar_run()))
 
 
+def test_snapshot_persists_and_validates_openai_provenance():
+    run = radar_run()
+    run.daily_briefing = ["Grounded GPT finding. Evidence: E001."]
+    run.daily_briefing_metadata = {
+        "generator": "openai-responses",
+        "model": "gpt-5.6",
+        "response_id": "resp_123",
+        "usage": {"input_tokens": 8000, "output_tokens": 200, "total_tokens": 8200},
+        "input": {"evidence_items": 40},
+        "citations": [
+            {
+                "id": "E001",
+                "title": "MemoryBench",
+                "url": "https://example.test/memory",
+                "source": "arXiv",
+            }
+        ],
+    }
+
+    snapshot = snapshot_for_run(run)
+    validate_snapshot(snapshot)
+
+    assert snapshot["briefing"]["generator"] == "openai-responses"
+    assert snapshot["briefing"]["usage"]["input_tokens"] == 8000
+
+
 def test_write_snapshot_preserves_the_briefing_across_passes(tmp_path):
     morning = radar_run()
     morning.daily_briefing = ["Committed by the first pass."]

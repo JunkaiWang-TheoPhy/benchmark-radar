@@ -1,8 +1,15 @@
+import json
 from datetime import UTC, datetime
 
+import pytest
+
 from benchmark_radar.briefing import (
+    MAX_INPUT_CHARS,
+    BriefingError,
+    briefing_input,
     current_day_snapshot,
     daily_report_run,
+    generate_daily_briefing,
     markdown_bullet,
     previous_calendar_day,
 )
@@ -42,7 +49,7 @@ def _run(items=None) -> RadarRun:
         since=datetime(2026, 8, 2, 12, tzinfo=UTC),
         items=items or [],
         health=[],
-        selection={"taxonomy_version": "taxonomy-v2"},
+        selection={"taxonomy_version": "taxonomy-v2", "lookback_hours": 48},
     )
 
 
@@ -129,6 +136,231 @@ def test_daily_report_run_uses_the_merged_snapshot_scope():
     assert report_run.selection["published_total"] == 2
 
 
+def test_gpt_input_includes_descriptions_history_health_and_stable_evidence_ids():
+    item = _item(1, title="MemoryBench: Long-horizon personal memory")
+    item.summary = "Measures whether assistants preserve user preferences across long sessions."
+    item.event_kind = "released"
+    item.total_score = 77
+    run = _run([item])
+    fresh_attention = _attention(1)
+    old_attention = _attention(2)
+    old_attention.observed_at = datetime(2026, 8, 3, tzinfo=UTC)
+    run.attention = [fresh_attention, old_attention]
+    current = snapshot_for_run(run)
+    current["ingest_health"] = [
+        {"source": "github", "kind": "evidence", "ok": True, "item_count": 1},
+        {"source": "hacker-news", "kind": "attention", "ok": True, "item_count": 2},
+        {"source": "openreview", "kind": "evidence", "ok": False, "item_count": 0},
+    ]
+
+    value = briefing_input([current], current, ["Insufficient comparable history."])
+    encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+
+    assert len(encoded) <= MAX_INPUT_CHARS
+    assert value["first_observed_evidence"][0]["id"] == "E001"
+    assert "preserve user preferences" in value["first_observed_evidence"][0]["summary"]
+    assert value["daily_series"][0]["measurement"]["taxonomy_version"] == "taxonomy-v2"
+    assert value["daily_series"][0]["measurement"]["lookback_hours"] == 48
+    assert value["daily_series"][0]["unavailable_sources"] == ["openreview"]
+    assert value["daily_series"][0]["collection_signature"] == [
+        "attention:hacker-news:ok",
+        "evidence:github:ok",
+        "evidence:openreview:failed",
+    ]
+    assert [signal["observed_today"] for signal in value["attention_signals"]] == [True, False]
+    assert value["attention_signals"][1]["observed_at"].startswith("2026-08-03")
+    assert value["deterministic_guardrails"] == ["Insufficient comparable history."]
+
+
+def test_gpt_input_excludes_summaryless_keyword_false_positives():
+    relevant = _item(1, title="AgentBench: Tool-use evaluation")
+    relevant.summary = "Measures AI agents completing multi-step tool tasks."
+    relevant.event_kind = "released"
+    false_positive = _item(
+        2,
+        title="Therapeutic agents against bacterial infection: biological evaluation",
+    )
+    false_positive.categories = ["evaluation", "agentic"]
+    false_positive.summary = ""
+    false_positive.event_kind = "released"
+    current = snapshot_for_run(_run([false_positive, relevant]))
+
+    value = briefing_input([current], current, ["guardrail"])
+    titles = [item["title"] for item in value["first_observed_evidence"]]
+
+    assert relevant.title in titles
+    assert false_positive.title not in titles
+
+
+def test_gpt_input_prioritizes_fresh_attention_before_the_cap():
+    run = _run([_item(1)])
+    old = [_attention(index) for index in range(1, 22)]
+    for item in old:
+        item.observed_at = datetime(2026, 8, 3, tzinfo=UTC)
+    fresh = _attention(99)
+    run.attention = [*old, fresh]
+    current = snapshot_for_run(run)
+
+    signals = briefing_input([current], current, ["guardrail"])["attention_signals"]
+
+    assert len(signals) == 20
+    assert signals[0]["title"] == "Discussion 99"
+    assert signals[0]["observed_today"] is True
+
+
+def test_generate_daily_briefing_uses_real_responses_contract_and_records_usage(monkeypatch):
+    item = _item(1, title="MemoryBench: Long-horizon personal memory")
+    item.summary = "Measures memory persistence."
+    item.event_kind = "released"
+    current = snapshot_for_run(_run([item]))
+    captured = {}
+
+    def fake_post(url, payload, **kwargs):
+        captured.update(url=url, payload=payload, kwargs=kwargs)
+        return {
+            "id": "resp_real",
+            "model": "gpt-5.6-2026-08-01",
+            "output": [
+                {
+                    "type": "message",
+                    "content": [
+                        {
+                            "type": "output_text",
+                            "text": json.dumps(
+                                {
+                                    "status": "insight",
+                                    "insights": [
+                                        {
+                                            "finding": (
+                                                "Memory evaluation is moving toward persistence."
+                                            ),
+                                            "why_it_matters": (
+                                                "Teams need longitudinal tests, not "
+                                                "single-session recall."
+                                            ),
+                                            "evidence_ids": ["E001"],
+                                            "confidence": "medium",
+                                        }
+                                    ],
+                                    "caveat": (
+                                        "One captured release does not establish a "
+                                        "field-wide trend."
+                                    ),
+                                }
+                            ),
+                        }
+                    ],
+                }
+            ],
+            "usage": {
+                "input_tokens": 8123,
+                "output_tokens": 241,
+                "total_tokens": 8364,
+                "input_tokens_details": {"cached_tokens": 100},
+                "output_tokens_details": {"reasoning_tokens": 80},
+            },
+        }
+
+    monkeypatch.setattr("benchmark_radar.briefing.post_json", fake_post)
+
+    result = generate_daily_briefing(
+        [current],
+        current,
+        ["Insufficient comparable history."],
+        "secret",
+    )
+
+    assert "Why it matters" in result.bullets[0]
+    assert "Evidence: E001" in result.bullets[0]
+    assert result.metadata["generator"] == "openai-responses"
+    assert result.metadata["response_id"] == "resp_real"
+    assert result.metadata["usage"]["input_tokens"] == 8123
+    assert result.metadata["input"]["evidence_items"] == 1
+    assert result.metadata["citations"][0]["url"] == item.url
+    assert captured["payload"]["model"] == "gpt-5.6"
+    assert captured["payload"]["reasoning"] == {"effort": "medium"}
+    assert "between one and six evidence IDs" in captured["payload"]["instructions"]
+    assert "identical collection_signature" in captured["payload"]["instructions"]
+    assert "only when observed_today is true" in captured["payload"]["instructions"]
+    assert captured["payload"]["text"]["format"]["strict"] is True
+    assert captured["payload"]["store"] is False
+    assert captured["kwargs"]["headers"] == {"Authorization": "Bearer secret"}
+    assert captured["kwargs"]["timeout"] == 90.0
+
+
+def test_generate_daily_briefing_rejects_a_citation_not_in_the_injected_packet(monkeypatch):
+    current = snapshot_for_run(_run([_item(1)]))
+
+    monkeypatch.setattr(
+        "benchmark_radar.briefing.post_json",
+        lambda *args, **kwargs: {
+            "output": [
+                {
+                    "type": "message",
+                    "content": [
+                        {
+                            "type": "output_text",
+                            "text": json.dumps(
+                                {
+                                    "status": "insight",
+                                    "insights": [
+                                        {
+                                            "finding": "Unsupported",
+                                            "why_it_matters": "It does not.",
+                                            "evidence_ids": ["E999"],
+                                            "confidence": "low",
+                                        }
+                                    ],
+                                    "caveat": "",
+                                }
+                            ),
+                        }
+                    ],
+                }
+            ]
+        },
+    )
+
+    with pytest.raises(BriefingError, match="outside the injected packet"):
+        generate_daily_briefing([current], current, ["guardrail"], "secret")
+
+
+def test_generate_daily_briefing_rejects_insights_with_no_material_status(monkeypatch):
+    current = snapshot_for_run(_run([_item(1)]))
+    monkeypatch.setattr(
+        "benchmark_radar.briefing.post_json",
+        lambda *args, **kwargs: {
+            "output": [
+                {
+                    "type": "message",
+                    "content": [
+                        {
+                            "type": "output_text",
+                            "text": json.dumps(
+                                {
+                                    "status": "no_material_insight",
+                                    "insights": [
+                                        {
+                                            "finding": "Contradictory finding",
+                                            "why_it_matters": "It should not be published.",
+                                            "evidence_ids": ["E001"],
+                                            "confidence": "low",
+                                        }
+                                    ],
+                                    "caveat": "No material insight.",
+                                }
+                            ),
+                        }
+                    ],
+                }
+            ]
+        },
+    )
+
+    with pytest.raises(BriefingError, match="status contradicts"):
+        generate_daily_briefing([current], current, ["guardrail"], "secret")
+
+
 def test_snapshot_for_run_persists_the_briefing_with_its_day():
     run = _run([_item(1)])
     run.daily_briefing = ["One new benchmark.", "Evidence rose."]
@@ -181,9 +413,7 @@ def test_merge_snapshots_leaves_no_briefing_key_when_neither_pass_had_one():
 
 
 def test_markdown_bullet_escapes_interpolated_values():
-    # Findings are computed rather than written by a model, but the bullets still
-    # interpolate upstream-derived values. A category or source name is data and
-    # must not become Markdown or HTML in the published issue body.
+    # Both model prose and source-derived values are data at this boundary.
     assert markdown_bullet("data_quality rose 5%") == "data\\_quality rose 5%"
     assert markdown_bullet("<img src=x> [link](http://evil.test)") == (
         "&lt;img src=x&gt; \\[link\\]\\(http://evil\\.test\\)"

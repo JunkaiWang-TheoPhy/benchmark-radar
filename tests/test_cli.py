@@ -2,12 +2,20 @@ import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import pytest
 import yaml
 
 from benchmark_radar import cli
+from benchmark_radar.briefing import GeneratedBriefing
 from benchmark_radar.models import ProducerHealth, RadarItem, RadarRun
 from benchmark_radar.pipeline import SOURCE_FETCHERS
 from benchmark_radar.snapshots import write_snapshot
+
+
+@pytest.fixture(autouse=True)
+def _isolate_openai_credentials(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_BRIEFING_REQUIRED", raising=False)
 
 
 def _config_path(tmp_path: Path) -> Path:
@@ -261,9 +269,36 @@ def test_a_briefing_is_written_without_any_api_key(monkeypatch, tmp_path):
     cli.main()
 
     stored = json.loads(next((tmp_path / "snapshots").glob("*.json")).read_text(encoding="utf-8"))
-    # The briefing no longer depends on a credential, so a day can never be
-    # left blank because a key was missing.
     assert stored["briefing"]["bullets"]
+    assert stored["briefing"]["generator"] == "deterministic-fallback"
+
+
+def test_cli_persists_real_gpt_briefing_metadata(monkeypatch, tmp_path):
+    monkeypatch.setenv("OPENAI_API_KEY", "secret")
+    _stub_sources(monkeypatch, datetime.now(UTC))
+    monkeypatch.setattr("sys.argv", _briefing_argv(tmp_path))
+    monkeypatch.setattr(
+        cli,
+        "generate_daily_briefing",
+        lambda *args, **kwargs: GeneratedBriefing(
+            bullets=["A real GPT synthesis. Evidence: E001."],
+            metadata={
+                "generator": "openai-responses",
+                "model": "gpt-5.6",
+                "response_id": "resp_real",
+                "usage": {"input_tokens": 8000, "output_tokens": 200, "total_tokens": 8200},
+                "input": {"evidence_items": 30},
+                "citations": [],
+            },
+        ),
+    )
+
+    cli.main()
+
+    stored = json.loads(next((tmp_path / "snapshots").glob("*.json")).read_text(encoding="utf-8"))
+    assert stored["briefing"]["generator"] == "openai-responses"
+    assert stored["briefing"]["response_id"] == "resp_real"
+    assert stored["briefing"]["usage"]["total_tokens"] == 8200
 
 
 def test_a_thin_day_reports_insufficient_volume_rather_than_a_pattern(monkeypatch, tmp_path):

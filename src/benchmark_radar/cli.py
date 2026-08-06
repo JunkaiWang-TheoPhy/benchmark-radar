@@ -8,9 +8,10 @@ from pathlib import Path
 
 import yaml
 
-from .briefing import current_day_snapshot, daily_report_run
+from .briefing import BriefingError, current_day_snapshot, daily_report_run, generate_daily_briefing
 from .export import DEFAULT_TABLE_LIMIT, write_exports
 from .findings import daily_findings
+from .http import RequestError
 from .pipeline import _failure_streak_key, run_pipeline, simulate_backfill
 from .report import render_markdown
 from .snapshots import (
@@ -263,23 +264,49 @@ def main() -> None:
     daily_snapshot = current_day_snapshot(snapshots, run)
     report_run = daily_report_run(daily_snapshot, run)
     today = run.generated_at.astimezone(UTC).date().isoformat()
-    # Issue #127: the briefing is computed, not generated. Findings are verified
-    # in code against the day's history, so every pass over the same UTC day
-    # derives the same text from the same snapshots and there is nothing to
-    # reuse, retry, or spend an API call on. `daily_findings` always returns a
-    # card, including an explicit no-finding one, so a quiet day reads as a
-    # quiet day rather than as a broken pipeline.
     history = [*(s for s in snapshots if s["date"] != today), daily_snapshot]
-    daily_briefing = daily_findings(history, config)
+    deterministic_findings = daily_findings(history, config)
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    briefing_required = os.getenv("OPENAI_BRIEFING_REQUIRED", "").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    daily_briefing = deterministic_findings
+    briefing_metadata: dict = {
+        "generator": "deterministic-fallback",
+        "reason": "OPENAI_API_KEY is not configured",
+    }
+    if api_key:
+        try:
+            generated = generate_daily_briefing(
+                history,
+                daily_snapshot,
+                deterministic_findings,
+                api_key,
+                model=os.getenv("OPENAI_BRIEFING_MODEL", "").strip() or "gpt-5.6",
+            )
+            daily_briefing = generated.bullets
+            briefing_metadata = generated.metadata
+        except (BriefingError, RequestError, ValueError) as error:
+            if briefing_required:
+                raise RuntimeError(f"required OpenAI briefing failed: {error}") from error
+            briefing_metadata["reason"] = f"{type(error).__name__}: {error}"
+            print(f"::warning title=GPT briefing fell back::{error}")
+    elif briefing_required:
+        raise RuntimeError("OPENAI_BRIEFING_REQUIRED is true but OPENAI_API_KEY is missing")
+
     # Attach before writing so the snapshot, the dashboard payload, and the
     # Markdown report all describe the same briefing.
     run.daily_briefing = daily_briefing
+    run.daily_briefing_metadata = briefing_metadata
     args.output.write_text(
         render_markdown(
             report_run,
             dashboard_url=dashboard_url,
             issue_item_limit=int(issue_item_limit) if issue_item_limit else None,
             daily_briefing=daily_briefing,
+            daily_briefing_metadata=briefing_metadata,
         ),
         encoding="utf-8",
     )
@@ -301,7 +328,13 @@ def main() -> None:
                 # describes the whole UTC day and is shared by every pass over
                 # it. Omitted when the day has none.
                 **(
-                    {"briefing": {"date": today, "bullets": daily_briefing}}
+                    {
+                        "briefing": {
+                            "date": today,
+                            "bullets": daily_briefing,
+                            **briefing_metadata,
+                        }
+                    }
                     if daily_briefing
                     else {}
                 ),
