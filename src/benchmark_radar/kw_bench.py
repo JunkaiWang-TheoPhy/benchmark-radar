@@ -368,6 +368,12 @@ _NOT_PERFORMED = re.compile(
     r"specified|available|stated)|no (?:check|search|cutoff))\s*\.?\s*$",
     re.IGNORECASE,
 )
+_NOVELTY_CHECK_FAILED = re.compile(
+    r"\b(?:no (?:check|search) (?:was )?(?:performed|run|completed)|"
+    r"(?:check|search) (?:was )?not (?:performed|run|completed)|"
+    r"(?:check|search) could not be (?:performed|run|completed))\b",
+    re.IGNORECASE,
+)
 _PROSPECTIVE_VALIDATION = re.compile(
     r"\b(?:new experiment|prospective(?:ly)? validat(?:e|es|ed|ion)|independent reproduction|"
     r"deployment outcome|expert adjudication|validated after|post[- ]hoc validation|"
@@ -470,11 +476,19 @@ def assign_level(evidence: dict[str, Any]) -> dict[str, Any]:
                 ),
                 missing=sorted(set(l5_missing)),
             )
+        if _NOVELTY_CHECK_FAILED.search(novelty):
+            return _unclassified(
+                reason=(
+                    "Evidence describes prospective validation, but the novelty check "
+                    "records that its search was not performed."
+                ),
+                missing=["novelty_check"],
+            )
         # A prior-art check that finds the result before the run caps this at
         # L4.  The rubric states this as an explicit ceiling, and it applies
         # whether the prior art surfaced in the novelty check or in what the
         # evaluator already knew.
-        prior_art = _PRIOR_ART_FOUND.search(novelty) and not _NO_PRIOR_ART.search(novelty)
+        prior_art = _PRIOR_ART_FOUND.search(novelty)
         if prior_art or _evaluator_knows(knowledge):
             return _level(
                 "L4",

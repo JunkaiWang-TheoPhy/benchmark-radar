@@ -453,6 +453,30 @@ def test_l5_accepts_explicit_negated_prior_art_results(novelty_check):
     assert assign_level(l5_evidence(novelty_check=novelty_check))["level"] == "L5"
 
 
+def test_an_explicit_prior_art_hit_overrides_an_earlier_clean_clause():
+    decision = assign_level(
+        l5_evidence(
+            novelty_check=(
+                "The search did not find any prior art at first, but the exact result "
+                "was already published in 2024."
+            )
+        )
+    )
+
+    assert decision["level"] == "L4"
+
+
+def test_an_embedded_admission_that_no_search_ran_blocks_l5():
+    decision = assign_level(
+        l5_evidence(
+            novelty_check="The check returned zero prior results because no search was performed."
+        )
+    )
+
+    assert decision["level"] == UNCLASSIFIED
+    assert decision["missing_evidence"] == ["novelty_check"]
+
+
 def test_novelty_check_reporting_prior_art_caps_at_l4():
     """The ceiling applies from the novelty check, not only evaluator knowledge."""
     decision = assign_level(
