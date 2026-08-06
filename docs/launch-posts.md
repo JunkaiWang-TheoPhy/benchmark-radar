@@ -382,7 +382,7 @@ Benchmark Radar therefore records whether a document reports a benchmark, not wh
 
 ### The automated daily radar
 
-The project also maintains a daily feed of new work on benchmarks, evaluations, datasets, and data quality. It collects records from arXiv, OpenReview, Hugging Face, GitHub, Semantic Scholar, OpenAlex, Brave Search, and Hacker News, then deduplicates and classifies them with published ranking components.
+The project also maintains a daily feed of new work on benchmarks, evaluations, datasets, and data quality. It collects records from arXiv, OpenReview, Hugging Face, GitHub, GitHub Releases, Semantic Scholar, OpenAlex, and Brave Search, then deduplicates and classifies them with published ranking components. Hacker News is tracked separately as an attention signal and does not affect evidence ranking.
 
 The daily feed and the hand-curated adoption leaderboard serve different purposes. The feed tracks new work entering the field. The leaderboard tracks benchmarks appearing in model-release documents.
 
