@@ -710,16 +710,17 @@ def kw_bench_layer(
     than the key simply being absent.
     """
     if store_path is None or not store_path.exists():
+        candidates = [{**track, "level": kw_bench.UNCLASSIFIED} for track in (tracks or [])]
         return {
             "shadow": True,
             "schema_version": kw_bench.CLASSIFICATION_SCHEMA_VERSION,
             "kw_bench_version": kw_bench.KW_BENCH_VERSION,
             "chart_levels": list(kw_bench.CHART_LEVELS),
-            "level_counts": kw_bench.level_counts([]),
-            "level_counts_released": kw_bench.level_counts([], released_only=True),
-            "coverage": kw_bench.coverage([]),
+            "level_counts": kw_bench.level_counts(candidates),
+            "level_counts_released": kw_bench.level_counts(candidates, released_only=True),
+            "coverage": kw_bench.coverage(candidates),
             "reference": kw_bench.kw_bench_reference(),
-            "track_count": 0,
+            "track_count": len(candidates),
         }
     return classification_layer(store_path, tracks=tracks)
 

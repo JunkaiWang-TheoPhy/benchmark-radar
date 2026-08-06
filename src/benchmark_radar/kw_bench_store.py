@@ -119,13 +119,19 @@ def read_records(path: Path) -> list[dict[str, Any]]:
         return []
     records: list[dict[str, Any]] = []
     with path.open(encoding="utf-8") as handle:
-        for number, line in enumerate(handle, start=1):
+        lines = handle.readlines()
+        for number, line in enumerate(lines, start=1):
             stripped = line.strip()
             if not stripped:
                 continue
             try:
                 records.append(json.loads(stripped))
             except json.JSONDecodeError as error:
+                # A crash can tear only the row being appended at EOF. Keep
+                # the durable prefix resumable, but reject malformed complete
+                # lines (and malformed non-final lines) as store corruption.
+                if number == len(lines) and not line.endswith("\n"):
+                    continue
                 raise KwBenchError(f"{path}:{number} is not valid JSON: {error}") from error
     return records
 
@@ -138,9 +144,11 @@ def current_records(path: Path) -> dict[tuple[str, str], dict[str, Any]]:
     """
     live: dict[tuple[str, str], dict[str, Any]] = {}
     for record in read_records(path):
+        key = record_key(record)
         if record.get("superseded"):
+            live.pop(key, None)
             continue
-        live[record_key(record)] = record
+        live[key] = record
     return live
 
 

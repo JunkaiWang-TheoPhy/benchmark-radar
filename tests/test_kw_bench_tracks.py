@@ -11,6 +11,7 @@ from benchmark_radar.kw_bench_tracks import (
     classify_tracks,
     derive_tracks,
 )
+from benchmark_radar.snapshots import kw_bench_layer
 
 CLASSIFIED_AT = "2026-08-06T00:00:00+00:00"
 
@@ -339,6 +340,16 @@ def test_limit_bounds_a_backfill_run(tmp_path):
     assert summary["classified"] == 2
 
 
+def test_negative_limit_is_rejected(tmp_path):
+    with pytest.raises(kw_bench.KwBenchError, match="limit must be non-negative"):
+        backfill(
+            [snapshot("2026-07-28", item())],
+            store_path=tmp_path / "kw.jsonl",
+            classified_at=CLASSIFIED_AT,
+            limit=-1,
+        )
+
+
 def test_a_bounded_run_advances_instead_of_reselecting_the_same_prefix(tmp_path):
     """`limit` bounds remaining work; slicing the full list could never finish."""
     store = tmp_path / "kw.jsonl"
@@ -409,6 +420,40 @@ def test_corrupt_json_is_reported_with_its_line(tmp_path):
         kw_bench_store.read_records(store)
 
 
+def test_torn_final_row_keeps_the_durable_store_prefix(tmp_path):
+    store = tmp_path / "kw.jsonl"
+    store.write_text(
+        '{"canonical_artifact_id":"a","track_id":"t"}\n{"canonical_artifact',
+        encoding="utf-8",
+    )
+
+    assert kw_bench_store.read_records(store) == [{"canonical_artifact_id": "a", "track_id": "t"}]
+
+
+def test_malformed_completed_final_row_is_rejected(tmp_path):
+    store = tmp_path / "kw.jsonl"
+    store.write_text(
+        '{"canonical_artifact_id":"a","track_id":"t"}\n{not json}\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(kw_bench.KwBenchError, match="kw.jsonl:2"):
+        kw_bench_store.read_records(store)
+
+
+def test_retraction_tombstone_removes_the_previous_live_record(tmp_path):
+    store = tmp_path / "kw.jsonl"
+    kw_bench_store.append_records(
+        store,
+        [
+            {"canonical_artifact_id": "a", "track_id": "t", "level": "L1"},
+            {"canonical_artifact_id": "a", "track_id": "t", "superseded": True},
+        ],
+    )
+
+    assert kw_bench_store.current_records(store) == {}
+
+
 def test_missing_store_reads_as_empty(tmp_path):
     assert kw_bench_store.read_records(tmp_path / "absent.jsonl") == []
 
@@ -427,6 +472,16 @@ def test_zero_batch_size_is_rejected():
 
 
 # --- Dashboard layer -----------------------------------------------------
+
+
+def test_missing_store_reports_candidate_tracks_as_unclassified(tmp_path):
+    tracks = derive_tracks([snapshot("2026-07-28", item())])
+
+    layer = kw_bench_layer(tmp_path / "absent.jsonl", tracks=tracks)
+
+    assert layer["track_count"] == 1
+    assert layer["coverage"]["track_count"] == 1
+    assert layer["level_counts"][kw_bench.UNCLASSIFIED] == 1
 
 
 def test_classification_layer_is_marked_shadow(tmp_path):

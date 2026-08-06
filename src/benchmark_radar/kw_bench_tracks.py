@@ -211,6 +211,8 @@ def classify_tracks(
     Returns a summary rather than the rows: callers want to know what moved,
     and the store is the record of what exists.
     """
+    if limit is not None and limit < 0:
+        raise kw_bench.KwBenchError("classification limit must be non-negative")
     extractor = extractor or NullExtractor()
     cached = kw_bench_store.current_records(store_path)
 
