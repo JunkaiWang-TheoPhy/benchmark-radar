@@ -154,7 +154,7 @@ Citable data: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.md
 
 *格式：一篇中文图文笔记，搭配 5 张数据卡片。*
 
-**标题：我统计了 30 份大模型报告，GPQA Diamond 出现最多**
+**标题：30 份模型报告，谁最常出现？**
 
 前沿模型发布时，大家到底在报哪些 benchmark？
 
@@ -170,6 +170,7 @@ Citable data: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.md
 
 完整排行榜和可下载数据放在 Benchmark Radar：
 https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+CSV：https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
 
 #人工智能 #大模型 #AI评测 #开源项目 #Benchmark
 
