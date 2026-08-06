@@ -375,7 +375,7 @@ def generate_daily_briefing(
         RESPONSES_URL,
         payload,
         headers={"Authorization": f"Bearer {api_key}"},
-        attempts=2,
+        attempts=4,
         timeout=90.0,
     )
     try:

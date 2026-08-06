@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import http.client
 import json
 import ssl
 import time
@@ -22,6 +23,25 @@ class RequestError(RuntimeError):
 def _safe_url(url: str) -> str:
     parts = urllib.parse.urlsplit(url)
     return urllib.parse.urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+
+
+def _safe_openai_error_detail(url: str, error: urllib.error.HTTPError) -> str:
+    """Expose only structured OpenAI error codes, never request or response prose."""
+    if urllib.parse.urlsplit(url).netloc != "api.openai.com":
+        return ""
+    try:
+        payload = json.loads(error.read(16_384).decode("utf-8"))
+    except (OSError, http.client.HTTPException, UnicodeDecodeError, json.JSONDecodeError):
+        return ""
+    detail = payload.get("error") if isinstance(payload, dict) else None
+    if not isinstance(detail, dict):
+        return ""
+    fields = [
+        f"{key}={detail[key]}"
+        for key in ("type", "code", "param")
+        if isinstance(detail.get(key), (str, int, float)) and str(detail[key]).strip()
+    ]
+    return f" ({', '.join(fields)})" if fields else ""
 
 
 def get_json(
@@ -88,6 +108,7 @@ def _request(
     if timeout <= 0:
         raise ValueError("timeout must be positive")
     last_error: Exception | None = None
+    last_http_detail = ""
     for attempt in range(attempts):
         try:
             with urllib.request.urlopen(
@@ -99,11 +120,16 @@ def _request(
         except urllib.error.HTTPError as error:
             # Only rate limits and server failures are transient. Never expose
             # a query string: some APIs carry credentials there.
+            detail = _safe_openai_error_detail(url, error)
             if error.code != 429 and error.code < 500:
-                raise RequestError(f"HTTP {error.code} from {_safe_url(url)}") from None
+                raise RequestError(f"HTTP {error.code} from {_safe_url(url)}{detail}") from None
             last_error = error
+            last_http_detail = detail
             retry_after = error.headers.get("Retry-After") if error.headers else None
-            delay = float(retry_after) if retry_after and retry_after.isdigit() else 2**attempt
+            try:
+                delay = max(0.0, float(retry_after)) if retry_after else float(2**attempt)
+            except ValueError:
+                delay = float(2**attempt)
             if attempt + 1 < attempts:
                 time.sleep(min(delay, MAX_RETRY_DELAY_SECONDS))
         except (urllib.error.URLError, TimeoutError) as error:
@@ -114,6 +140,7 @@ def _request(
     if isinstance(last_error, urllib.error.HTTPError):
         raise RequestError(
             f"HTTP {last_error.code} from {_safe_url(url)} after {attempts} attempts"
+            f"{last_http_detail}"
         ) from None
     raise RequestError(
         f"{type(last_error).__name__} from {_safe_url(url)} after {attempts} attempts"
