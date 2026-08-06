@@ -273,6 +273,93 @@ function definition(label, value) {
   ]);
 }
 
+function safeHttpUrl(value) {
+  try {
+    const url = new URL(String(value));
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function validBriefingCitations(citations) {
+  const seen = new Set();
+  return (Array.isArray(citations) ? citations : []).flatMap((citation) => {
+    const id = String(citation?.id || "");
+    const href = safeHttpUrl(citation?.url);
+    if (!/^E\d{3}$/.test(id) || !href || seen.has(id)) return [];
+    seen.add(id);
+    return [{
+      id,
+      href,
+      title: String(citation?.title || id),
+      source: String(citation?.source || "Primary source"),
+    }];
+  });
+}
+
+function briefingContent(line, citations) {
+  const links = new Map(citations.map((citation) => [citation.id, citation]));
+
+  const nodes = [];
+  let cursor = 0;
+  for (const match of String(line).matchAll(/\bE\d{3}\b/g)) {
+    const citation = links.get(match[0]);
+    if (!citation) continue;
+    nodes.push(document.createTextNode(line.slice(cursor, match.index)));
+    nodes.push(element("a", {
+      className: "briefing-evidence-link",
+      text: match[0],
+      attrs: {
+        href: citation.href,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        title: `Open evidence: ${citation.title}`,
+        "aria-label": `${match[0]}: ${citation.title}`,
+      },
+    }));
+    cursor = match.index + match[0].length;
+  }
+  nodes.push(document.createTextNode(line.slice(cursor)));
+  return nodes;
+}
+
+function briefingProvenance(briefing) {
+  if (briefing.generator !== "openai-responses") return null;
+  const usage = briefing.usage || {};
+  const input = briefing.input || {};
+  return element("p", {
+    className: "daily-briefing-meta",
+    text: `GPT synthesis: ${briefing.model || "OpenAI model"} via OpenAI Responses API · ${Number(usage.input_tokens || 0).toLocaleString()} input / ${Number(usage.output_tokens || 0).toLocaleString()} output tokens · ${Number(input.evidence_items || 0).toLocaleString()} evidence records and ${Number(input.history_days || 0).toLocaleString()} history days injected.`,
+  });
+}
+
+function briefingEvidenceList(citations) {
+  if (!citations.length) return null;
+  return element("section", {
+    className: "daily-briefing-evidence",
+    attrs: { "aria-labelledby": "daily-briefing-evidence-heading" },
+  }, [
+    element("h3", {
+      className: "daily-briefing-evidence-title",
+      text: "Evidence cited by GPT",
+      attrs: { id: "daily-briefing-evidence-heading" },
+    }),
+    element("ul", {}, citations.map((citation) =>
+      element("li", {}, [
+        element("a", {
+          text: `${citation.id} — ${citation.title}`,
+          attrs: {
+            href: citation.href,
+            target: "_blank",
+            rel: "noopener noreferrer",
+          },
+        }),
+        element("span", { text: ` (${citation.source})` }),
+      ]))),
+  ]);
+}
+
 // The briefing is generated once per UTC day and stored in that day's snapshot,
 // so a day can legitimately have none: it predates the feature, no API key was
 // configured, or every pass over the day failed the call. Say which rather than
@@ -280,16 +367,27 @@ function definition(label, value) {
 function renderDailyBriefing(day) {
   const briefing = day.briefing || {};
   const bullets = Array.isArray(briefing.bullets) ? briefing.bullets : [];
+  const citations = validBriefingCitations(briefing.citations);
   // A briefing carrying another day's date describes the wrong day, so it is
   // withheld rather than shown beside this date's listings.
   const usable = briefing.date === day.date ? bullets.filter((line) => line.trim()) : [];
   replaceChildren(
     byId("daily-briefing-body"),
     usable.length
-      ? [element("ul", { className: "daily-briefing-list" },
-          // `text` assigns textContent, so the stored bullets render as the
-          // plain text they are. They are never inserted as HTML.
-          usable.map((line) => element("li", { text: line })))]
+      ? [
+          element("ul", { className: "daily-briefing-list" },
+          // Model prose remains text nodes. Only exact evidence IDs present in
+          // the snapshot's validated citation map become links.
+          usable.map((line) => element("li", {}, briefingContent(line, citations)))),
+          briefingProvenance(briefing),
+          briefing.caveat
+            ? element("p", { className: "daily-briefing-caveat" }, [
+                element("strong", { text: "Caveat: " }),
+                document.createTextNode(String(briefing.caveat)),
+              ])
+            : null,
+          briefingEvidenceList(citations),
+        ]
       : [
           element("p", {
             className: "empty-state",

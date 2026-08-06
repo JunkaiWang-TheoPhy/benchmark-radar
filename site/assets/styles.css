@@ -383,6 +383,53 @@ input {
   margin-top: 0.4rem;
 }
 
+.briefing-evidence-link {
+  color: var(--blue-deep);
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.14em;
+}
+
+.briefing-evidence-link:hover {
+  text-decoration-thickness: 0.14em;
+}
+
+.daily-briefing-meta {
+  margin: 0.85rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.daily-briefing-caveat {
+  margin: 0.85rem 0 0;
+  padding-left: 0.8rem;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.daily-briefing-evidence {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.daily-briefing-evidence-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+}
+
+.daily-briefing-evidence ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.86rem;
+}
+
+.daily-briefing-evidence li + li {
+  margin-top: 0.22rem;
+}
+
 .record-card {
   border-bottom: 1px solid var(--line);
 }
