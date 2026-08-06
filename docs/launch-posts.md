@@ -341,7 +341,7 @@ This is a measure of vendor reporting convention, not benchmark quality. Saturat
 
 A model-release document does not list every evaluation its authors ran. It presents a selected set of results to explain the model to readers. That selection reflects internal tooling, historical practice, the model's intended use, and the comparisons a lab expects readers to recognize.
 
-Benchmark Radar records that visible reporting choice. The source material is the released document itself, not a benchmark website or a third-party leaderboard. Each entry links back to the model card, system card, or technical report that supports it.
+Benchmark Radar records that visible reporting choice. The source material is the released document itself, not a benchmark website or a third-party leaderboard. Each entry links back to the model-release document that supports it.
 
 The dataset cannot establish that a benchmark is scientifically better, harder, or more predictive than another. It can show which evaluations have become common reporting conventions in the documents sampled.
 
