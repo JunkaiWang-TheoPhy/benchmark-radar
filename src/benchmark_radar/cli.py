@@ -169,8 +169,19 @@ def main() -> None:
         type=int,
         default=None,
         help=(
-            "classify only: stop after this many tracks. Bounds a first backfill "
-            "pass; the next run resumes from the cache with no repeated work."
+            "classify only: stop after this many tracks that still need work. "
+            "Bounds a first backfill pass; the next run picks up where it "
+            "stopped rather than re-selecting the same prefix."
+        ),
+    )
+    parser.add_argument(
+        "--kw-bench-refresh-after",
+        default=None,
+        help=(
+            "classify only: re-extract tracks classified before this ISO "
+            "timestamp. An upstream README edit that leaves a track's metadata "
+            "unchanged is invisible to the cache by design, since detecting it "
+            "means fetching the source; this is how those are picked up."
         ),
     )
     args = parser.parse_args()
@@ -182,6 +193,7 @@ def main() -> None:
             classified_at=datetime.now(UTC).isoformat(),
             batch_size=args.kw_bench_batch_size,
             limit=args.kw_bench_limit,
+            refresh_before=args.kw_bench_refresh_after,
         )
         dashboard = rebuild_dashboard(
             args.snapshot_dir,

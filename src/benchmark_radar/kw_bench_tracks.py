@@ -84,7 +84,11 @@ class MappingExtractor:
         self._evidence = evidence_by_artifact
 
     def extract(self, track: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
-        entry = self._evidence.get(str(track.get("canonical_artifact_id")))
+        # Keyed by track ID first so a mixed suite can carry different evidence
+        # per track, then by artifact ID for the common single-track case.
+        entry = self._evidence.get(str(track.get("track_id"))) or self._evidence.get(
+            str(track.get("canonical_artifact_id"))
+        )
         if not entry:
             return {}, []
         evidence = dict(entry.get("evidence") or entry)
@@ -97,15 +101,23 @@ def _is_scored_track(item: dict[str, Any]) -> bool:
     return bool(categories & SCORED_TRACK_CATEGORIES)
 
 
-def derive_tracks(snapshots: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def derive_tracks(
+    snapshots: list[dict[str, Any]],
+    *,
+    track_names: dict[str, list[str]] | None = None,
+) -> list[dict[str, Any]]:
     """Collapse snapshot observations into canonical, classifiable tracks.
 
-    One track per canonical artifact in the MVP.  A mixed suite that declares
-    several scored tracks is represented by several rows sharing a canonical
-    artifact ID and differing by `track_name`; the schema supports that today
-    and the extractor will populate it once it can read a suite's task
-    breakdown.  Splitting suites on title guesswork would be exactly the
-    keyword inference the rubric forbids.
+    One track per canonical artifact by default.  `track_names` splits a known
+    mixed suite into several tracks sharing a canonical artifact ID and
+    differing by `track_name`, each classified and counted separately, which is
+    what the rubric requires of a suite holding both retrieval questions and
+    executable tasks.
+
+    The split is supplied, never inferred.  Guessing a suite's task breakdown
+    from its title is the keyword inference the rubric forbids, so a suite with
+    no declared breakdown stays a single track rather than being invented into
+    several.
 
     The returned rows are deterministic and sorted, so a backfill produces the
     same work list on every machine and every rerun.
@@ -152,14 +164,20 @@ def derive_tracks(snapshots: list[dict[str, Any]]) -> list[dict[str, Any]]:
     ordered = []
     for canonical in sorted(tracks):
         track = tracks[canonical]
-        ordered.append(
-            {
-                **track,
-                "sources": sorted(track["sources"]),
-                "categories": sorted(track["categories"]),
-                "track_id": kw_bench.track_id(canonical, track["track_name"]),
-            }
-        )
+        base = {
+            **track,
+            "sources": sorted(track["sources"]),
+            "categories": sorted(track["categories"]),
+        }
+        names = (track_names or {}).get(canonical) or [track["track_name"]]
+        for name in sorted(dict.fromkeys(str(value) for value in names)):
+            ordered.append(
+                {
+                    **base,
+                    "track_name": name,
+                    "track_id": kw_bench.track_id(canonical, name),
+                }
+            )
     return ordered
 
 
@@ -171,25 +189,55 @@ def classify_tracks(
     extractor: Extractor | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
     limit: int | None = None,
+    refresh_before: str | None = None,
 ) -> dict[str, Any]:
     """Classify the tracks that need it and append the results.
 
-    Resumable and idempotent.  A track whose evidence hash, source hashes, and
-    rubric version already match a stored row is skipped without calling the
-    extractor, so a completed backfill rerun costs nothing.  Work is committed
+    Resumable and idempotent.  A track whose rubric version and metadata
+    fingerprint already match a stored row never reaches the extractor, so a
+    completed backfill rerun makes zero extraction calls.  Work is committed
     per batch, so an interruption keeps everything already written.
+
+    `refresh_before` re-extracts rows classified before a given timestamp,
+    which is how upstream source edits are picked up: they are invisible to the
+    fingerprint by construction, since detecting them means fetching the
+    source.
 
     Returns a summary rather than the rows: callers want to know what moved,
     and the store is the record of what exists.
     """
     extractor = extractor or NullExtractor()
     cached = kw_bench_store.current_records(store_path)
-    pending = tracks[:limit] if limit is not None else tracks
+
+    # Decide what is stale *before* extracting anything.  Extraction is the
+    # expensive step once a model backs it, so a cache check that runs after it
+    # saves nothing: the call has already been paid for.  `track_fingerprint`
+    # covers the track metadata that lands in the stored row, so a track whose
+    # event_kind flipped to `released` is reclassified even though its evidence
+    # text is byte-identical.
+    stale = [
+        track
+        for track in tracks
+        if kw_bench_store.needs_classification(
+            track,
+            cached.get((track["canonical_artifact_id"], track["track_id"])),
+        )
+        or kw_bench_store.is_stale(
+            cached.get((track["canonical_artifact_id"], track["track_id"])),
+            refresh_before=refresh_before,
+        )
+    ]
+    reused = len(tracks) - len(stale)
+    # `limit` bounds the work, so it must apply to what is left to do rather
+    # than to the front of the full list.  Slicing `tracks` made every bounded
+    # run re-select the same already-classified prefix, so a corpus larger than
+    # the limit could never finish however many times it ran.
+    pending = stale[:limit] if limit is not None else stale
 
     written = 0
-    skipped = 0
     extracted = 0
     superseded = 0
+    unchanged = 0
     for batch in kw_bench_store.iter_batches(list(pending), batch_size):
         rows: list[dict[str, Any]] = []
         for track in batch:
@@ -197,21 +245,21 @@ def classify_tracks(
             previous = cached.get(key)
             evidence, source_hashes = extractor.extract(track)
             extracted += 1
-            digest = kw_bench.evidence_hash(evidence)
-            if not kw_bench_store.needs_classification(
-                track,
-                previous,
-                evidence_hash=digest,
-                source_hashes=source_hashes,
-            ):
-                skipped += 1
-                continue
             record = kw_bench.classify_track(
                 {**track, "evidence": evidence, "source_hashes": source_hashes},
                 classified_at=classified_at,
                 classified_by=f"kw-bench-deterministic/{extractor.name}",
             )
             record["extractor"] = extractor.name
+            record["track_fingerprint"] = kw_bench_store.track_fingerprint(track)
+            # Extraction can legitimately return what is already stored: a
+            # README edit that did not change the six fields, or a track whose
+            # metadata moved without touching its evidence. Appending an
+            # identical row would grow the store on every run with no new
+            # information, so only a real change is recorded.
+            if previous is not None and not kw_bench_store.record_changed(previous, record):
+                unchanged += 1
+                continue
             # A human-approved level is never silently overwritten by an
             # automated rerun.  Re-approval is a human action, so the new row
             # returns to the review queue and the approval stays visible in
@@ -225,10 +273,14 @@ def classify_tracks(
 
     return {
         "kw_bench_version": kw_bench.KW_BENCH_VERSION,
-        "tracks_considered": len(pending),
+        "tracks_considered": len(tracks),
+        "tracks_pending": len(stale),
+        # The honest count of extractor invocations. A cache hit never reaches
+        # the extractor, so this is 0 on an unchanged rerun.
         "extraction_calls": extracted,
         "classified": written,
-        "reused_from_cache": skipped,
+        "reused_from_cache": reused,
+        "unchanged_after_extraction": unchanged,
         "superseded": superseded,
         "extractor": extractor.name,
         "store": str(store_path),
@@ -243,9 +295,11 @@ def backfill(
     extractor: Extractor | None = None,
     batch_size: int = DEFAULT_BATCH_SIZE,
     limit: int | None = None,
+    refresh_before: str | None = None,
+    track_names: dict[str, list[str]] | None = None,
 ) -> dict[str, Any]:
     """Derive tracks from the full snapshot history and classify them."""
-    tracks = derive_tracks(snapshots)
+    tracks = derive_tracks(snapshots, track_names=track_names)
     summary = classify_tracks(
         tracks,
         store_path=store_path,
@@ -253,6 +307,7 @@ def backfill(
         extractor=extractor,
         batch_size=batch_size,
         limit=limit,
+        refresh_before=refresh_before,
     )
     return {**summary, "tracks_derived": len(tracks)}
 

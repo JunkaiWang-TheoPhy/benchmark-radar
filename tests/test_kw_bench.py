@@ -416,6 +416,129 @@ def test_coverage_of_an_empty_corpus_has_no_rate():
     assert coverage([])["classified_rate"] is None
 
 
+# --- Regressions from independent review --------------------------------
+#
+# Every case below was a real misclassification found by adversarial review,
+# reproduced before it was fixed. They share one root cause worth naming: the
+# evidence fields describe two different actors, and reading the verifier's
+# machinery as if it were the agent's behaviour moves a level.
+
+
+def test_placeholder_l5_fields_do_not_satisfy_the_gate():
+    """ "unknown" and "not performed" are missing fields wearing a value."""
+    decision = assign_level(l5_evidence(evaluation_cutoff="unknown", novelty_check="not performed"))
+
+    assert decision["level"] == UNCLASSIFIED
+    assert set(decision["missing_evidence"]) == {"evaluation_cutoff", "novelty_check"}
+
+
+def test_novelty_check_reporting_prior_art_caps_at_l4():
+    """The ceiling applies from the novelty check, not only evaluator knowledge."""
+    decision = assign_level(
+        l5_evidence(novelty_check="The exact result was already published in 2024.")
+    )
+
+    assert decision["level"] == "L4"
+
+
+def test_a_negated_knowledge_claim_does_not_read_as_knowledge():
+    """ "the evaluator has no known result" must not cap a genuine L5 at L4."""
+    decision = assign_level(
+        l5_evidence(evaluator_knowledge="The evaluator has no known result at the cutoff.")
+    )
+
+    assert decision["level"] == "L5"
+
+
+def test_an_open_ended_question_is_not_an_undisclosed_target():
+    """ "open-ended" must qualify the environment, not any noun."""
+    decision = assign_level(
+        evidence(
+            scored_outcome="The agent computes the answer, derived from the table.",
+            agent_visible_target=(
+                "The prompt states the open-ended question in full; only the answer is withheld."
+            ),
+            evaluator_knowledge="The evaluator already knows the recorded answer.",
+        )
+    )
+
+    assert decision["level"] == "L1"
+
+
+def test_a_verifier_that_reproduces_a_failure_is_not_a_replication_task():
+    """Verifier machinery is not agent behaviour: this is L2, not L3."""
+    decision = assign_level(
+        evidence(
+            scored_outcome=(
+                "The agent patches the specified issue; the verifier checks final repository state."
+            ),
+            agent_visible_target="The issue is given to the agent.",
+            evaluator_knowledge="The reference patch is recorded.",
+            verifier_modality="executable",
+            verifier_procedure=(
+                "Tests reproduce the failure and check the final repository state."
+            ),
+        )
+    )
+
+    assert decision["level"] == "L2"
+
+
+def test_a_verifier_running_commands_does_not_make_a_task_execution():
+    """Read-only diagnosis scored on the returned answer stays at L1."""
+    decision = assign_level(
+        evidence(
+            scored_outcome="The agent diagnoses the cause and returns a written explanation.",
+            agent_visible_target="The question is stated in full.",
+            evaluator_knowledge="A gold explanation is recorded.",
+            verifier_procedure=(
+                "The harness executes the commands; only the returned answer is compared."
+            ),
+        )
+    )
+
+    assert decision["level"] == "L1"
+
+
+def test_evaluator_side_arithmetic_is_not_agent_side_derivation():
+    """ "the evaluator computes accuracy" is scoring, not reasoning: still L0."""
+    decision = assign_level(
+        evidence(
+            scored_outcome="The answer span is copied verbatim from the supplied document.",
+            agent_visible_target="The question is given.",
+            evaluator_knowledge="The annotated span is recorded.",
+            verifier_procedure=(
+                "The evaluator computes exact-match accuracy against the annotated span."
+            ),
+        )
+    )
+
+    assert decision["level"] == "L0"
+
+
+def test_an_ordinary_comparison_counts_as_derivation():
+    decision = assign_level(
+        evidence(
+            scored_outcome="The agent retrieves the record and compares its timestamp to a cutoff.",
+            verifier_procedure="The returned label is compared to the gold label.",
+        )
+    )
+
+    assert decision["level"] == "L1"
+
+
+def test_a_qualified_state_noun_still_signals_execution():
+    decision = assign_level(
+        evidence(
+            scored_outcome="The verifier checks the final repository state after the run.",
+            verifier_modality="executable",
+            verifier_procedure="Tests are executed against the repository.",
+        )
+    )
+
+    assert decision["level"] == "L2"
+
+
 def test_reference_lists_all_six_levels():
     reference = kw_bench.kw_bench_reference()
 

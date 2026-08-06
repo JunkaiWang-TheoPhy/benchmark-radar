@@ -7,23 +7,33 @@ while a partial JSON document is unparseable and loses the whole run.
 
 Two invariants carry the issue's acceptance criteria.
 
-**Idempotence through content hashing.**  A track is reclassified only when its
-evidence hash, its source hashes, or the rubric version changes.  Rerunning a
-completed backfill therefore performs zero extraction calls, which is the
-property that makes a daily run affordable once the model extractor lands.
+**Idempotence through content hashing.**  A track is re-extracted only when its
+metadata fingerprint or the rubric version changes, or when an explicit refresh
+cutoff asks for it.  The gate runs *before* extraction, never after: a check
+that needs the extracted evidence in hand has already spent the call it was
+meant to avoid.  Rerunning a completed backfill therefore performs zero
+extraction calls, which is the property that makes a daily run affordable once
+the model extractor lands.
 
-**Historical snapshots stay immutable.**  Superseding a record appends the new
-row and marks the old one, rather than editing in place.  A level that changed
-because the rubric changed must remain visible as a change, not be silently
-rewritten into having always been the new value.
+**Historical snapshots stay immutable.**  Superseding a record appends a new
+row carrying `supersedes_evidence_hash`, rather than editing the old one.  The
+earlier row is left exactly as written; `current_records` resolves the live
+value by last-row-wins.  A level that changed because the rubric changed must
+remain visible as a change, not be silently rewritten into having always been
+the new value.
+
+The `superseded` flag that `read_records` honours is reserved for an explicit
+retraction (a row withdrawn without a replacement).  Ordinary supersession does
+not set it, because the newer row already wins.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import tempfile
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -40,17 +50,61 @@ def record_key(record: dict[str, Any]) -> tuple[str, str]:
     )
 
 
-def _cache_signature(record: dict[str, Any]) -> tuple[str, tuple[str, ...], str]:
+# Track metadata that is copied into the stored row. A change to any of these
+# must invalidate the cache even when the evidence text is byte-identical,
+# because the published record would otherwise keep a stale value: an artifact
+# promoted from `updated` to `released` that kept its old row would be missing
+# from the released-only chart despite having been released.
+FINGERPRINTED_TRACK_FIELDS: tuple[str, ...] = (
+    "canonical_artifact_id",
+    "track_id",
+    "track_name",
+    "title",
+    "url",
+    "event_kind",
+)
+
+
+def track_fingerprint(track: dict[str, Any]) -> str:
+    """Fingerprint the track metadata that reaches the stored row."""
+    payload = {field: str(track.get(field) or "").strip() for field in FINGERPRINTED_TRACK_FIELDS}
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return f"sha256:{hashlib.sha256(canonical.encode()).hexdigest()[:16]}"
+
+
+def _cache_signature(record: dict[str, Any]) -> tuple[str, str]:
     """What must match for a stored classification to be reusable.
 
     The rubric version is part of the signature because a level-boundary change
     invalidates every stored level even when the evidence text is untouched.
     """
     return (
-        str(record.get("evidence_hash") or ""),
-        tuple(str(value) for value in (record.get("source_hashes") or [])),
         str(record.get("kw_bench_version") or ""),
+        str(record.get("track_fingerprint") or ""),
     )
+
+
+def record_changed(previous: dict[str, Any], candidate: dict[str, Any]) -> bool:
+    """Whether a freshly classified row differs from the stored one.
+
+    Compared on the fields that carry meaning to a reader. `classified_at`
+    is excluded: a rerun that produced an identical classification at a
+    different wall-clock time has not changed anything, and appending a row
+    for it would make the store grow without recording new information.
+    """
+    fields = (
+        "level",
+        "level_rationale",
+        "evidence_hash",
+        "source_hashes",
+        "track_fingerprint",
+        "review_status",
+        "missing_evidence",
+        "evidence",
+        "tags",
+        "kw_bench_version",
+    )
+    return any(previous.get(field) != candidate.get(field) for field in fields)
 
 
 def read_records(path: Path) -> list[dict[str, Any]]:
@@ -89,27 +143,44 @@ def current_records(path: Path) -> dict[tuple[str, str], dict[str, Any]]:
     return live
 
 
-def needs_classification(
-    track: dict[str, Any],
-    cached: dict[str, Any] | None,
-    *,
-    evidence_hash: str,
-    source_hashes: Iterable[str] = (),
-) -> bool:
-    """Whether this track must be reclassified.
+def needs_classification(track: dict[str, Any], cached: dict[str, Any] | None) -> bool:
+    """Whether this track must be re-extracted and reclassified.
 
-    Returns False only when a cached row exists whose evidence, sources, and
-    rubric version all match.  Anything else, including an absent cache and a
-    rubric bump, requires work.
+    Decided from the track and the cached row alone, with no reference to
+    freshly extracted evidence, because this gate exists to decide whether to
+    *pay for* that extraction.  A check that needs the evidence in hand has
+    already spent the call it was meant to avoid.
+
+    Returns False only when a cached row exists whose rubric version and track
+    fingerprint both match.  Anything else, including an absent cache, a
+    rubric bump, and a track promoted from `updated` to `released`, requires
+    work.
+
+    Evidence and source hashes are deliberately not consulted here.  They are
+    outputs of extraction, so they cannot gate it; they are compared afterward
+    by `record_changed`, which decides whether the result is worth storing.
+
+    A consequence worth stating plainly: an upstream README edit that leaves
+    the track metadata untouched does *not* trigger re-extraction on its own,
+    because detecting it would require fetching the README, which is the cost
+    being avoided.  Refreshing stored evidence against changed upstream text is
+    what `--kw-bench-refresh-after` is for.
     """
     if cached is None:
         return True
-    signature = (
-        str(evidence_hash),
-        tuple(sorted(str(value) for value in source_hashes)),
-        KW_BENCH_VERSION,
-    )
-    return _cache_signature(cached) != signature
+    return _cache_signature(cached) != (KW_BENCH_VERSION, track_fingerprint(track))
+
+
+def is_stale(cached: dict[str, Any] | None, *, refresh_before: str | None) -> bool:
+    """Whether a cached row predates the requested refresh cutoff.
+
+    Lets an operator re-extract rows older than a chosen timestamp without
+    discarding the whole store, which is the only way to pick up upstream
+    source edits that leave a track's metadata unchanged.
+    """
+    if cached is None or not refresh_before:
+        return False
+    return str(cached.get("classified_at") or "") < str(refresh_before)
 
 
 def append_records(path: Path, records: list[dict[str, Any]]) -> int:

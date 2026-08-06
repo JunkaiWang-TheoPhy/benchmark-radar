@@ -195,10 +195,26 @@ def evidence_hash(evidence: dict[str, Any]) -> str:
 # describe the scored outcome and the verifier, never the artifact title.  A
 # regex over a paper title is exactly the keyword inference the issue forbids.
 _STATE_CHANGE = re.compile(
-    r"\b(?:end state|final state|environment state|state of the (?:repo|repository|environment|"
-    r"database|system)|resulting (?:repo|repository|file|files|database)|side effects?|"
-    r"applies? a patch|patch is applied|writes? to|modif(?:y|ies|ied)|mutat(?:e|es|ed)|"
-    r"commits?|deploys?|executes? the (?:action|command)s?)\b",
+    # `(?:\w+\s+){0,2}state` lets a qualifier sit between the adjective and the
+    # noun: "final repository state" and "resulting database state" are the
+    # same claim as "final state", and requiring adjacency missed them.
+    r"\b(?:end|final|resulting|environment|environmental)\s+(?:\w+\s+){0,2}?state\b"
+    r"|\bstate of the (?:repo|repository|environment|database|system|workspace)\b"
+    r"|\bresulting (?:repo|repository|file|files|database)\b"
+    r"|\b(?:side effects?|applies? a patch|patch is applied|writes? to|"
+    r"modif(?:y|ies|ied)|mutat(?:e|es|ed)|commits?|deploys?)\b",
+    re.IGNORECASE,
+)
+# An explicit statement that only the returned answer is scored. The rubric
+# makes this decisive: read-only use of a shell, browser, or database preserves
+# L1 when the verifier checks only the returned answer, however much tool
+# activity happened along the way.
+_ANSWER_ONLY = re.compile(
+    r"\b(?:only the (?:returned |submitted |final )?(?:answer|response|output|report|"
+    r"explanation|label|prediction)|the (?:returned|submitted|final) "
+    r"(?:answer|response|output|report|explanation|label|prediction) is "
+    r"(?:compared|scored|checked|graded|matched)|scored? only on the "
+    r"(?:answer|response|output))\b",
     re.IGNORECASE,
 )
 _READ_ONLY = re.compile(
@@ -209,7 +225,8 @@ _READ_ONLY = re.compile(
 _DERIVED_ANSWER = re.compile(
     r"\b(?:deriv(?:e|es|ed|ation)|infer(?:s|red|ence)?|comput(?:e|es|ed)|calculat(?:e|es|ed)|"
     r"reason(?:s|ing|ed)?|synthesi[sz](?:e|es|ed|ing)|combin(?:e|es|ed)|aggregat(?:e|es|ed)|"
-    r"prov(?:e|es|ed)|solv(?:e|es|ed))\b",
+    r"prov(?:e|es|ed)|solv(?:e|es|ed)|compar(?:e|es|ed)|rank(?:s|ed)?|classif(?:y|ies|ied)|"
+    r"summari[sz](?:e|es|ed)|translat(?:e|es|ed)|diagnos(?:e|es|ed|is))\b",
     re.IGNORECASE,
 )
 _VERBATIM_LOOKUP = re.compile(
@@ -242,11 +259,35 @@ _TARGET_WITHHELD = re.compile(
     r"|\b(?:target|problem|bug|defect|finding|phenomenon|relationship|mechanism|failure|"
     r"vulnerability)\s+(?:\w+\s+){0,3}?is (?:undisclosed|withheld|hidden|not (?:named|disclosed|"
     r"revealed|given|provided|specified))\b"
-    r"|\bopen[- ]ended\b"
+    # "open-ended" must qualify the *environment or investigation*, not any
+    # noun: "the open-ended question is stated in full" is an ordinary
+    # free-response benchmark, and treating it as a withheld target promoted
+    # every such suite to L4.
+    r"|\bopen[- ]ended (?:environment|setting|investigation|exploration|search|"
+    r"bug hunt|analysis|repository|codebase|dataset|world)\b"
+    # "no target is disclosed" / "no problem is named": the negative form of
+    # the same claim. Restricted to the investigation nouns so it cannot fire
+    # on "no answer is given", which is every benchmark.
+    r"|\bno (?:\w+\s+){0,2}?(?:target|problem|bug|defect|finding|phenomenon|relationship|"
+    r"mechanism|failure|vulnerability|hypothesis) is (?:disclosed|named|given|provided|"
+    r"specified|revealed|stated)\b"
     r"|\bmust (?:choose|decide|determine) what to (?:investigate|examine|study|look for)\b"
     r"|\bwithout (?:naming|being told|being given|specifying|disclosing) (?:the |which |what )?"
     r"(?:target|problem|bug|defect|finding|phenomenon|relationship|mechanism|failure|"
     r"vulnerability|where|to look)\b",
+    re.IGNORECASE,
+)
+# Negations that flip the meaning of a knowledge claim. Applied as a veto over
+# the whole field rather than inside the pattern: "the evaluator has no known
+# result" matches on `known result` several words away from the `no`, so a
+# lookahead anchored to the verb cannot see it. A field that says the evaluator
+# knows nothing must never read as the evaluator knowing something, since that
+# inversion caps a genuine L5 at L4.
+_NO_EVALUATOR_KNOWLEDGE = re.compile(
+    r"\b(?:no|not|never|nothing|none)\s+(?:\w+\s+){0,3}?"
+    r"(?:known|knows?|knew|recorded|documented|identified|result|finding|prior art)\b"
+    r"|\b(?:is|was|are|were)\s+(?:not|un)known\b"
+    r"|\bunknown (?:to|at|before) the\b",
     re.IGNORECASE,
 )
 _EVALUATOR_KNOWS = re.compile(
@@ -254,6 +295,33 @@ _EVALUATOR_KNOWS = re.compile(
     r"(?:knows?|knew|holds?|held|has|have|recorded)\b"
     r"|\b(?:known|recorded|ground[- ]truth|held[- ]out) (?:finding|bug|answer|relationship|"
     r"mechanism|result)\b",
+    re.IGNORECASE,
+)
+
+
+def _evaluator_knows(text: str) -> bool:
+    """Whether the evaluator is stated to already hold the target finding."""
+    if _NO_EVALUATOR_KNOWLEDGE.search(text):
+        return False
+    return bool(_EVALUATOR_KNOWS.search(text))
+
+
+# A novelty check whose own text reports that the result already exists.  The
+# rubric makes a prior-art hit an L4 ceiling regardless of how the run was
+# framed, so this is read from the novelty check rather than inferred.
+_PRIOR_ART_FOUND = re.compile(
+    r"\b(?:already (?:published|known|reported|documented|exists?)|"
+    r"prior (?:art|work|result)s? (?:was |were |is |are )?(?:found|identified|located)|"
+    r"(?:result|finding) (?:was |is )?(?:previously |already )?(?:published|reported|known)|"
+    r"published in \d{4}|predates the (?:run|evaluation))\b",
+    re.IGNORECASE,
+)
+# A novelty check or cutoff that admits it was not actually performed.  The
+# rubric requires these fields to carry real content for L5; a placeholder is
+# a missing field wearing a value, so it produces `Unclassified`.
+_NOT_PERFORMED = re.compile(
+    r"^\s*(?:n/?a|none|unknown|tbd|todo|pending|not (?:performed|done|applicable|recorded|"
+    r"specified|available|stated)|no (?:check|search|cutoff))\s*\.?\s*$",
     re.IGNORECASE,
 )
 _PROSPECTIVE_VALIDATION = re.compile(
@@ -288,10 +356,22 @@ def assign_level(evidence: dict[str, Any]) -> dict[str, Any]:
             missing=missing,
         )
 
-    outcome = _signal(evidence, "scored_outcome", "verifier_procedure")
+    # `scored_outcome` describes what the *agent* must achieve; the verifier
+    # fields describe how the evaluator checks it.  These must not be merged
+    # for the agent-side tests.  A verifier that "reproduces the failure" or
+    # "executes the commands" describes evaluator machinery, and reading it as
+    # agent behaviour promoted ordinary execution tasks to L3 and read-only
+    # diagnosis to L2.
+    outcome = _signal(evidence, "scored_outcome")
+    procedure = _signal(evidence, "verifier_procedure")
     target = _signal(evidence, "agent_visible_target")
     knowledge = _signal(evidence, "evaluator_knowledge")
+    novelty = _signal(evidence, "novelty_check")
     everything = _signal(evidence, *EVIDENCE_FIELDS)
+    # The verifier may state the scoring boundary ("only the returned answer is
+    # compared") even when the outcome text does not, so this one signal is
+    # read across both.
+    answer_only = _ANSWER_ONLY.search(outcome) or _ANSWER_ONLY.search(procedure)
 
     # --- L5: the result is created prospectively -------------------------
     # Tested first, and gated hardest.  L5 requires an open frontier, a result
@@ -301,27 +381,37 @@ def assign_level(evidence: dict[str, Any]) -> dict[str, Any]:
     # without a cutoff there is no basis to claim the result was unknown.
     if _PROSPECTIVE_VALIDATION.search(everything) and _TARGET_WITHHELD.search(target or everything):
         l5_missing = missing_evidence_fields(evidence, level="L5")
+        # A field that says "unknown", "n/a", or "not performed" is a missing
+        # field with a value in it.  Accepting it would let a placeholder
+        # satisfy the rubric's hardest gate.
+        l5_missing.extend(
+            field
+            for field in L5_REQUIRED_FIELDS
+            if field not in l5_missing and _NOT_PERFORMED.match(_clean(evidence.get(field)))
+        )
         if l5_missing:
             return _unclassified(
                 reason=(
                     "Evidence describes prospective validation of a novel result, but an "
-                    "L5 assignment requires "
+                    "L5 assignment requires a recorded "
                     + " and ".join(L5_REQUIRED_FIELDS)
-                    + "; missing: "
-                    + ", ".join(l5_missing)
+                    + "; missing or not performed: "
+                    + ", ".join(sorted(set(l5_missing)))
                     + "."
                 ),
-                missing=l5_missing,
+                missing=sorted(set(l5_missing)),
             )
         # A prior-art check that finds the result before the run caps this at
-        # L4.  The rubric states this as an explicit ceiling.
-        if _EVALUATOR_KNOWS.search(knowledge):
+        # L4.  The rubric states this as an explicit ceiling, and it applies
+        # whether the prior art surfaced in the novelty check or in what the
+        # evaluator already knew.
+        if _PRIOR_ART_FOUND.search(novelty) or _evaluator_knows(knowledge):
             return _level(
                 "L4",
                 boundary="L4 to L5",
                 rationale=(
-                    "Prior art known to the evaluator before the run establishes an L4 "
-                    "ceiling despite prospective validation evidence."
+                    "A prior-art or provenance check found the result before the run, which "
+                    "establishes an L4 ceiling despite prospective validation evidence."
                 ),
             )
         return _level(
@@ -338,7 +428,7 @@ def assign_level(evidence: dict[str, Any]) -> dict[str, Any]:
     # evaluator already knows it.  A task that states the question and
     # withholds only the answer is not L4; that is every ordinary benchmark,
     # and it stays at L1/L2/L3 by its scored outcome.
-    if _TARGET_WITHHELD.search(target) and _EVALUATOR_KNOWS.search(knowledge):
+    if _TARGET_WITHHELD.search(target) and _evaluator_knows(knowledge):
         return _level(
             "L4",
             boundary="L3 to L4",
@@ -349,8 +439,12 @@ def assign_level(evidence: dict[str, Any]) -> dict[str, Any]:
         )
 
     # --- L3: the task reproduces a known target --------------------------
+    # Read from the agent-side outcome and the disclosed target only.  A
+    # verifier that "reproduces the failure" is describing its own machinery,
+    # not a replication task, and reading it as one turned ordinary patch-and-
+    # test benchmarks into L3.
     if _REPLICATION_TARGET.search(outcome) or (
-        _REPLICATION_TARGET.search(everything) and _TARGET_DISCLOSED.search(target)
+        _REPLICATION_TARGET.search(target) and _TARGET_DISCLOSED.search(target)
     ):
         return _level(
             "L3",
@@ -363,10 +457,12 @@ def assign_level(evidence: dict[str, Any]) -> dict[str, Any]:
 
     # --- L2: external state determines success ---------------------------
     # Read-only use of a shell, browser, or database stays at L1 when the
-    # verifier checks only the returned answer, so an explicit read-only
-    # statement in the scored outcome overrides an incidental state-change
-    # verb elsewhere in the record.
-    if _STATE_CHANGE.search(outcome) and not _READ_ONLY.search(outcome):
+    # verifier checks only the returned answer.  Both escapes are honoured: an
+    # explicit read-only statement, and an explicit statement that only the
+    # answer is scored.  The state-change signal is read from the agent-side
+    # outcome, so a verifier that runs commands to grade a returned answer
+    # cannot by itself make a task L2.
+    if _STATE_CHANGE.search(outcome) and not _READ_ONLY.search(outcome) and not answer_only:
         return _level(
             "L2",
             boundary="L1 to L2",
@@ -378,7 +474,10 @@ def assign_level(evidence: dict[str, Any]) -> dict[str, Any]:
 
     # --- L1 vs L0: the answer is derived ---------------------------------
     # Order matters: a task that retrieves *and then* reasons is L1, so a
-    # derivation signal wins over a lookup signal when both appear.
+    # derivation signal wins over a lookup signal when both appear.  Read from
+    # the agent-side outcome only: "the evaluator computes exact-match
+    # accuracy" describes scoring arithmetic, not agent derivation, and
+    # counting it turned copy-the-span retrieval into L1.
     if _DERIVED_ANSWER.search(outcome):
         return _level(
             "L1",

@@ -140,11 +140,32 @@ def test_rerunning_a_completed_backfill_classifies_nothing(tmp_path):
     assert len(kw_bench_store.read_records(store)) == 1
 
 
+def test_a_cache_hit_never_reaches_the_extractor(tmp_path):
+    """The gate must run before extraction, or it saves nothing once a model backs it."""
+    store = tmp_path / "kw.jsonl"
+    snapshots = [snapshot("2026-07-28", item())]
+    backfill(snapshots, store_path=store, classified_at=CLASSIFIED_AT)
+
+    class Counting(NullExtractor):
+        def __init__(self):
+            self.calls = 0
+
+        def extract(self, track):
+            self.calls += 1
+            return {}, []
+
+    counter = Counting()
+    summary = backfill(snapshots, store_path=store, classified_at=CLASSIFIED_AT, extractor=counter)
+
+    assert counter.calls == 0
+    assert summary["extraction_calls"] == 0
+
+
 def test_changed_evidence_supersedes_without_rewriting_history(tmp_path):
     store = tmp_path / "kw.jsonl"
     snapshots = [snapshot("2026-07-28", item())]
     artifact = "artifact:arxiv:2607.12345"
-    backfill(snapshots, store_path=store, classified_at=CLASSIFIED_AT)
+    backfill(snapshots, store_path=store, classified_at="2026-07-28T00:00:00+00:00")
 
     extractor = MappingExtractor(
         {
@@ -157,11 +178,13 @@ def test_changed_evidence_supersedes_without_rewriting_history(tmp_path):
             }
         }
     )
+    # A refresh cutoff is what re-extracts a track whose metadata is unchanged.
     backfill(
         snapshots,
         store_path=store,
-        classified_at=CLASSIFIED_AT,
+        classified_at="2026-08-06T00:00:00+00:00",
         extractor=extractor,
+        refresh_before="2026-08-01T00:00:00+00:00",
     )
 
     records = kw_bench_store.read_records(store)
@@ -169,42 +192,71 @@ def test_changed_evidence_supersedes_without_rewriting_history(tmp_path):
     assert records[0]["level"] == kw_bench.UNCLASSIFIED
     assert records[1]["level"] == "L2"
     assert records[1]["supersedes_evidence_hash"] == records[0]["evidence_hash"]
+    # The earlier row is left exactly as written; the newer one wins by order.
+    assert "superseded" not in records[0]
     live = kw_bench_store.current_records(store)
     assert live[(artifact, records[1]["track_id"])]["level"] == "L2"
 
 
 def test_a_rubric_version_bump_invalidates_the_cache(tmp_path, monkeypatch):
+    """A level-boundary change invalidates stored levels even on identical evidence."""
     store = tmp_path / "kw.jsonl"
     snapshots = [snapshot("2026-07-28", item())]
     backfill(snapshots, store_path=store, classified_at=CLASSIFIED_AT)
 
+    # Patch both names: the store gates on its own import, and `classify_track`
+    # stamps the version onto the row it builds.
     monkeypatch.setattr(kw_bench_store, "KW_BENCH_VERSION", "0.2")
+    monkeypatch.setattr(kw_bench, "KW_BENCH_VERSION", "0.2")
     summary = backfill(snapshots, store_path=store, classified_at=CLASSIFIED_AT)
 
+    assert summary["extraction_calls"] == 1
     assert summary["classified"] == 1
+    live = list(kw_bench_store.current_records(store).values())
+    assert live[0]["kw_bench_version"] == "0.2"
 
 
-def test_changed_source_hashes_force_reclassification(tmp_path):
-    """An edited README must re-extract even when the evidence text is unchanged."""
+def test_a_refresh_cutoff_re_extracts_rows_classified_before_it(tmp_path):
+    """Upstream source edits are invisible to the fingerprint, so this is the hook."""
     store = tmp_path / "kw.jsonl"
     snapshots = [snapshot("2026-07-28", item())]
-    artifact = "artifact:arxiv:2607.12345"
-    fields = {"evidence": {}, "source_hashes": ["sha256:aaa"]}
-    backfill(
-        snapshots,
-        store_path=store,
-        classified_at=CLASSIFIED_AT,
-        extractor=MappingExtractor({artifact: fields}),
-    )
+    backfill(snapshots, store_path=store, classified_at="2026-07-28T00:00:00+00:00")
 
     summary = backfill(
         snapshots,
         store_path=store,
+        classified_at="2026-08-06T00:00:00+00:00",
+        refresh_before="2026-08-01T00:00:00+00:00",
+    )
+
+    assert summary["extraction_calls"] == 1
+    # Re-extraction produced identical evidence, so nothing new is stored.
+    assert summary["classified"] == 0
+    assert summary["unchanged_after_extraction"] == 1
+    assert len(kw_bench_store.read_records(store)) == 1
+
+
+def test_a_track_promoted_to_released_is_reclassified(tmp_path):
+    """A stale `updated` row would silently drop the track from released counts."""
+    store = tmp_path / "kw.jsonl"
+    backfill(
+        [snapshot("2026-07-28", item(event_kind="updated"))],
+        store_path=store,
         classified_at=CLASSIFIED_AT,
-        extractor=MappingExtractor({artifact: {**fields, "source_hashes": ["sha256:bbb"]}}),
+    )
+
+    summary = backfill(
+        [
+            snapshot("2026-07-28", item(event_kind="updated")),
+            snapshot("2026-07-29", item(event_kind="released")),
+        ],
+        store_path=store,
+        classified_at=CLASSIFIED_AT,
     )
 
     assert summary["classified"] == 1
+    live = list(kw_bench_store.current_records(store).values())
+    assert live[0]["event_kind"] == "released"
 
 
 def test_an_interrupted_backfill_keeps_completed_batches(tmp_path):
@@ -257,6 +309,58 @@ def test_limit_bounds_a_backfill_run(tmp_path):
 
     assert summary["tracks_derived"] == 5
     assert summary["classified"] == 2
+
+
+def test_a_bounded_run_advances_instead_of_reselecting_the_same_prefix(tmp_path):
+    """`limit` bounds remaining work; slicing the full list could never finish."""
+    store = tmp_path / "kw.jsonl"
+    snapshots = [
+        snapshot(
+            "2026-07-28",
+            *[item(source_id=f"p{n}", url=f"https://arxiv.org/abs/2607.{n:05d}") for n in range(5)],
+        )
+    ]
+
+    totals = []
+    for _ in range(3):
+        backfill(snapshots, store_path=store, classified_at=CLASSIFIED_AT, limit=2)
+        totals.append(len(kw_bench_store.current_records(store)))
+
+    assert totals == [2, 4, 5]
+
+
+def test_a_mixed_suite_reports_one_level_per_track(tmp_path):
+    """A suite of retrieval questions and executable tasks is L0 and L2, not an average."""
+    store = tmp_path / "kw.jsonl"
+    snapshots = [snapshot("2026-07-28", item())]
+    artifact = "artifact:arxiv:2607.12345"
+    tracks = derive_tracks(snapshots, track_names={artifact: ["retrieval", "execution"]})
+    assert len(tracks) == 2
+
+    by_name = {track["track_name"]: track["track_id"] for track in tracks}
+    extractor = MappingExtractor(
+        {
+            by_name["retrieval"]: {
+                "scored_outcome": "The answer span is copied verbatim from the document.",
+                "agent_visible_target": "The question is given.",
+                "evaluator_knowledge": "The annotated span is recorded.",
+                "verifier_modality": "exact",
+                "verifier_procedure": "The span is compared to the annotated span.",
+            },
+            by_name["execution"]: {
+                "scored_outcome": "The verifier checks the end state of the repository.",
+                "agent_visible_target": "The goal is given.",
+                "evaluator_knowledge": "The expected end state is recorded.",
+                "verifier_modality": "executable",
+                "verifier_procedure": "Tests run against the modified repository.",
+            },
+        }
+    )
+    classify_tracks(tracks, store_path=store, classified_at=CLASSIFIED_AT, extractor=extractor)
+
+    counts = classification_layer(store)["level_counts"]
+    assert counts["L0"] == 1
+    assert counts["L2"] == 1
 
 
 # --- Store mechanics -----------------------------------------------------
