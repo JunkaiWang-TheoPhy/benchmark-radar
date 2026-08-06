@@ -5,7 +5,10 @@ import pytest
 
 from benchmark_radar.briefing import (
     MAX_INPUT_CHARS,
+    MAX_REQUEST_TOKENS,
     BriefingError,
+    _payload,
+    _request_token_estimate,
     briefing_input,
     current_day_snapshot,
     daily_report_run,
@@ -203,9 +206,32 @@ def test_gpt_input_prioritizes_fresh_attention_before_the_cap():
 
     signals = briefing_input([current], current, ["guardrail"])["attention_signals"]
 
-    assert len(signals) == 20
+    assert len(signals) == 8
     assert signals[0]["title"] == "Discussion 99"
     assert signals[0]["observed_today"] is True
+
+
+def test_request_budget_counts_high_token_density_text():
+    payload = _payload("gpt-5.6", "界" * 28_000)
+
+    assert _request_token_estimate(payload, "gpt-5.6") > MAX_REQUEST_TOKENS
+
+
+def test_request_budget_also_counts_server_character_estimate():
+    payload = _payload("gpt-5.6", "a" * 40_000)
+
+    assert _request_token_estimate(payload, "gpt-5.6") > MAX_REQUEST_TOKENS
+
+
+def test_request_budget_has_an_offline_multibyte_fallback(monkeypatch):
+    monkeypatch.setattr(
+        "tiktoken.encoding_for_model", lambda model: (_ for _ in ()).throw(KeyError())
+    )
+    monkeypatch.setattr("tiktoken.get_encoding", lambda name: (_ for _ in ()).throw(OSError()))
+
+    estimate = _request_token_estimate(_payload("gpt-5.6", "界" * 12_000), "gpt-5.6")
+
+    assert estimate > MAX_REQUEST_TOKENS
 
 
 def test_generate_daily_briefing_uses_real_responses_contract_and_records_usage(monkeypatch):
@@ -276,6 +302,7 @@ def test_generate_daily_briefing_uses_real_responses_contract_and_records_usage(
     assert result.metadata["response_id"] == "resp_real"
     assert result.metadata["usage"]["input_tokens"] == 8123
     assert result.metadata["input"]["evidence_items"] == 1
+    assert result.metadata["input"]["request_tokens_estimate"] <= MAX_REQUEST_TOKENS
     assert result.metadata["citations"][0]["url"] == item.url
     assert captured["payload"]["model"] == "gpt-5.6"
     assert captured["payload"]["reasoning"] == {"effort": "medium"}
