@@ -441,6 +441,18 @@ def test_l5_requires_the_novelty_check_to_record_a_clean_result():
     assert decision["missing_evidence"] == ["novelty_check"]
 
 
+@pytest.mark.parametrize(
+    "novelty_check",
+    [
+        "The search did not find any prior art.",
+        "The review identified no matching results.",
+        "The check returned zero prior results.",
+    ],
+)
+def test_l5_accepts_explicit_negated_prior_art_results(novelty_check):
+    assert assign_level(l5_evidence(novelty_check=novelty_check))["level"] == "L5"
+
+
 def test_novelty_check_reporting_prior_art_caps_at_l4():
     """The ceiling applies from the novelty check, not only evaluator knowledge."""
     decision = assign_level(

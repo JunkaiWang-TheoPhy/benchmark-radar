@@ -352,7 +352,12 @@ _PRIOR_ART_FOUND = re.compile(
 _NO_PRIOR_ART = re.compile(
     r"\bno (?:prior art|prior (?:work|result)s?|matching result|earlier (?:result|report))\b"
     r"|\b(?:found|returned|surfaced) nothing\b"
-    r"|\bnothing (?:was )?found\b",
+    r"|\bnothing (?:was )?found\b"
+    r"|\b(?:search|review|check|we|it) (?:did not|didn't) "
+    r"(?:find|identify|locate|surface|return) (?:any )?"
+    r"(?:prior art|prior (?:work|result)s?|matching results?)\b"
+    r"|\b(?:search|review|check) (?:found|identified|located|surfaced|returned) "
+    r"(?:no|zero) (?:prior art|prior (?:work|result)s?|matching results?)\b",
     re.IGNORECASE,
 )
 # A novelty check or cutoff that admits it was not actually performed.  The
