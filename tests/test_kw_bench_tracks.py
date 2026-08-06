@@ -201,6 +201,13 @@ def test_switching_extractors_invalidates_null_evidence(tmp_path):
 
     assert summary["extraction_calls"] == 1
     assert next(iter(kw_bench_store.current_records(store).values()))["level"] == "L0"
+    rerun = backfill(
+        snapshots,
+        store_path=store,
+        classified_at=CLASSIFIED_AT,
+        extractor=extractor,
+    )
+    assert rerun["extraction_calls"] == 0
 
 
 def test_changed_evidence_supersedes_without_rewriting_history(tmp_path):
@@ -270,10 +277,17 @@ def test_a_refresh_cutoff_re_extracts_rows_classified_before_it(tmp_path):
     )
 
     assert summary["extraction_calls"] == 1
-    # Re-extraction produced identical evidence, so nothing new is stored.
-    assert summary["classified"] == 0
-    assert summary["unchanged_after_extraction"] == 1
-    assert len(kw_bench_store.read_records(store)) == 1
+    # The semantic evidence is unchanged, but cache freshness is persisted so
+    # the same cutoff does not force another extraction on the next run.
+    assert summary["classified"] == 1
+    assert len(kw_bench_store.read_records(store)) == 2
+    rerun = backfill(
+        snapshots,
+        store_path=store,
+        classified_at="2026-08-07T00:00:00+00:00",
+        refresh_before="2026-08-01T00:00:00+00:00",
+    )
+    assert rerun["extraction_calls"] == 0
 
 
 def test_refresh_cutoffs_compare_instants_across_timezone_offsets(tmp_path):
@@ -590,5 +604,5 @@ def test_classification_layer_never_mixes_rubric_versions(tmp_path, monkeypatch)
 
     assert layer["kw_bench_version"] == "0.2"
     assert layer["track_count"] == 2
-    assert layer["coverage"]["track_count"] == 1
-    assert layer["level_counts"][kw_bench.UNCLASSIFIED] == 1
+    assert layer["coverage"]["track_count"] == 2
+    assert layer["level_counts"][kw_bench.UNCLASSIFIED] == 2

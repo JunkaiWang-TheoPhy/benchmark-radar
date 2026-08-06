@@ -89,10 +89,9 @@ def _cache_signature(record: dict[str, Any]) -> tuple[str, str, str]:
 def record_changed(previous: dict[str, Any], candidate: dict[str, Any]) -> bool:
     """Whether a freshly classified row differs from the stored one.
 
-    Compared on the fields that carry meaning to a reader. `classified_at`
-    is excluded: a rerun that produced an identical classification at a
-    different wall-clock time has not changed anything, and appending a row
-    for it would make the store grow without recording new information.
+    Compared on semantic fields plus cache freshness metadata. Extraction only
+    reaches this check for a stale row, so persisting a new extractor identity
+    or refresh timestamp prevents the same expensive no-op work on every run.
     """
     fields = (
         "level",
@@ -105,6 +104,8 @@ def record_changed(previous: dict[str, Any], candidate: dict[str, Any]) -> bool:
         "evidence",
         "tags",
         "kw_bench_version",
+        "extractor",
+        "classified_at",
     )
     return any(previous.get(field) != candidate.get(field) for field in fields)
 

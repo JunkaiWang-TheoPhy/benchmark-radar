@@ -432,6 +432,15 @@ def test_placeholder_l5_fields_do_not_satisfy_the_gate():
     assert set(decision["missing_evidence"]) == {"evaluation_cutoff", "novelty_check"}
 
 
+def test_l5_requires_the_novelty_check_to_record_a_clean_result():
+    decision = assign_level(
+        l5_evidence(novelty_check="A prior-art search across arXiv and Scopus was performed.")
+    )
+
+    assert decision["level"] == UNCLASSIFIED
+    assert decision["missing_evidence"] == ["novelty_check"]
+
+
 def test_novelty_check_reporting_prior_art_caps_at_l4():
     """The ceiling applies from the novelty check, not only evaluator knowledge."""
     decision = assign_level(

@@ -479,6 +479,14 @@ def assign_level(evidence: dict[str, Any]) -> dict[str, Any]:
                     "establishes an L4 ceiling despite prospective validation evidence."
                 ),
             )
+        if not _NO_PRIOR_ART.search(novelty):
+            return _unclassified(
+                reason=(
+                    "Evidence describes prospective validation, but the novelty check "
+                    "does not record whether the search found prior art."
+                ),
+                missing=["novelty_check"],
+            )
         return _level(
             "L5",
             boundary="L4 to L5",

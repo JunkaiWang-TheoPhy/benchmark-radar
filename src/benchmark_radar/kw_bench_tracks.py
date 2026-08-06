@@ -260,11 +260,10 @@ def classify_tracks(
             )
             record["extractor"] = extractor.name
             record["track_fingerprint"] = kw_bench_store.track_fingerprint(track)
-            # Extraction can legitimately return what is already stored: a
-            # README edit that did not change the six fields, or a track whose
-            # metadata moved without touching its evidence. Appending an
-            # identical row would grow the store on every run with no new
-            # information, so only a real change is recorded.
+            # Extraction can legitimately return what is already stored. The
+            # new row still records cache freshness (`classified_at`) and the
+            # extractor identity, otherwise every later run repeats the same
+            # potentially expensive refresh or extractor transition.
             if previous is not None and not kw_bench_store.record_changed(previous, record):
                 unchanged += 1
                 continue
@@ -344,6 +343,12 @@ def classification_layer(
             for track in current_tracks
         }
         records = [record for record in records if kw_bench_store.record_key(record) in active_keys]
+        recorded_keys = {kw_bench_store.record_key(record) for record in records}
+        records.extend(
+            {**track, "level": kw_bench.UNCLASSIFIED}
+            for track in current_tracks
+            if (str(track["canonical_artifact_id"]), str(track["track_id"])) not in recorded_keys
+        )
     return {
         "shadow": True,
         "schema_version": kw_bench.CLASSIFICATION_SCHEMA_VERSION,
