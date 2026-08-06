@@ -34,6 +34,7 @@ import json
 import os
 import tempfile
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -180,7 +181,23 @@ def is_stale(cached: dict[str, Any] | None, *, refresh_before: str | None) -> bo
     """
     if cached is None or not refresh_before:
         return False
-    return str(cached.get("classified_at") or "") < str(refresh_before)
+
+    def timestamp(value: Any, *, field: str) -> datetime:
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError as error:
+            raise KwBenchError(f"{field} must be an ISO timestamp") from error
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=UTC)
+        return parsed.astimezone(UTC)
+
+    classified_at = cached.get("classified_at")
+    if not classified_at:
+        return True
+    return timestamp(classified_at, field="classified_at") < timestamp(
+        refresh_before,
+        field="refresh cutoff",
+    )
 
 
 def append_records(path: Path, records: list[dict[str, Any]]) -> int:

@@ -236,6 +236,21 @@ def test_a_refresh_cutoff_re_extracts_rows_classified_before_it(tmp_path):
     assert len(kw_bench_store.read_records(store)) == 1
 
 
+def test_refresh_cutoffs_compare_instants_across_timezone_offsets(tmp_path):
+    store = tmp_path / "kw.jsonl"
+    snapshots = [snapshot("2026-07-28", item())]
+    backfill(snapshots, store_path=store, classified_at="2026-08-06T00:00:00+00:00")
+
+    summary = backfill(
+        snapshots,
+        store_path=store,
+        classified_at=CLASSIFIED_AT,
+        refresh_before="2026-08-05T20:00:00-07:00",
+    )
+
+    assert summary["extraction_calls"] == 1
+
+
 def test_a_track_promoted_to_released_is_reclassified(tmp_path):
     """A stale `updated` row would silently drop the track from released counts."""
     store = tmp_path / "kw.jsonl"
