@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import UTC
+from urllib.parse import quote
 
 from . import __version__
 from .briefing import markdown_bullet
@@ -10,6 +11,11 @@ from .models import RadarItem, RadarRun
 
 def _escape(text: str) -> str:
     return text.replace("|", "\\|").replace("\n", " ").strip()
+
+
+def _safe_markdown_url(url: str) -> str:
+    """Percent-encode delimiters that can terminate a Markdown destination."""
+    return quote(url, safe=":/?#[]@!$&'*+,;=%")
 
 
 def _item_block(index: int, item: RadarItem) -> str:
@@ -127,8 +133,8 @@ def render_markdown(
                 for citation in citations:
                     lines.append(
                         f"- **{_escape(str(citation.get('id') or ''))}** — "
-                        f"[{_escape(str(citation.get('title') or 'Untitled'))}]"
-                        f"({citation.get('url')}) "
+                        f"[{_escape(markdown_bullet(str(citation.get('title') or 'Untitled')))}]"
+                        f"({_safe_markdown_url(str(citation.get('url') or ''))}) "
                         f"({_escape(str(citation.get('source') or 'unknown'))})"
                     )
                 lines.append("")

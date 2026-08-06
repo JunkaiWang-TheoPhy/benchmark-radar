@@ -171,8 +171,8 @@ def test_report_proves_the_gpt_call_and_links_only_trusted_citations():
             "citations": [
                 {
                     "id": "E001",
-                    "title": "MemoryBench",
-                    "url": "https://example.test/memory",
+                    "title": "MemoryBench](https://evil.test)",
+                    "url": "https://example.test/memory_(safe)",
                     "source": "arXiv",
                 }
             ],
@@ -182,7 +182,9 @@ def test_report_proves_the_gpt_call_and_links_only_trusted_citations():
     assert "GPT synthesis: gpt-5.6 via OpenAI Responses API" in report
     assert "8,123 input / 241 output tokens" in report
     assert "42 evidence records and 10 history days injected" in report
-    assert "[MemoryBench](https://example.test/memory)" in report
+    assert "[MemoryBench\\]\\(https://evil\\.test\\)]" in report
+    assert "(https://example.test/memory_%28safe%29)" in report
+    assert "[MemoryBench](https://evil.test)" not in report
 
 
 def test_report_distinguishes_latest_pass_from_merged_daily_total():

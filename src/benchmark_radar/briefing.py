@@ -314,6 +314,7 @@ def generate_daily_briefing(
             "Success criteria:\n"
             "- synthesize rather than recite the supplied counts\n"
             "- ground every finding in the supplied E### evidence IDs\n"
+            "- cite between one and six evidence IDs per finding\n"
             "- distinguish a new release from an update or attention signal\n"
             "- infer a recurring pattern only when at least two artifacts support it; prefer "
             "independent sources\n"
@@ -359,8 +360,9 @@ def generate_daily_briefing(
 
     evidence_by_id = {item["id"]: item for item in evidence_packet["first_observed_evidence"]}
     insights = parsed.get("insights") or []
-    if parsed.get("status") == "insight" and not insights:
-        raise BriefingError("OpenAI marked an insight without returning one")
+    status = parsed.get("status")
+    if (status == "insight") != bool(insights):
+        raise BriefingError("OpenAI status contradicts the returned insights")
     if len(insights) > MAX_BULLETS:
         raise BriefingError("OpenAI returned too many insights")
 

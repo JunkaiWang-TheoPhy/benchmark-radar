@@ -2,6 +2,7 @@ import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import pytest
 import yaml
 
 from benchmark_radar import cli
@@ -9,6 +10,12 @@ from benchmark_radar.briefing import GeneratedBriefing
 from benchmark_radar.models import ProducerHealth, RadarItem, RadarRun
 from benchmark_radar.pipeline import SOURCE_FETCHERS
 from benchmark_radar.snapshots import write_snapshot
+
+
+@pytest.fixture(autouse=True)
+def _isolate_openai_credentials(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_BRIEFING_REQUIRED", raising=False)
 
 
 def _config_path(tmp_path: Path) -> Path:

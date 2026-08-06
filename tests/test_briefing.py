@@ -250,6 +250,7 @@ def test_generate_daily_briefing_uses_real_responses_contract_and_records_usage(
     assert result.metadata["citations"][0]["url"] == item.url
     assert captured["payload"]["model"] == "gpt-5.6"
     assert captured["payload"]["reasoning"] == {"effort": "medium"}
+    assert "between one and six evidence IDs" in captured["payload"]["instructions"]
     assert captured["payload"]["text"]["format"]["strict"] is True
     assert captured["payload"]["store"] is False
     assert captured["kwargs"]["headers"] == {"Authorization": "Bearer secret"}
@@ -290,6 +291,42 @@ def test_generate_daily_briefing_rejects_a_citation_not_in_the_injected_packet(m
     )
 
     with pytest.raises(BriefingError, match="outside the injected packet"):
+        generate_daily_briefing([current], current, ["guardrail"], "secret")
+
+
+def test_generate_daily_briefing_rejects_insights_with_no_material_status(monkeypatch):
+    current = snapshot_for_run(_run([_item(1)]))
+    monkeypatch.setattr(
+        "benchmark_radar.briefing.post_json",
+        lambda *args, **kwargs: {
+            "output": [
+                {
+                    "type": "message",
+                    "content": [
+                        {
+                            "type": "output_text",
+                            "text": json.dumps(
+                                {
+                                    "status": "no_material_insight",
+                                    "insights": [
+                                        {
+                                            "finding": "Contradictory finding",
+                                            "why_it_matters": "It should not be published.",
+                                            "evidence_ids": ["E001"],
+                                            "confidence": "low",
+                                        }
+                                    ],
+                                    "caveat": "No material insight.",
+                                }
+                            ),
+                        }
+                    ],
+                }
+            ]
+        },
+    )
+
+    with pytest.raises(BriefingError, match="status contradicts"):
         generate_daily_briefing([current], current, ["guardrail"], "secret")
 
 
