@@ -16,7 +16,7 @@ Two rules these drafts follow deliberately:
   The audience most likely to share this is also the audience most able to check the
   denominator.
 - No claim that "most benchmarks are not adopted". Every tracked benchmark has at least
-  one adopter, so that framing is simply false here. The honest finding is the
+  one adopter, so that framing is false here. The honest finding is the
   concentration: 21 of 79 benchmarks appear in five or more documents, while 24 appear in
   exactly one and 25 come from a single organization.
 
@@ -54,7 +54,7 @@ I built an open-source project called Benchmark Radar around this question: whic
 
 The ranking is hand-curated from 30 model cards, system cards, and technical reports. The counted unit is the document, not the result row. Reporting AIME at pass@1, consensus@64, and with tools in one card still contributes one adoption. The leaderboard publishes `card_count` and `organization_count` side by side rather than merging them.
 
-The sample is small, n=30 documents across 10 organizations, so I would not treat this as a comprehensive map of evaluation practice.
+The sample is small, n=30 documents across 10 organizations, so I would not treat this as a full map of evaluation practice.
 
 More importantly, this measures vendor reporting convention, not benchmark quality. Saturated or contaminated benchmarks can rank highly precisely because they remain conventional to report. I deliberately exclude scores because vendors differ in prompting, scaffolding, tool access, reasoning budget, pass@k, and evaluation setup.
 
@@ -78,7 +78,7 @@ The current top entries are GPQA Diamond at 23 cards/10 organizations, SWE-bench
 
 Each document gets at most one vote per benchmark, regardless of how many prompt settings, scaffolds, or pass@k variants it reports. Card count and organization count stay separate, since six vendors using something tells a different story from one vendor using it six times.
 
-This is a leaderboard of reporting convention, not benchmark quality. A benchmark can rank highly even if it is saturated or contaminated, simply because releases still report it. I also leave scores out because results produced with different tools, prompts, reasoning budgets, and evaluators are usually not comparable. The dataset is only 30 documents, so the result should be read as a small, inspectable sample.
+This is a leaderboard of reporting convention, not benchmark quality. A benchmark can rank highly even if it is saturated or contaminated because releases still report it. I also leave scores out because results produced with different tools, prompts, reasoning budgets, and evaluators are usually not comparable. The dataset is only 30 documents, so the result should be read as a small, inspectable sample.
 
 The project also runs a daily radar for new benchmarks, evals, datasets, and data-quality work.
 
@@ -89,6 +89,8 @@ JSON: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.json
 ## 4. X / Twitter
 
 *Format: 6-post thread, each post under 280 characters.*
+
+- [x] Posted
 
 **1/6**
 
@@ -130,6 +132,8 @@ CSV: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
 
 *Format: one professional post with short paragraphs.*
 
+- [x] Posted
+
 Which AI benchmarks have become part of the standard model-release vocabulary?
 
 I have been working on Benchmark Radar, an open-source project built around that question. I manually reviewed 30 model cards, system cards, and technical reports from 10 organizations, then recorded which benchmarks each document reports. The current dataset contains 79 benchmarks.
@@ -146,25 +150,61 @@ Project: https://github.com/ktwu01/benchmark-radar
 Leaderboard: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard  
 Citable data: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.md
 
-## 6. Bluesky
+## 6. Xiaohongshu（小红书）
 
-*Format: one post under 300 characters.*
+*格式：一篇中文图文笔记，搭配 5 张数据卡片。*
 
-I read 30 frontier model reports to count which benchmarks they mention. GPQA Diamond leads at 23 cards/10 orgs. Small sample, and this measures reporting convention, not quality. Saturated or contaminated benchmarks can still rank high. Scores excluded. https://koutian.is-a.dev/benchmark-radar/
+**标题：我统计了 30 份大模型报告，GPQA Diamond 出现最多**
 
-## 7. Mastodon
+前沿模型发布时，大家到底在报哪些 benchmark？
 
-*Format: one post under 500 characters.*
+我整理了 30 份 model card、system card 和技术报告，覆盖 10 家机构，共记录 79 个 benchmark。出现次数最多的三项是：
 
-Which benchmarks do frontier labs report when shipping models? I reviewed 30 model cards, system cards, and technical reports from 10 organizations. GPQA Diamond leads at 23 cards/10 orgs, followed by SWE-bench Verified at 18/8.
+1. GPQA Diamond：23 份文档，10 家机构
+2. SWE-bench Verified：18 份文档，8 家机构
+3. LiveCodeBench：15 份文档，7 家机构
 
-This small sample measures reporting convention, not benchmark quality. Saturated or contaminated benchmarks may rank highly because they are conventional. Scores are excluded as setups differ.
+统计单位是文档，不是结果行。同一份报告无论展示多少种 prompt、工具或 pass@k 设置，同一个 benchmark 都只计一次。
 
-MIT licensed: https://github.com/ktwu01/benchmark-radar
+这个排名衡量的是厂商的报告惯例，不是 benchmark 质量。已经饱和或可能受到污染的评测，也可能因为大家习惯报告而排得很高。目前样本只有 30 份文档。
+
+完整排行榜和可下载数据放在 Benchmark Radar：
+https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+
+#人工智能 #大模型 #AI评测 #开源项目 #Benchmark
+
+**配图顺序：**
+
+1. 封面：30 份模型报告里，谁最常出现？
+2. 前五名排行榜
+3. 统计方法：每份文档每个 benchmark 最多计一次
+4. 长尾分布：24 个只出现一次，25 个只被一家机构报告
+5. 解读边界与项目链接
+
+## 7. Jike（即刻）
+
+*格式：一条中文动态，数据结论在前，项目链接在后。*
+
+我整理了 30 份前沿模型的 model card、system card 和技术报告，想看看发布模型时大家实际在报哪些 benchmark。
+
+目前记录了 79 个 benchmark。GPQA Diamond 出现在 23 份文档中，覆盖全部 10 家机构；SWE-bench Verified 为 18 份、8 家；LiveCodeBench 为 15 份、7 家。
+
+每份文档对同一个 benchmark 最多计一次，文档数和机构数分开公布。这份数据反映报告惯例，不代表 benchmark 质量，也不比较跨厂商的模型得分。样本目前只有 30 份文档。
+
+项目和数据：https://github.com/ktwu01/benchmark-radar
+在线排行榜：https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+
+如果你熟悉模型评测或 model card，欢迎帮我看看这个计数方法有没有漏洞，或者补充还没有收录的模型文档。
 
 ## 8. GitHub Release notes for v0.3.0
 
 *Format: GitHub Release title and Markdown release notes.*
+
+- [x] Published on 2026-08-05
+
+Release: https://github.com/ktwu01/benchmark-radar/releases/tag/v0.3.0
+Tag: `v0.3.0`
+Commit: `3b5524af003ce4b047036eb851dee66dac4b27b4`
 
 **Title:** Benchmark Radar v0.3.0: Model Card Adoption Rank
 
@@ -360,3 +400,21 @@ https://koutian.is-a.dev/benchmark-radar/
 *Format: 3-sentence pitch to an AI evaluation newsletter writer.*
 
 I built a small open-source dataset that counts which benchmarks appear across 30 frontier model cards, system cards, and technical reports from 10 organizations. The main finding is concentration plus a long tail: GPQA Diamond appears in 23 documents, while 24 of the 79 tracked benchmarks appear in exactly one. It measures reporting convention, not benchmark quality, so saturated or contaminated benchmarks may rank highly; scores are excluded as evaluation setups differ, and the n=30 sample is explicitly limited: https://github.com/ktwu01/benchmark-radar
+
+## 16. V2EX（分享创造）
+
+*格式：发布到「分享创造」节点，说明项目做了什么、统计边界和希望获得的反馈。*
+
+**标题：[分享创造] Benchmark Radar：统计 30 份模型报告中实际出现的 benchmark**
+
+我做了一个开源项目 Benchmark Radar，其中有一份手工整理的 Model Card Adoption Rank。它回答一个比较具体的问题：前沿模型发布时，各家的 model card、system card 和技术报告实际会报哪些 benchmark？
+
+当前数据包含 30 份文档、10 家机构和 79 个 benchmark。排在前面的是 GPQA Diamond（23 份文档，10 家机构）、SWE-bench Verified（18，8）和 LiveCodeBench（15，7）。
+
+计数时，同一份文档中的同一个 benchmark 最多计一次。项目分开公布文档数和机构数，不将它们合成一个总分。这份排名衡量的是厂商报告惯例，不是 benchmark 质量。模型得分也没有放在一起比，因为各家的 prompt、工具、推理预算和 evaluator 并不一致。当前 30 份文档的样本也还很小。
+
+v0.3.0 已经发布：https://github.com/ktwu01/benchmark-radar/releases/tag/v0.3.0
+在线排行榜：https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+CSV：https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
+
+希望请 V 友帮忙看两件事：统计口径是否合理；还有哪些重要的模型文档没有收录。
