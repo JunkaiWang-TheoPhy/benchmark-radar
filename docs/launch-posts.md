@@ -166,7 +166,7 @@ Citable data: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.md
 
 统计单位是文档，不是结果行。同一份报告无论展示多少种 prompt、工具或 pass@k 设置，同一个 benchmark 都只计一次。
 
-这个排名衡量的是厂商的报告惯例，不是 benchmark 质量。已经饱和或可能受到污染的评测，也可能因为大家习惯报告而排得很高。目前样本只有 30 份文档。
+这个排名衡量的是厂商的报告惯例，不是 benchmark 质量。已经饱和或可能受到污染的评测，也可能因为大家习惯报告而排得很高。项目不比较跨厂商的模型得分，因为 prompt、工具、推理预算和 evaluator 并不一致。目前样本只有 30 份文档。
 
 完整排行榜和可下载数据放在 Benchmark Radar：
 https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
