@@ -661,3 +661,29 @@ def test_daily_briefing_withholds_another_days_text_and_names_an_absent_one():
     # listings.
     assert "briefing.date === day.date" in script
     assert "No briefing was recorded for this day." in script
+
+
+def test_daily_briefing_links_only_cited_http_evidence_ids():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert "validBriefingCitations(briefing.citations)" in script
+    assert "briefingContent(line, citations)" in script
+    assert "String(line).matchAll(/\\bE\\d{3}\\b/g)" in script
+    assert '["http:", "https:"].includes(url.protocol)' in script
+    assert 'className: "briefing-evidence-link"' in script
+    assert 'target: "_blank"' in script
+    assert 'rel: "noopener noreferrer"' in script
+    assert "document.createTextNode(line.slice(cursor))" in script
+
+
+def test_daily_briefing_renders_its_provenance_caveat_and_evidence_ledger():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'briefing.generator !== "openai-responses"' in script
+    assert "via OpenAI Responses API" in script
+    assert "input.evidence_items" in script
+    assert "input.history_days" in script
+    assert 'text: "Caveat: "' in script
+    assert 'text: "Evidence cited by GPT"' in script
+    assert "briefingEvidenceList(citations)" in script
+    assert "`${citation.id} — ${citation.title}`" in script
