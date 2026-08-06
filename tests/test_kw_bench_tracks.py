@@ -175,6 +175,34 @@ def test_a_cache_hit_never_reaches_the_extractor(tmp_path):
     assert summary["extraction_calls"] == 0
 
 
+def test_switching_extractors_invalidates_null_evidence(tmp_path):
+    store = tmp_path / "kw.jsonl"
+    snapshots = [snapshot("2026-07-28", item())]
+    artifact = "artifact:arxiv:2607.12345"
+    backfill(snapshots, store_path=store, classified_at=CLASSIFIED_AT)
+    extractor = MappingExtractor(
+        {
+            artifact: {
+                "scored_outcome": "The answer is copied verbatim from the document.",
+                "agent_visible_target": "The question is given.",
+                "evaluator_knowledge": "The evaluator holds the answer.",
+                "verifier_modality": "exact",
+                "verifier_procedure": "Exact match determines success.",
+            }
+        }
+    )
+
+    summary = backfill(
+        snapshots,
+        store_path=store,
+        classified_at=CLASSIFIED_AT,
+        extractor=extractor,
+    )
+
+    assert summary["extraction_calls"] == 1
+    assert next(iter(kw_bench_store.current_records(store).values()))["level"] == "L0"
+
+
 def test_changed_evidence_supersedes_without_rewriting_history(tmp_path):
     store = tmp_path / "kw.jsonl"
     snapshots = [snapshot("2026-07-28", item())]
@@ -192,13 +220,11 @@ def test_changed_evidence_supersedes_without_rewriting_history(tmp_path):
             }
         }
     )
-    # A refresh cutoff is what re-extracts a track whose metadata is unchanged.
     backfill(
         snapshots,
         store_path=store,
         classified_at="2026-08-06T00:00:00+00:00",
         extractor=extractor,
-        refresh_before="2026-08-01T00:00:00+00:00",
     )
 
     records = kw_bench_store.read_records(store)
@@ -428,6 +454,22 @@ def test_torn_final_row_keeps_the_durable_store_prefix(tmp_path):
     )
 
     assert kw_bench_store.read_records(store) == [{"canonical_artifact_id": "a", "track_id": "t"}]
+
+    kw_bench_store.append_records(store, [{"canonical_artifact_id": "b", "track_id": "u"}])
+
+    assert [record["track_id"] for record in kw_bench_store.read_records(store)] == ["t", "u"]
+
+
+def test_append_preserves_a_valid_final_row_without_a_newline(tmp_path):
+    store = tmp_path / "kw.jsonl"
+    store.write_text(
+        '{"canonical_artifact_id":"a","track_id":"t"}',
+        encoding="utf-8",
+    )
+
+    kw_bench_store.append_records(store, [{"canonical_artifact_id": "b", "track_id": "u"}])
+
+    assert [record["track_id"] for record in kw_bench_store.read_records(store)] == ["t", "u"]
 
 
 def test_malformed_completed_final_row_is_rejected(tmp_path):

@@ -628,6 +628,20 @@ def test_a_conceptual_state_is_not_an_environment_state():
     assert decision["level"] == "L1"
 
 
+@pytest.mark.parametrize("kind", ["final", "environmental", "quantum"])
+def test_a_predicted_state_is_not_a_mutated_system_state(kind):
+    decision = assign_level(
+        evidence(
+            scored_outcome=(f"The agent computes the {kind} state from the supplied measurements."),
+            agent_visible_target="The measurements and prediction question are supplied.",
+            evaluator_knowledge="The evaluator holds the ground-truth label.",
+            verifier_procedure="Exact match against the annotated state label.",
+        )
+    )
+
+    assert decision["level"] == "L1"
+
+
 def test_running_a_migration_is_execution_even_when_a_report_is_returned():
     decision = assign_level(
         evidence(

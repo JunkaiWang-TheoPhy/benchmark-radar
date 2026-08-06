@@ -73,7 +73,7 @@ def track_fingerprint(track: dict[str, Any]) -> str:
     return f"sha256:{hashlib.sha256(canonical.encode()).hexdigest()[:16]}"
 
 
-def _cache_signature(record: dict[str, Any]) -> tuple[str, str]:
+def _cache_signature(record: dict[str, Any]) -> tuple[str, str, str]:
     """What must match for a stored classification to be reusable.
 
     The rubric version is part of the signature because a level-boundary change
@@ -82,6 +82,7 @@ def _cache_signature(record: dict[str, Any]) -> tuple[str, str]:
     return (
         str(record.get("kw_bench_version") or ""),
         str(record.get("track_fingerprint") or ""),
+        str(record.get("extractor") or ""),
     )
 
 
@@ -152,7 +153,9 @@ def current_records(path: Path) -> dict[tuple[str, str], dict[str, Any]]:
     return live
 
 
-def needs_classification(track: dict[str, Any], cached: dict[str, Any] | None) -> bool:
+def needs_classification(
+    track: dict[str, Any], cached: dict[str, Any] | None, *, extractor: str
+) -> bool:
     """Whether this track must be re-extracted and reclassified.
 
     Decided from the track and the cached row alone, with no reference to
@@ -160,10 +163,10 @@ def needs_classification(track: dict[str, Any], cached: dict[str, Any] | None) -
     *pay for* that extraction.  A check that needs the evidence in hand has
     already spent the call it was meant to avoid.
 
-    Returns False only when a cached row exists whose rubric version and track
-    fingerprint both match.  Anything else, including an absent cache, a
-    rubric bump, and a track promoted from `updated` to `released`, requires
-    work.
+    Returns False only when a cached row exists whose rubric version, track
+    fingerprint, and extractor identity all match. Anything else, including
+    an absent cache, a rubric bump, a new extractor, and a track promoted from
+    `updated` to `released`, requires work.
 
     Evidence and source hashes are deliberately not consulted here.  They are
     outputs of extraction, so they cannot gate it; they are compared afterward
@@ -177,7 +180,11 @@ def needs_classification(track: dict[str, Any], cached: dict[str, Any] | None) -
     """
     if cached is None:
         return True
-    return _cache_signature(cached) != (KW_BENCH_VERSION, track_fingerprint(track))
+    return _cache_signature(cached) != (
+        KW_BENCH_VERSION,
+        track_fingerprint(track),
+        extractor,
+    )
 
 
 def is_stale(cached: dict[str, Any] | None, *, refresh_before: str | None) -> bool:
@@ -218,6 +225,24 @@ def append_records(path: Path, records: list[dict[str, Any]]) -> int:
     if not records:
         return 0
     path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists() and path.stat().st_size:
+        # Recover the append boundary after a torn write. A valid final object
+        # merely missing its newline is preserved; an invalid unterminated tail
+        # is the interrupted row and is truncated back to the durable prefix.
+        with path.open("rb+") as repair:
+            contents = repair.read()
+            if not contents.endswith(b"\n"):
+                boundary = contents.rfind(b"\n") + 1
+                tail = contents[boundary:]
+                try:
+                    json.loads(tail.decode("utf-8"))
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    repair.truncate(boundary)
+                else:
+                    repair.seek(0, os.SEEK_END)
+                    repair.write(b"\n")
+                repair.flush()
+                os.fsync(repair.fileno())
     with path.open("a", encoding="utf-8") as handle:
         for record in records:
             handle.write(json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n")

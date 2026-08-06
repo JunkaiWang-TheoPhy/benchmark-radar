@@ -202,7 +202,6 @@ _STATE_CHANGE = re.compile(
     r"\b(?:end|final|resulting|target)\s+(?:\w+\s+){0,2}?"
     r"(?:repo|repository|environment|database|system|workspace|file|filesystem|"
     r"container|cluster|schema|branch)\s+state\b"
-    r"|\b(?:end|final|resulting|environment|environmental)\s+state\b"
     r"|\bstate of the (?:repo|repository|environment|database|system|workspace)\b"
     r"|\bresulting (?:repo|repository|file|files|database)\b"
     r"|\b(?:side effects?|applies? a patch|patch is applied|writes? to|"

@@ -228,6 +228,7 @@ def classify_tracks(
         if kw_bench_store.needs_classification(
             track,
             cached.get((track["canonical_artifact_id"], track["track_id"])),
+            extractor=extractor.name,
         )
         or kw_bench_store.is_stale(
             cached.get((track["canonical_artifact_id"], track["track_id"])),
