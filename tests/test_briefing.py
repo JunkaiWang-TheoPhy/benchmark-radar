@@ -7,6 +7,7 @@ from benchmark_radar.briefing import (
     MAX_INPUT_CHARS,
     MAX_REQUEST_TOKENS,
     BriefingError,
+    _output_text,
     _payload,
     _request_token_estimate,
     briefing_input,
@@ -232,6 +233,12 @@ def test_request_budget_has_an_offline_multibyte_fallback(monkeypatch):
     estimate = _request_token_estimate(_payload("gpt-5.6", "界" * 12_000), "gpt-5.6")
 
     assert estimate > MAX_REQUEST_TOKENS
+
+
+def test_model_output_is_not_cut_mid_sentence_after_generation():
+    complete = "A" * 420 + " complete ending."
+
+    assert _output_text(complete) == complete
 
 
 def test_generate_daily_briefing_uses_real_responses_contract_and_records_usage(monkeypatch):

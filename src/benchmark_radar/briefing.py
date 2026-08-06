@@ -104,6 +104,11 @@ def _plain(value: Any, limit: int) -> str:
     return " ".join(str(value or "").split())[:limit]
 
 
+def _output_text(value: Any) -> str:
+    """Normalize model prose without cutting a sentence after generation."""
+    return " ".join(str(value or "").split())
+
+
 def _evidence_records(history: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Select a broad but bounded set of artifacts that are genuinely new today."""
     selected: list[dict[str, Any]] = []
@@ -315,7 +320,8 @@ _INSTRUCTIONS = (
     "supports no material insight, return no_material_insight and say what is missing "
     "instead of forcing a story.\n\n"
     "Output: at most three non-overlapping insights. Keep each finding and why_it_matters "
-    "concrete. Use the caveat for the most material coverage or measurement limitation."
+    "concrete, at most 80 words each, and end each with a complete sentence. Use the caveat "
+    "for the most material coverage or measurement limitation."
 )
 
 
@@ -454,8 +460,8 @@ def generate_daily_briefing(
         ):
             raise BriefingError("OpenAI cited evidence outside the injected packet")
         cited_ids.extend(value for value in ids if value not in cited_ids)
-        finding = _plain(insight.get("finding"), 420)
-        why = _plain(insight.get("why_it_matters"), 420)
+        finding = _output_text(insight.get("finding"))
+        why = _output_text(insight.get("why_it_matters"))
         confidence = str(insight.get("confidence") or "low").capitalize()
         if not finding or not why:
             raise BriefingError("OpenAI returned an empty finding")
@@ -463,7 +469,7 @@ def generate_daily_briefing(
             f"{finding} Why it matters: {why} Evidence: {', '.join(ids)}. {confidence} confidence."
         )
 
-    caveat = _plain(parsed.get("caveat"), 500)
+    caveat = _output_text(parsed.get("caveat"))
     if not bullets:
         if not caveat:
             raise BriefingError("OpenAI returned neither an insight nor a caveat")
