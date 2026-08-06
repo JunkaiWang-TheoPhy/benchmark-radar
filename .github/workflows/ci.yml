@@ -21,4 +21,4 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest -q
-      - run: benchmark-radar rebuild
+      - run: benchmark-radar classify
