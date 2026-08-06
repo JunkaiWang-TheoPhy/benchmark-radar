@@ -51,7 +51,15 @@ def _iso_utc(value: datetime) -> str:
 
 def snapshot_for_run(run: RadarRun) -> dict[str, Any]:
     date = run.generated_at.astimezone(UTC).date().isoformat()
-    briefing = {"date": date, "bullets": list(run.daily_briefing)} if run.daily_briefing else None
+    briefing = (
+        {
+            "date": date,
+            "bullets": list(run.daily_briefing),
+            **run.daily_briefing_metadata,
+        }
+        if run.daily_briefing
+        else None
+    )
     return {
         "schema_version": SCHEMA_VERSION,
         "date": date,
@@ -182,6 +190,34 @@ def _validate_briefing(briefing: Any, *, source: str, date: str) -> None:
     for bullet in bullets:
         if not isinstance(bullet, str) or not bullet.strip():
             raise SnapshotError(f"{source}: briefing.bullets entries must be non-empty strings")
+    if briefing.get("generator") != "openai-responses":
+        return
+    if not str(briefing.get("model") or "").strip():
+        raise SnapshotError(f"{source}: OpenAI briefing must name its model")
+    if not str(briefing.get("response_id") or "").startswith("resp_"):
+        raise SnapshotError(f"{source}: OpenAI briefing must retain its response ID")
+    usage = briefing.get("usage")
+    if not isinstance(usage, dict) or any(
+        not isinstance(usage.get(field), int) or usage[field] < 0
+        for field in ("input_tokens", "output_tokens", "total_tokens")
+    ):
+        raise SnapshotError(f"{source}: OpenAI briefing usage is invalid")
+    if usage["total_tokens"] <= 0:
+        raise SnapshotError(f"{source}: OpenAI briefing must retain nonzero token usage")
+    input_scope = briefing.get("input")
+    if not isinstance(input_scope, dict) or not isinstance(input_scope.get("evidence_items"), int):
+        raise SnapshotError(f"{source}: OpenAI briefing input scope is invalid")
+    citations = briefing.get("citations")
+    if not isinstance(citations, list):
+        raise SnapshotError(f"{source}: OpenAI briefing citations must be an array")
+    for citation in citations:
+        if (
+            not isinstance(citation, dict)
+            or not str(citation.get("id") or "").startswith("E")
+            or not str(citation.get("title") or "").strip()
+            or not str(citation.get("url") or "").startswith(("https://", "http://"))
+        ):
+            raise SnapshotError(f"{source}: OpenAI briefing citation is invalid")
 
 
 def _validate_attention(attention: Any, *, source: str) -> None:

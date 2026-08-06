@@ -61,6 +61,7 @@ def render_markdown(
     *,
     issue_item_limit: int | None = None,
     daily_briefing: list[str] | None = None,
+    daily_briefing_metadata: dict | None = None,
 ) -> str:
     date = run.generated_at.astimezone(UTC).date().isoformat()
     category_counts = Counter(category for item in run.items for category in item.categories)
@@ -100,6 +101,39 @@ def render_markdown(
                 "",
             ]
         )
+        metadata = daily_briefing_metadata or {}
+        if metadata.get("generator") == "openai-responses":
+            usage = metadata.get("usage") or {}
+            input_scope = metadata.get("input") or {}
+            lines.extend(
+                [
+                    (
+                        f"_GPT synthesis: {_escape(str(metadata.get('model') or 'unknown'))} "
+                        f"via OpenAI Responses API · "
+                        f"{int(usage.get('input_tokens') or 0):,} input / "
+                        f"{int(usage.get('output_tokens') or 0):,} output tokens · "
+                        f"{int(input_scope.get('evidence_items') or 0)} evidence records and "
+                        f"{int(input_scope.get('history_days') or 0)} history days injected._"
+                    ),
+                    "",
+                ]
+            )
+            caveat = str(metadata.get("caveat") or "").strip()
+            if caveat:
+                lines.extend([f"> Caveat: {_escape(markdown_bullet(caveat))}", ""])
+            citations = metadata.get("citations") or []
+            if citations:
+                lines.extend(["Evidence cited by GPT:", ""])
+                for citation in citations:
+                    lines.append(
+                        f"- **{_escape(str(citation.get('id') or ''))}** — "
+                        f"[{_escape(str(citation.get('title') or 'Untitled'))}]"
+                        f"({citation.get('url')}) "
+                        f"({_escape(str(citation.get('source') or 'unknown'))})"
+                    )
+                lines.append("")
+        elif metadata.get("generator") == "deterministic-fallback":
+            lines.extend(["_Deterministic fallback; no GPT response was published._", ""])
     lines.extend(
         [
             "## At a glance",

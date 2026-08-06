@@ -158,6 +158,33 @@ def test_report_places_escaped_daily_briefing_before_counts():
     assert report.index("## Daily briefing") < report.index("## At a glance")
 
 
+def test_report_proves_the_gpt_call_and_links_only_trusted_citations():
+    report = render_markdown(
+        _run([_record(1)]),
+        daily_briefing=["A grounded finding. Evidence: E001."],
+        daily_briefing_metadata={
+            "generator": "openai-responses",
+            "model": "gpt-5.6",
+            "usage": {"input_tokens": 8123, "output_tokens": 241},
+            "input": {"evidence_items": 42, "history_days": 10},
+            "caveat": "The feed is not a representative sample.",
+            "citations": [
+                {
+                    "id": "E001",
+                    "title": "MemoryBench",
+                    "url": "https://example.test/memory",
+                    "source": "arXiv",
+                }
+            ],
+        },
+    )
+
+    assert "GPT synthesis: gpt-5.6 via OpenAI Responses API" in report
+    assert "8,123 input / 241 output tokens" in report
+    assert "42 evidence records and 10 history days injected" in report
+    assert "[MemoryBench](https://example.test/memory)" in report
+
+
 def test_report_distinguishes_latest_pass_from_merged_daily_total():
     run = _run([_record(1), _record(2)])
     run.selection = {
