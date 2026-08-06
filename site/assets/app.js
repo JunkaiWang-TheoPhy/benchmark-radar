@@ -360,6 +360,28 @@ function briefingEvidenceList(citations) {
   ]);
 }
 
+function briefingDetails(briefing, citations) {
+  const provenance = briefingProvenance(briefing);
+  const caveat = briefing.caveat
+    ? element("p", { className: "daily-briefing-caveat" }, [
+        element("strong", { text: "Caveat: " }),
+        document.createTextNode(String(briefing.caveat)),
+      ])
+    : null;
+  const evidence = briefingEvidenceList(citations);
+  if (!provenance && !caveat && !evidence) return null;
+
+  const label = citations.length
+    ? `Evidence & briefing details · ${citations.length.toLocaleString()} sources`
+    : "Briefing details";
+  return element("details", { className: "daily-briefing-details" }, [
+    element("summary", { text: label }),
+    provenance,
+    caveat,
+    evidence,
+  ]);
+}
+
 // The briefing is generated once per UTC day and stored in that day's snapshot,
 // so a day can legitimately have none: it predates the feature, no API key was
 // configured, or every pass over the day failed the call. Say which rather than
@@ -379,14 +401,7 @@ function renderDailyBriefing(day) {
           // Model prose remains text nodes. Only exact evidence IDs present in
           // the snapshot's validated citation map become links.
           usable.map((line) => element("li", {}, briefingContent(line, citations)))),
-          briefingProvenance(briefing),
-          briefing.caveat
-            ? element("p", { className: "daily-briefing-caveat" }, [
-                element("strong", { text: "Caveat: " }),
-                document.createTextNode(String(briefing.caveat)),
-              ])
-            : null,
-          briefingEvidenceList(citations),
+          briefingDetails(briefing, citations),
         ]
       : [
           element("p", {
