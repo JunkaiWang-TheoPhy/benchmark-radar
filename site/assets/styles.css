@@ -395,8 +395,27 @@ input {
   text-decoration-thickness: 0.14em;
 }
 
+.daily-briefing-details {
+  margin-top: 0.85rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line);
+}
+
+.daily-briefing-details summary {
+  width: fit-content;
+  color: var(--blue-deep);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.daily-briefing-details summary:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.14em;
+}
+
 .daily-briefing-meta {
-  margin: 0.85rem 0 0;
+  margin: 0.7rem 0 0;
   color: var(--muted);
   font-size: 0.82rem;
 }
@@ -410,9 +429,7 @@ input {
 }
 
 .daily-briefing-evidence {
-  margin-top: 0.9rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--line);
+  margin-top: 0.75rem;
 }
 
 .daily-briefing-evidence-title {

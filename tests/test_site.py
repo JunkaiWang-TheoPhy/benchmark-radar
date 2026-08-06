@@ -687,3 +687,12 @@ def test_daily_briefing_renders_its_provenance_caveat_and_evidence_ledger():
     assert 'text: "Evidence cited by GPT"' in script
     assert "briefingEvidenceList(citations)" in script
     assert "`${citation.id} — ${citation.title}`" in script
+
+
+def test_daily_briefing_collapses_verbose_evidence_details_by_default():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'element("details", { className: "daily-briefing-details" }' in script
+    assert "Evidence & briefing details · ${citations.length.toLocaleString()} sources" in script
+    assert "briefingDetails(briefing, citations)" in script
+    assert 'attrs: { open: "" }' not in script
