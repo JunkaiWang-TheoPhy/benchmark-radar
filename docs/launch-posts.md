@@ -30,7 +30,7 @@ Baseline before any of this ships: 8 stars, 6 forks.
 
 I built Benchmark Radar to answer a narrow question: which AI benchmarks do frontier labs actually report when they release a model?
 
-I manually reviewed 30 model cards, system cards, and technical reports from 10 organizations, recording the benchmarks mentioned in each document. The current leaderboard tracks 79 benchmarks. GPQA Diamond leads with 23 cards from 10 organizations, followed by SWE-bench Verified at 18/8 and LiveCodeBench at 15/7.
+I manually reviewed 30 model-release documents from 10 organizations, recording the benchmarks mentioned in each document. The current leaderboard tracks 79 benchmarks. GPQA Diamond leads with 23 documents from 10 organizations, followed by SWE-bench Verified at 18/8 and LiveCodeBench at 15/7.
 
 The unit is the document, not the result row. If one card reports AIME with several scaffolds or pass@k settings, that still counts as one adoption. I publish card count and organization count separately, with organization count used only as a tiebreak.
 
@@ -52,7 +52,7 @@ Of 79 tracked benchmarks, 21 appear in at least five model cards, while 24 appea
 
 I built an open-source project called Benchmark Radar around this question: which benchmarks do frontier labs actually report when releasing models?
 
-The ranking is hand-curated from 30 model cards, system cards, and technical reports. The counted unit is the document, not the result row. Reporting AIME at pass@1, consensus@64, and with tools in one card still contributes one adoption. The leaderboard publishes `card_count` and `organization_count` side by side rather than merging them.
+The ranking is hand-curated from 30 model-release documents. The counted unit is the document, not the result row. Reporting AIME at pass@1, consensus@64, and with tools in one document still contributes one adoption. The leaderboard publishes `card_count` and `organization_count` side by side rather than merging them.
 
 The sample is small, n=30 documents across 10 organizations, so I would not treat this as a full map of evaluation practice.
 
@@ -72,7 +72,7 @@ Feedback on the counting method and missing model documents would be especially 
 
 **Title:** I made a leaderboard of the benchmarks that model releases actually report
 
-When a new model drops, I often want to know whether its benchmark table uses broadly shared evaluations or a mostly vendor-specific set. So I read 30 model cards, system cards, and technical reports from 10 organizations and counted benchmark mentions by document.
+When a new model drops, I often want to know whether its benchmark table uses broadly shared evaluations or a mostly vendor-specific set. So I read 30 model-release documents from 10 organizations and counted benchmark mentions by document.
 
 The current top entries are GPQA Diamond at 23 cards/10 organizations, SWE-bench Verified at 18/8, LiveCodeBench at 15/7, Humanity's Last Exam at 14/8, and AIME at 14/7.
 
@@ -96,7 +96,7 @@ JSON: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.json
 
 Which benchmarks do frontier labs actually report when they release a model?
 
-I reviewed 30 model cards, system cards, and technical reports from 10 organizations. Benchmark Radar now tracks 79 benchmarks.  
+I reviewed 30 model-release documents from 10 organizations. Benchmark Radar now tracks 79 benchmarks.
 https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
 
 **2/6**
@@ -136,7 +136,7 @@ CSV: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
 
 Which AI benchmarks have become part of the standard model-release vocabulary?
 
-I have been working on Benchmark Radar, an open-source project built around that question. I manually reviewed 30 model cards, system cards, and technical reports from 10 organizations, then recorded which benchmarks each document reports. The current dataset contains 79 benchmarks.
+I have been working on Benchmark Radar, an open-source project built around that question. I manually reviewed 30 model-release documents from 10 organizations, then recorded which benchmarks each document reports. The current dataset contains 79 benchmarks.
 
 GPQA Diamond appears in 23 documents from all 10 organizations. SWE-bench Verified appears in 18 documents from 8 organizations, and LiveCodeBench in 15 from 7. At the other end, 24 benchmarks appear in exactly one document, and 25 are reported by only one organization.
 
@@ -209,7 +209,7 @@ Commit: `3b5524af003ce4b047036eb851dee66dac4b27b4`
 
 **Title:** Benchmark Radar v0.3.0: Model Card Adoption Rank
 
-This release adds the hand-curated Model Card Adoption Rank, which tracks which benchmarks appear in frontier model cards, system cards, and technical reports.
+This release adds the hand-curated Model Card Adoption Rank, which tracks which benchmarks appear in frontier model cards, system cards, technical reports, and release posts.
 
 > **Interpretation caveat:** This measures vendor reporting convention, not benchmark quality. A saturated or contaminated benchmark can rank highly because reporting it is conventional. Scores remain out of scope because prompts, scaffolds, tool access, reasoning budgets, pass@k, and evaluators differ across vendors. The current sample is small, with 30 documents.
 
@@ -331,7 +331,7 @@ Benchmark Radar 还会每日自动收集新的 benchmark、评测、数据集和
 
 **Title:** Which Benchmarks Do Frontier Model Reports Actually Use?
 
-When a lab releases a new model, its evaluation table reflects a mixture of scientific usefulness, historical convention, internal tooling, and what readers expect to see. I built Benchmark Radar to record one observable part of that process: which benchmarks are mentioned in actual model cards, system cards, and technical reports.
+When a lab releases a new model, its evaluation table reflects a mixture of scientific usefulness, historical convention, internal tooling, and what readers expect to see. I built Benchmark Radar to record one observable part of that process: which benchmarks are mentioned in actual model-release documents.
 
 The first dataset covers 30 documents from 10 organizations and tracks 79 benchmarks. It is a small sample. GPQA Diamond appears in 23 documents from all 10 organizations, while SWE-bench Verified appears in 18 from 8. The distribution also has a long tail: 24 benchmarks appear in exactly one document, and 25 are reported by only one organization.
 
@@ -414,7 +414,7 @@ Corrections and additions can be submitted through the repository. The most usef
 
 **Description:**
 
-Benchmark Radar tracks which AI benchmarks appear in model cards, system cards, and technical reports. The hand-curated leaderboard covers 30 documents, 10 organizations, and 79 benchmarks, counting each document once per benchmark and publishing document and organization counts separately.
+Benchmark Radar tracks which AI benchmarks appear in model cards, system cards, technical reports, and release posts. The hand-curated leaderboard covers 30 documents, 10 organizations, and 79 benchmarks, counting each document once per benchmark and publishing document and organization counts separately.
 
 It also runs a daily automated radar for new benchmarks, evals, datasets, and data-quality work.
 
@@ -426,7 +426,7 @@ https://koutian.is-a.dev/benchmark-radar/
 
 *Format: 3-sentence pitch to an AI evaluation newsletter writer.*
 
-I built a small open-source dataset that counts which benchmarks appear across 30 frontier model cards, system cards, and technical reports from 10 organizations. The main finding is concentration plus a long tail: GPQA Diamond appears in 23 documents, while 24 of the 79 tracked benchmarks appear in exactly one. It measures reporting convention, not benchmark quality, so saturated or contaminated benchmarks may rank highly; scores are excluded as evaluation setups differ, and the n=30 sample is explicitly limited: https://github.com/ktwu01/benchmark-radar
+I built a small open-source dataset that counts which benchmarks appear across 30 frontier model-release documents from 10 organizations. The main finding is concentration plus a long tail: GPQA Diamond appears in 23 documents, while 24 of the 79 tracked benchmarks appear in exactly one. It measures reporting convention, not benchmark quality, so saturated or contaminated benchmarks may rank highly; scores are excluded as evaluation setups differ, and the n=30 sample is explicitly limited: https://github.com/ktwu01/benchmark-radar
 
 ## 16. V2EX（分享创造）
 
@@ -452,7 +452,7 @@ CSV：https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
 
 **Title:** Benchmark Radar: benchmark adoption across 30 frontier model reports
 
-I built Benchmark Radar to track which benchmarks appear in model cards, system cards, and technical reports. The hand-curated dataset currently covers 30 documents from 10 organizations and records 79 benchmarks.
+I built Benchmark Radar to track which benchmarks appear in model cards, system cards, technical reports, and release posts. The hand-curated dataset currently covers 30 documents from 10 organizations and records 79 benchmarks.
 
 The leading entries are GPQA Diamond at 23 documents from 10 organizations, SWE-bench Verified at 18/8, and LiveCodeBench at 15/7. Each document contributes at most one count per benchmark, regardless of how many prompts, scaffolds, tool settings, or pass@k variants it reports. Document count and organization count are published separately.
 
@@ -473,7 +473,7 @@ Feedback on the counting method, incorrect entries, and missing model documents 
 
 *Paste this message verbatim in the server channel approved for project or research announcements.*
 
-Hi, I built a small open dataset on which benchmarks frontier labs report when releasing models. Benchmark Radar currently covers 30 model cards, system cards, and technical reports from 10 organizations, with 79 tracked benchmarks.
+Hi, I built a small open dataset on which benchmarks frontier labs report when releasing models. Benchmark Radar currently covers 30 model-release documents from 10 organizations, with 79 tracked benchmarks.
 
 GPQA Diamond appears in 23 documents from 10 organizations, SWE-bench Verified in 18/8, and LiveCodeBench in 15/7. Each document counts at most once per benchmark, and document count stays separate from organization count.
 
@@ -486,7 +486,7 @@ Repository: https://github.com/ktwu01/benchmark-radar
 
 *Paste this message verbatim in the server channel approved for community projects. Do not reuse the full LinkedIn post.*
 
-Hi, I published a small open dataset that counts benchmark mentions across 30 frontier model cards, system cards, and technical reports from 10 organizations. It tracks 79 benchmarks and publishes both document count and organization count.
+Hi, I published a small open dataset that counts benchmark mentions across 30 frontier model-release documents from 10 organizations. It tracks 79 benchmarks and publishes both document count and organization count.
 
 The top three are GPQA Diamond at 23 documents/10 organizations, SWE-bench Verified at 18/8, and LiveCodeBench at 15/7. This measures reporting convention, not benchmark quality. Scores are excluded because evaluation setups differ, and n=30 is a small sample.
 
@@ -500,7 +500,7 @@ Corrections and missing model-report suggestions are welcome.
 
 *Paste this message verbatim in the workspace channel approved for project announcements. Do not reuse the full LinkedIn post.*
 
-I built Benchmark Radar to make one part of model-release evaluation practice inspectable: which benchmarks vendors include in model cards, system cards, and technical reports.
+I built Benchmark Radar to make one part of model-release evaluation practice inspectable: which benchmarks vendors include in model cards, system cards, technical reports, and release posts.
 
 The current hand-curated dataset covers 30 documents from 10 organizations and 79 benchmarks. Each document counts once per benchmark, with document count and organization count published separately. GPQA Diamond currently leads at 23 documents from 10 organizations.
 
@@ -516,6 +516,6 @@ Feedback on the data model and counting rule would be useful.
 
 *Reuse decision: do not paste the full X thread or LinkedIn post. This shorter note is copy-ready.*
 
-I reviewed 30 frontier model cards, system cards, and technical reports from 10 organizations to see which benchmarks they actually report. GPQA Diamond appears in 23 documents, while 24 of the 79 tracked benchmarks appear only once. Benchmark Radar counts each document once per benchmark and publishes document and organization counts separately. This measures reporting convention, not benchmark quality; scores are excluded because evaluation setups differ, and n=30 is a small sample.
+I reviewed 30 frontier model-release documents from 10 organizations to see which benchmarks they actually report. GPQA Diamond appears in 23 documents, while 24 of the 79 tracked benchmarks appear only once. Benchmark Radar counts each document once per benchmark and publishes document and organization counts separately. This measures reporting convention, not benchmark quality; scores are excluded because evaluation setups differ, and n=30 is a small sample.
 
 https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
