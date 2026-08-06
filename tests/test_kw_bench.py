@@ -539,6 +539,129 @@ def test_a_qualified_state_noun_still_signals_execution():
     assert decision["level"] == "L2"
 
 
+# --- Second review round: regressions caused by the first round's fixes -----
+#
+# Tightening the patterns above introduced these. Kept as tests because they
+# are the concrete evidence for the accuracy caveat in `kw_bench_reference`:
+# hand-written patterns over natural language trade one error class for
+# another, which is why an unreviewed level is a triage hint and not a fact.
+
+
+def test_a_clean_novelty_check_is_not_read_as_prior_art():
+    """ "No prior art was found" is the expected result of a novelty check."""
+    decision = assign_level(
+        l5_evidence(
+            evaluator_knowledge="The evaluator was unaware of any matching result at the cutoff.",
+            novelty_check=(
+                "A systematic search was completed before the cutoff. No prior art was found."
+            ),
+        )
+    )
+
+    assert decision["level"] == "L5"
+
+
+def test_not_only_is_an_intensifier_not_a_negation():
+    """ "not only recorded but covered by a test" asserts more knowledge, not less."""
+    decision = assign_level(
+        evidence(
+            scored_outcome="The agent diagnoses and reports the undisclosed defect.",
+            agent_visible_target="An open-ended repository; the target bug is undisclosed.",
+            evaluator_knowledge=(
+                "The known bug is not only recorded but covered by a regression test."
+            ),
+            verifier_modality="human expert",
+            verifier_procedure="The submitted diagnosis is matched against the recorded bug.",
+        )
+    )
+
+    assert decision["level"] == "L4"
+
+
+def test_an_absent_alternative_hypothesis_is_not_a_hidden_target():
+    """Statistical-task boilerplate must not read as an undisclosed finding."""
+    decision = assign_level(
+        evidence(
+            scored_outcome="The agent computes the p-value for the stated null hypothesis.",
+            agent_visible_target=(
+                "The null hypothesis and dataset are supplied; no alternative hypothesis "
+                "is specified."
+            ),
+            evaluator_knowledge="The evaluator already knows the recorded answer.",
+            verifier_procedure="The returned p-value is compared with the reference value.",
+        )
+    )
+
+    assert decision["level"] == "L1"
+
+
+def test_an_answer_only_claim_that_also_scores_state_is_not_exclusive():
+    decision = assign_level(
+        evidence(
+            scored_outcome="The agent modifies the repository and summarizes the applied fix.",
+            agent_visible_target="The issue and required end state are specified.",
+            evaluator_knowledge="The evaluator holds the expected patched state.",
+            verifier_modality="executable",
+            verifier_procedure=(
+                "Only the returned report is parsed for metadata; tests also inspect the "
+                "final repository state."
+            ),
+        )
+    )
+
+    assert decision["level"] == "L2"
+
+
+def test_a_conceptual_state_is_not_an_environment_state():
+    """ "final disease state" is a prediction target, not a mutated system."""
+    decision = assign_level(
+        evidence(
+            scored_outcome=(
+                "The agent computes the final disease state from the supplied longitudinal record."
+            ),
+            agent_visible_target="The patient history and prediction question are supplied.",
+            evaluator_knowledge="The evaluator holds the ground-truth label.",
+            verifier_procedure="Exact match against the annotated disease-state label.",
+        )
+    )
+
+    assert decision["level"] == "L1"
+
+
+def test_running_a_migration_is_execution_even_when_a_report_is_returned():
+    decision = assign_level(
+        evidence(
+            scored_outcome=(
+                "The agent executes the commands for a specified database migration and "
+                "computes a completion report from their exit statuses."
+            ),
+            agent_visible_target="The migration and required commands are specified in full.",
+            evaluator_knowledge="The evaluator holds the expected migrated schema.",
+            verifier_modality="executable",
+            verifier_procedure="The harness checks the exit statuses and the migrated schema.",
+        )
+    )
+
+    assert decision["level"] == "L2"
+
+
+def test_a_trailing_evaluator_clause_does_not_become_agent_derivation():
+    """ "...copied verbatim ... and later compared" is still retrieval."""
+    decision = assign_level(
+        evidence(
+            scored_outcome=(
+                "The answer span is copied verbatim from the document and later compared "
+                "against the annotated span."
+            ),
+            agent_visible_target="The document and lookup question are supplied in full.",
+            evaluator_knowledge="The evaluator holds the annotated answer span.",
+            verifier_procedure="Exact span match determines success.",
+        )
+    )
+
+    assert decision["level"] == "L0"
+
+
 def test_reference_lists_all_six_levels():
     reference = kw_bench.kw_bench_reference()
 

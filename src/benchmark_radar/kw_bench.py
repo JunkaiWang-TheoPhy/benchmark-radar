@@ -195,26 +195,40 @@ def evidence_hash(evidence: dict[str, Any]) -> str:
 # describe the scored outcome and the verifier, never the artifact title.  A
 # regex over a paper title is exactly the keyword inference the issue forbids.
 _STATE_CHANGE = re.compile(
-    # `(?:\w+\s+){0,2}state` lets a qualifier sit between the adjective and the
-    # noun: "final repository state" and "resulting database state" are the
-    # same claim as "final state", and requiring adjacency missed them.
-    r"\b(?:end|final|resulting|environment|environmental)\s+(?:\w+\s+){0,2}?state\b"
+    # The qualifier between adjective and noun must name a *system* the agent
+    # can act on. An unrestricted `(?:\w+\s+){0,2}state` matched "final disease
+    # state", turning a clinical prediction task into an execution task: the
+    # word "state" carries no external-mutation claim on its own.
+    r"\b(?:end|final|resulting|target)\s+(?:\w+\s+){0,2}?"
+    r"(?:repo|repository|environment|database|system|workspace|file|filesystem|"
+    r"container|cluster|schema|branch)\s+state\b"
+    r"|\b(?:end|final|resulting|environment|environmental)\s+state\b"
     r"|\bstate of the (?:repo|repository|environment|database|system|workspace)\b"
     r"|\bresulting (?:repo|repository|file|files|database)\b"
     r"|\b(?:side effects?|applies? a patch|patch is applied|writes? to|"
-    r"modif(?:y|ies|ied)|mutat(?:e|es|ed)|commits?|deploys?)\b",
+    r"modif(?:y|ies|ied)|mutat(?:e|es|ed)|commits?|deploys?|"
+    r"migrat(?:e|es|ed|ion)|provisions?|installs?)\b",
     re.IGNORECASE,
 )
-# An explicit statement that only the returned answer is scored. The rubric
+# An explicit statement that *only* the returned answer is scored. The rubric
 # makes this decisive: read-only use of a shell, browser, or database preserves
 # L1 when the verifier checks only the returned answer, however much tool
 # activity happened along the way.
+#
+# This is an exclusivity claim, so a sentence that says "only the returned
+# report is parsed for metadata" while also checking repository state is not
+# one: `_ANSWER_ONLY_DEFEATED` withdraws the escape when the same text goes on
+# to score something else.
 _ANSWER_ONLY = re.compile(
     r"\b(?:only the (?:returned |submitted |final )?(?:answer|response|output|report|"
     r"explanation|label|prediction)|the (?:returned|submitted|final) "
     r"(?:answer|response|output|report|explanation|label|prediction) is "
     r"(?:compared|scored|checked|graded|matched)|scored? only on the "
     r"(?:answer|response|output))\b",
+    re.IGNORECASE,
+)
+_ANSWER_ONLY_DEFEATED = re.compile(
+    r"\b(?:also|additionally|as well as|in addition|and then)\b|;\s*tests?\b",
     re.IGNORECASE,
 )
 _READ_ONLY = re.compile(
@@ -268,8 +282,13 @@ _TARGET_WITHHELD = re.compile(
     # "no target is disclosed" / "no problem is named": the negative form of
     # the same claim. Restricted to the investigation nouns so it cannot fire
     # on "no answer is given", which is every benchmark.
-    r"|\bno (?:\w+\s+){0,2}?(?:target|problem|bug|defect|finding|phenomenon|relationship|"
-    r"mechanism|failure|vulnerability|hypothesis) is (?:disclosed|named|given|provided|"
+    # `hypothesis` is deliberately absent: "no alternative hypothesis is
+    # specified" is ordinary statistical-task boilerplate, not a hidden
+    # discovery target, and including it made significance-testing benchmarks
+    # L4. The intervening-word budget is 1 so "no alternative X" cannot reach
+    # past its own noun.
+    r"|\bno (?:\w+\s+)?(?:target|problem|bug|defect|finding|phenomenon|relationship|"
+    r"mechanism|failure|vulnerability) is (?:disclosed|named|given|provided|"
     r"specified|revealed|stated)\b"
     r"|\bmust (?:choose|decide|determine) what to (?:investigate|examine|study|look for)\b"
     r"|\bwithout (?:naming|being told|being given|specifying|disclosing) (?:the |which |what )?"
@@ -284,9 +303,16 @@ _TARGET_WITHHELD = re.compile(
 # knows nothing must never read as the evaluator knowing something, since that
 # inversion caps a genuine L5 at L4.
 _NO_EVALUATOR_KNOWLEDGE = re.compile(
-    r"\b(?:no|not|never|nothing|none)\s+(?:\w+\s+){0,3}?"
+    # `not only X but Y` is an intensifier, not a negation: "the known bug is
+    # not only recorded but covered by a test" asserts *more* evaluator
+    # knowledge, and reading it as less dropped a real L4 to L1. Excluded by
+    # requiring that `not` is not followed by `only`.
+    r"\b(?:no|never|nothing|none)\s+(?:\w+\s+){0,3}?"
     r"(?:known|knows?|knew|recorded|documented|identified|result|finding|prior art)\b"
+    r"|\bnot\s+(?!only\b)(?:\w+\s+){0,3}?"
+    r"(?:known|knows?|knew|recorded|documented|identified)\b"
     r"|\b(?:is|was|are|were)\s+(?:not|un)known\b"
+    r"|\b(?:unaware of|no knowledge of|did not know)\b"
     r"|\bunknown (?:to|at|before) the\b",
     re.IGNORECASE,
 )
@@ -310,10 +336,24 @@ def _evaluator_knows(text: str) -> bool:
 # rubric makes a prior-art hit an L4 ceiling regardless of how the run was
 # framed, so this is read from the novelty check rather than inferred.
 _PRIOR_ART_FOUND = re.compile(
-    r"\b(?:already (?:published|known|reported|documented|exists?)|"
-    r"prior (?:art|work|result)s? (?:was |were |is |are )?(?:found|identified|located)|"
-    r"(?:result|finding) (?:was |is )?(?:previously |already )?(?:published|reported|known)|"
-    r"published in \d{4}|predates the (?:run|evaluation))\b",
+    # A negated hit is the *expected* outcome of a novelty check, so "no prior
+    # art was found" must not read as prior art. `(?<!no )` and friends guard
+    # the find verbs; the search-completed phrasings are matched positively.
+    r"\b(?:already (?:published|known|reported|documented|exists?))\b"
+    r"|(?<!no )(?<!No )\bprior (?:art|work|result)s? (?:was |were |is |are )?"
+    r"(?:found|identified|located)\b"
+    r"|\b(?:result|finding) (?:was |is )?(?:previously |already )?"
+    r"(?:published|reported|known)\b"
+    r"|\bpublished in \d{4}\b"
+    r"|\bpredates the (?:run|evaluation)\b",
+    re.IGNORECASE,
+)
+# Explicit statements that a novelty check came back clean. Checked first, so a
+# clean result is never re-read as a prior-art hit by a later pattern.
+_NO_PRIOR_ART = re.compile(
+    r"\bno (?:prior art|prior (?:work|result)s?|matching result|earlier (?:result|report))\b"
+    r"|\b(?:found|returned|surfaced) nothing\b"
+    r"|\bnothing (?:was )?found\b",
     re.IGNORECASE,
 )
 # A novelty check or cutoff that admits it was not actually performed.  The
@@ -335,6 +375,24 @@ _PROSPECTIVE_VALIDATION = re.compile(
 def _signal(evidence: dict[str, Any], *fields: str) -> str:
     """Join the named evidence fields into one searchable blob."""
     return " \n".join(_clean(evidence.get(field)) for field in fields)
+
+
+# A trailing clause describing how the evaluator scores the result. Authors
+# routinely append one to `scored_outcome` ("...copied verbatim from the
+# document and later compared against the annotated span"), and its verbs are
+# the evaluator's, not the agent's. Counting "compared" there turned verbatim
+# retrieval into derivation.
+_EVALUATOR_CLAUSE = re.compile(
+    r"(?:,\s*|\s+)(?:and\s+)?(?:is\s+|are\s+)?(?:then\s+|later\s+|subsequently\s+|"
+    r"afterwards?\s+)(?:compared|scored|checked|graded|matched|evaluated|assessed)\b.*$"
+    r"|(?:,\s*|;\s*|\s+)(?:which|and)\s+the\s+(?:evaluator|grader|verifier|harness)\b.*$",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _agent_side(text: str) -> str:
+    """Drop a trailing evaluator-scoring clause from an agent-side field."""
+    return _EVALUATOR_CLAUSE.sub("", text).strip()
 
 
 def assign_level(evidence: dict[str, Any]) -> dict[str, Any]:
@@ -362,7 +420,7 @@ def assign_level(evidence: dict[str, Any]) -> dict[str, Any]:
     # "executes the commands" describes evaluator machinery, and reading it as
     # agent behaviour promoted ordinary execution tasks to L3 and read-only
     # diagnosis to L2.
-    outcome = _signal(evidence, "scored_outcome")
+    outcome = _agent_side(_signal(evidence, "scored_outcome"))
     procedure = _signal(evidence, "verifier_procedure")
     target = _signal(evidence, "agent_visible_target")
     knowledge = _signal(evidence, "evaluator_knowledge")
@@ -371,7 +429,14 @@ def assign_level(evidence: dict[str, Any]) -> dict[str, Any]:
     # The verifier may state the scoring boundary ("only the returned answer is
     # compared") even when the outcome text does not, so this one signal is
     # read across both.
-    answer_only = _ANSWER_ONLY.search(outcome) or _ANSWER_ONLY.search(procedure)
+    # An exclusivity claim is only an escape while it stays exclusive: "only
+    # the returned report is parsed for metadata; tests also inspect the final
+    # repository state" scores two things, and honouring the "only" there
+    # dropped a real execution task to L1.
+    answer_only = any(
+        _ANSWER_ONLY.search(field) and not _ANSWER_ONLY_DEFEATED.search(field)
+        for field in (outcome, procedure)
+    )
 
     # --- L5: the result is created prospectively -------------------------
     # Tested first, and gated hardest.  L5 requires an open frontier, a result
@@ -405,7 +470,8 @@ def assign_level(evidence: dict[str, Any]) -> dict[str, Any]:
         # L4.  The rubric states this as an explicit ceiling, and it applies
         # whether the prior art surfaced in the novelty check or in what the
         # evaluator already knew.
-        if _PRIOR_ART_FOUND.search(novelty) or _evaluator_knows(knowledge):
+        prior_art = _PRIOR_ART_FOUND.search(novelty) and not _NO_PRIOR_ART.search(novelty)
+        if prior_art or _evaluator_knows(knowledge):
             return _level(
                 "L4",
                 boundary="L4 to L5",
@@ -690,6 +756,12 @@ def kw_bench_reference() -> dict[str, Any]:
             "Levels describe the capability a passing score requires. They are not a "
             "quality, difficulty, or importance ranking: an L1 benchmark can be more "
             "valuable than an L3 one.",
+            "Boundary detection reads recorded evidence text with hand-written patterns, "
+            "which is approximate. Two rounds of adversarial review found 11 and then 7 "
+            "misclassifications, each fix trading one error class for another, so an "
+            "auto-assigned level is a triage hint rather than an audited fact. Levels are "
+            "reliable only after the human review the rollout requires; the "
+            "validation-set accuracy is not yet measured.",
             "Classification applies to canonical benchmark tracks. A mixed suite reports "
             "one level per track rather than a suite-wide average.",
             "Levels are assigned deterministically from recorded evidence fields. Title "
