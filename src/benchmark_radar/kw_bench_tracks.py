@@ -170,12 +170,17 @@ def derive_tracks(
             "categories": sorted(track["categories"]),
         }
         names = (track_names or {}).get(canonical) or [track["track_name"]]
-        for name in sorted(dict.fromkeys(str(value) for value in names)):
+        seen_track_ids: set[str] = set()
+        for name in sorted(str(value) for value in names):
+            identifier = kw_bench.track_id(canonical, name)
+            if identifier in seen_track_ids:
+                continue
+            seen_track_ids.add(identifier)
             ordered.append(
                 {
                     **base,
                     "track_name": name,
-                    "track_id": kw_bench.track_id(canonical, name),
+                    "track_id": identifier,
                 }
             )
     return ordered

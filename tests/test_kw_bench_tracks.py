@@ -110,6 +110,19 @@ def test_derivation_is_deterministic():
     ]
 
 
+def test_track_names_are_deduplicated_by_their_normalized_identity():
+    snapshots = [snapshot("2026-07-28", item())]
+    artifact = "artifact:arxiv:2607.12345"
+
+    tracks = derive_tracks(
+        snapshots,
+        track_names={artifact: [" Retrieval ", "retrieval", "RETRIEVAL"]},
+    )
+
+    assert len(tracks) == 1
+    assert len({track["track_id"] for track in tracks}) == 1
+
+
 # --- Backfill and caching ------------------------------------------------
 
 
