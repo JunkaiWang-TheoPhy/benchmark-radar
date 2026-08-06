@@ -325,7 +325,9 @@ Benchmark Radar 还会每日自动收集新的 benchmark、评测、数据集和
 
 ## 12. Dev.to / Hashnode
 
-*Format: article title, exactly three opening paragraphs, followed by a section outline.*
+*Format: complete Markdown article with exactly three opening paragraphs before the first subheading.*
+
+*Reuse decision: publish this article on DEV first. Paste it verbatim into Hashnode, then set the DEV article URL as the original or canonical URL in Hashnode. Do not reuse the LinkedIn post because it omits the method and data-access detail expected in a technical article.*
 
 **Title:** Which Benchmarks Do Frontier Model Reports Actually Use?
 
@@ -335,42 +337,66 @@ The first dataset covers 30 documents from 10 organizations and tracks 79 benchm
 
 This is a measure of vendor reporting convention, not benchmark quality. Saturated or contaminated benchmarks can rank highly precisely because reporting them has become conventional. I exclude scores because prompts, scaffolds, tool access, reasoning budgets, pass@k, and evaluators vary across vendors. A document-level mention is the unit that remains comparable across those differences.
 
-### Section outline
+### Adoption as an observable reporting choice
 
-1. **The question: adoption as an observable reporting choice**
-   - Why model-release documents are the source material
-   - What the dataset can and cannot establish
+A model-release document does not list every evaluation its authors ran. It presents a selected set of results to explain the model to readers. That selection reflects internal tooling, historical practice, the model's intended use, and the comparisons a lab expects readers to recognize.
 
-2. **Counting documents instead of result rows**
-   - One benchmark mention per document
-   - Why long appendices should not receive extra weight
+Benchmark Radar records that visible reporting choice. The source material is the released document itself, not a benchmark website or a third-party leaderboard. Each entry links back to the model card, system card, or technical report that supports it.
 
-3. **Card count and organization count**
-   - `card_count` as the headline measure
-   - `organization_count` as a tiebreak
-   - Shared convention versus organization-specific practice
+The dataset cannot establish that a benchmark is scientifically better, harder, or more predictive than another. It can show which evaluations have become common reporting conventions in the documents sampled.
 
-4. **What the first 30 documents show**
-   - The top 10 reported benchmarks
-   - The concentration among 21 recurring benchmarks
-   - The long tail of single-document and single-organization entries
+### Counting documents instead of result rows
 
-5. **Why scores are deliberately excluded**
-   - Prompt and scaffold differences
-   - Tool access and reasoning budgets
-   - pass@k and evaluator differences
+The counted unit is the document. A document contributes at most one adoption to a benchmark, even when it reports several prompts, scaffolds, tool settings, or pass@k variants.
 
-6. **The automated daily radar**
-   - Eight discovery sources
-   - Deduplication and transparent classification
-   - Explainable ranking components and daily GitHub Issues
+This rule prevents a long appendix from receiving more weight than a concise report. A model card with ten AIME result rows and a model card with one AIME result row each contribute one AIME adoption.
 
-7. **Using and citing the data**
-   - Dashboard and leaderboard
-   - JSON, CSV, Markdown, and Shields artifacts
-   - MIT-licensed repository
+### Separating document count from organization count
 
-Project: https://github.com/ktwu01/benchmark-radar
+The leaderboard publishes two values:
+
+- `card_count`: the number of documents that report the benchmark
+- `organization_count`: the number of organizations represented by those documents
+
+The values stay separate because repeated reporting within one organization differs from reporting across several organizations. `card_count` determines the headline order, while `organization_count` breaks ties.
+
+### What the first 30 documents show
+
+The current top five are:
+
+1. GPQA Diamond: 23 documents, 10 organizations
+2. SWE-bench Verified: 18 documents, 8 organizations
+3. LiveCodeBench: 15 documents, 7 organizations
+4. Humanity's Last Exam: 14 documents, 8 organizations
+5. AIME: 14 documents, 7 organizations
+
+The distribution also has a long tail. Of 79 tracked benchmarks, 21 appear in at least five documents, 24 appear in exactly one document, and 25 are reported by exactly one organization.
+
+The sample contains 30 documents from 10 organizations, so these figures describe the tracked registry rather than the full evaluation field.
+
+### Why the dataset excludes scores
+
+Two results with the same benchmark name may use different prompts, scaffolds, tools, reasoning budgets, pass@k settings, or evaluators. Placing those scores in one cross-vendor table would imply comparability that the source documents do not support.
+
+Benchmark Radar therefore records whether a document reports a benchmark, not which model received the highest number. A saturated or contaminated benchmark can still rank highly because reporting it remains conventional. The ranking measures reporting practice, not benchmark quality.
+
+### The automated daily radar
+
+The project also maintains a daily feed of new work on benchmarks, evaluations, datasets, and data quality. It collects records from arXiv, OpenReview, Hugging Face, GitHub, Semantic Scholar, OpenAlex, Brave Search, and Hacker News, then deduplicates and classifies them with published ranking components.
+
+The daily feed and the hand-curated adoption leaderboard serve different purposes. The feed tracks new work entering the field. The leaderboard tracks benchmarks appearing in model-release documents.
+
+### Using and citing the data
+
+The project is MIT licensed, and the leaderboard is available in several formats:
+
+- Dashboard: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+- JSON: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.json
+- CSV: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
+- Markdown: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.md
+- Repository: https://github.com/ktwu01/benchmark-radar
+
+Corrections and additions can be submitted through the repository. The most useful additions are missing model documents and corrections to benchmark mentions already recorded.
 
 ## 13. Lobste.rs
 
@@ -419,3 +445,77 @@ v0.3.0 已经发布：https://github.com/ktwu01/benchmark-radar/releases/tag/v0.
 CSV：https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
 
 希望请 V 友帮忙看两件事：统计口径是否合理；还有哪些重要的模型文档没有收录。
+
+## 17. Hugging Face Forums
+
+*Format: dataset announcement with a title, method summary, limitations, and direct data links.*
+
+**Title:** Benchmark Radar: benchmark adoption across 30 frontier model reports
+
+I built Benchmark Radar to track which benchmarks appear in model cards, system cards, and technical reports. The hand-curated dataset currently covers 30 documents from 10 organizations and records 79 benchmarks.
+
+The leading entries are GPQA Diamond at 23 documents from 10 organizations, SWE-bench Verified at 18/8, and LiveCodeBench at 15/7. Each document contributes at most one count per benchmark, regardless of how many prompts, scaffolds, tool settings, or pass@k variants it reports. Document count and organization count are published separately.
+
+This measures vendor reporting convention, not benchmark quality. Saturated or contaminated benchmarks may rank highly because reporting them remains conventional. Scores are excluded because prompts, tools, reasoning budgets, pass@k, and evaluators differ across vendors. The sample is small at 30 documents.
+
+Leaderboard: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+CSV: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
+JSON: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.json
+Repository: https://github.com/ktwu01/benchmark-radar
+
+Feedback on the counting method, incorrect entries, and missing model documents would be useful.
+
+## 18. AI community chat messages
+
+*Reuse decision: do not paste the X thread or LinkedIn post into Discord or Slack. The X copy depends on six separate posts, and the LinkedIn copy is too long for a community chat. Use the shorter messages below. The EleutherAI message may be reused verbatim in ML Collective and LAION.*
+
+### 18.1 EleutherAI Discord, ML Collective Discord, and LAION Discord
+
+*Paste this message verbatim in the server channel approved for project or research announcements.*
+
+Hi, I built a small open dataset on which benchmarks frontier labs report when releasing models. Benchmark Radar currently covers 30 model cards, system cards, and technical reports from 10 organizations, with 79 tracked benchmarks.
+
+GPQA Diamond appears in 23 documents from 10 organizations, SWE-bench Verified in 18/8, and LiveCodeBench in 15/7. Each document counts at most once per benchmark, and document count stays separate from organization count.
+
+This measures reporting convention, not benchmark quality. Scores are excluded because evaluation setups differ, and the sample is still small at n=30. I would appreciate feedback on the counting method or model documents I missed.
+
+Leaderboard: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+Repository: https://github.com/ktwu01/benchmark-radar
+
+### 18.2 Hugging Face Discord
+
+*Paste this message verbatim in the server channel approved for community projects. Do not reuse the full LinkedIn post.*
+
+Hi, I published a small open dataset that counts benchmark mentions across 30 frontier model cards, system cards, and technical reports from 10 organizations. It tracks 79 benchmarks and publishes both document count and organization count.
+
+The top three are GPQA Diamond at 23 documents/10 organizations, SWE-bench Verified at 18/8, and LiveCodeBench at 15/7. This measures reporting convention, not benchmark quality. Scores are excluded because evaluation setups differ, and n=30 is a small sample.
+
+CSV: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
+JSON: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.json
+Repository: https://github.com/ktwu01/benchmark-radar
+
+Corrections and missing model-report suggestions are welcome.
+
+### 18.3 MLOps Community Slack
+
+*Paste this message verbatim in the workspace channel approved for project announcements. Do not reuse the full LinkedIn post.*
+
+I built Benchmark Radar to make one part of model-release evaluation practice inspectable: which benchmarks vendors include in model cards, system cards, and technical reports.
+
+The current hand-curated dataset covers 30 documents from 10 organizations and 79 benchmarks. Each document counts once per benchmark, with document count and organization count published separately. GPQA Diamond currently leads at 23 documents from 10 organizations.
+
+This is a view of reporting convention, not benchmark quality. Cross-vendor scores are excluded because prompts, tools, reasoning budgets, pass@k, and evaluators differ. The sample is small at n=30.
+
+Leaderboard: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+CSV: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
+Repository: https://github.com/ktwu01/benchmark-radar
+
+Feedback on the data model and counting rule would be useful.
+
+## 19. Substack Note
+
+*Reuse decision: do not paste the full X thread or LinkedIn post. This shorter note is copy-ready.*
+
+I reviewed 30 frontier model cards, system cards, and technical reports from 10 organizations to see which benchmarks they actually report. GPQA Diamond appears in 23 documents, while 24 of the 79 tracked benchmarks appear only once. Benchmark Radar counts each document once per benchmark and publishes document and organization counts separately. This measures reporting convention, not benchmark quality; scores are excluded because evaluation setups differ, and n=30 is a small sample.
+
+https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
