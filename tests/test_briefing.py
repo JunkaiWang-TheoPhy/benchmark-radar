@@ -142,10 +142,15 @@ def test_gpt_input_includes_descriptions_history_health_and_stable_evidence_ids(
     item.event_kind = "released"
     item.total_score = 77
     run = _run([item])
+    fresh_attention = _attention(1)
+    old_attention = _attention(2)
+    old_attention.observed_at = datetime(2026, 8, 3, tzinfo=UTC)
+    run.attention = [fresh_attention, old_attention]
     current = snapshot_for_run(run)
     current["ingest_health"] = [
-        {"source": "github", "ok": True, "item_count": 1},
-        {"source": "openreview", "ok": False, "item_count": 0},
+        {"source": "github", "kind": "evidence", "ok": True, "item_count": 1},
+        {"source": "hacker-news", "kind": "attention", "ok": True, "item_count": 2},
+        {"source": "openreview", "kind": "evidence", "ok": False, "item_count": 0},
     ]
 
     value = briefing_input([current], current, ["Insufficient comparable history."])
@@ -156,6 +161,13 @@ def test_gpt_input_includes_descriptions_history_health_and_stable_evidence_ids(
     assert "preserve user preferences" in value["first_observed_evidence"][0]["summary"]
     assert value["daily_series"][0]["measurement"]["taxonomy_version"] == "taxonomy-v2"
     assert value["daily_series"][0]["unavailable_sources"] == ["openreview"]
+    assert value["daily_series"][0]["collection_signature"] == [
+        "attention:hacker-news:ok",
+        "evidence:github:ok",
+        "evidence:openreview:failed",
+    ]
+    assert [signal["observed_today"] for signal in value["attention_signals"]] == [True, False]
+    assert value["attention_signals"][1]["observed_at"].startswith("2026-08-03")
     assert value["deterministic_guardrails"] == ["Insufficient comparable history."]
 
 
@@ -251,6 +263,8 @@ def test_generate_daily_briefing_uses_real_responses_contract_and_records_usage(
     assert captured["payload"]["model"] == "gpt-5.6"
     assert captured["payload"]["reasoning"] == {"effort": "medium"}
     assert "between one and six evidence IDs" in captured["payload"]["instructions"]
+    assert "identical collection_signature" in captured["payload"]["instructions"]
+    assert "only when observed_today is true" in captured["payload"]["instructions"]
     assert captured["payload"]["text"]["format"]["strict"] is True
     assert captured["payload"]["store"] is False
     assert captured["kwargs"]["headers"] == {"Authorization": "Bearer secret"}
