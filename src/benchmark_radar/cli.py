@@ -12,6 +12,9 @@ from .briefing import BriefingError, current_day_snapshot, daily_report_run, gen
 from .export import DEFAULT_TABLE_LIMIT, write_exports
 from .findings import daily_findings
 from .http import RequestError
+from .kw_bench_store import STORE_FILENAME as KW_BENCH_STORE_FILENAME
+from .kw_bench_tracks import DEFAULT_BATCH_SIZE
+from .kw_bench_tracks import backfill as backfill_classifications
 from .pipeline import _failure_streak_key, run_pipeline, simulate_backfill
 from .report import render_markdown
 from .snapshots import (
@@ -66,13 +69,23 @@ def main() -> None:
     parser.add_argument(
         "command",
         nargs="?",
-        choices=("run", "rebuild", "backfill", "migrate", "rescore", "simulate-history", "export"),
+        choices=(
+            "run",
+            "rebuild",
+            "backfill",
+            "migrate",
+            "rescore",
+            "simulate-history",
+            "export",
+            "classify",
+        ),
         default="run",
         help=(
             "Collect a daily run, rebuild/backfill cumulative data from saved snapshots, "
             "migrate snapshot schemas, rescore stored taxonomy categories against the "
-            "current config, simulate missing historical snapshots, or export the "
-            "Model Card Adoption Rank as standalone citable files."
+            "current config, simulate missing historical snapshots, export the "
+            "Model Card Adoption Rank as standalone citable files, or classify canonical "
+            "benchmark tracks against the KW-Bench L0-L5 capability rubric."
         ),
     )
     parser.add_argument("--config", type=Path, default=Path("config.yml"))
@@ -132,7 +145,85 @@ def main() -> None:
             "30-replay coverage), counting real snapshots already on disk."
         ),
     )
+    parser.add_argument(
+        "--kw-bench-store",
+        type=Path,
+        default=Path("data") / KW_BENCH_STORE_FILENAME,
+        help=(
+            "KW-Bench L0-L5 classification layer (issue #153). Append-only JSONL "
+            "keyed by canonical artifact and track. Read by every rebuild to "
+            "publish the shadow capability layer; written by `classify`."
+        ),
+    )
+    parser.add_argument(
+        "--kw-bench-batch-size",
+        type=int,
+        default=DEFAULT_BATCH_SIZE,
+        help=(
+            "classify only: tracks per committed batch. Work is durable per "
+            "batch, so an interrupted run keeps everything already written."
+        ),
+    )
+    parser.add_argument(
+        "--kw-bench-limit",
+        type=int,
+        default=None,
+        help=(
+            "classify only: stop after this many tracks that still need work. "
+            "Bounds a first backfill pass; the next run picks up where it "
+            "stopped rather than re-selecting the same prefix."
+        ),
+    )
+    parser.add_argument(
+        "--kw-bench-refresh-after",
+        default=None,
+        help=(
+            "classify only: re-extract tracks classified before this ISO "
+            "timestamp. An upstream README edit that leaves a track's metadata "
+            "unchanged is invisible to the cache by design, since detecting it "
+            "means fetching the source; this is how those are picked up."
+        ),
+    )
     args = parser.parse_args()
+
+    if args.command == "classify":
+        summary = backfill_classifications(
+            load_snapshots(args.snapshot_dir),
+            store_path=args.kw_bench_store,
+            classified_at=datetime.now(UTC).isoformat(),
+            batch_size=args.kw_bench_batch_size,
+            limit=args.kw_bench_limit,
+            refresh_before=args.kw_bench_refresh_after,
+        )
+        dashboard = rebuild_dashboard(
+            args.snapshot_dir,
+            args.dashboard_output,
+            registry_path=args.model_cards,
+            scores_path=args.benchmark_scores,
+            kw_bench_store_path=args.kw_bench_store,
+        )
+        report = dashboard["kw_bench"]["coverage"]
+        print(
+            f"Derived {summary['tracks_derived']} canonical tracks against KW-Bench "
+            f"{summary['kw_bench_version']} (extractor: {summary['extractor']})"
+        )
+        print(
+            f"  classified {summary['classified']}, reused {summary['reused_from_cache']} "
+            f"from cache, {summary['superseded']} superseded"
+        )
+        for level, count in report["level_counts"].items():
+            print(f"  {level:14s} {count}")
+        rate = report["classified_rate"]
+        print(
+            "  coverage      "
+            + (f"{rate:.1%} of tracks carry a level" if rate is not None else "no tracks yet")
+        )
+        if report["awaiting_human_review"]:
+            print(
+                f"  {report['awaiting_human_review']} record(s) await human review "
+                "and are withheld from published counts"
+            )
+        return
 
     if args.command in {"rebuild", "backfill"}:
         data = rebuild_dashboard(
@@ -140,6 +231,7 @@ def main() -> None:
             args.dashboard_output,
             registry_path=args.model_cards,
             scores_path=args.benchmark_scores,
+            kw_bench_store_path=args.kw_bench_store,
         )
         action = "Backfilled" if args.command == "backfill" else "Rebuilt"
         print(f"{action} {args.dashboard_output} from {data['snapshot_count']} daily snapshots")
@@ -204,6 +296,7 @@ def main() -> None:
             args.dashboard_output,
             registry_path=args.model_cards,
             scores_path=args.benchmark_scores,
+            kw_bench_store_path=args.kw_bench_store,
         )
         print(
             f"Simulated {len(written)} historical snapshots with coverage "
@@ -219,6 +312,7 @@ def main() -> None:
             args.dashboard_output,
             registry_path=args.model_cards,
             scores_path=args.benchmark_scores,
+            kw_bench_store_path=args.kw_bench_store,
         )
         print(
             f"Rescored {summary['snapshots']} snapshots against taxonomy "
@@ -244,6 +338,7 @@ def main() -> None:
             args.dashboard_output,
             registry_path=args.model_cards,
             scores_path=args.benchmark_scores,
+            kw_bench_store_path=args.kw_bench_store,
         )
         print(
             f"Migrated {len(snapshots)} snapshots to schema {dashboard['schema_version']} "
@@ -351,6 +446,7 @@ def main() -> None:
         args.dashboard_output,
         registry_path=args.model_cards,
         scores_path=args.benchmark_scores,
+        kw_bench_store_path=args.kw_bench_store,
     )
     print(
         f"Wrote {len(run.items)} items, snapshot {snapshot_path}, and dashboard data "

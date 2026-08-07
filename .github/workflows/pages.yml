@@ -14,6 +14,8 @@ on:
       - "src/benchmark_radar/snapshots.py"
       - "src/benchmark_radar/corpus.py"
       - "src/benchmark_radar/model_cards.py"
+      - "src/benchmark_radar/cli.py"
+      - "src/benchmark_radar/kw_bench*.py"
       # Both run during the build and write files into the artifact, so a change
       # to either one only reaches the published site if it also triggers a
       # deploy. Without these, editing the share-card generator or the export
@@ -47,7 +49,10 @@ jobs:
       - name: Build validated dashboard data
         run: |
           python -m pip install -e '.[dev]'
-          benchmark-radar rebuild
+          # The classification store is derived and intentionally untracked.
+          # Build it in the fresh Pages checkout before publishing radar.json.
+          # The MVP uses NullExtractor, so this makes no external/model calls.
+          benchmark-radar classify
           # Standalone citable artifacts alongside the dashboard bundle (issue
           # #88). Written into site/data/ so they deploy with the rest of the
           # site and resolve at a stable URL: an embedded badge or a citation

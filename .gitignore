@@ -17,6 +17,12 @@ out/
 /site/data/leaderboard.md
 /site/data/leaderboard-badge.json
 
+# Derived by `benchmark-radar classify` from the snapshots, which are the
+# source. Committing it would let a stale or partially backfilled set of
+# levels be reviewed as if a human had written them. Pages regenerates the
+# store before publishing; the MVP's null extractor makes no external calls.
+/data/kw_bench_classifications.jsonl
+
 .gstack/
 .DS_Store
 .worktrees/

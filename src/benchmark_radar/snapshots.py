@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from . import kw_bench
 from .attention import fetch_attention_feeds
 from .benchmark_scores import DEFAULT_SCORES_PATH, load_scores, score_progression
 from .corpus import (
@@ -17,6 +18,7 @@ from .corpus import (
     organizations_for_item,
 )
 from .insights import build_insights
+from .kw_bench_tracks import classification_layer, derive_tracks
 from .model_cards import DEFAULT_REGISTRY_PATH, adoption_rank, load_registry
 from .models import RadarRun
 from .pipeline import match_proximity_rule
@@ -695,11 +697,40 @@ def _curated_layers(
     }
 
 
+def kw_bench_layer(
+    store_path: Path | None,
+    *,
+    tracks: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """The KW-Bench capability layer, or an explicit empty state.
+
+    A missing store is normal before the first backfill and must not fail the
+    build. The layer still publishes the rubric reference and a zeroed set of
+    bars so the dashboard can describe the scale it is about to show rather
+    than the key simply being absent.
+    """
+    if store_path is None or not store_path.exists():
+        candidates = [{**track, "level": kw_bench.UNCLASSIFIED} for track in (tracks or [])]
+        return {
+            "shadow": True,
+            "schema_version": kw_bench.CLASSIFICATION_SCHEMA_VERSION,
+            "kw_bench_version": kw_bench.KW_BENCH_VERSION,
+            "chart_levels": list(kw_bench.CHART_LEVELS),
+            "level_counts": kw_bench.level_counts(candidates),
+            "level_counts_released": kw_bench.level_counts(candidates, released_only=True),
+            "coverage": kw_bench.coverage(candidates),
+            "reference": kw_bench.kw_bench_reference(),
+            "track_count": len(candidates),
+        }
+    return classification_layer(store_path, tracks=tracks)
+
+
 def dashboard_data(
     snapshots: list[dict[str, Any]],
     *,
     registry_path: Path | None = None,
     scores_path: Path | None = None,
+    kw_bench_store_path: Path | None = None,
 ) -> dict[str, Any]:
     days: list[dict[str, Any]] = []
     categories: set[str] = set()
@@ -833,6 +864,15 @@ def dashboard_data(
         },
         "days": days,
         "corpus": corpus,
+        # Issue #153, shadow mode. The KW-Bench L0-L5 capability layer is
+        # published beside the taxonomy counts, not in place of them, so the
+        # level distribution can be audited against the real corpus before the
+        # visible chart switches over. The payload marks itself `shadow: true`;
+        # the browser does not read it yet.
+        "kw_bench": kw_bench_layer(
+            kw_bench_store_path,
+            tracks=derive_tracks(snapshots),
+        ),
         # Curated and versioned in the repository rather than collected daily:
         # they answer "which benchmarks do vendors report", "how have the
         # readable scores moved", and "what do those two together say", which
@@ -865,11 +905,13 @@ def rebuild_dashboard(
     *,
     registry_path: Path | None = None,
     scores_path: Path | None = None,
+    kw_bench_store_path: Path | None = None,
 ) -> dict[str, Any]:
     value = dashboard_data(
         load_snapshots(snapshot_dir),
         registry_path=registry_path,
         scores_path=scores_path,
+        kw_bench_store_path=kw_bench_store_path,
     )
     _write_json(output, value)
     return value
