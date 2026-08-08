@@ -12,6 +12,7 @@ class SiteParser(HTMLParser):
         self.html_lang = ""
         self.viewport = False
         self.local_refs: list[str] = []
+        self.icon_hrefs: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
@@ -22,6 +23,8 @@ class SiteParser(HTMLParser):
             self.html_lang = str(values.get("lang", ""))
         if tag == "meta" and values.get("name") == "viewport":
             self.viewport = True
+        if tag == "link" and "icon" in str(values.get("rel", "")).split():
+            self.icon_hrefs.append(str(values.get("href", "")))
         reference = values.get("href") or values.get("src")
         if reference and not urlsplit(reference).scheme and not reference.startswith(("#", "//")):
             self.local_refs.append(reference)
@@ -124,6 +127,16 @@ def test_each_view_serializes_only_the_filters_it_reads():
         assert f'params.set("{key}"' in leaderboard
 
     assert 'if (state.view === "map" && state.entity) params.set("entity"' in body
+
+
+def test_site_has_an_icon():
+    parser = SiteParser()
+    parser.feed(Path("site/index.html").read_text(encoding="utf-8"))
+
+    # Issue #152: without this the browser requests /favicon.ico and 404s, so
+    # tabs and bookmarks fall back to a blank page glyph. The referenced file
+    # is checked for existence by test_static_html_references_existing_local_assets.
+    assert parser.icon_hrefs, "index.html declares no icon"
 
 
 def test_rubric_dialog_is_linkable_by_url_hash():
