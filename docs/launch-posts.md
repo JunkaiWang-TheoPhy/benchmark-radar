@@ -26,6 +26,8 @@ Baseline before any of this ships: 8 stars, 6 forks.
 
 *Format: title under 80 characters, followed by plain body text.*
 
+posted: https://news.ycombinator.com/item?id=49192217
+
 **Title:** Show HN: Which benchmarks appear in frontier model cards?
 
 I built Benchmark Radar to answer a narrow question: which AI benchmarks do frontier labs actually report when they release a model?
@@ -43,7 +45,7 @@ Leaderboard: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
 Data: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
 
 ## 2. Reddit r/MachineLearning
-
+posted:
 *Format: `[P]` project title convention, with finding-first body.*
 
 **Title:** [P] I checked 30 frontier model reports to see which benchmarks they actually use
@@ -110,8 +112,6 @@ The top three are:
 GPQA Diamond: 23 cards, 10 orgs  
 SWE-bench Verified: 18, 8  
 LiveCodeBench: 15, 7
-
-Card count and organization count are published separately. They are never merged into one score.
 
 **4/6**
 
