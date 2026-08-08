@@ -111,6 +111,21 @@ def render_markdown(
         if metadata.get("generator") == "openai-responses":
             usage = metadata.get("usage") or {}
             input_scope = metadata.get("input") or {}
+            coverage = input_scope.get("coverage") or {}
+            # State the denominator. The former footer reported only the
+            # surviving record count, so a run that reached the model with 10 of
+            # 306 records read exactly like one that used everything.
+            corpus_total = int(coverage.get("corpus_evidence_records") or 0)
+            injected = int(input_scope.get("evidence_items") or 0)
+            scope = f"{injected} evidence records"
+            if corpus_total:
+                scope = f"{injected} of {corpus_total} evidence records"
+            tracked = int(input_scope.get("tracked_artifacts") or 0)
+            if tracked:
+                scope += f", {tracked} tracked artifacts"
+            dropped = int(coverage.get("evidence_dropped") or 0)
+            if dropped:
+                scope += f" ({dropped} dropped for budget)"
             lines.extend(
                 [
                     (
@@ -118,7 +133,7 @@ def render_markdown(
                         f"via OpenAI Responses API · "
                         f"{int(usage.get('input_tokens') or 0):,} input / "
                         f"{int(usage.get('output_tokens') or 0):,} output tokens · "
-                        f"{int(input_scope.get('evidence_items') or 0)} evidence records and "
+                        f"{scope} and "
                         f"{int(input_scope.get('history_days') or 0)} history days injected._"
                     ),
                     "",

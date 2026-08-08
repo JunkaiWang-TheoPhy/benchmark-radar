@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 import pytest
 
 from benchmark_radar.briefing import (
+    MAX_ATTENTION_ITEMS,
     MAX_INPUT_CHARS,
     MAX_REQUEST_TOKENS,
     BriefingError,
@@ -198,7 +199,7 @@ def test_gpt_input_excludes_summaryless_keyword_false_positives():
 
 def test_gpt_input_prioritizes_fresh_attention_before_the_cap():
     run = _run([_item(1)])
-    old = [_attention(index) for index in range(1, 22)]
+    old = [_attention(index) for index in range(1, MAX_ATTENTION_ITEMS + 2)]
     for item in old:
         item.observed_at = datetime(2026, 8, 3, tzinfo=UTC)
     fresh = _attention(99)
@@ -207,19 +208,19 @@ def test_gpt_input_prioritizes_fresh_attention_before_the_cap():
 
     signals = briefing_input([current], current, ["guardrail"])["attention_signals"]
 
-    assert len(signals) == 8
+    assert len(signals) == MAX_ATTENTION_ITEMS
     assert signals[0]["title"] == "Discussion 99"
     assert signals[0]["observed_today"] is True
 
 
 def test_request_budget_counts_high_token_density_text():
-    payload = _payload("gpt-5.6", "界" * 28_000)
+    payload = _payload("gpt-5.6", "界" * 190_000)
 
     assert _request_token_estimate(payload, "gpt-5.6") > MAX_REQUEST_TOKENS
 
 
 def test_request_budget_also_counts_server_character_estimate():
-    payload = _payload("gpt-5.6", "a" * 40_000)
+    payload = _payload("gpt-5.6", "a" * 260_000)
 
     assert _request_token_estimate(payload, "gpt-5.6") > MAX_REQUEST_TOKENS
 
@@ -230,7 +231,7 @@ def test_request_budget_has_an_offline_multibyte_fallback(monkeypatch):
     )
     monkeypatch.setattr("tiktoken.get_encoding", lambda name: (_ for _ in ()).throw(OSError()))
 
-    estimate = _request_token_estimate(_payload("gpt-5.6", "界" * 12_000), "gpt-5.6")
+    estimate = _request_token_estimate(_payload("gpt-5.6", "界" * 80_000), "gpt-5.6")
 
     assert estimate > MAX_REQUEST_TOKENS
 
@@ -458,3 +459,69 @@ def test_markdown_bullet_escapes_interpolated_values():
     assert markdown_bullet("<img src=x> [link](http://evil.test)") == (
         "&lt;img src=x&gt; \\[link\\]\\(http://evil\\.test\\)"
     )
+
+
+def _dated_run(items, *, day: int) -> RadarRun:
+    return RadarRun(
+        generated_at=datetime(2026, 8, day, 12, tzinfo=UTC),
+        since=datetime(2026, 8, day - 1, 12, tzinfo=UTC),
+        items=items,
+        health=[],
+        selection={"taxonomy_version": "taxonomy-v2", "lookback_hours": 48},
+    )
+
+
+def _metric_item(index: int, *, day: int, downloads: float) -> RadarItem:
+    return RadarItem(
+        source="Hugging Face",
+        source_id=f"org/dataset-{index}",
+        title=f"Benchmark dataset {index}",
+        url=f"https://huggingface.co/datasets/org/dataset-{index}",
+        published_at=datetime(2026, 8, day, tzinfo=UTC),
+        categories=["benchmark"],
+        summary="A scored evaluation dataset with documented tasks.",
+        event_kind="updated",
+        metrics={"downloads": downloads},
+    )
+
+
+def test_briefing_carries_artifacts_that_moved_since_they_were_first_seen():
+    # The former packet supplied only first-seen items, so an artifact the
+    # radar had watched all week was invisible no matter how much it moved.
+    first = snapshot_for_run(_dated_run([_metric_item(1, day=4, downloads=100.0)], day=4))
+    latest = snapshot_for_run(_dated_run([_metric_item(1, day=6, downloads=900.0)], day=6))
+
+    packet = briefing_input([first, latest], latest, ["guardrail"])
+    tracked = packet["tracked_artifacts"]
+
+    assert [entry["title"] for entry in tracked] == ["Benchmark dataset 1"]
+    assert tracked[0]["metric_deltas"] == {"downloads": 800.0}
+    assert tracked[0]["seen_days"] == 2
+    # The artifact is not first-seen today, so it reaches the model only as a
+    # tracked record. That was the gap.
+    assert packet["first_observed_evidence"] == []
+
+
+def test_tracked_artifacts_omit_a_metric_that_lacks_both_endpoints():
+    # `build_corpus` substitutes 0 for a missing endpoint, which turns "this
+    # metric first appeared today" into "it grew from zero".
+    early = _metric_item(2, day=4, downloads=50.0)
+    later = _metric_item(2, day=6, downloads=50.0)
+    later.metrics = {"downloads": 50.0, "likes": 7.0}
+    first = snapshot_for_run(_dated_run([early], day=4))
+    latest = snapshot_for_run(_dated_run([later], day=6))
+
+    tracked = briefing_input([first, latest], latest, ["guardrail"])["tracked_artifacts"]
+
+    assert tracked[0]["metric_deltas"] == {"likes": 7.0}
+
+
+def test_briefing_packet_reports_how_much_of_the_corpus_reached_the_model():
+    run = _dated_run([_item(index) for index in range(1, 6)], day=4)
+    current = snapshot_for_run(run)
+
+    coverage = briefing_input([current], current, ["guardrail"])["coverage"]
+
+    assert coverage["corpus_evidence_records"] == 5
+    assert coverage["evidence_injected"] == 5
+    assert coverage["evidence_dropped_for_size"] == 0
