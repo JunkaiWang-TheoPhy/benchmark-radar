@@ -29,6 +29,8 @@ out/
 # realise it, so a committed list of them is a spam and doxxing vector whatever
 # the intent. The survey itself carries public professional signals only and is
 # safe to share; this file is not.
+/out/benchmark-author-contacts.csv
+benchmark-author-contacts.csv
 /out/benchmark-author-contacts.json
 benchmark-author-contacts.json
 

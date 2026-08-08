@@ -8,6 +8,7 @@ from pathlib import Path
 
 import yaml
 
+from .authors import contacts_csv
 from .authors import survey as author_survey
 from .briefing import BriefingError, current_day_snapshot, daily_report_run, generate_daily_briefing
 from .export import DEFAULT_TABLE_LIMIT, write_exports
@@ -104,7 +105,7 @@ def main() -> None:
     parser.add_argument(
         "--author-contacts",
         type=Path,
-        default=Path("out/benchmark-author-contacts.json"),
+        default=Path("out/benchmark-author-contacts.csv"),
         help=(
             "Where `authors --author-emails` writes harvested commit emails. Kept "
             "out of the survey and untracked: publishing addresses people did not "
@@ -251,10 +252,7 @@ def main() -> None:
             # Untracked by design: a committed list of harvested addresses is a
             # spam vector no matter why it was gathered.
             args.author_contacts.parent.mkdir(parents=True, exist_ok=True)
-            args.author_contacts.write_text(
-                json.dumps(result["contacts"], ensure_ascii=False, indent=2) + "\n",
-                encoding="utf-8",
-            )
+            args.author_contacts.write_text(contacts_csv(result["contacts"]), encoding="utf-8")
             print(f"  contacts: {args.author_contacts} (gitignored, {len(result['contacts'])})")
         for failure in report["failures"][:5]:
             print(f"  ::warning:: {failure}")
