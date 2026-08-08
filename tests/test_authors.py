@@ -66,6 +66,22 @@ def test_data_work_is_read_from_the_authors_own_words():
     assert authors.data_signals(unrelated) == []
 
 
+def test_data_signals_match_words_not_organization_substrings():
+    profile = {"bio": "", "company": "PlanetLabs", "blog": ""}
+
+    assert authors.data_signals(profile) == []
+
+
+def test_data_signals_cover_professional_data_roles_and_products():
+    profile = {
+        "bio": "Senior Data Scientist building scalable data platforms",
+        "company": "Acme",
+        "blog": "",
+    }
+
+    assert authors.data_signals(profile) == ["data platform", "data scientist"]
+
+
 def test_noreply_commit_addresses_are_never_collected(monkeypatch):
     # A noreply address identifies nobody and is pure noise in a contact file.
     monkeypatch.setattr(
@@ -99,9 +115,12 @@ def test_the_shareable_survey_never_carries_harvested_commit_emails(monkeypatch)
         "public_profile",
         lambda login: {
             "login": login,
+            "name": "Real Person",
             "bio": "dataset work",
             "company": "Acme",
             "followers": 1,
+            "profile_url": "https://github.com/real",
+            "public_profile_email": "hello@example.test",
             "data_signals": ["dataset"],
             "works_on_data": True,
         },
@@ -111,6 +130,36 @@ def test_the_shareable_survey_never_carries_harvested_commit_emails(monkeypatch)
     result = authors.survey([current], include_emails=True)
 
     assert result["contacts"] == [
-        {"login": "real", "commit_email": "r@e.test", "found_in": "org/bench"}
+        {
+            "login": "real",
+            "name": "Real Person",
+            "company": "Acme",
+            "bio": "dataset work",
+            "profile_url": "https://github.com/real",
+            "public_profile_email": "hello@example.test",
+            "commit_email": "r@e.test",
+            "data_signals": ["dataset"],
+            "works_on_data": True,
+            "found_in": ["org/bench"],
+        }
     ]
     assert "r@e.test" not in str(result["report"])
+
+
+def test_contacts_csv_contains_every_contact_and_flattens_lists():
+    rendered = authors.contacts_csv(
+        [
+            {
+                "login": "real",
+                "commit_email": "r@e.test",
+                "data_signals": ["data quality", "dataset"],
+                "found_in": ["org/one", "org/two"],
+            },
+            {"login": "other", "commit_email": "o@e.test", "found_in": ["org/one"]},
+        ]
+    )
+
+    assert rendered.count("\r\n") == 3
+    assert "data quality; dataset" in rendered
+    assert "org/one; org/two" in rendered
+    assert "other" in rendered

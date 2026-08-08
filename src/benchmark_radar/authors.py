@@ -25,6 +25,8 @@ No email is ever sent. This reads public APIs and stops there.
 
 from __future__ import annotations
 
+import csv
+import io
 import os
 import re
 from typing import Any
@@ -45,6 +47,18 @@ DATA_SIGNALS = (
     "data-centric",
     "data curation",
     "dataset",
+    "data scientist",
+    "data architect",
+    "data platform",
+    "data system",
+    "data product",
+    "data provider",
+    "data marketplace",
+    "synthetic data",
+    "training data",
+    "geospatial data",
+    "satellite imagery",
+    "earth observation",
     "data engineering",
     "annotation",
     "labeling",
@@ -60,6 +74,18 @@ DATA_SIGNALS = (
 )
 
 _GITHUB_REPO = re.compile(r"^https?://github\.com/([^/]+)/([^/?#]+)", re.IGNORECASE)
+CONTACT_COLUMNS = (
+    "login",
+    "name",
+    "company",
+    "bio",
+    "profile_url",
+    "public_profile_email",
+    "commit_email",
+    "data_signals",
+    "works_on_data",
+    "found_in",
+)
 
 
 class AuthorLookupError(RuntimeError):
@@ -169,7 +195,30 @@ def data_signals(profile: dict[str, Any]) -> list[str]:
     text = " ".join(
         str(profile.get(field) or "") for field in ("bio", "company", "blog")
     ).casefold()
-    return sorted({signal for signal in DATA_SIGNALS if signal in text})
+    return sorted(
+        {
+            signal
+            for signal in DATA_SIGNALS
+            if re.search(rf"(?<!\w){re.escape(signal)}s?(?!\w)", text)
+        }
+    )
+
+
+def contacts_csv(contacts: list[dict[str, Any]]) -> str:
+    """Render the complete private contact inventory as RFC 4180 CSV."""
+    output = io.StringIO(newline="")
+    writer = csv.DictWriter(output, fieldnames=CONTACT_COLUMNS, lineterminator="\r\n")
+    writer.writeheader()
+    for contact in contacts:
+        row = dict(contact)
+        row["data_signals"] = "; ".join(row.get("data_signals") or [])
+        row["found_in"] = "; ".join(row.get("found_in") or [])
+        rendered = {}
+        for column in CONTACT_COLUMNS:
+            value = row.get(column, "")
+            rendered[column] = " ".join(value.split()) if isinstance(value, str) else value
+        writer.writerow(rendered)
+    return output.getvalue()
 
 
 def public_profile(login: str) -> dict[str, Any]:
@@ -241,7 +290,7 @@ def survey(
     """
     repos = popular_repositories(snapshots, limit=repo_limit)
     profiles: dict[str, dict[str, Any]] = {}
-    contacts: dict[str, dict[str, str]] = {}
+    contacts: dict[str, dict[str, Any]] = {}
     failures: list[str] = []
 
     for repo in repos:
@@ -276,11 +325,23 @@ def survey(
                 }
             )
             if login in emails:
-                contacts[login] = {
-                    "login": login,
-                    "commit_email": emails[login],
-                    "found_in": repo["full_name"],
-                }
+                contact = contacts.setdefault(
+                    login,
+                    {
+                        "login": login,
+                        "name": profile.get("name"),
+                        "company": profile.get("company"),
+                        "bio": profile.get("bio"),
+                        "profile_url": profile.get("profile_url"),
+                        "public_profile_email": profile.get("public_profile_email"),
+                        "commit_email": emails[login],
+                        "data_signals": profile.get("data_signals") or [],
+                        "works_on_data": bool(profile.get("works_on_data")),
+                        "found_in": [],
+                    },
+                )
+                if repo["full_name"] not in contact["found_in"]:
+                    contact["found_in"].append(repo["full_name"])
 
     people = sorted(
         profiles.values(),
