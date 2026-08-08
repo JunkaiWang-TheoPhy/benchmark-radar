@@ -748,3 +748,232 @@ def test_daily_briefing_collapses_verbose_evidence_details_by_default():
     assert "Evidence & briefing details · ${citations.length.toLocaleString()} sources" in script
     assert "briefingDetails(briefing, citations)" in script
     assert 'attrs: { open: "" }' not in script
+
+
+def test_today_view_renders_the_daily_questions_under_the_briefing():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'id="daily-questions"' in html
+    assert 'id="daily-questions-body"' in html
+    # The briefing says what changed and the Q&A answers what a reader would ask
+    # about it, so the Q&A follows the briefing and both sit above the filters.
+    assert html.index('id="daily-briefing"') < html.index('id="daily-questions"')
+    assert html.index('id="daily-questions"') < html.index('id="filters"')
+    assert "renderDailyQuestions(day)" in script
+    # Both describe one scan date, so neither is shown over the whole archive.
+    assert 'byId("daily-questions").hidden = showingAllDates' in script
+
+
+def test_daily_questions_withhold_another_days_answers_and_name_an_absent_set():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert "questions.date === day.date" in script
+    assert "No questions were answered for this day." in script
+
+
+def test_daily_questions_print_stat_values_from_the_registry_not_the_prose():
+    """The renderer must never take a number from the model's own sentences.
+
+    `questions.py` computes every figure before the call and has the model cite
+    S### ids; the page prints the cited statistic's own value. Rendering prose
+    numbers instead would reintroduce exactly the fabrication the registry
+    exists to prevent.
+    """
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert "formatStatValue(stat)" in script
+    assert "answer.cited_stats" in script
+    assert 'unit !== "count"' in script
+    assert 'window !== "today"' in script
+    # Spans already carry parentheses; the Markdown renderer avoids nesting a
+    # second pair and the dashboard has to agree with it.
+    assert 'window.endsWith(")")' in script
+
+
+def test_daily_questions_show_the_counter_view_and_admitted_insufficiency():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # A daily feed that only ever confirms itself teaches a reader nothing about
+    # how much to trust it, so the counter-view is rendered, never collapsed.
+    assert 'text: "Counter-view: "' in script
+    assert 'text: "Takeaway: "' in script
+    assert "Evidence is insufficient to answer this today." in script
+    assert "answer?.sufficient_evidence === false" in script
+
+
+def test_daily_questions_flag_an_uncertified_comparison_window():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # Without a certified window, day-over-day differences may be collection
+    # changes rather than field changes, so the answers must not read as trends.
+    assert "questions.comparable === false" in script
+    assert "questions.comparability_note" in script
+    assert 'questions.generator !== "openai-responses"' in script
+    assert "every figure computed before the call and cited by ID." in script
+
+
+def test_daily_questions_link_only_validated_http_evidence():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # Same gate as the briefing: an id-shaped string with an unsafe or missing
+    # URL is not turned into a link a reader can click.
+    assert "validBriefingCitations(answer?.cited_evidence)" in script
+
+
+def _rendered_questions(fixture: str | None = None):
+    """Run the real renderer over a fixture and return the resulting DOM tree.
+
+    Source assertions cannot distinguish "renders the answer" from "mentions the
+    word answer". The whole claim of this section is that every figure on it is
+    traceable to a statistic computed before the model ran, so it is executed.
+    """
+    import json
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if not node:
+        import pytest
+
+        pytest.skip("node is not installed")
+    result = subprocess.run(
+        [node, "tests/render_questions_harness.mjs", *([fixture] if fixture else [])],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=True,
+    )
+    return json.loads(result.stdout)
+
+
+def _flatten(node):
+    yield node
+    for child in node.get("children") or []:
+        yield from _flatten(child)
+
+
+def test_rendered_questions_carry_every_answer_field_and_registry_value():
+    nodes = list(_flatten(_rendered_questions()))
+    classes = {node["className"] for node in nodes}
+    text = next(iter(nodes))["text"]
+
+    assert {"question-group", "answer", "answer-signal", "answer-takeaway"} <= classes
+    assert "answer-counter-view" in classes
+    # Both fixture groups and all three answers render, not just the first.
+    assert len([n for n in nodes if n["className"] == "question-group"]) == 2
+    assert len([n for n in nodes if n["className"] == "answer"]) == 3
+
+    # The statistic's value and span come from the registry entry, and the span
+    # is not wrapped in a second pair of parentheses.
+    assert "First-observed records today: 40" in text
+    assert "12 since 2026-07-23 (17 days)" in text
+    assert "12 (since 2026-07-23 (17 days))" not in text
+
+    # A registry value is printed at full precision. `toLocaleString()` would
+    # round this to 1,234.568, quietly altering a figure on the one page whose
+    # whole claim is that every number is the one that was computed.
+    assert "1,234.56789 days" in text
+    assert "1,234.568 days" not in text
+
+    # The model's own prose is reproduced verbatim, and the counter-view with it.
+    assert "No credible counter-view found." in text
+    assert "Evidence is insufficient to answer this today." in text
+    assert "No certified comparison window" in text
+    assert "Answered by gpt-5 in 3 calls" in text
+
+
+def test_dashboard_and_markdown_format_statistics_identically():
+    """The two renderers must print the same figure for the same statistic.
+
+    The Markdown report and the dashboard are both published from one registry,
+    so a reader comparing them must not see two different numbers. This runs the
+    JS formatter against `report._format_stat_value` over the same inputs.
+    """
+    import json
+    import re
+    import shutil
+    import subprocess
+    from pathlib import Path as _Path
+
+    import pytest
+
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+
+    from benchmark_radar.report import _format_stat_value
+
+    cases = [1234.56789, 12.5, 40.0, 0.125, 1234567.0, -1234.5, -1234567, 0, 100, 999, 1000]
+    source = _Path("site/assets/app.js").read_text(encoding="utf-8")
+    match = re.search(r"function formatStatValue[\s\S]*?\n}\n", source)
+    assert match, "formatStatValue not found in app.js"
+    program = (
+        f"{match.group(0)}\n"
+        f"const cases = {json.dumps(cases)};\n"
+        "console.log(JSON.stringify(cases.map((value) => "
+        'formatStatValue({ value, unit: "count", window: "today" }))));'
+    )
+    result = subprocess.run(
+        [node, "-e", program], capture_output=True, text=True, timeout=60, check=True
+    )
+
+    expected = [
+        _format_stat_value({"value": value, "unit": "count", "window": "today"}) for value in cases
+    ]
+    assert json.loads(result.stdout) == expected
+
+
+def test_rendered_questions_link_cited_evidence_to_its_source():
+    nodes = list(_flatten(_rendered_questions()))
+    links = [node for node in nodes if node["href"]]
+
+    assert [node["href"] for node in links] == ["https://arxiv.org/abs/2608.00001"]
+    assert links[0]["text"] == "A harness for long-horizon agent tasks"
+
+
+def _render_with(mutate, tmp_path):
+    """Render the fixture after applying `mutate` to it."""
+    import json
+    from pathlib import Path as _Path
+
+    fixture = json.loads(_Path("tests/fixtures/daily_questions.json").read_text(encoding="utf-8"))
+    mutate(fixture)
+    path = tmp_path / "daily_questions.json"
+    path.write_text(json.dumps(fixture), encoding="utf-8")
+    return _rendered_questions(str(path))
+
+
+def test_rendered_questions_withhold_a_stale_day_rather_than_mislabel_it(tmp_path):
+    """A Q&A stamped with another date answers questions about the wrong day."""
+
+    def restamp(fixture):
+        fixture["questions"]["date"] = "2026-08-07"
+
+    rendered = _render_with(restamp, tmp_path)
+    assert "No questions were answered for this day." in rendered["text"]
+    assert not any(node["className"] == "answer" for node in _flatten(rendered))
+
+
+def test_rendered_questions_report_an_absent_set_rather_than_blank_space(tmp_path):
+    """The Q&A is opt-in, so a day with none must say so under its heading."""
+
+    def clear(fixture):
+        fixture["questions"] = {}
+
+    rendered = _render_with(clear, tmp_path)
+    assert "No questions were answered for this day." in rendered["text"]
+    assert not any(node["className"] == "question-group" for node in _flatten(rendered))
+
+
+def test_rendered_questions_drop_an_evidence_citation_with_an_unsafe_url(tmp_path):
+    """An id-shaped citation without a safe URL must not become a link."""
+
+    def poison(fixture):
+        citation = fixture["questions"]["groups"][0]["answers"][0]["cited_evidence"][0]
+        citation["url"] = "javascript:alert(1)"
+
+    rendered = _render_with(poison, tmp_path)
+    assert not [node for node in _flatten(rendered) if node["href"]]
+    # The answer itself still renders; only the unfollowable citation is dropped.
+    assert any(node["className"] == "answer" for node in _flatten(rendered))

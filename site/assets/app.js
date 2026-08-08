@@ -423,6 +423,170 @@ function renderDailyBriefing(day) {
   );
 }
 
+// Statistic values are printed from the registry the answer cites, never from
+// the model's prose, so a number reaches the page only if it was computed
+// before the call. This mirrors report.py's `_format_stat_value` exactly.
+function formatStatValue(stat) {
+  const value = stat?.value;
+  // `toLocaleString()` is not used: it rounds to three fraction digits, so a
+  // registry value of 1234.56789 would reach the page as 1,234.568. Grouping is
+  // applied to the integer part only, which matches Python's `f"{value:,}"` and
+  // keeps the printed figure identical to the Markdown report's.
+  let rendered;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const [whole, fraction] = String(value).split(".");
+    // \B keeps the separator out of a leading "-", so -1234 groups as -1,234.
+    const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    rendered = fraction ? `${grouped}.${fraction}` : grouped;
+  } else {
+    rendered = String(value ?? "");
+  }
+  const unit = String(stat?.unit || "").trim();
+  if (unit && unit !== "count") rendered = `${rendered} ${unit}`;
+  const window = String(stat?.window || "").trim();
+  if (window && window !== "today") {
+    // Spans already carry their own parentheses; do not nest another pair.
+    rendered = window.endsWith(")") ? `${rendered} ${window}` : `${rendered} (${window})`;
+  }
+  return rendered;
+}
+
+function answerCitations(answer) {
+  const stats = (Array.isArray(answer?.cited_stats) ? answer.cited_stats : []).map((stat) =>
+    element("li", {}, [
+      element("code", { className: "answer-stat-id", text: String(stat?.id || "") }),
+      document.createTextNode(` ${String(stat?.label || "")}: `),
+      element("strong", { text: formatStatValue(stat) }),
+    ]),
+  );
+  // Same rule as the briefing: only an exact evidence ID with a safe http(s)
+  // URL becomes a link, so a citation nobody can follow is not rendered as one.
+  const evidence = validBriefingCitations(answer?.cited_evidence).map((citation) =>
+    element("li", {}, [
+      element("code", { className: "answer-stat-id", text: citation.id }),
+      document.createTextNode(" "),
+      element("a", {
+        text: citation.title,
+        attrs: {
+          href: citation.href,
+          target: "_blank",
+          rel: "noopener noreferrer",
+        },
+      }),
+      element("span", { text: ` (${citation.source})` }),
+    ]),
+  );
+  if (!stats.length && !evidence.length) return null;
+  return element("ul", { className: "answer-citations" }, [...stats, ...evidence]);
+}
+
+function answerBlock(answer) {
+  const insufficient = answer?.sufficient_evidence === false;
+  const confidence = String(answer?.confidence || "").trim();
+  return element("article", { className: "answer" }, [
+    // The confidence sits on the question's own line: it qualifies the answer
+    // that follows, so a reader should meet it before reading the claim.
+    element("h4", { className: "answer-question" }, [
+      document.createTextNode(String(answer?.question || "")),
+      ...(confidence
+        ? [
+            element("span", {
+              className: `pill pill-confidence pill-confidence-${confidence}`,
+              text: `${confidence} confidence`,
+            }),
+          ]
+        : []),
+    ]),
+    element("p", { className: "answer-signal", text: String(answer?.signal || "") }),
+    element("p", { className: "answer-plain" }, [
+      element("em", { text: "In plain English: " }),
+      document.createTextNode(String(answer?.plain_english || "")),
+    ]),
+    answerCitations(answer),
+    // Stated on the answer rather than hidden in a tooltip: "the evidence does
+    // not support an answer today" is a result, not a rendering failure.
+    ...(insufficient
+      ? [
+          element("p", {
+            className: "answer-insufficient",
+            text: "Evidence is insufficient to answer this today.",
+          }),
+        ]
+      : []),
+    element("p", { className: "answer-takeaway" }, [
+      element("strong", { text: "Takeaway: " }),
+      document.createTextNode(String(answer?.takeaway || "")),
+    ]),
+    // The counter-view is the point of the format: an answer that only ever
+    // confirms itself teaches a reader nothing about how much to trust it.
+    element("p", { className: "answer-counter-view" }, [
+      element("strong", { text: "Counter-view: " }),
+      document.createTextNode(String(answer?.counter_view || "")),
+    ]),
+  ]);
+}
+
+function questionsProvenance(questions) {
+  if (questions.generator !== "openai-responses") return null;
+  const usage = questions.usage || {};
+  return element("p", {
+    className: "daily-questions-meta",
+    text: `Answered by ${questions.model || "OpenAI model"} in ${Number(questions.calls || 0).toLocaleString()} calls · ${Number(usage.input_tokens || 0).toLocaleString()} input / ${Number(usage.output_tokens || 0).toLocaleString()} output tokens · every figure computed before the call and cited by ID.`,
+  });
+}
+
+// The Q&A is opt-in and generated once per UTC day, so a day can legitimately
+// have none: it predates the feature, no API key was configured, or the calls
+// failed. Say which rather than leaving a heading above blank space.
+function renderDailyQuestions(day) {
+  const questions = day.questions || {};
+  const groups = Array.isArray(questions.groups) ? questions.groups : [];
+  // A Q&A carrying another day's date answers questions about the wrong day,
+  // so it is withheld rather than shown beside this date's listings.
+  const usable = questions.date === day.date ? groups : [];
+  const rendered = usable.flatMap((group) => {
+    const answers = (Array.isArray(group?.answers) ? group.answers : []).map(answerBlock);
+    if (!answers.length) return [];
+    return [
+      element("section", { className: "question-group" }, [
+        element("h3", {
+          className: "question-group-title",
+          text: String(group?.title || "Questions"),
+        }),
+        ...answers,
+      ]),
+    ];
+  });
+  replaceChildren(
+    byId("daily-questions-body"),
+    rendered.length
+      ? [
+          // Without a certified comparison window, day-over-day differences may
+          // be collection changes rather than field changes. Saying so up front
+          // stops the answers below from reading as a trend claim.
+          ...(questions.comparable === false
+            ? [
+                element("p", {
+                  className: "daily-questions-caveat",
+                  text: String(
+                    questions.comparability_note ||
+                      "No certified comparison window today, so these answers describe what was captured rather than how the field is trending.",
+                  ),
+                }),
+              ]
+            : []),
+          ...rendered,
+          questionsProvenance(questions),
+        ]
+      : [
+          element("p", {
+            className: "empty-state",
+            text: "No questions were answered for this day.",
+          }),
+        ],
+  );
+}
+
 function renderToday() {
   const showingAllDates = state.todayDate === "all";
   const day = dailySnapshot(showingAllDates ? state.data.latest_date : state.todayDate);
@@ -433,9 +597,11 @@ function renderToday() {
   // result set. Hiding them in All dates mode keeps latest-day context from
   // appearing to explain observations collected across the full history.
   byId("daily-briefing").hidden = showingAllDates;
+  byId("daily-questions").hidden = showingAllDates;
   byId("source-health-panel").hidden = showingAllDates;
 
   renderDailyBriefing(day);
+  renderDailyQuestions(day);
 
   syncFilters();
   const observations = filteredObservations();
