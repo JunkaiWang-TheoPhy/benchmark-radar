@@ -461,6 +461,111 @@ input {
   margin-top: 0.22rem;
 }
 
+.daily-questions {
+  margin-bottom: 1.5rem;
+  padding: 0.9rem 1.4rem;
+  border: 1px solid var(--ink);
+  background: var(--panel);
+}
+
+.daily-questions-title {
+  margin-bottom: 0.6rem;
+  font-size: 1rem;
+}
+
+.daily-questions-caveat {
+  margin: 0 0 0.85rem;
+  padding-left: 0.8rem;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.question-group + .question-group {
+  margin-top: 1.1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.question-group-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.answer + .answer {
+  margin-top: 0.9rem;
+}
+
+.answer-question {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0 0 0.3rem;
+  font-size: 0.95rem;
+}
+
+.answer-signal,
+.answer-plain,
+.answer-takeaway,
+.answer-counter-view {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+}
+
+.answer-plain {
+  color: var(--muted);
+}
+
+.answer-citations {
+  margin: 0.45rem 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.84rem;
+}
+
+.answer-citations li + li {
+  margin-top: 0.22rem;
+}
+
+.answer-stat-id {
+  color: var(--muted);
+  font-size: 0.94em;
+}
+
+/* An answer the evidence cannot support is flagged in the flow of the answer,
+   not tucked away: withholding it is a result the reader needs to see. */
+.answer-insufficient {
+  margin: 0.4rem 0 0;
+  padding-left: 0.8rem;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-style: italic;
+}
+
+.answer-counter-view {
+  padding-left: 0.8rem;
+  border-left: 3px solid var(--line);
+}
+
+.pill-confidence {
+  flex: none;
+  font-weight: 600;
+  text-transform: lowercase;
+}
+
+.daily-questions-meta {
+  margin: 0.9rem 0 0;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .record-card {
   border-bottom: 1px solid var(--line);
 }

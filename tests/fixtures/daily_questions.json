@@ -1,0 +1,106 @@
+{
+  "date": "2026-08-08",
+  "questions": {
+    "schema_version": 1,
+    "date": "2026-08-08",
+    "generator": "openai-responses",
+    "model": "gpt-5",
+    "comparable": false,
+    "comparability_note": "No certified comparison window: collection changed on 2026-08-06.",
+    "calls": 3,
+    "usage": {
+      "input_tokens": 41234,
+      "output_tokens": 2810
+    },
+    "groups": [
+      {
+        "id": "arrivals",
+        "title": "What arrived",
+        "answers": [
+          {
+            "question": "What benchmarks, datasets, or evaluation methods did the radar first see today?",
+            "signal": "Most of today's first-observed records are agentic evaluation harnesses.",
+            "plain_english": "Most new items today test whether a model can carry out a task, not just answer a question.",
+            "takeaway": "Expect harness setup cost, not just a scoring script.",
+            "counter_view": "The feed is keyword-filtered, so agentic wording may be over-represented.",
+            "stat_ids": [
+              "S001"
+            ],
+            "evidence_ids": [
+              "E001"
+            ],
+            "confidence": "medium",
+            "sufficient_evidence": true,
+            "cited_stats": [
+              {
+                "id": "S001",
+                "label": "First-observed records today",
+                "value": 40,
+                "unit": "count",
+                "window": "today"
+              }
+            ],
+            "cited_evidence": [
+              {
+                "id": "E001",
+                "title": "A harness for long-horizon agent tasks",
+                "url": "https://arxiv.org/abs/2608.00001",
+                "source": "arxiv"
+              }
+            ]
+          },
+          {
+            "question": "Which of today's arrivals document how they score an answer?",
+            "signal": "Scoring documentation is absent from the captured metadata for most arrivals.",
+            "plain_english": "For most new items we cannot tell how they decide an answer is correct.",
+            "takeaway": "Treat unscored arrivals as unverified until the repository is read.",
+            "counter_view": "No credible counter-view found.",
+            "stat_ids": [],
+            "evidence_ids": [],
+            "confidence": "low",
+            "sufficient_evidence": false,
+            "cited_stats": [],
+            "cited_evidence": []
+          }
+        ]
+      },
+      {
+        "id": "movement",
+        "title": "What is still moving",
+        "answers": [
+          {
+            "question": "Which artifacts the radar already tracked moved measurably, and over what span?",
+            "signal": "Tracked artifacts moved on cumulative download counts across their whole tracked span.",
+            "plain_english": "Some items the radar has followed for a while kept gaining downloads overall.",
+            "takeaway": "Read the movement as a total since first sighting, not as a one-day jump.",
+            "counter_view": "Only one connector reported the movement, so it is uncorroborated.",
+            "stat_ids": [
+              "S014",
+              "S021"
+            ],
+            "evidence_ids": [],
+            "confidence": "low",
+            "sufficient_evidence": true,
+            "cited_stats": [
+              {
+                "id": "S014",
+                "label": "Tracked artifacts with movement",
+                "value": 12,
+                "unit": "count",
+                "window": "since 2026-07-23 (17 days)"
+              },
+              {
+                "id": "S021",
+                "label": "Mean days between sightings",
+                "value": 1234.56789,
+                "unit": "days",
+                "window": "today"
+              }
+            ],
+            "cited_evidence": []
+          }
+        ]
+      }
+    ]
+  }
+}

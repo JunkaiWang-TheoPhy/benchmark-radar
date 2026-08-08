@@ -127,6 +127,17 @@
           <h2 class="daily-briefing-title" id="daily-briefing-heading">Daily briefing</h2>
           <div id="daily-briefing-body"></div>
         </section>
+        <!-- The day's Q&A sits directly under the briefing: the briefing says
+             what changed, this answers what a reader would ask about it. Both
+             describe the whole scan date, so both stay above the filters. -->
+        <section
+          class="daily-questions"
+          id="daily-questions"
+          aria-labelledby="daily-questions-heading"
+        >
+          <h2 class="daily-questions-title" id="daily-questions-heading">Questions for today</h2>
+          <div id="daily-questions-body"></div>
+        </section>
         <form class="filter-panel today-filters" id="filters">
           <label class="search-field">
             Search
