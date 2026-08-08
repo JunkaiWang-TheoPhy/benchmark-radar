@@ -183,6 +183,14 @@ def _corpus_statistics(
         for observation in corpus["observations"]
         if observation["snapshot_date"] == current_date
     }
+    # Which connectors actually reported each metric, not merely which ones saw
+    # the artifact. An artifact found via GitHub and Hugging Face where only
+    # Hugging Face publishes downloads has one source for that number.
+    metric_sources: dict[tuple[str, str], set[str]] = {}
+    for observation in corpus["observations"]:
+        for metric in observation.get("metrics") or {}:
+            key = (observation["entity_id"], metric)
+            metric_sources.setdefault(key, set()).add(observation["source"])
     artifacts = [entity for entity in corpus["entities"] if entity["type"] == "artifact"]
     returning = [
         entity
@@ -195,24 +203,31 @@ def _corpus_statistics(
         entity for entity in returning if len(entity.get("sources") or []) >= CORROBORATION_SOURCES
     ]
     add(
-        "tracked artifacts today reported by more than one connector",
+        "tracked artifacts today seen by more than one connector",
         len(corroborated),
-        detail={"note": "independent corroboration; a single connector twice is one observation"},
+        detail={
+            "note": (
+                "independent sighting of the artifact; a single connector twice is one "
+                "observation. This does not mean both connectors measured the same metric: "
+                "per-metric corroboration is reported on each movement statistic."
+            )
+        },
     )
 
     tracked: list[dict[str, Any]] = []
     for entity in returning:
-        metrics = entity.get("metrics") or {}
-        # Only a metric present at both endpoints has a real delta. build_corpus
-        # substitutes 0 for a missing endpoint, which reads as growth from zero.
-        deltas = {
-            key: value
-            for key, value in (entity.get("metric_deltas") or {}).items()
-            if value and key in metrics
-        }
+        # `build_corpus` emits deltas only for metrics present at both
+        # endpoints, so a nonzero value here is real movement rather than a
+        # field the connector just started publishing.
+        deltas = {key: value for key, value in (entity.get("metric_deltas") or {}).items() if value}
         if not deltas:
             continue
         seen_days = list(entity.get("seen_days") or [])
+        # Corroboration is per metric. Two connectors seeing the artifact says
+        # nothing about whether both measured the number that moved.
+        delta_sources = {
+            metric: sorted(metric_sources.get((entity["id"], metric)) or ()) for metric in deltas
+        }
         tracked.append(
             {
                 "entity_id": entity["id"],
@@ -223,7 +238,10 @@ def _corpus_statistics(
                 "first_seen_at": entity.get("first_seen_at"),
                 "last_seen_at": entity.get("last_seen_at"),
                 "metric_deltas": deltas,
-                "corroborated": len(entity.get("sources") or []) >= CORROBORATION_SOURCES,
+                "metric_sources": delta_sources,
+                "corroborated": any(
+                    len(names) >= CORROBORATION_SOURCES for names in delta_sources.values()
+                ),
             }
         )
     tracked.sort(
@@ -241,8 +259,10 @@ def _corpus_statistics(
             detail={
                 "cumulative": True,
                 "note": "movement across the whole tracked span, not a one-day change",
-                "corroborated": entry["corroborated"],
-                "sources": entry["sources"],
+                # Connectors that reported THIS metric, not merely the artifact.
+                "corroborated": len(entry["metric_sources"].get(metric) or [])
+                >= CORROBORATION_SOURCES,
+                "sources": entry["metric_sources"].get(metric) or [],
                 "url": entry["url"],
             },
         )

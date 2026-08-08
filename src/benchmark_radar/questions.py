@@ -28,6 +28,7 @@ to a few calls across two scheduled runs.
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from .briefing import (
@@ -122,7 +123,10 @@ _INSTRUCTIONS = (
     "Grounding rules:\n"
     "- Never write a number that is not in the stat registry. Reference statistics by "
     "their S### id in stat_ids and describe them in words; the renderer prints the "
-    "value. If you need a number the registry does not contain, say so instead.\n"
+    "value. If you need a number the registry does not contain, say so instead. Any "
+    "digits you type in prose are checked against the registry and the whole answer is "
+    "rejected on a mismatch, so prefer wording like 'most of today's records' over a "
+    "figure you would have to restate.\n"
     "- Cite E### evidence IDs for every claim about a specific artifact.\n"
     "- A metric_delta is cumulative movement across the artifact's whole tracked span, "
     "never a one-day change. Always state the span.\n"
@@ -199,7 +203,67 @@ def _payload(model: str, serialized: str) -> dict[str, Any]:
             },
         },
         "max_output_tokens": MAX_QA_OUTPUT_TOKENS,
+        # Same contract as the briefing: the evidence packet and the answers are
+        # this repository's data and are not retained server-side.
+        "store": False,
     }
+
+
+_PROSE_FIELDS = ("signal", "plain_english", "takeaway", "counter_view")
+# Quantities the model may write without citing a statistic: ordinals and small
+# counts that describe its own answer ("both readings", "the first of two")
+# rather than measurements of the corpus.
+_ALLOWED_BARE_NUMBERS = {"0", "1", "2", "3", "100"}
+_NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
+
+
+def _registry_number_forms(stat: dict[str, Any]) -> set[str]:
+    """Every spelling of a statistic's value a model might reasonably write."""
+    value = stat.get("value")
+    forms = {str(value)}
+    if isinstance(value, (int, float)):
+        magnitude = abs(value)
+        forms.add(f"{magnitude:,}")
+        forms.add(str(magnitude))
+        if float(value).is_integer():
+            whole = int(abs(value))
+            forms.update({str(whole), f"{whole:,}"})
+    for key in ("share_pct", "share_of_records_pct", "baseline_share_pct", "shift_points"):
+        detail_value = (stat.get("detail") or {}).get(key)
+        if detail_value is not None:
+            forms.add(str(detail_value))
+            if float(detail_value).is_integer():
+                forms.add(str(int(detail_value)))
+    return forms
+
+
+def _reject_uncited_quantities(
+    answer: dict[str, Any],
+    stats_by_id: dict[str, dict[str, Any]],
+) -> None:
+    """Fail an answer whose prose states a number the registry does not hold.
+
+    Citing a valid statistic is not enough on its own: an answer may cite S001
+    (=2) and still write "three datasets arrived". The registry is the authority
+    for every quantity, so a number appearing in prose has to match a value the
+    registry actually computed, whether or not the answer also cites an ID.
+    """
+    allowed = set(_ALLOWED_BARE_NUMBERS)
+    for stat in stats_by_id.values():
+        allowed.update(_registry_number_forms(stat))
+    for field in _PROSE_FIELDS:
+        text = str(answer.get(field) or "")
+        for match in _NUMBER.finditer(text):
+            token = match.group(0)
+            # A year or a date fragment is context, not a measurement.
+            if token in allowed or token.rstrip(",") in allowed:
+                continue
+            if re.fullmatch(r"20\d\d", token):
+                continue
+            raise BriefingError(
+                f"OpenAI wrote the uncited quantity {token!r} in {field}; "
+                "every number must come from the statistic registry"
+            )
 
 
 def _validate(
@@ -207,6 +271,7 @@ def _validate(
     group: dict[str, Any],
     stats_by_id: dict[str, dict[str, Any]],
     evidence_ids: set[str],
+    evidence_by_id: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Reject ungrounded answers rather than publishing them."""
     if len(answers) != len(group["questions"]):
@@ -233,6 +298,7 @@ def _validate(
         # filler this format exists to prevent.
         if sufficient and not cited:
             raise BriefingError("OpenAI claimed sufficient evidence while citing none")
+        _reject_uncited_quantities(answer, stats_by_id)
         validated.append(
             {
                 "question": question,
@@ -253,6 +319,18 @@ def _validate(
                 "confidence": str(answer.get("confidence") or "low"),
                 "sufficient_evidence": sufficient,
                 "cited_stats": [stats_by_id[stat_id] for stat_id in answer.get("stat_ids") or []],
+                # Carried so a reader can open what an answer rests on. A
+                # citation nobody can follow is not a citation.
+                "cited_evidence": [
+                    {
+                        "id": item_id,
+                        "title": (evidence_by_id or {}).get(item_id, {}).get("title", ""),
+                        "url": (evidence_by_id or {}).get(item_id, {}).get("url", ""),
+                        "source": (evidence_by_id or {}).get(item_id, {}).get("source", ""),
+                    }
+                    for item_id in answer.get("evidence_ids") or []
+                    if item_id in (evidence_by_id or {})
+                ],
             }
         )
     return validated
@@ -271,7 +349,7 @@ def generate_daily_questions(
     registry = build_registry(history, current, config)
     stats_by_id = stat_index(registry)
     base = briefing_input(history, current, deterministic_findings)
-    evidence_ids = {item["id"] for item in base.get("first_observed_evidence") or []}
+    evidence_by_id = {item["id"]: item for item in base.get("first_observed_evidence") or []}
 
     groups: list[dict[str, Any]] = []
     usage_total: dict[str, int] = {}
@@ -298,7 +376,13 @@ def generate_daily_questions(
             raise BriefingError("OpenAI structured output is not valid JSON") from error
         if not isinstance(parsed, dict):
             raise BriefingError("OpenAI structured output is not an object")
-        answers = _validate(parsed.get("answers") or [], group, stats_by_id, evidence_ids)
+        answers = _validate(
+            parsed.get("answers") or [],
+            group,
+            stats_by_id,
+            {item["id"] for item in packet.get("first_observed_evidence") or []},
+            evidence_by_id,
+        )
         usage = _usage(response)
         for key, value in usage.items():
             usage_total[key] = usage_total.get(key, 0) + value

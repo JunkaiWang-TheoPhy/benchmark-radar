@@ -203,3 +203,67 @@ def test_a_day_never_loses_answers_it_already_had():
     merged = merge_snapshots(morning, snapshot_for_run(_run([_item(2)])))
 
     assert merged["questions"]["groups"][0]["title"] == "t"
+
+
+def test_prose_may_not_state_a_number_the_registry_does_not_hold():
+    # Citing a valid statistic is not enough: an answer can cite S001 (=2) and
+    # still write "three datasets arrived". The registry is the authority for
+    # every quantity in the text, not only the ones the answer points at.
+    group, stats_by_id, evidence = _fixture()
+
+    with pytest.raises(BriefingError, match="uncited quantity"):
+        questions._validate(
+            [_answer(signal="A total of 847 datasets arrived today.")],
+            group,
+            stats_by_id,
+            evidence,
+        )
+
+
+def test_prose_may_restate_a_value_the_registry_computed():
+    group, stats_by_id, evidence = _fixture()
+
+    validated = questions._validate(
+        [_answer(signal="The radar captured 2 evidence records today.")],
+        group,
+        stats_by_id,
+        evidence,
+    )
+
+    assert validated[0]["signal"].endswith("today.")
+
+
+def test_evidence_validation_is_scoped_to_what_the_call_actually_saw():
+    # The movement group receives no first-observed evidence, so an E ID the
+    # model guessed must not validate against the wider base packet.
+    group = {"id": "movement", "title": "t", "questions": ("Q1?",)}
+    _, stats_by_id, _ = _fixture()
+
+    with pytest.raises(BriefingError, match="unknown evidence"):
+        questions._validate([_answer(evidence_ids=["E001"])], group, stats_by_id, set(), {})
+
+
+def test_a_metric_reported_by_one_connector_is_not_corroborated():
+    # Two connectors seeing an artifact says nothing about whether both
+    # measured the number that moved.
+    from benchmark_radar.stats import build_registry as build
+
+    early = _item(1, day=4, downloads=10.0)
+    later = _item(1, day=6, downloads=99.0)
+    sighting = _item(1, day=6)
+    sighting.source = "GitHub"
+    sighting.url = early.url
+    first = snapshot_for_run(_run([early], day=4))
+    latest = snapshot_for_run(_run([later, sighting], day=6))
+
+    tracked = build([first, latest], latest)["tracked_artifacts"]
+
+    assert tracked[0]["metric_deltas"] == {"downloads": 89.0}
+    assert tracked[0]["metric_sources"]["downloads"] == ["Hugging Face"]
+    assert tracked[0]["corroborated"] is False
+
+
+def test_question_requests_do_not_retain_data_server_side():
+    payload = questions._payload("gpt-5.6", "{}")
+
+    assert payload["store"] is False

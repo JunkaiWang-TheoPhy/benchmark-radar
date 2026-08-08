@@ -114,7 +114,14 @@ def _question_lines(daily_questions: dict | None) -> list[str]:
                     f"{_escape(markdown_bullet(str(stat.get('label') or '')))}: "
                     f"**{_escape(_format_stat_value(stat))}**"
                 )
-            if answer.get("cited_stats"):
+            for citation in answer.get("cited_evidence") or []:
+                lines.append(
+                    f"- `{_escape(str(citation.get('id') or ''))}` "
+                    f"[{_escape(markdown_bullet(str(citation.get('title') or 'Untitled')))}]"
+                    f"({_safe_markdown_url(str(citation.get('url') or ''))}) "
+                    f"({_escape(str(citation.get('source') or 'unknown'))})"
+                )
+            if answer.get("cited_stats") or answer.get("cited_evidence"):
                 lines.append("")
             if not answer.get("sufficient_evidence", True):
                 lines.extend(["_Evidence is insufficient to answer this today._", ""])

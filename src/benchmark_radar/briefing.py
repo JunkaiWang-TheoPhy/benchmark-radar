@@ -199,14 +199,9 @@ def _tracked_artifacts(
         seen_days = list(entity.get("seen_days") or [])
         if len(seen_days) < MIN_TRACKED_SEEN_DAYS:
             continue
-        # A delta is only meaningful when the same metric exists at both
-        # endpoints. `build_corpus` substitutes 0 for a missing endpoint, which
-        # turns "this metric appeared today" into "it grew from zero".
-        deltas = {
-            key: value
-            for key, value in (entity.get("metric_deltas") or {}).items()
-            if value and key in (entity.get("metrics") or {})
-        }
+        # `build_corpus` now emits a delta only for metrics present at both
+        # endpoints, so a nonzero value here is real movement.
+        deltas = {key: value for key, value in (entity.get("metric_deltas") or {}).items() if value}
         tracked.append(
             {
                 "entity_id": entity["id"],

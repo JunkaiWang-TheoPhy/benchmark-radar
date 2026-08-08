@@ -503,17 +503,18 @@ def test_briefing_carries_artifacts_that_moved_since_they_were_first_seen():
 
 
 def test_tracked_artifacts_omit_a_metric_that_lacks_both_endpoints():
-    # `build_corpus` substitutes 0 for a missing endpoint, which turns "this
-    # metric first appeared today" into "it grew from zero".
+    # A metric the connector only started publishing today has no delta:
+    # reporting one would claim it "grew from zero" when nothing moved. Only
+    # `downloads`, present at both endpoints, is real movement here.
     early = _metric_item(2, day=4, downloads=50.0)
-    later = _metric_item(2, day=6, downloads=50.0)
-    later.metrics = {"downloads": 50.0, "likes": 7.0}
+    later = _metric_item(2, day=6, downloads=90.0)
+    later.metrics = {"downloads": 90.0, "likes": 7.0}
     first = snapshot_for_run(_dated_run([early], day=4))
     latest = snapshot_for_run(_dated_run([later], day=6))
 
     tracked = briefing_input([first, latest], latest, ["guardrail"])["tracked_artifacts"]
 
-    assert tracked[0]["metric_deltas"] == {"likes": 7.0}
+    assert tracked[0]["metric_deltas"] == {"downloads": 40.0}
 
 
 def test_briefing_packet_reports_how_much_of_the_corpus_reached_the_model():

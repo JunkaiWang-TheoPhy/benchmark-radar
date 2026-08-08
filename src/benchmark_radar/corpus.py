@@ -315,9 +315,14 @@ def build_corpus(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
                 for key, value in (item.get("metrics") or {}).items()
                 if isinstance(value, (int, float))
             }
-            if not artifact["metrics_first"]:
-                artifact["metrics_first"] = metrics
-            artifact["metrics_latest"] = metrics
+            # Endpoints are tracked per metric. Connectors publish different
+            # fields for the same artifact, so a metric-less sighting from one
+            # connector must not erase another's history: taking the whole dict
+            # wholesale let a GitHub observation blank out Hugging Face's
+            # download endpoints and silently delete the delta.
+            for key, value in metrics.items():
+                artifact["metrics_first"].setdefault(key, value)
+                artifact["metrics_latest"][key] = value
             artifact["latest_score"] = item.get("total_score")
 
             observation = {
@@ -412,9 +417,14 @@ def build_corpus(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
         raw_payload_hashes = sorted(entity.pop("_raw_payload_hashes"))
         metrics_first = entity.pop("metrics_first")
         metrics_latest = entity.pop("metrics_latest")
+        # Only a metric present at BOTH endpoints has a real delta. Substituting
+        # 0 for a missing endpoint reports "downloads grew from zero" when the
+        # connector merely started publishing the field, which is fabricated
+        # movement. Metrics seen at one endpoint only are omitted here and
+        # remain visible as current values under `metrics`.
         metric_deltas = {
-            key: round(metrics_latest.get(key, 0) - metrics_first.get(key, 0), 4)
-            for key in sorted({*metrics_first, *metrics_latest})
+            key: round(metrics_latest[key] - metrics_first[key], 4)
+            for key in sorted(metrics_first.keys() & metrics_latest.keys())
         }
         public_entities.append(
             {

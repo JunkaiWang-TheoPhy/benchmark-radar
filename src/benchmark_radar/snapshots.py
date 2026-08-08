@@ -834,6 +834,10 @@ def dashboard_data(
                 # persisted, or days where the call was skipped or failed. The
                 # dashboard renders its own absent state from that.
                 "briefing": snapshot.get("briefing") or {},
+                # Same contract as `briefing`: an empty object means the opt-in
+                # Q&A did not run for this day, which the dashboard renders as
+                # its own absent state rather than as an empty answer set.
+                "questions": snapshot.get("questions") or {},
                 "coverage_complete": not coverage_gaps,
                 "coverage_gaps": coverage_gaps,
                 "coverage_signature": coverage_signature,
