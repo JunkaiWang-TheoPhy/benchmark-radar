@@ -153,3 +153,7 @@ class RadarRun:
     # breadth, and citations without mixing those fields into reader prose.
     daily_briefing: list[str] | None = None
     daily_briefing_metadata: dict[str, Any] = field(default_factory=dict)
+    # The day's grouped Q&A, each answer carrying the statistic IDs it cites so
+    # published numbers come from the registry rather than from model prose.
+    # None when the Q&A did not run; it is opt-in and never blocks a snapshot.
+    daily_questions: dict[str, Any] | None = None

@@ -1,5 +1,18 @@
 """KW-Bench capability classification: canonical tracks assigned L0-L5.
 
+**Dormant.** Nothing renders these levels. Assigning L0-L5 means judging what an
+evaluator knew before a run, which is a semantic reading of a task and its
+verifier; the deterministic patterns below cannot make that call, and two rounds
+of adversarial review found 11 and then 7 misclassifications, each fix trading
+one error class for another. Issue #153 is closed as not planned. The code stays
+here, and `classify` still runs in CI, so the layer can be revived if a semantic
+extractor ever replaces the patterns. Treat `docs/kw-bench-rubric.md` as the
+rubric of record and apply it by hand.
+
+The rubric this module implements lives at `docs/kw-bench-rubric.md`, which is
+this repository's source of truth for it. `KW_BENCH_VERSION` below tracks the
+`KW-BENCH VERSION` field on that document's task card.
+
 This is a different question from the one `rubric.py` answers.  `rubric.py`
 scores *whether a reader should open a record today* (relevance, evidence,
 recency, adoption).  This module scores *what capability an agent must
@@ -767,7 +780,7 @@ def kw_bench_reference() -> dict[str, Any]:
         "purpose": (
             "Classify the highest capability an agent must demonstrate to pass a benchmark."
         ),
-        "source": "https://github.com/ktwu01/vendor-data-qc/blob/main/kw-bench-rubric.md",
+        "source": "https://github.com/ktwu01/benchmark-radar/blob/main/docs/kw-bench-rubric.md",
         "levels": [
             {
                 "level": level,

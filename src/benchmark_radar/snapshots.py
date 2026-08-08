@@ -71,6 +71,8 @@ def snapshot_for_run(run: RadarRun) -> dict[str, Any]:
         # Omitted entirely when the day has no briefing, so an absent key means
         # "not generated yet" and a later pass knows to retry.
         **({"briefing": briefing} if briefing else {}),
+        # Same contract for the opt-in daily Q&A.
+        **({"questions": run.daily_questions} if run.daily_questions else {}),
         "evidence_items": [item.to_dict() for item in run.items],
         "attention": {
             "observations": [observation.to_dict() for observation in run.attention],
@@ -464,6 +466,9 @@ def merge_snapshots(existing: dict[str, Any], incoming: dict[str, Any]) -> dict[
     # that describes the merged day. Fall back to the existing briefing only
     # when the incoming pass has none, so a day never loses one it already had.
     briefing = incoming.get("briefing") or existing.get("briefing")
+    # The Q&A follows the same rule: the incoming pass answered from the union,
+    # so it wins, and a day never loses answers it already had.
+    day_questions = incoming.get("questions") or existing.get("questions")
 
     merged = {
         **incoming,
@@ -477,6 +482,10 @@ def merge_snapshots(existing: dict[str, Any], incoming: dict[str, Any]) -> dict[
         merged["briefing"] = briefing
     else:
         merged.pop("briefing", None)
+    if day_questions:
+        merged["questions"] = day_questions
+    else:
+        merged.pop("questions", None)
     if selection or existing_selection:
         merged["selection"] = selection
     # `discovery_state` is cumulative by construction: the later pass loads
@@ -825,6 +834,10 @@ def dashboard_data(
                 # persisted, or days where the call was skipped or failed. The
                 # dashboard renders its own absent state from that.
                 "briefing": snapshot.get("briefing") or {},
+                # Same contract as `briefing`: an empty object means the opt-in
+                # Q&A did not run for this day, which the dashboard renders as
+                # its own absent state rather than as an empty answer set.
+                "questions": snapshot.get("questions") or {},
                 "coverage_complete": not coverage_gaps,
                 "coverage_gaps": coverage_gaps,
                 "coverage_signature": coverage_signature,
