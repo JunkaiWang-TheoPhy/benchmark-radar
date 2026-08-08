@@ -16,6 +16,7 @@ from .kw_bench_store import STORE_FILENAME as KW_BENCH_STORE_FILENAME
 from .kw_bench_tracks import DEFAULT_BATCH_SIZE
 from .kw_bench_tracks import backfill as backfill_classifications
 from .pipeline import _failure_streak_key, run_pipeline, simulate_backfill
+from .questions import generate_daily_questions
 from .report import render_markdown
 from .snapshots import (
     load_snapshots,
@@ -412,10 +413,27 @@ def main() -> None:
     elif briefing_required:
         raise RuntimeError("OPENAI_BRIEFING_REQUIRED is true but OPENAI_API_KEY is missing")
 
+    # The daily Q&A is opt-in: it costs one API call per question group, and a
+    # failure here must never cost the run its briefing or its snapshot.
+    daily_questions: dict | None = None
+    if api_key and os.getenv("OPENAI_QUESTIONS", "").lower() in {"1", "true", "yes"}:
+        try:
+            daily_questions = generate_daily_questions(
+                history,
+                daily_snapshot,
+                deterministic_findings,
+                api_key,
+                model=os.getenv("OPENAI_BRIEFING_MODEL", "").strip() or "gpt-5.6",
+                config=config,
+            )
+        except (BriefingError, RequestError, ValueError) as error:
+            print(f"::warning title=Daily questions skipped::{error}")
+
     # Attach before writing so the snapshot, the dashboard payload, and the
     # Markdown report all describe the same briefing.
     run.daily_briefing = daily_briefing
     run.daily_briefing_metadata = briefing_metadata
+    run.daily_questions = daily_questions
     args.output.write_text(
         render_markdown(
             report_run,
@@ -423,6 +441,7 @@ def main() -> None:
             issue_item_limit=int(issue_item_limit) if issue_item_limit else None,
             daily_briefing=daily_briefing,
             daily_briefing_metadata=briefing_metadata,
+            daily_questions=daily_questions,
         ),
         encoding="utf-8",
     )

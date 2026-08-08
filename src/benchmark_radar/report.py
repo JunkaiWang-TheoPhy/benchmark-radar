@@ -61,6 +61,86 @@ def _item_block(index: int, item: RadarItem) -> str:
     return "\n".join(lines)
 
 
+def _format_stat_value(stat: dict) -> str:
+    """Render a computed statistic, never a number the model wrote."""
+    value = stat.get("value")
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    rendered = f"{value:,}" if isinstance(value, (int, float)) else str(value)
+    unit = str(stat.get("unit") or "").strip()
+    if unit and unit != "count":
+        rendered = f"{rendered} {unit}"
+    window = str(stat.get("window") or "").strip()
+    if window and window != "today":
+        # Spans already carry their own parentheses; do not nest another pair.
+        rendered = f"{rendered} {window}" if window.endswith(")") else f"{rendered} ({window})"
+    return rendered
+
+
+def _question_lines(daily_questions: dict | None) -> list[str]:
+    """Render the daily Q&A: signal, plain English, takeaway, counter-view.
+
+    Statistic values are printed from the registry the answers cite, so a
+    number reaches the page only if it was computed before the model ran.
+    """
+    if not daily_questions or not daily_questions.get("groups"):
+        return []
+    lines = ["## Questions for today", ""]
+    if not daily_questions.get("comparable", True):
+        lines.extend(
+            [
+                "> No certified comparison window today, so these answers describe what "
+                "was captured rather than how the field is trending.",
+                "",
+            ]
+        )
+    for group in daily_questions["groups"]:
+        lines.extend([f"### {_escape(str(group.get('title') or 'Questions'))}", ""])
+        for answer in group.get("answers") or []:
+            lines.extend(
+                [
+                    f"**{_escape(markdown_bullet(str(answer.get('question') or '')))}**",
+                    "",
+                    _escape(markdown_bullet(str(answer.get("signal") or ""))),
+                    "",
+                    f"_In plain English:_ "
+                    f"{_escape(markdown_bullet(str(answer.get('plain_english') or '')))}",
+                    "",
+                ]
+            )
+            for stat in answer.get("cited_stats") or []:
+                lines.append(
+                    f"- `{_escape(str(stat.get('id') or ''))}` "
+                    f"{_escape(markdown_bullet(str(stat.get('label') or '')))}: "
+                    f"**{_escape(_format_stat_value(stat))}**"
+                )
+            if answer.get("cited_stats"):
+                lines.append("")
+            if not answer.get("sufficient_evidence", True):
+                lines.extend(["_Evidence is insufficient to answer this today._", ""])
+            lines.extend(
+                [
+                    f"**Takeaway:** {_escape(markdown_bullet(str(answer.get('takeaway') or '')))}",
+                    "",
+                    f"**Counter-view:** "
+                    f"{_escape(markdown_bullet(str(answer.get('counter_view') or '')))}",
+                    "",
+                ]
+            )
+    usage = daily_questions.get("usage") or {}
+    lines.extend(
+        [
+            f"_Answered by {_escape(str(daily_questions.get('model') or 'unknown'))} in "
+            f"{int(daily_questions.get('calls') or 0)} calls · "
+            f"{int(usage.get('input_tokens') or 0):,} input / "
+            f"{int(usage.get('output_tokens') or 0):,} output tokens · "
+            f"every figure computed before the call and cited by ID._",
+            "",
+        ]
+    )
+    return lines
+
+
 def render_markdown(
     run: RadarRun,
     dashboard_url: str | None = None,
@@ -68,6 +148,7 @@ def render_markdown(
     issue_item_limit: int | None = None,
     daily_briefing: list[str] | None = None,
     daily_briefing_metadata: dict | None = None,
+    daily_questions: dict | None = None,
 ) -> str:
     date = run.generated_at.astimezone(UTC).date().isoformat()
     category_counts = Counter(category for item in run.items for category in item.categories)
@@ -155,6 +236,7 @@ def render_markdown(
                 lines.append("")
         elif metadata.get("generator") == "deterministic-fallback":
             lines.extend(["_Deterministic fallback; no GPT response was published._", ""])
+    lines.extend(_question_lines(daily_questions))
     lines.extend(
         [
             "## At a glance",
