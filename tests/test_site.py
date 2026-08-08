@@ -105,6 +105,27 @@ def test_automatic_frontier_default_does_not_leak_into_unrelated_urls():
     assert "function selectFrontier(benchmarkId)" in script
 
 
+def test_each_view_serializes_only_the_filters_it_reads():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    body = script.split("function writeUrl()", 1)[1].split("\nfunction ", 1)[0]
+
+    # Issue #123: a reader clicking a trend date got
+    # ?date=...&lfrontier=apex_agents, and switching to the leaderboard carried
+    # ?date=... along, because writeUrl() wrote every filter on every view.
+    # Each param is read back by exactly one view, so only that view may write
+    # it. Guard the gate rather than the individual set() calls, which the
+    # previous fix already had and which still leaked.
+    today = body.split('if (state.view === "today")', 1)[1].split('if (state.view === "map"', 1)[0]
+    for key in ("date", "q", "kind", "category", "source", "organization", "event"):
+        assert f'params.set("{key}"' in today
+
+    leaderboard = body.split('if (state.view === "leaderboard")', 1)[1]
+    for key in ("lq", "ldomain", "lorg", "lera", "lfrontier"):
+        assert f'params.set("{key}"' in leaderboard
+
+    assert 'if (state.view === "map" && state.entity) params.set("entity"' in body
+
+
 def test_rubric_dialog_is_linkable_by_url_hash():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
