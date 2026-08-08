@@ -12,6 +12,7 @@ class SiteParser(HTMLParser):
         self.html_lang = ""
         self.viewport = False
         self.local_refs: list[str] = []
+        self.icon_hrefs: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
@@ -22,6 +23,8 @@ class SiteParser(HTMLParser):
             self.html_lang = str(values.get("lang", ""))
         if tag == "meta" and values.get("name") == "viewport":
             self.viewport = True
+        if tag == "link" and "icon" in str(values.get("rel", "")).split():
+            self.icon_hrefs.append(str(values.get("href", "")))
         reference = values.get("href") or values.get("src")
         if reference and not urlsplit(reference).scheme and not reference.startswith(("#", "//")):
             self.local_refs.append(reference)
@@ -103,6 +106,37 @@ def test_automatic_frontier_default_does_not_leak_into_unrelated_urls():
     assert "if (state.lfrontierExplicit && state.lfrontier)" in script
     assert "state.lfrontierExplicit = false" in script
     assert "function selectFrontier(benchmarkId)" in script
+
+
+def test_each_view_serializes_only_the_filters_it_reads():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    body = script.split("function writeUrl()", 1)[1].split("\nfunction ", 1)[0]
+
+    # Issue #123: a reader clicking a trend date got
+    # ?date=...&lfrontier=apex_agents, and switching to the leaderboard carried
+    # ?date=... along, because writeUrl() wrote every filter on every view.
+    # Each param is read back by exactly one view, so only that view may write
+    # it. Guard the gate rather than the individual set() calls, which the
+    # previous fix already had and which still leaked.
+    today = body.split('if (state.view === "today")', 1)[1].split('if (state.view === "map"', 1)[0]
+    for key in ("date", "q", "kind", "category", "source", "organization", "event"):
+        assert f'params.set("{key}"' in today
+
+    leaderboard = body.split('if (state.view === "leaderboard")', 1)[1]
+    for key in ("lq", "ldomain", "lorg", "lera", "lfrontier"):
+        assert f'params.set("{key}"' in leaderboard
+
+    assert 'if (state.view === "map" && state.entity) params.set("entity"' in body
+
+
+def test_site_has_an_icon():
+    parser = SiteParser()
+    parser.feed(Path("site/index.html").read_text(encoding="utf-8"))
+
+    # Issue #152: without this the browser requests /favicon.ico and 404s, so
+    # tabs and bookmarks fall back to a blank page glyph. The referenced file
+    # is checked for existence by test_static_html_references_existing_local_assets.
+    assert parser.icon_hrefs, "index.html declares no icon"
 
 
 def test_rubric_dialog_is_linkable_by_url_hash():

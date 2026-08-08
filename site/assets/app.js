@@ -124,24 +124,35 @@ function readUrl() {
 function writeUrl() {
   const params = new URLSearchParams();
   if (state.view !== "today") params.set("view", state.view);
-  if (state.todayDate === "all") {
-    params.set("date", "all");
-  } else if (state.todayDate && state.todayDate !== state.data?.latest_date) {
-    params.set("date", state.todayDate);
+  // Every filter below belongs to exactly one view, so only that view may write
+  // it. Serializing all of them unconditionally is what leaked `lfrontier` onto
+  // Today/Trends/Map links and `date` onto Leaderboard links (issue #123): the
+  // reader would click "2026-07-31" and land on a URL carrying a leaderboard
+  // selection that nothing on the page reads back.
+  if (state.view === "today") {
+    if (state.todayDate === "all") {
+      params.set("date", "all");
+    } else if (state.todayDate && state.todayDate !== state.data?.latest_date) {
+      params.set("date", state.todayDate);
+    }
+    if (state.q) params.set("q", state.q);
+    if (state.kind) params.set("kind", state.kind);
+    if (state.category) params.set("category", state.category);
+    if (state.source) params.set("source", state.source);
+    if (state.organization) params.set("organization", state.organization);
+    if (state.event) params.set("event", state.event);
   }
-  if (state.q) params.set("q", state.q);
-  if (state.kind) params.set("kind", state.kind);
-  if (state.category) params.set("category", state.category);
-  if (state.source) params.set("source", state.source);
-  if (state.organization) params.set("organization", state.organization);
-  if (state.event) params.set("event", state.event);
   if (state.view === "map" && state.entity) params.set("entity", state.entity);
-  if (state.lq) params.set("lq", state.lq);
-  if (state.ldomain) params.set("ldomain", state.ldomain);
-  if (state.lorg) params.set("lorg", state.lorg);
-  if (state.lera) params.set("lera", state.lera);
-  if (state.lfrontierExplicit && state.lfrontier) {
-    params.set("lfrontier", state.lfrontier);
+  if (state.view === "leaderboard") {
+    if (state.lq) params.set("lq", state.lq);
+    if (state.ldomain) params.set("ldomain", state.ldomain);
+    if (state.lorg) params.set("lorg", state.lorg);
+    if (state.lera) params.set("lera", state.lera);
+    // A benchmark auto-picked as the default is not the reader's choice, so it
+    // stays out of the URL until they select one themselves.
+    if (state.lfrontierExplicit && state.lfrontier) {
+      params.set("lfrontier", state.lfrontier);
+    }
   }
   const query = params.toString();
   // The rubric dialog is a hashtag, not a query param, so a shared link like
