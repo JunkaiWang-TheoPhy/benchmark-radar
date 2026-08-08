@@ -1854,6 +1854,7 @@ td a {
 }
 
 .frontier-chart {
+  position: relative;
   margin-top: 0.5rem;
 }
 
@@ -1886,8 +1887,14 @@ td a {
 }
 
 .frontier-point:focus polygon,
-.frontier-point:hover polygon {
+.frontier-point:hover polygon,
+.frontier-point.is-selected polygon {
   stroke-width: 4;
+}
+
+.frontier-point,
+.score-point {
+  cursor: pointer;
 }
 
 /* Card events live on their own band. A tick per card means several cards on one
@@ -1914,7 +1921,8 @@ td a {
 }
 
 .card-rug-tick:focus line,
-.card-rug-tick:hover line {
+.card-rug-tick:hover line,
+.card-rug-tick.is-selected line {
   stroke-width: 4;
 }
 
@@ -2002,6 +2010,79 @@ td a {
   height: 11px;
   background: #6ea8dc;
   border-radius: 50%;
+}
+
+.legend-swatch-score-line,
+.legend-swatch-score-line-single-org {
+  width: 24px;
+  height: 0;
+  border-top: 3px solid #6ea8dc;
+}
+
+.legend-swatch-score-line-single-org {
+  border-top-style: dashed;
+}
+
+.frontier-tooltip {
+  position: absolute;
+  z-index: 4;
+  display: grid;
+  width: min(310px, calc(100% - 16px));
+  gap: 0.45rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid #5c7079;
+  background: #0b1317;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 35%);
+  color: #e8eef0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.frontier-tooltip[hidden] {
+  display: none;
+}
+
+.frontier-tooltip.is-pinned {
+  border-color: #f4b65e;
+  pointer-events: auto;
+}
+
+.frontier-tooltip-source {
+  justify-self: start;
+  color: #9bc8ef;
+  font-weight: 600;
+}
+
+.frontier-tooltip-kind,
+.frontier-tooltip-hint {
+  color: #97a5ac;
+  font-family: var(--utility);
+  font-size: 0.66rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.frontier-tooltip-title {
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.frontier-tooltip-details {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.2rem 0.65rem;
+  margin: 0;
+}
+
+.frontier-tooltip-details dt {
+  color: #97a5ac;
+}
+
+.frontier-tooltip-details dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 /* Stated findings (issue #91). Sits above the workbench on the light canvas:
@@ -2143,8 +2224,10 @@ td a {
 }
 
 .score-point:focus circle,
-.score-point:hover circle {
+.score-point:hover circle,
+.score-point.is-selected circle {
   r: 8px;
+  stroke-width: 4;
 }
 
 .score-best-line {
