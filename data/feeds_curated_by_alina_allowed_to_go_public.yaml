@@ -1,0 +1,352 @@
+feeds:
+  # ============================================================
+  # 信息源配置原则（参考 juya-ai-daily 风格）：
+  # 优先级：模型发布 > 产品应用 > 开发生态 > 行业动态
+  # LLM prompt 已优化，会自动过滤噪音（学术论文、非AI内容等）
+  # ============================================================
+
+  # --- 橘鸦AI早报（核心参考源）---
+  - name: "橘鸦AI早报"
+    url: "https://imjuya.github.io/juya-ai-daily/rss.xml"
+    lang: "zh"
+    category: "行业动态"
+
+  # --- 中文 AI 媒体 ---
+  - name: "机器之心"
+    url: "https://www.jiqizhixin.com/rss"
+    lang: "zh"
+    category: "行业动态"
+
+  - name: "量子位"
+    url: "https://www.qbitai.com/feed"
+    lang: "zh"
+    category: "行业动态"
+
+  - name: "36氪 AI"
+    url: "https://36kr.com/feed"
+    lang: "zh"
+    category: "行业动态"
+
+  - name: "AI科技评论（雷锋网）"
+    url: "https://www.leiphone.com/feed"
+    lang: "zh"
+    category: "行业动态"
+
+  # --- 国内大模型厂商 ---
+  - name: "美团技术博客"
+    url: "https://tech.meituan.com/feed/"
+    lang: "zh"
+    category: "官方动态"
+
+  - name: "零一万物"
+    url: "https://www.01.ai/blog/feed"
+    lang: "zh"
+    category: "官方动态"
+
+  # --- AI 评测基准 & 研究组织 ---
+  - name: "ARC Prize Blog"
+    url: "https://rsshub.app/twitter/user/arcprize"
+    lang: "en"
+    category: "行业动态"
+
+  - name: "ARC-AGI-3 Agents Releases"
+    url: "https://github.com/arcprize/ARC-AGI-3-Agents/releases.atom"
+    lang: "en"
+    category: "开源生态"
+
+  - name: "ARC-AGI Releases"
+    url: "https://github.com/arcprize/ARC-AGI/releases.atom"
+    lang: "en"
+    category: "开源生态"
+
+  # --- 国际 AI 媒体 ---
+  - name: "TechCrunch AI"
+    url: "https://techcrunch.com/category/artificial-intelligence/feed/"
+    lang: "en"
+    category: "行业动态"
+
+  - name: "The Verge AI"
+    url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"
+    lang: "en"
+    category: "行业动态"
+
+  - name: "Ars Technica AI"
+    url: "https://feeds.arstechnica.com/arstechnica/technology-lab"
+    lang: "en"
+    category: "行业动态"
+
+  - name: "MIT Technology Review"
+    url: "https://www.technologyreview.com/feed/"
+    lang: "en"
+    category: "深度报道"
+
+  - name: "VentureBeat AI"
+    url: "https://venturebeat.com/category/ai/feed/"
+    lang: "en"
+    category: "行业动态"
+
+  # --- 国际 AI 官方博客 ---
+  - name: "OpenAI Blog"
+    url: "https://openai.com/news/rss.xml"
+    lang: "en"
+    category: "官方动态"
+
+  - name: "Google AI Blog"
+    url: "https://blog.google/innovation-and-ai/technology/ai/rss/"
+    lang: "en"
+    category: "官方动态"
+
+  - name: "Anthropic News"
+    url: "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml"
+    lang: "en"
+    category: "官方动态"
+
+  - name: "Anthropic Engineering"
+    url: "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_engineering.xml"
+    lang: "en"
+    category: "官方动态"
+
+  - name: "Anthropic Research"
+    url: "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_research.xml"
+    lang: "en"
+    category: "官方动态"
+
+  - name: "Google DeepMind"
+    url: "https://deepmind.google/blog/rss.xml"
+    lang: "en"
+    category: "官方动态"
+
+  - name: "Google Research Blog"
+    url: "https://research.google/blog/rss/"
+    lang: "en"
+    category: "官方动态"
+
+  - name: "Meta AI Blog"
+    url: "https://ai.meta.com/blog/rss/"
+    lang: "en"
+    category: "官方动态"
+
+  - name: "Microsoft AI Blog"
+    url: "https://blogs.microsoft.com/ai/feed/"
+    lang: "en"
+    category: "官方动态"
+
+  - name: "Mistral AI"
+    url: "https://mistral.ai/feed/index.xml"
+    lang: "en"
+    category: "官方动态"
+
+  - name: "NVIDIA AI Blog"
+    url: "https://blogs.nvidia.com/feed/"
+    lang: "en"
+    category: "行业动态"
+
+  - name: "Apple Machine Learning"
+    url: "https://machinelearning.apple.com/rss.xml"
+    lang: "en"
+    category: "官方动态"
+
+  - name: "AWS Machine Learning"
+    url: "https://aws.amazon.com/blogs/machine-learning/feed/"
+    lang: "en"
+    category: "官方动态"
+
+  - name: "Hugging Face Blog"
+    url: "https://huggingface.co/blog/feed.xml"
+    lang: "en"
+    category: "开源生态"
+
+  - name: "Stability AI"
+    url: "https://stability.ai/blog/feed"
+    lang: "en"
+    category: "开源生态"
+
+  # --- 社区 ---
+  - name: "Hacker News (Best)"
+    url: "https://hnrss.org/best?q=AI+OR+AGI+OR+LLM+OR+GPT+OR+Claude+OR+machine+learning+OR+benchmark+OR+reasoning"
+    lang: "en"
+    category: "社区热议"
+
+  - name: "Reddit r/LocalLLaMA"
+    url: "https://www.reddit.com/r/LocalLLaMA/.rss"
+    lang: "en"
+    category: "社区热议"
+
+  # --- X/Twitter AI KOL（通过 RSSHub 代理）---
+  - name: "OpenAI Twitter"
+    url: "https://rsshub.app/twitter/user/OpenAI"
+    lang: "en"
+    category: "官方动态"
+
+  - name: "Kaboronevsky Twitter"
+    url: "https://rsshub.app/twitter/user/kaboronevsky"
+    lang: "en"
+    category: "行业动态"
+
+  # --- 热门开源项目 GitHub Releases ---
+  - name: "OpenClaw Releases"
+    url: "https://github.com/openclaw/openclaw/releases.atom"
+    lang: "en"
+    category: "开源生态"
+
+  - name: "Karpathy autoresearch Releases"
+    url: "https://github.com/karpathy/autoresearch/releases.atom"
+    lang: "en"
+    category: "开源生态"
+
+  # --- 国际大模型厂商 GitHub Releases ---
+  # Meta
+  - name: "Meta Llama Models Releases"
+    url: "https://github.com/meta-llama/llama-models/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # Mistral
+  - name: "Mistral Inference Releases"
+    url: "https://github.com/mistralai/mistral-inference/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # xAI (Grok)
+  - name: "xAI Grok Releases"
+    url: "https://github.com/xai-org/grok-1/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # --- 国内大模型厂商 GitHub Releases（一手模型发布）---
+  # 阿里千问（追踪模型主仓库，而非 Agent 框架）
+  - name: "Qwen3 Releases（阿里千问）"
+    url: "https://github.com/QwenLM/Qwen3/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  - name: "Qwen-Agent Releases（阿里千问）"
+    url: "https://github.com/QwenLM/Qwen-Agent/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # DeepSeek
+  - name: "DeepSeek-V3 Releases"
+    url: "https://github.com/deepseek-ai/DeepSeek-V3/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  - name: "DeepSeek-R1 Releases"
+    url: "https://github.com/deepseek-ai/DeepSeek-R1/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # 百度
+  - name: "ERNIE Releases（百度文心）"
+    url: "https://github.com/PaddlePaddle/ERNIE/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  - name: "PaddlePaddle Releases（百度飞桨）"
+    url: "https://github.com/PaddlePaddle/Paddle/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # 腾讯
+  - name: "HunyuanVideo Releases（腾讯混元）"
+    url: "https://github.com/Tencent/HunyuanVideo/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # 字节跳动 / 火山引擎
+  - name: "verl Releases（字节火山引擎）"
+    url: "https://github.com/volcengine/verl/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # 智谱（GLM 系列 + 视频）
+  - name: "GLM-4 Releases（智谱）"
+    url: "https://github.com/THUDM/GLM-4/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  - name: "CogVideo Releases（智谱清言）"
+    url: "https://github.com/THUDM/CogVideo/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # 月之暗面 Moonshot（Kimi 系列）
+  - name: "Kimi-k1.5 Releases（月之暗面）"
+    url: "https://github.com/MoonshotAI/Kimi-k1.5/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # 上海AI实验室（InternLM 系列）
+  - name: "InternLM Releases（上海AI实验室）"
+    url: "https://github.com/InternLM/InternLM/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # 美团龙猫（LongCat 系列）
+  - name: "LongCat-Next Releases（美团）"
+    url: "https://github.com/meituan-longcat/LongCat-Next/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # 快手（Kling / Kolors 系列）
+  - name: "Kolors Releases（快手）"
+    url: "https://github.com/Kwai-Kolors/Kolors/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # MiniMax
+  - name: "MiniMax-01 Releases"
+    url: "https://github.com/MiniMax-AI/MiniMax-01/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # 阶跃星辰 StepFun
+  - name: "Step-Audio Releases（阶跃星辰）"
+    url: "https://github.com/stepfun-ai/Step-Audio/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  - name: "Step-Video Releases（阶跃星辰）"
+    url: "https://github.com/stepfun-ai/Step-Video-T2V/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # 字节跳动 AI 研究
+  - name: "UI-TARS Releases（字节跳动）"
+    url: "https://github.com/bytedance/UI-TARS/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # Cohere（企业级 LLM）
+  - name: "Cohere Toolkit Releases"
+    url: "https://github.com/cohere-ai/cohere-toolkit/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # Black Forest Labs（FLUX 图像生成）
+  - name: "FLUX Releases（Black Forest Labs）"
+    url: "https://github.com/black-forest-labs/flux/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # 零一万物 Yi（已有 blog，补 GitHub 模型 release）
+  - name: "Yi Releases（零一万物）"
+    url: "https://github.com/01-ai/Yi/releases.atom"
+    lang: "en"
+    category: "模型发布"
+
+  # --- 论文 & 研究 ---
+  - name: "arXiv AI (cs.AI)"
+    url: "https://rss.arxiv.org/rss/cs.AI"
+    lang: "en"
+    category: "学术论文"
+
+  - name: "arXiv LLM (cs.CL)"
+    url: "https://rss.arxiv.org/rss/cs.CL"
+    lang: "en"
+    category: "学术论文"
+
+  - name: "Microsoft Research"
+    url: "https://www.microsoft.com/en-us/research/feed/"
+    lang: "en"
+    category: "学术论文"
