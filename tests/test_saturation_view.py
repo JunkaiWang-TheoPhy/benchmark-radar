@@ -165,16 +165,18 @@ def test_scores_still_render_when_no_mention_carries_a_date():
     # Ordering matters: clearAdoptionFrontier empties the readout, so the score
     # render has to come after it.
     assert guard.index("clearAdoptionFrontier") < guard.index("renderScoreReadout(entry)")
-    assert "scoreOnlyChart(entry)" in guard
+    assert "renderFrontierLegend(entry, record, { sparse: true })" in guard
+    assert "scoreOnlyChart(entry, board)" in guard
 
 
 def test_the_score_only_chart_reuses_the_one_score_renderer():
     # Two implementations of one axis would be free to disagree about the join
     # rule, which is the single thing this chart must not do.
     script = source("site/assets/app.js")
-    helper = script.split("function scoreOnlyChart(entry)", 1)[1].split("\n}", 1)[0]
+    helper = script.split("function scoreOnlyChart(entry, board)", 1)[1].split("\n}", 1)[0]
 
     assert "adoptionFrontierChart(" in helper
+    assert "board," in helper
     assert "sparse: true" in helper
 
 

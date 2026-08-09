@@ -52,6 +52,62 @@ def test_frontier_svg_fits_the_viewport_without_horizontal_scrolling():
     assert ".frontier-point-advance polygon" in styles
 
 
+def test_trajectory_points_expose_and_pin_record_details():
+    script = source("site/assets/app.js")
+    styles = source("site/assets/styles.css")
+
+    assert 'className: "frontier-tooltip"' in script
+    assert 'role: "tooltip"' in script
+    assert 'group.addEventListener("pointerenter", () =>' in script
+    assert 'group.addEventListener("click"' in script
+    assert 'event.key === "Escape"' in script
+    assert 'classList.add("is-selected")' in script
+    assert '"aria-pressed": "false"' in script
+    assert 'label: "Protocol"' in script
+    assert 'label: "Source"' in script
+    assert ".frontier-point.is-selected polygon" in styles
+    assert ".score-point.is-selected circle" in styles
+    assert "pinned: selectedFrontierPoint === group" in script
+    assert 'record.unit === "percent" ? "%" : ` ${record.unit}`' in script
+    assert 'role: "group"' in script
+    assert 'event.key === "Escape" && selectedFrontierPoint' in script
+    assert 'view !== "leaderboard" && selectedFrontierPoint' in script
+    assert 'pinned ? "dialog" : "tooltip"' in script
+    assert 'text: "Open source record ↗"' in script
+    assert 'byId("frontier-tooltip").querySelector("a")?.focus()' in script
+    assert "tooltip?.contains(document.activeElement)" in script
+    assert "if (focused) show()" in script
+    assert "else if (hovered)" in script
+    assert "if (selectedFrontierPoint === group)" in script
+    assert "clearFrontierPointSelection();" in script.split("function openRubric", 1)[1]
+    assert "function enableFrontierTouchTargets(svg)" in script
+    assert "nearestDistance <= 22" in script
+    assert 'window.addEventListener("resize", repositionFrontierTooltip)' in script
+    assert 'window.addEventListener("scroll", repositionFrontierTooltip' in script
+    assert 'kind: event.advances ? "First report card" : "Repeat report card"' in script
+    assert ".card-rug-tick.is-selected line" in styles
+    assert "pointer-events: none" in styles
+    assert ".frontier-tooltip.is-pinned" in styles
+    assert "function scoreOnlyChart(entry, board)" in script
+    assert "scoreOnlyChart(entry, board)" in script
+    assert "`${event.organization} · ${event.model} · first report · count" not in script
+    assert "`${observation.model} · ${observation.value} · ${observation.protocol}`" not in script
+
+
+def test_score_legend_explains_solid_and_dashed_connections():
+    script = source("site/assets/app.js")
+    styles = source("site/assets/styles.css")
+
+    assert '"legend-swatch-score-line",' in script
+    assert '"Solid score connection"' in script
+    assert '"same instrument and protocol across organizations"' in script
+    assert '"legend-swatch-score-line-single-org",' in script
+    assert '"Dashed score connection"' in script
+    assert '"same instrument and protocol, one organization only"' in script
+    assert ".legend-swatch-score-line-single-org" in styles
+    assert "border-top-style: dashed" in styles
+
+
 def test_task_preview_distinguishes_source_paraphrase_from_domain_fallback():
     html = source("site/index.html")
     script = source("site/assets/app.js")

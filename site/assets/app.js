@@ -168,6 +168,9 @@ function writeUrl() {
 }
 
 function setView(view, update = true) {
+  if (view !== "leaderboard" && selectedFrontierPoint) {
+    clearFrontierPointSelection();
+  }
   state.view = view;
   document.querySelectorAll(".view").forEach((section) => {
     section.hidden = section.id !== `${view}-view`;
@@ -1328,6 +1331,7 @@ function openRubric(item = null, versionOverride = null) {
     : rubricFor(item);
   const dialog = byId("rubric-dialog");
   if (!data) return;
+  clearFrontierPointSelection();
   const max = Number(data.score_max) || 4;
   const components = data.components || [];
   const contribution = (component) =>
@@ -2422,6 +2426,279 @@ function renderScoreReadout(entry) {
   replaceChildren(host, [scoreReadout(entry, record)]);
 }
 
+let selectedFrontierPoint = null;
+let selectedFrontierDetails = null;
+let describedFrontierPoint = null;
+let selectedFrontierSourceVisited = false;
+
+function frontierTooltip() {
+  const tooltip = element("div", {
+    className: "frontier-tooltip",
+    attrs: {
+      id: "frontier-tooltip",
+      role: "tooltip",
+      hidden: "",
+      "aria-live": "polite",
+    },
+  });
+  tooltip.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && selectedFrontierPoint) {
+      event.preventDefault();
+      const point = selectedFrontierPoint;
+      point.focus();
+      clearFrontierPointSelection();
+      return;
+    }
+    if (event.key !== "Tab" || !event.target.matches(".frontier-tooltip-source")) return;
+    if (event.shiftKey) {
+      event.preventDefault();
+      selectedFrontierPoint?.focus();
+      return;
+    }
+    const points = [...byId("frontier-chart").querySelectorAll("[data-frontier-point]")];
+    const next = points[points.indexOf(selectedFrontierPoint) + 1];
+    if (next) {
+      selectedFrontierSourceVisited = true;
+      event.target.setAttribute("tabindex", "-1");
+      event.preventDefault();
+      next.focus();
+    }
+  });
+  return tooltip;
+}
+
+function frontierTooltipContent(details, pinned) {
+  return [
+    element("span", { className: "frontier-tooltip-kind", text: details.kind }),
+    element("strong", { className: "frontier-tooltip-title", text: details.title }),
+    element(
+      "dl",
+      { className: "frontier-tooltip-details" },
+      details.rows.flatMap(({ label, value }) => [
+        element("dt", { text: label }),
+        element("dd", { text: value }),
+      ]),
+    ),
+    pinned && details.url
+      ? element("a", {
+          className: "frontier-tooltip-source",
+          text: "Open source record ↗",
+          attrs: {
+            href: details.url,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            tabindex: selectedFrontierSourceVisited ? "-1" : "0",
+          },
+        })
+      : null,
+    element("span", {
+      className: "frontier-tooltip-hint",
+      text: pinned
+        ? "Pinned · click the marker again or press Escape to close"
+        : "Click the marker to pin these details",
+    }),
+  ];
+}
+
+function positionFrontierTooltip(tooltip, group) {
+  const host = byId("frontier-chart");
+  if (!host) return;
+  const hostBox = host.getBoundingClientRect();
+  const pointBox = group.getBoundingClientRect();
+  const gap = 10;
+  const centered = pointBox.left + pointBox.width / 2 - tooltip.offsetWidth / 2;
+  const viewportMaxLeft = Math.max(8, window.innerWidth - tooltip.offsetWidth - 8);
+  const minLeft = Math.max(8, Math.min(hostBox.left + 8, viewportMaxLeft));
+  const maxLeft = Math.max(
+    minLeft,
+    Math.min(hostBox.right - tooltip.offsetWidth - 8, viewportMaxLeft),
+  );
+  const left = Math.max(minLeft, Math.min(centered, maxLeft));
+  tooltip.style.left = `${left - hostBox.left}px`;
+
+  const above = pointBox.top - tooltip.offsetHeight - gap;
+  const below = pointBox.bottom + gap;
+  const viewportMaxTop = Math.max(8, window.innerHeight - tooltip.offsetHeight - 8);
+  const top =
+    above >= 8
+      ? above
+      : below + tooltip.offsetHeight <= window.innerHeight - 8
+        ? below
+        : Math.max(8, Math.min(pointBox.top - tooltip.offsetHeight / 2, viewportMaxTop));
+  tooltip.style.top = `${top - hostBox.top}px`;
+}
+
+function repositionFrontierTooltip() {
+  const tooltip = byId("frontier-tooltip");
+  if (!tooltip || tooltip.hidden || !describedFrontierPoint) return;
+  positionFrontierTooltip(tooltip, describedFrontierPoint);
+}
+
+function showFrontierTooltip(group, details, { pinned = false } = {}) {
+  const tooltip = byId("frontier-tooltip");
+  if (!tooltip) return;
+  replaceChildren(tooltip, frontierTooltipContent(details, pinned));
+  tooltip.hidden = false;
+  tooltip.classList.toggle("is-pinned", pinned);
+  tooltip.setAttribute("role", pinned ? "dialog" : "tooltip");
+  if (pinned) {
+    tooltip.setAttribute("aria-label", `${details.kind} details`);
+    tooltip.removeAttribute("aria-live");
+  } else {
+    tooltip.removeAttribute("aria-label");
+    tooltip.setAttribute("aria-live", "polite");
+  }
+  if (describedFrontierPoint && describedFrontierPoint !== group) {
+    describedFrontierPoint.removeAttribute("aria-describedby");
+  }
+  describedFrontierPoint = group;
+  group.setAttribute("aria-describedby", tooltip.id);
+  positionFrontierTooltip(tooltip, group);
+}
+
+function hideFrontierTooltip() {
+  const tooltip = byId("frontier-tooltip");
+  if (!tooltip) return;
+  tooltip.hidden = true;
+  tooltip.classList.remove("is-pinned");
+  describedFrontierPoint?.removeAttribute("aria-describedby");
+  describedFrontierPoint = null;
+}
+
+function clearFrontierPointSelection() {
+  if (selectedFrontierPoint) {
+    selectedFrontierPoint.classList.remove("is-selected");
+    selectedFrontierPoint.setAttribute("aria-pressed", "false");
+    selectedFrontierPoint.removeAttribute("aria-describedby");
+  }
+  selectedFrontierPoint = null;
+  selectedFrontierDetails = null;
+  selectedFrontierSourceVisited = false;
+  hideFrontierTooltip();
+}
+
+function restoreSelectedFrontierPoint() {
+  if (selectedFrontierPoint && selectedFrontierDetails) {
+    const tooltip = byId("frontier-tooltip");
+    if (
+      tooltip?.classList.contains("is-pinned") &&
+      describedFrontierPoint === selectedFrontierPoint
+    ) {
+      return;
+    }
+    showFrontierTooltip(selectedFrontierPoint, selectedFrontierDetails, { pinned: true });
+  } else {
+    hideFrontierTooltip();
+  }
+}
+
+function makeFrontierPointInteractive(group, details) {
+  let hovered = false;
+  let focused = false;
+  const show = () => {
+    const tooltip = byId("frontier-tooltip");
+    if (
+      selectedFrontierPoint !== group &&
+      tooltip?.contains(document.activeElement)
+    ) {
+      return;
+    }
+    showFrontierTooltip(group, details, { pinned: selectedFrontierPoint === group });
+  };
+  group.addEventListener("pointerenter", () => {
+    hovered = true;
+    show();
+  });
+  group.addEventListener("pointerleave", () => {
+    hovered = false;
+    if (focused) show();
+    else restoreSelectedFrontierPoint();
+  });
+  group.addEventListener("focus", () => {
+    focused = true;
+    show();
+  });
+  group.addEventListener("blur", () => {
+    focused = false;
+    if (selectedFrontierPoint === group) {
+      restoreSelectedFrontierPoint();
+    } else if (hovered) {
+      show();
+    } else {
+      restoreSelectedFrontierPoint();
+    }
+  });
+  group.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (selectedFrontierPoint === group) {
+      clearFrontierPointSelection();
+      return;
+    }
+    clearFrontierPointSelection();
+    selectedFrontierPoint = group;
+    selectedFrontierDetails = details;
+    group.classList.add("is-selected");
+    group.setAttribute("aria-pressed", "true");
+    showFrontierTooltip(group, details, { pinned: true });
+    byId("frontier-tooltip").querySelector("a")?.focus();
+  });
+  group.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      group.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    } else if (
+      event.key === "Tab" &&
+      event.shiftKey &&
+      selectedFrontierPoint &&
+      selectedFrontierSourceVisited
+    ) {
+      const points = [...byId("frontier-chart").querySelectorAll("[data-frontier-point]")];
+      const next = points[points.indexOf(selectedFrontierPoint) + 1];
+      if (group === next) {
+        event.preventDefault();
+        selectedFrontierSourceVisited = false;
+        showFrontierTooltip(selectedFrontierPoint, selectedFrontierDetails, { pinned: true });
+        byId("frontier-tooltip").querySelector("a")?.focus();
+      }
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      clearFrontierPointSelection();
+    }
+  });
+}
+
+// Dense runs cannot carry one independent 44px SVG rectangle per marker: those
+// rectangles overlap and the last one in paint order hides its neighbours. A
+// chart-level resolver gives every tap a 22px acquisition radius, then assigns an
+// overlap to the geometrically nearest visible mark instead of DOM paint order.
+function enableFrontierTouchTargets(svg) {
+  svg.addEventListener("click", (event) => {
+    // Keyboard activation dispatches a detail-0 click from the focused group and
+    // must keep that explicit target. Pointer-generated clicks are resolved by
+    // geometry even when their painted DOM target is a different overlapping mark.
+    if (event.detail === 0) return;
+    let nearest = null;
+    let nearestDistance = Infinity;
+    svg.querySelectorAll("[data-frontier-point]").forEach((group) => {
+      const box = group.getBoundingClientRect();
+      const distance = Math.hypot(
+        event.clientX - (box.left + box.right) / 2,
+        event.clientY - (box.top + box.bottom) / 2,
+      );
+      if (distance < nearestDistance) {
+        nearest = group;
+        nearestDistance = distance;
+      }
+    });
+    const direct = event.target.closest("[data-frontier-point]");
+    if (nearest && nearestDistance <= 22 && nearest !== direct) {
+      event.preventDefault();
+      event.stopPropagation();
+      nearest.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    }
+  }, true);
+}
+
 // A legend keyed to the marks actually on the chart. The panel previously relied
 // on the prose explainer to say what orange versus gray meant, which put the key
 // several lines away from the thing it explains; issue #91 reports readers taking
@@ -2456,6 +2733,20 @@ function renderFrontierLegend(entry, record, { sparse = false } = {}) {
       "Readable score",
       "connected only at one instrument and protocol",
     ]);
+    if (record.series.some((series) => series.connectable && !series.single_organization)) {
+      items.push([
+        "legend-swatch-score-line",
+        "Solid score connection",
+        "same instrument and protocol across organizations",
+      ]);
+    }
+    if (record.series.some((series) => series.connectable && series.single_organization)) {
+      items.push([
+        "legend-swatch-score-line-single-org",
+        "Dashed score connection",
+        "same instrument and protocol, one organization only",
+      ]);
+    }
   }
   replaceChildren(
     host,
@@ -2552,7 +2843,9 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
 
   const svg = svgElement("svg", {
     viewBox: `0 0 ${width} ${height}`,
-    role: "img",
+    // A group rather than an image: image descendants are presentational in the
+    // accessibility tree, which would hide the interactive marker buttons.
+    role: "group",
     "aria-label":
       (events.length
         ? `${entry.name} reporting adoption over time. ${advances.length} of ` +
@@ -2613,11 +2906,14 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
       const group = svgElement("g", {
         class: "frontier-point frontier-point-advance",
         tabindex: "0",
-        role: "img",
+        role: "button",
+        "aria-pressed": "false",
+        "data-frontier-point": "",
         "aria-label":
           `${event.organization} first reported it ${formatDate(event.published, {
             dateStyle: "medium",
-          })} with ${event.model}, taking the count to ${event.organizationCount}`,
+          })} with ${event.model}, taking the count to ${event.organizationCount}. ` +
+          "Click to pin record details.",
       });
       const r = 7;
       group.append(
@@ -2625,13 +2921,27 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
           points: `${pointX},${pointY - r} ${pointX + r},${pointY} ${pointX},${pointY + r} ${pointX - r},${pointY}`,
         }),
       );
-      group.append(
-        svgElement(
-          "title",
-          {},
-          `${event.organization} · ${event.model} · first report · count ${event.organizationCount}`,
-        ),
-      );
+      makeFrontierPointInteractive(group, {
+        kind: "New organization",
+        title: `${event.organization} · ${event.model}`,
+        rows: [
+          { label: "Organization", value: event.organization },
+          { label: "Model", value: event.model },
+          {
+            label: "Date",
+            value: formatDate(event.published, { dateStyle: "medium" }),
+          },
+          {
+            label: "Adoption",
+            value: `First report · cumulative count ${event.organizationCount}`,
+          },
+          {
+            label: "Source",
+            value: String(event.document_type || "model card").replaceAll("_", " "),
+          },
+        ],
+        url: event.url,
+      });
       svg.append(group);
     }
   }
@@ -2682,7 +2992,9 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
       const group = svgElement("g", {
         class: `card-rug-tick${event.advances ? " card-rug-tick-first" : " card-rug-tick-repeat"}`,
         tabindex: "0",
-        role: "img",
+        role: "button",
+        "aria-pressed": "false",
+        "data-frontier-point": "",
         "aria-label":
           `${event.organization}, ${event.model}, ${formatDate(event.published, {
             dateStyle: "medium",
@@ -2702,15 +3014,29 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
           y2: rugTop + rugHeight / 2 + halfHeight,
         }),
       );
-      group.append(
-        svgElement(
-          "title",
-          {},
-          `${event.organization} · ${event.model} · ${
-            event.advances ? "first report" : "count unchanged"
-          }`,
-        ),
-      );
+      makeFrontierPointInteractive(group, {
+        kind: event.advances ? "First report card" : "Repeat report card",
+        title: `${event.organization} · ${event.model}`,
+        rows: [
+          { label: "Organization", value: event.organization },
+          { label: "Model", value: event.model },
+          {
+            label: "Date",
+            value: formatDate(event.published, { dateStyle: "medium" }),
+          },
+          {
+            label: "Adoption",
+            value: event.advances
+              ? `First report · cumulative count ${event.organizationCount}`
+              : `Later card · cumulative count unchanged at ${event.organizationCount}`,
+          },
+          {
+            label: "Source",
+            value: String(event.document_type || "model card").replaceAll("_", " "),
+          },
+        ],
+        url: event.url,
+      });
       svg.append(group);
     }
     svg.append(
@@ -2794,16 +3120,27 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
     );
 
     for (const observation of record.observations) {
+      const source = (board.model_cards || []).find(
+        (card) => card.model_card_id === observation.source_id,
+      );
+      const sourceLabel = source
+        ? `${source.organization} · ${source.model} (${String(
+            source.document_type || "model card",
+          ).replaceAll("_", " ")})`
+        : observation.source_id.replaceAll("_", " ");
       const group = svgElement("g", {
         class: `score-point${observation.reported_by ? " score-point-third-party" : ""}`,
         tabindex: "0",
-        role: "img",
+        role: "button",
+        "aria-pressed": "false",
+        "data-frontier-point": "",
         "aria-label":
           `${observation.value} ${record.metric} by ${observation.model} ` +
           `(${observation.organization}), ${formatDate(observation.reported_at, {
             dateStyle: "medium",
           })}, protocol ${observation.protocol}` +
-          (observation.reported_by ? `, cited by ${observation.reported_by}` : ""),
+          (observation.reported_by ? `, cited by ${observation.reported_by}` : "") +
+          ". Click to pin record details.",
       });
       group.append(
         svgElement("circle", {
@@ -2812,14 +3149,30 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
           r: 5,
         }),
       );
-      group.append(
-        svgElement(
-          "title",
-          {},
-          `${observation.model} · ${observation.value} · ${observation.protocol}` +
-            (observation.reported_by ? ` · cited by ${observation.reported_by}` : ""),
-        ),
-      );
+      makeFrontierPointInteractive(group, {
+        kind: "Readable score",
+        title: `${observation.organization} · ${observation.model}`,
+        rows: [
+          { label: "Organization", value: observation.organization },
+          { label: "Model", value: observation.model },
+          {
+            label: "Date",
+            value: formatDate(observation.reported_at, { dateStyle: "medium" }),
+          },
+          {
+            label: "Score",
+            value: `${observation.value}${record.unit === "percent" ? "%" : ` ${record.unit}`} ${record.metric}`,
+          },
+          { label: "Instrument", value: observation.instrument },
+          { label: "Protocol", value: observation.protocol },
+          { label: "Source", value: sourceLabel },
+          { label: "Read from", value: observation.read_from.replaceAll("_", " ") },
+          ...(observation.reported_by
+            ? [{ label: "Cited by", value: observation.reported_by }]
+            : []),
+        ],
+        url: source?.url,
+      });
       svg.append(group);
     }
 
@@ -2969,6 +3322,7 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
       "publication time",
     ),
   );
+  enableFrontierTouchTargets(svg);
   return svg;
 }
 
@@ -2976,19 +3330,20 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
 // to the same renderer with no adoption events rather than duplicating the score
 // geometry: two implementations of one axis would be free to disagree about the
 // join rule, which is the one thing this chart must not do.
-function scoreOnlyChart(entry) {
+function scoreOnlyChart(entry, board) {
   return adoptionFrontierChart(
     entry,
     // `organization_count` is only read for the adoption axis, which is suppressed
-    // here, and `model_cards` only to bound the range -- which the score dates now
-    // supply. An empty board keeps this call from depending on either.
-    { organization_count: 0, model_cards: [] },
+    // here. Keep the real card roster so score tooltips can resolve their source
+    // labels and links even when no dated adoption event can be drawn.
+    board,
     [],
     { sparse: true },
   );
 }
 
 function clearAdoptionFrontier(message) {
+  clearFrontierPointSelection();
   byId("frontier-stage").textContent = "";
   replaceChildren(byId("frontier-summary"), []);
   replaceChildren(byId("frontier-milestones"), []);
@@ -3031,8 +3386,10 @@ function renderAdoptionFrontier(board) {
     // score track still draws, on its own, with the points and comparable series
     // intact rather than reduced to the aggregate readout.
     clearAdoptionFrontier("This benchmark has no dated mentions.");
-    if (scoreRecord(entry.benchmark_id)) {
-      replaceChildren(byId("frontier-chart"), [scoreOnlyChart(entry)]);
+    const record = scoreRecord(entry.benchmark_id);
+    renderFrontierLegend(entry, record, { sparse: true });
+    if (record) {
+      replaceChildren(byId("frontier-chart"), [scoreOnlyChart(entry, board), frontierTooltip()]);
     }
     renderScoreReadout(entry);
     return;
@@ -3071,9 +3428,11 @@ function renderAdoptionFrontier(board) {
   const sparse = frontier.length < 2;
   const scored = Boolean(scoreRecord(entry.benchmark_id));
   renderFrontierLegend(entry, scoreRecord(entry.benchmark_id), { sparse });
+  clearFrontierPointSelection();
   replaceChildren(byId("frontier-chart"), [
     sparse ? sparseFrontier(entry, events) : null,
     sparse && !scored ? null : adoptionFrontierChart(entry, board, events, { sparse }),
+    sparse && !scored ? null : frontierTooltip(),
   ]);
   // Rendered for every benchmark, including those whose adoption is too sparse
   // to plot: the score reading is a separate question from the adoption reading,
@@ -3778,6 +4137,8 @@ function bindEvents() {
     passive: true,
   });
   window.addEventListener("resize", repositionDayTooltip);
+  window.addEventListener("resize", repositionFrontierTooltip);
+  window.addEventListener("scroll", repositionFrontierTooltip, { passive: true });
   // The frontier chart picks its viewBox width from the viewport, so crossing the
   // 760px breakpoint has to redraw it. Without this a page loaded wide and then
   // narrowed (or a rotated phone) keeps the 920-unit box until some unrelated
@@ -3793,6 +4154,11 @@ function bindEvents() {
     if (board) renderAdoptionFrontier(board);
   });
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && selectedFrontierPoint) {
+      clearFrontierPointSelection();
+      event.preventDefault();
+      return;
+    }
     // Do not swallow Escape unless a card is actually open to close.
     if (event.key === "Escape" && dismissDayTooltip()) event.preventDefault();
   });
