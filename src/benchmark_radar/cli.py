@@ -624,20 +624,24 @@ def main() -> None:
     args.json_output.write_text(
         json.dumps(
             {
-                "generated_at": run.generated_at.isoformat(),
-                "since": run.since.isoformat(),
-                "evidence_items": [item.to_dict() for item in run.items],
+                # The report and snapshot describe the merged UTC-day union, not
+                # the latest pass alone: a same-day rerun must not replace the
+                # day's evidence with a subset (issue #88 social insight reads
+                # this file).
+                "generated_at": report_run.generated_at.isoformat(),
+                "since": report_run.since.isoformat(),
+                "evidence_items": [item.to_dict() for item in report_run.items],
                 "attention": {
-                    "observations": [item.to_dict() for item in run.attention],
+                    "observations": [item.to_dict() for item in report_run.attention],
                 },
                 "ingest_health": [
                     health.to_dict() for health in [*run.health, *run.attention_ingest_health]
                 ],
                 "producer_health": [health.to_dict() for health in run.producer_health],
-                "selection": run.selection,
-                # Day-scoped, unlike the run-scoped counters above: the briefing
-                # describes the whole UTC day and is shared by every pass over
-                # it. Omitted when the day has none.
+                "selection": report_run.selection,
+                # Day-scoped like the evidence above: the briefing describes the
+                # whole UTC day and is shared by every pass over it. Omitted
+                # when the day has none.
                 **(
                     {
                         "briefing": {
