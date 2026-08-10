@@ -601,7 +601,6 @@ def simulate_backfill(
                     source=source_name,
                     ok=False,
                     error=f"{type(error).__name__}: {error}",
-                    method=collection_method(source_name, []),
                 )
             )
 
@@ -712,7 +711,6 @@ def run_pipeline(
                     source=source_name,
                     ok=False,
                     error=f"{type(error).__name__}: {error}",
-                    method=collection_method(source_name, []),
                 )
             )
     required = {

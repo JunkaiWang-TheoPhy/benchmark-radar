@@ -666,7 +666,10 @@ function renderToday() {
     ...day.ingest_health.map((entry) => ({
       ...entry,
       layer: entry.kind === "attention" ? "Attention ingest" : "Evidence ingest",
-      method: entry.method || LEGACY_SOURCE_COLLECTION_METHODS[entry.source] || "",
+      method:
+        entry.method ||
+        (entry.ok ? LEGACY_SOURCE_COLLECTION_METHODS[entry.source] : "") ||
+        "",
     })),
     ...day.producer_health.map((entry) => ({ ...entry, layer: "Producer report" })),
   ];
