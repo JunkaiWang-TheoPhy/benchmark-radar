@@ -227,14 +227,7 @@ def test_prose_may_state_identifier_fragments_the_registry_does_not_hold():
     group, stats_by_id, evidence = _fixture()
 
     validated = questions._validate(
-        [
-            _answer(
-                signal=(
-                    "The 26-001 entry and S001 sit next to v2.001; "
-                    "2026-001, arrived too."
-                )
-            )
-        ],
+        [_answer(signal=("The 26-001 entry and S001 sit next to v2.001; 2026-001, arrived too."))],
         group,
         stats_by_id,
         evidence,
