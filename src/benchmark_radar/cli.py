@@ -27,6 +27,14 @@ from .snapshots import (
     rescore_snapshot_history,
     write_snapshot,
 )
+from .social import (
+    build_insight_sentence,
+    collect_git_changes,
+    extract_checked,
+    load_channels,
+    render_social_section,
+    summarize_repo_changes,
+)
 
 DEFAULT_DASHBOARD_OUTPUT = Path("site/data/radar.json")
 DEFAULT_FEED_OUTPUT = Path("site/feed.xml")
@@ -85,6 +93,7 @@ def main() -> None:
             "export",
             "classify",
             "authors",
+            "social",
         ),
         default="run",
         help=(
@@ -92,8 +101,9 @@ def main() -> None:
             "migrate snapshot schemas, rescore stored taxonomy categories against the "
             "current config, simulate missing historical snapshots, export the "
             "Model Card Adoption Rank as standalone citable files, classify canonical "
-            "benchmark tracks against the KW-Bench L0-L5 capability rubric, or survey "
-            "the public profiles of authors behind popular benchmark repositories."
+            "benchmark tracks against the KW-Bench L0-L5 capability rubric, survey "
+            "the public profiles of authors behind popular benchmark repositories, "
+            "or render the daily social post section from the day's evidence and git history."
         ),
     )
     parser.add_argument(
@@ -122,6 +132,51 @@ def main() -> None:
     parser.add_argument("--config", type=Path, default=Path("config.yml"))
     parser.add_argument("--output", type=Path, default=Path("out/report.md"))
     parser.add_argument("--json-output", type=Path, default=Path("out/items.json"))
+    parser.add_argument(
+        "--social-output",
+        type=Path,
+        default=Path("out/social.md"),
+        help="social only: where the rendered social post section is written.",
+    )
+    parser.add_argument(
+        "--items",
+        type=Path,
+        default=Path("out/items.json"),
+        help="social only: the day's evidence records (out/items.json).",
+    )
+    parser.add_argument(
+        "--repo",
+        type=Path,
+        default=Path("."),
+        help="social only: repository whose git history feeds the repo-change sentence.",
+    )
+    parser.add_argument(
+        "--channels",
+        type=Path,
+        default=Path("config/social.yml"),
+        help="social only: channel checklist source (config/social.yml).",
+    )
+    parser.add_argument(
+        "--existing-body",
+        type=Path,
+        default=None,
+        help=(
+            "social only: body of the already-created issue for this day, so "
+            "channels already ticked stay ticked on re-renders."
+        ),
+    )
+    parser.add_argument(
+        "--since",
+        type=str,
+        default=None,
+        help="social only: ISO start of the git window (defaults to 24 hours ago).",
+    )
+    parser.add_argument(
+        "--until",
+        type=str,
+        default=None,
+        help="social only: ISO end of the git window (defaults to now).",
+    )
     parser.add_argument("--snapshot-dir", type=Path, default=Path("data/snapshots"))
     parser.add_argument("--dashboard-output", type=Path, default=DEFAULT_DASHBOARD_OUTPUT)
     parser.add_argument(
@@ -420,6 +475,34 @@ def main() -> None:
         print(
             f"Migrated {len(snapshots)} snapshots to schema {dashboard['schema_version']} "
             f"and rebuilt {args.dashboard_output}"
+        )
+        return
+
+    if args.command == "social":
+        items: list[dict] = []
+        if args.items.exists():
+            payload = json.loads(args.items.read_text(encoding="utf-8"))
+            items = payload.get("evidence_items") or []
+        now = datetime.now(UTC)
+        until = args.until or now.isoformat()
+        since = args.since or (now - timedelta(hours=24)).isoformat()
+        changes = collect_git_changes(args.repo, since, until)
+        repo_sentence, commit_subjects = summarize_repo_changes(changes)
+        checked = set()
+        if args.existing_body and args.existing_body.exists():
+            checked = extract_checked(args.existing_body.read_text(encoding="utf-8"))
+        section = render_social_section(
+            build_insight_sentence(items),
+            repo_sentence,
+            commit_subjects,
+            load_channels(args.channels),
+            checked,
+        )
+        args.social_output.parent.mkdir(parents=True, exist_ok=True)
+        args.social_output.write_text(section + "\n", encoding="utf-8")
+        print(
+            f"Wrote {args.social_output} from {len(items)} evidence items "
+            f"and {len(changes)} commits"
         )
         return
 

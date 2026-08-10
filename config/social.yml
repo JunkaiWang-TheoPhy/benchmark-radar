@@ -1,0 +1,47 @@
+# Daily social posting channels (issue #88). Each day's radar issue renders a
+# "Daily social post" section with one checkbox per channel below. Tick a
+# channel in the issue once that day's post is sent there; the daily workflow
+# preserves checked boxes when it re-renders the same day's issue.
+#
+# Edit this list freely. Changes apply to future days only: the checked state
+# of past days stays in the issues themselves.
+#
+# "daily" marks the channels the daily post targets. The remaining channels
+# are single-shot launch channels kept here so the checklist matches the
+# platform list in docs/launch-posts.md.
+social:
+  channels:
+    - name: "X / Twitter"
+      daily: true
+    - name: "LinkedIn"
+      daily: true
+    - name: "Reddit r/MachineLearning"
+      daily: true
+    - name: "Reddit r/LocalLLaMA"
+      daily: true
+    - name: "Hugging Face Forums"
+      daily: false
+    - name: "EleutherAI Discord"
+      daily: false
+    - name: "ML Collective Discord"
+      daily: false
+    - name: "Hugging Face Discord"
+      daily: false
+    - name: "MLOps Community Slack"
+      daily: false
+    - name: "小红书"
+      daily: true
+    - name: "即刻"
+      daily: true
+    - name: "知乎"
+      daily: true
+    - name: "微信公众号"
+      daily: true
+    - name: "V2EX"
+      daily: true
+    - name: "DEV Community"
+      daily: false
+    - name: "Hashnode"
+      daily: false
+    - name: "Substack Notes"
+      daily: false
