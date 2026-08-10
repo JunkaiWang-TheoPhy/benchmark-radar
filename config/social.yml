@@ -1,7 +1,8 @@
-# Daily social posting channels (issue #88). Each day's radar issue renders a
-# "Daily social post" section with one checkbox per channel below. Tick a
-# channel in the issue once that day's post is sent there; the daily workflow
-# preserves checked boxes when it re-renders the same day's issue.
+# Daily social posting channels (issue #88). Each day's workflow renders a
+# "Daily social post" section with one checkbox per channel below into
+# out/social.md, fetched from the evidence artifact. Tick a channel once that
+# day's post is sent there; re-running the social command with --existing-body
+# pointing at a previous render re-applies those ticks.
 #
 # Edit this list freely. Changes apply to future days only: the checked state
 # of past days stays in the issues themselves.

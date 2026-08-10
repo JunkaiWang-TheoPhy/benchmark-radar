@@ -407,6 +407,21 @@ def test_daily_radar_yml_enables_and_requires_questions_in_production():
     assert str(env.get("OPENAI_QUESTIONS_REQUIRED")).lower() == "true"
 
 
+def test_daily_radar_yml_renders_social_material_instead_of_an_issue():
+    """Issue #37: the daily GitHub Issue was retired once the dashboard and
+    site/feed.xml became the reading surface. The social posting material must
+    still be rendered deterministically into the evidence artifact."""
+    workflow_path = Path(".github/workflows/daily-radar.yml")
+    workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+    assert "publish-issue" not in workflow["jobs"]
+    social_step = next(
+        step
+        for step in workflow["jobs"]["build-report"]["steps"]
+        if step.get("name") == "Render daily social post material"
+    )
+    assert "--social-output out/social.md" in social_step["run"]
+
+
 def test_questions_required_raises_without_a_flag_or_key(monkeypatch, tmp_path):
     monkeypatch.setenv("OPENAI_QUESTIONS_REQUIRED", "true")
     _stub_sources(monkeypatch, datetime.now(UTC))

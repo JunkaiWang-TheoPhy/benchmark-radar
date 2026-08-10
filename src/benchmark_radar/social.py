@@ -1,12 +1,13 @@
-"""Daily social post material for each day's radar issue (issue #88 follow-up).
+"""Daily social post material for each day's radar run (issue #88 follow-up).
 
-Every day the radar workflow appends a short "Daily social post" section to the
-day's GitHub Issue. The section carries the two sentences the post can be built
-from, a benchmark insight read off the day's evidence and a repo-change summary
-read off the day's git history, a ready-to-copy 发布文案 sample from
-config/social.yml, plus a per-channel checklist. Ticking a channel in the issue
-marks that day's post as sent; the workflow re-applies those ticks when it
-re-renders the same day's issue, so a retry never resets progress.
+Every day the radar workflow renders a short "Daily social post" section to
+out/social.md (fetchable from the evidence artifact; the daily GitHub Issue
+that used to carry it was retired in issue #37). The section carries the two
+sentences the post can be built from, a benchmark insight read off the day's
+evidence and a repo-change summary read off the day's git history, a
+ready-to-copy 发布文案 sample from config/social.yml, plus a per-channel
+checklist. When a previous render is supplied with ``--existing-body``, ticks
+already made are re-applied so a re-run never resets posting progress.
 """
 
 from __future__ import annotations
