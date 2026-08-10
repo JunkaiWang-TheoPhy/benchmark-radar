@@ -142,6 +142,27 @@ def test_render_section_lists_every_channel_unchecked(tmp_path: Path):
     assert "- [x]" not in section
 
 
+def test_render_section_includes_the_copy_paste_post_sample():
+    section = render_social_section(
+        "insight",
+        "repo change",
+        [],
+        [{"name": "LinkedIn"}],
+        post_sample=(
+            "一个反常识的发现：样本。\n"
+            "源码和分析详见：https://github.com/ktwu01/benchmark-radar/issues/150"
+        ),
+    )
+    assert "**发布文案示例** (copy-paste for today's post):" in section
+    assert "一个反常识的发现：样本。" in section
+    assert "issues/150" in section
+
+
+def test_render_section_omits_post_sample_when_none_configured():
+    section = render_social_section("insight", "repo change", [], [{"name": "LinkedIn"}])
+    assert "**发布文案示例**" not in section
+
+
 def test_merge_checked_keeps_prior_ticks_and_leaves_new_channels_unchecked():
     section = render_social_section(
         "insight",
@@ -208,7 +229,12 @@ def test_social_command_writes_section(monkeypatch, tmp_path: Path):
     )
     channels_path = tmp_path / "social.yml"
     channels_path.write_text(
-        "social:\n  channels:\n    - name: X / Twitter\n    - name: LinkedIn\n",
+        "social:\n"
+        "  post_sample: |-\n"
+        "    一个反常识的发现：样本。\n"
+        "  channels:\n"
+        "    - name: X / Twitter\n"
+        "    - name: LinkedIn\n",
         encoding="utf-8",
     )
     output = tmp_path / "social.md"
@@ -230,3 +256,4 @@ def test_social_command_writes_section(monkeypatch, tmp_path: Path):
     assert SECTION_HEADING in body
     assert "1 item across GitHub" in body
     assert "- [ ] X / Twitter" in body
+    assert "一个反常识的发现：样本。" in body

@@ -3,9 +3,10 @@
 Every day the radar workflow appends a short "Daily social post" section to the
 day's GitHub Issue. The section carries the two sentences the post can be built
 from, a benchmark insight read off the day's evidence and a repo-change summary
-read off the day's git history, plus a per-channel checklist. Ticking a channel
-in the issue marks that day's post as sent; the workflow re-applies those ticks
-when it re-renders the same day's issue, so a retry never resets progress.
+read off the day's git history, a ready-to-copy 发布文案 sample from
+config/social.yml, plus a per-channel checklist. Ticking a channel in the issue
+marks that day's post as sent; the workflow re-applies those ticks when it
+re-renders the same day's issue, so a retry never resets progress.
 """
 
 from __future__ import annotations
@@ -51,6 +52,13 @@ class GitChange:
 
 def _escape(text: str) -> str:
     return text.replace("|", "\\|").replace("\n", " ").strip()
+
+
+def load_post_sample(path: Path) -> str | None:
+    """Read the ready-to-copy 发布文案 from config/social.yml, if any."""
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    sample = (data.get("social") or {}).get("post_sample")
+    return str(sample).strip() if sample else None
 
 
 def load_channels(path: Path, *, daily_only: bool = False) -> list[dict]:
@@ -215,6 +223,7 @@ def render_social_section(
     commit_subjects: list[str],
     channels: list[dict],
     checked: set[str] | None = None,
+    post_sample: str | None = None,
 ) -> str:
     """Render the section that gets appended to the day's radar issue."""
     checked = checked or set()
@@ -233,6 +242,15 @@ def render_social_section(
         lines.extend(["_Latest commits:_", ""])
         lines.extend(f"- {_escape(subject)}" for subject in commit_subjects)
         lines.append("")
+    if post_sample:
+        lines.extend(
+            [
+                "**发布文案示例** (copy-paste for today's post):",
+                "",
+                post_sample,
+                "",
+            ]
+        )
     lines.extend(
         [
             "**Posting checklist** - tick a channel after today's post is sent there:",

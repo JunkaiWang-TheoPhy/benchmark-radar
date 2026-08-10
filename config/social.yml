@@ -9,7 +9,15 @@
 # "daily" marks the channels the daily post targets. The remaining channels
 # are single-shot launch channels kept here so the checklist matches the
 # platform list in docs/launch-posts.md.
+#
+# "post_sample" is the ready-to-copy 发布文案 rendered under each day's issue.
+# It is static text, not re-derived per day: refresh it when the L0-L5 picture
+# it describes moves (issue #150 holds the source analysis).
 social:
+  post_sample: |-
+    一个反常识的发现：Agent benchmarks 看起来已经在评测智能体前沿，实际上大多还在测“能不能按要求把事情做完”。
+    按Hejia Geng的 L0–L5 分级，当前主体仍是 L2 执行和 L3 复现；L4 再发现刚开始出现，而要求 Agent 产出 benchmark 创建时未知知识或方法的 L5，本周仍未发现新案例。
+    源码和分析详见：https://github.com/ktwu01/benchmark-radar/issues/150
   channels:
     - name: "X / Twitter"
       daily: true
@@ -31,13 +39,47 @@ social:
       daily: false
     - name: "小红书"
       daily: true
-    - name: "即刻"
-      daily: true
     - name: "知乎"
       daily: true
     - name: "微信公众号"
       daily: true
     - name: "V2EX"
+      daily: true
+    - name: "WeChat Moment"
+      daily: true
+    - name: "Science Intelligence 实名讨论群"
+      daily: true
+    - name: "Benchmark Radar 讨论群"
+      daily: true
+    - name: "Agent Infra交流群 （Substrate）"
+      daily: true
+    - name: "灵台AI"
+      daily: true
+    - name: "Math AI"
+      daily: true
+    - name: "博杰老师Agent实战营01"
+      daily: true
+    - name: "Phys Bench"
+      daily: true
+    - name: "ACL 2026线下开会社交群"
+      daily: true
+    - name: "COLM 2026 开会群"
+      daily: true
+    - name: "HKUDS-开源交流群2"
+      daily: true
+    - name: "HLE V2 | Core"
+      daily: true
+    - name: "Sichen Tao"
+      daily: true
+    - name: "Junwei Zhou"
+      daily: true
+    - name: "LHTB 造题"
+      daily: true
+    - name: "Ziyan Chen"
+      daily: true
+    - name: "TB"
+      daily: true
+    - name: "TB Sci"
       daily: true
     - name: "DEV Community"
       daily: false

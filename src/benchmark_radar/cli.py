@@ -32,6 +32,7 @@ from .social import (
     collect_git_changes,
     extract_checked,
     load_channels,
+    load_post_sample,
     render_social_section,
     summarize_repo_changes,
 )
@@ -388,6 +389,7 @@ def main() -> None:
             commit_subjects,
             load_channels(args.channels, daily_only=True),
             checked,
+            load_post_sample(args.channels),
         )
         args.social_output.parent.mkdir(parents=True, exist_ok=True)
         args.social_output.write_text(section + "\n", encoding="utf-8")
