@@ -220,6 +220,29 @@ def test_prose_may_not_state_a_number_the_registry_does_not_hold():
         )
 
 
+def test_prose_may_state_identifier_fragments_the_registry_does_not_hold():
+    # "26-001", "S001", "v2.001", "2026-001," are version and artifact codes,
+    # not corpus measurements, so they must not fail a day's Q&A (a production
+    # run rejected '001,' and aborted the whole pipeline).
+    group, stats_by_id, evidence = _fixture()
+
+    validated = questions._validate(
+        [
+            _answer(
+                signal=(
+                    "The 26-001 entry and S001 sit next to v2.001; "
+                    "2026-001, arrived too."
+                )
+            )
+        ],
+        group,
+        stats_by_id,
+        evidence,
+    )
+
+    assert validated[0]["signal"].startswith("The 26-001 entry")
+
+
 def test_prose_may_restate_a_value_the_registry_computed():
     group, stats_by_id, evidence = _fixture()
 

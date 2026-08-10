@@ -215,6 +215,23 @@ _PROSE_FIELDS = ("signal", "plain_english", "takeaway", "counter_view")
 # rather than measurements of the corpus.
 _ALLOWED_BARE_NUMBERS = {"0", "1", "2", "3", "100"}
 _NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
+# Characters that glue a digit run into a version, id, or other code rather
+# than leaving it a free-standing measurement ("26-001", "S001", "v2.001",
+# "doi:10.1000"). A token abutting one of these is an identifier fragment.
+_IDENTIFIER_GLUE = set("-._/:#")
+
+
+def _is_identifier_fragment(text: str, match: re.Match[str]) -> bool:
+    """A digit run that abuts a letter or code separator is not a quantity."""
+    start, end = match.start(), match.end()
+    before = text[start - 1] if start else ""
+    after = text[end] if end < len(text) else ""
+    return (
+        before.isalpha()
+        or after.isalpha()
+        or before in _IDENTIFIER_GLUE
+        or after in _IDENTIFIER_GLUE
+    )
 
 
 def _registry_number_forms(stat: dict[str, Any]) -> set[str]:
@@ -259,6 +276,12 @@ def _reject_uncited_quantities(
             if token in allowed or token.rstrip(",") in allowed:
                 continue
             if re.fullmatch(r"20\d\d", token):
+                continue
+            # A digit run glued to a letter or separator is a version or
+            # artifact id, not the model inventing a statistic. Without this,
+            # identifiers like "26-001," or "S001" would fail a day's Q&A for
+            # describing the corpus rather than for stating a bad number.
+            if _is_identifier_fragment(text, match):
                 continue
             raise BriefingError(
                 f"OpenAI wrote the uncited quantity {token!r} in {field}; "
