@@ -122,6 +122,18 @@ def test_load_channels_daily_only_filters_launch_channels(tmp_path: Path):
     assert [c["name"] for c in load_channels(path)] == ["X / Twitter", "DEV Community"]
 
 
+def test_load_channels_daily_only_keeps_everything_when_no_channel_sets_daily(tmp_path: Path):
+    path = tmp_path / "social.yml"
+    path.write_text(
+        "social:\n  channels:\n    - name: X / Twitter\n    - name: 知乎\n",
+        encoding="utf-8",
+    )
+    assert [c["name"] for c in load_channels(path, daily_only=True)] == [
+        "X / Twitter",
+        "知乎",
+    ]
+
+
 def test_render_section_lists_every_channel_unchecked(tmp_path: Path):
     channels_path = tmp_path / "social.yml"
     channels_path.write_text(

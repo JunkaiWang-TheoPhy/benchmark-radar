@@ -30,9 +30,9 @@ from .snapshots import (
 from .social import (
     build_insight_sentence,
     collect_git_changes,
-    extract_checked,
     load_channels,
     load_post_sample,
+    merge_checked,
     render_social_section,
     summarize_repo_changes,
 )
@@ -380,17 +380,15 @@ def main() -> None:
         since = args.since or (now - timedelta(hours=24)).isoformat()
         changes = collect_git_changes(args.repo, since, until)
         repo_sentence, commit_subjects = summarize_repo_changes(changes)
-        checked = set()
-        if args.existing_body and args.existing_body.exists():
-            checked = extract_checked(args.existing_body.read_text(encoding="utf-8"))
         section = render_social_section(
             build_insight_sentence(items),
             repo_sentence,
             commit_subjects,
             load_channels(args.channels, daily_only=True),
-            checked,
-            load_post_sample(args.channels),
+            post_sample=load_post_sample(args.channels),
         )
+        if args.existing_body and args.existing_body.exists():
+            section = merge_checked(section, args.existing_body.read_text(encoding="utf-8"))
         args.social_output.parent.mkdir(parents=True, exist_ok=True)
         args.social_output.write_text(section + "\n", encoding="utf-8")
         print(

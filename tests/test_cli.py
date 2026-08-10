@@ -303,6 +303,42 @@ def test_every_pass_over_a_day_derives_the_same_briefing(monkeypatch, tmp_path):
     assert first["bullets"]
 
 
+def test_items_json_keeps_the_merged_day_evidence_on_a_same_day_rerun(monkeypatch, tmp_path):
+    """Issue #88: the social insight reads out/items.json, so a same-day rerun
+    must not replace the day's evidence with the latest pass alone. The merged
+    union keeps both passes' items (issue #104 identity rule)."""
+    first = RadarItem(
+        source="GitHub",
+        source_id="org/repo",
+        title="First benchmark",
+        url="https://github.com/org/repo",
+        published_at=datetime.now(UTC),
+        summary="Benchmark suite for language model evaluation.",
+    )
+    second = RadarItem(
+        source="GitHub",
+        source_id="org/repo-2",
+        title="Second benchmark",
+        url="https://github.com/org/repo-2",
+        published_at=datetime.now(UTC),
+        summary="Benchmark suite for language model evaluation.",
+    )
+    monkeypatch.setitem(SOURCE_FETCHERS, "github", lambda config, since, limit: [first])
+    monkeypatch.setitem(SOURCE_FETCHERS, "arxiv", lambda config, since, limit: [first])
+    monkeypatch.setitem(SOURCE_FETCHERS, "huggingface", lambda config, since, limit: [first])
+    monkeypatch.setattr("sys.argv", _briefing_argv(tmp_path))
+
+    cli.main()
+    monkeypatch.setitem(SOURCE_FETCHERS, "github", lambda config, since, limit: [second])
+    monkeypatch.setitem(SOURCE_FETCHERS, "arxiv", lambda config, since, limit: [second])
+    monkeypatch.setitem(SOURCE_FETCHERS, "huggingface", lambda config, since, limit: [second])
+    cli.main()
+
+    payload = json.loads((tmp_path / "items.json").read_text(encoding="utf-8"))
+    titles = {item["title"] for item in payload["evidence_items"]}
+    assert {"First benchmark", "Second benchmark"} <= titles
+
+
 def test_a_briefing_is_written_without_any_api_key(monkeypatch, tmp_path):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     _stub_sources(monkeypatch, datetime.now(UTC))

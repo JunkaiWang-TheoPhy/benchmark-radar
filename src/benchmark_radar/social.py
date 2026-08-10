@@ -222,11 +222,9 @@ def render_social_section(
     repo_sentence: str,
     commit_subjects: list[str],
     channels: list[dict],
-    checked: set[str] | None = None,
     post_sample: str | None = None,
 ) -> str:
     """Render the section that gets appended to the day's radar issue."""
-    checked = checked or set()
     lines = [
         SECTION_HEADING,
         "",
@@ -261,7 +259,6 @@ def render_social_section(
         name = str(channel.get("name") or "").strip()
         if not name:
             continue
-        mark = "x" if name in checked else " "
-        lines.append(f"- [{mark}] {_escape(name)}")
+        lines.append(f"- [ ] {_escape(name)}")
     lines.append("")
     return "\n".join(lines)
