@@ -366,6 +366,37 @@ def main() -> None:
         print(f"{action} {args.dashboard_output} from {data['snapshot_count']} daily snapshots")
         return
 
+    if args.command == "social":
+        # Config-independent: dispatched before load_config so the command
+        # works against explicit --items/--repo/--channels paths outside the
+        # repository without needing an unrelated radar config.yml.
+        items: list[dict] = []
+        if args.items.exists():
+            payload = json.loads(args.items.read_text(encoding="utf-8"))
+            items = payload.get("evidence_items") or []
+        now = datetime.now(UTC)
+        until = args.until or now.isoformat()
+        since = args.since or (now - timedelta(hours=24)).isoformat()
+        changes = collect_git_changes(args.repo, since, until)
+        repo_sentence, commit_subjects = summarize_repo_changes(changes)
+        checked = set()
+        if args.existing_body and args.existing_body.exists():
+            checked = extract_checked(args.existing_body.read_text(encoding="utf-8"))
+        section = render_social_section(
+            build_insight_sentence(items),
+            repo_sentence,
+            commit_subjects,
+            load_channels(args.channels, daily_only=True),
+            checked,
+        )
+        args.social_output.parent.mkdir(parents=True, exist_ok=True)
+        args.social_output.write_text(section + "\n", encoding="utf-8")
+        print(
+            f"Wrote {args.social_output} from {len(items)} evidence items "
+            f"and {len(changes)} commits"
+        )
+        return
+
     config = load_config(args.config)
 
     if args.command == "export":
@@ -475,34 +506,6 @@ def main() -> None:
         print(
             f"Migrated {len(snapshots)} snapshots to schema {dashboard['schema_version']} "
             f"and rebuilt {args.dashboard_output}"
-        )
-        return
-
-    if args.command == "social":
-        items: list[dict] = []
-        if args.items.exists():
-            payload = json.loads(args.items.read_text(encoding="utf-8"))
-            items = payload.get("evidence_items") or []
-        now = datetime.now(UTC)
-        until = args.until or now.isoformat()
-        since = args.since or (now - timedelta(hours=24)).isoformat()
-        changes = collect_git_changes(args.repo, since, until)
-        repo_sentence, commit_subjects = summarize_repo_changes(changes)
-        checked = set()
-        if args.existing_body and args.existing_body.exists():
-            checked = extract_checked(args.existing_body.read_text(encoding="utf-8"))
-        section = render_social_section(
-            build_insight_sentence(items),
-            repo_sentence,
-            commit_subjects,
-            load_channels(args.channels),
-            checked,
-        )
-        args.social_output.parent.mkdir(parents=True, exist_ok=True)
-        args.social_output.write_text(section + "\n", encoding="utf-8")
-        print(
-            f"Wrote {args.social_output} from {len(items)} evidence items "
-            f"and {len(changes)} commits"
         )
         return
 

@@ -107,6 +107,21 @@ def test_parse_git_log_ties_files_to_the_right_commit_when_blank_precedes_files(
     ]
 
 
+def test_load_channels_daily_only_filters_launch_channels(tmp_path: Path):
+    path = tmp_path / "social.yml"
+    path.write_text(
+        "social:\n"
+        "  channels:\n"
+        "    - name: X / Twitter\n"
+        "      daily: true\n"
+        "    - name: DEV Community\n"
+        "      daily: false\n",
+        encoding="utf-8",
+    )
+    assert [c["name"] for c in load_channels(path, daily_only=True)] == ["X / Twitter"]
+    assert [c["name"] for c in load_channels(path)] == ["X / Twitter", "DEV Community"]
+
+
 def test_render_section_lists_every_channel_unchecked(tmp_path: Path):
     channels_path = tmp_path / "social.yml"
     channels_path.write_text(
@@ -148,6 +163,21 @@ def test_merge_checked_keeps_prior_ticks_and_leaves_new_channels_unchecked():
     assert "- [x] LinkedIn" in merged
     assert "- [ ] X / Twitter" in merged
     assert "- [ ] 知乎" in merged
+
+
+def test_merge_checked_keeps_ticks_for_escaped_channel_names():
+    # A channel named with a pipe renders escaped (\\|) in the issue body.
+    # extract_checked must unescape it so the tick survives the next render.
+    section = render_social_section(
+        "insight",
+        "repo change",
+        [],
+        [{"name": "Community | General"}, {"name": "LinkedIn"}],
+    )
+    existing = "## 🗣 Daily social post\n\n- [x] Community \\| General\n- [ ] LinkedIn\n"
+    merged = merge_checked(section, existing)
+    assert "- [x] Community \\| General" in merged
+    assert "- [ ] LinkedIn" in merged
 
 
 def test_extract_checked_only_reads_the_social_section():

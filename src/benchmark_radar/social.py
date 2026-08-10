@@ -53,10 +53,20 @@ def _escape(text: str) -> str:
     return text.replace("|", "\\|").replace("\n", " ").strip()
 
 
-def load_channels(path: Path) -> list[dict]:
-    """Read the channel checklist from config/social.yml."""
+def load_channels(path: Path, *, daily_only: bool = False) -> list[dict]:
+    """Read the channel checklist from config/social.yml.
+
+    With daily_only, only channels marked ``daily: true`` are returned. The
+    launch-only channels (Discord communities, DEV/Hashnode articles, and the
+    like) are single-shot: listing them on every day's checklist would read as
+    an instruction to post there daily. When the config marks no channel at
+    all, every channel is treated as daily rather than silently dropping the
+    whole checklist.
+    """
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     channels = (data.get("social") or {}).get("channels") or []
+    if daily_only and any(channel.get("daily") is not None for channel in channels):
+        channels = [channel for channel in channels if channel.get("daily")]
     return [channel for channel in channels if str(channel.get("name") or "").strip()]
 
 
@@ -158,6 +168,11 @@ def collect_git_changes(repo: Path, since: str, until: str) -> list[GitChange]:
     return parse_git_log(result.stdout)
 
 
+def _canonical_name(raw: str) -> str:
+    """Undo the rendering-time escaping so ticks match configured names."""
+    return raw.strip().replace("\\|", "|")
+
+
 def extract_checked(body: str) -> set[str]:
     """Channel names already ticked in an existing issue body."""
     checked: set[str] = set()
@@ -170,7 +185,7 @@ def extract_checked(body: str) -> set[str]:
             continue
         match = _CHECKBOX_RE.match(line)
         if match and match.group(1).strip().lower() == "x":
-            checked.add(match.group(2).strip())
+            checked.add(_canonical_name(match.group(2)))
     return checked
 
 
@@ -187,7 +202,7 @@ def merge_checked(section: str, existing_body: str) -> str:
     lines = []
     for line in section.splitlines():
         match = _CHECKBOX_RE.match(line)
-        if match and match.group(2).strip() in checked:
+        if match and _canonical_name(match.group(2)) in checked:
             lines.append(f"- [x] {match.group(2).strip()}")
         else:
             lines.append(line)
