@@ -7,6 +7,20 @@ const CATEGORY_COLORS = {
 };
 const FALLBACK_COLORS = ["#756aa8", "#397f9a", "#a4576d", "#70833d"];
 const ALL_DATES_PAGE_SIZE = 100;
+// How each evidence connector actually collects records (issue #174: every
+// row read "Radar ingest" regardless of source, so a stalled RSS feed and a
+// broken API call looked identical at a glance).
+const SOURCE_COLLECTION_METHODS = {
+  arxiv: "RSS",
+  huggingface: "API",
+  github: "API",
+  openreview: "API",
+  semantic_scholar: "API",
+  github_releases: "API",
+  first_party_feeds: "RSS",
+  openalex: "API",
+  brave: "API",
+};
 
 const byId = (id) => document.getElementById(id);
 const state = {
@@ -650,7 +664,11 @@ function renderToday() {
   );
 
   const healthEntries = [
-    ...day.ingest_health.map((entry) => ({ ...entry, layer: "Radar ingest" })),
+    ...day.ingest_health.map((entry) => ({
+      ...entry,
+      layer: entry.kind === "attention" ? "Attention ingest" : "Evidence ingest",
+      method: SOURCE_COLLECTION_METHODS[entry.source] || "",
+    })),
     ...day.producer_health.map((entry) => ({ ...entry, layer: "Producer report" })),
   ];
   // Fetch plumbing is not what the reader came for, so the roster stays
@@ -673,7 +691,9 @@ function renderToday() {
         element("span", { className: `health-dot${entry.ok ? " ok" : ""}` }),
         element("span", {
           className: "health-name",
-          text: `${entry.source} · ${entry.layer}`,
+          text: entry.method
+            ? `${entry.source} · ${entry.method} · ${entry.layer}`
+            : `${entry.source} · ${entry.layer}`,
         }),
         element("span", {
           className: "health-count",
