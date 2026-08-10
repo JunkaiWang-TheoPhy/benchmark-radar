@@ -34,15 +34,19 @@ def test_report_contains_evidence_and_health():
 def test_source_health_names_each_connectors_collection_method():
     # Issue #174: every row of the Source health table looked the same at a
     # glance, so a stalled RSS feed and a broken search API read as identical
-    # failures. The Method column names how each connector actually collects.
+    # failures. The Method column (populated by the pipeline from what a run
+    # actually did, see sources.collection_method) surfaces the difference.
     run = RadarRun(
         generated_at=datetime(2026, 7, 27, tzinfo=UTC),
         since=datetime(2026, 7, 25, tzinfo=UTC),
         items=[],
         health=[
-            SourceHealth(source="arxiv", ok=True, item_count=0),
+            SourceHealth(source="arxiv", ok=True, item_count=0, method="RSS"),
             SourceHealth(
-                source="brave", ok=False, error="RuntimeError: BRAVE_API_KEY is not configured"
+                source="brave",
+                ok=False,
+                error="RuntimeError: BRAVE_API_KEY is not configured",
+                method="API",
             ),
         ],
     )

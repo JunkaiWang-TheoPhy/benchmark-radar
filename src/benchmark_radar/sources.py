@@ -1001,6 +1001,46 @@ SOURCE_FETCHERS = {
     "brave": fetch_brave,
 }
 
+# What each connector's `parser_version` prefix says about how a record was
+# actually collected. arXiv, for one, tries its Atom API and falls back to
+# RSS mid-run, so this cannot be a static per-source label (issue #174).
+_PARSER_VERSION_METHODS = {
+    "arxiv-rss": "RSS",
+    "arxiv-atom": "API",
+    "first-party-rss-atom": "RSS/Atom",
+    "huggingface-hub": "API",
+    "github-search": "API",
+    "openreview-api-v2": "API",
+    "semantic-scholar-graph": "API",
+    "github-releases": "API",
+    "openalex-works": "API",
+    "brave-web-search": "API",
+}
+
+# Fallback label when a connector run produced no items to inspect (an empty
+# but healthy fetch, or a failure before any record was parsed).
+SOURCE_DEFAULT_METHODS = {
+    "arxiv": "RSS",
+    "huggingface": "API",
+    "github": "API",
+    "openreview": "API",
+    "semantic_scholar": "API",
+    "github_releases": "API",
+    "first_party_feeds": "RSS/Atom",
+    "openalex": "API",
+    "brave": "API",
+}
+
+
+def collection_method(source_name: str, fetched: list[RadarItem]) -> str:
+    """The collection method actually used this run, derived from what ran."""
+    for item in fetched:
+        prefix = item.parser_version.rsplit("/", 1)[0]
+        method = _PARSER_VERSION_METHODS.get(prefix)
+        if method:
+            return method
+    return SOURCE_DEFAULT_METHODS.get(source_name, "")
+
 
 def default_since(hours: int) -> datetime:
     return datetime.now(UTC) - timedelta(hours=hours)

@@ -8,25 +8,6 @@ from . import __version__
 from .briefing import markdown_bullet
 from .models import RadarItem, RadarRun
 
-# How each `## Source health` connector actually collects records (issue
-# #174: a bare source name told readers nothing about API vs RSS vs search,
-# so a stalled feed and a broken API call looked identical at a glance).
-SOURCE_COLLECTION_METHODS = {
-    "arxiv": "RSS",
-    "huggingface": "API",
-    "github": "API",
-    "openreview": "API",
-    "semantic_scholar": "API",
-    "github_releases": "API",
-    "first_party_feeds": "RSS",
-    "openalex": "API",
-    "brave": "API",
-}
-
-
-def _collection_method(source: str) -> str:
-    return SOURCE_COLLECTION_METHODS.get(source, "")
-
 
 def _escape(text: str) -> str:
     return text.replace("|", "\\|").replace("\n", " ").strip()
@@ -435,9 +416,8 @@ def render_markdown(
     )
     for health in run.health:
         detail = _escape(health.error or "")
-        method = _collection_method(health.source)
         lines.append(
-            f"| {health.source} | {method} | {'✅' if health.ok else '⚠️'} | "
+            f"| {health.source} | {health.method} | {'✅' if health.ok else '⚠️'} | "
             f"{health.item_count} | {detail} |"
         )
     if run.attention_ingest_health or run.producer_health:
