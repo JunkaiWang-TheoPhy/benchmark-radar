@@ -14,7 +14,7 @@ from . import rubric
 from .attention import fetch_attention_feeds
 from .corpus import exact_artifact_keys
 from .models import RadarItem, RadarRun, SourceHealth
-from .sources import FUTURE_TIMESTAMP_TOLERANCE, SOURCE_FETCHERS
+from .sources import FUTURE_TIMESTAMP_TOLERANCE, SOURCE_FETCHERS, collection_method
 
 TRACKING_PARAMETERS = {"ref", "source", "utm_campaign", "utm_content", "utm_medium", "utm_source"}
 
@@ -586,7 +586,14 @@ def simulate_backfill(
         fetcher = SOURCE_FETCHERS[source_name]
         try:
             fetched = fetcher(source_config, earliest_since, limit)
-            fetch_health.append(SourceHealth(source=source_name, ok=True, item_count=len(fetched)))
+            fetch_health.append(
+                SourceHealth(
+                    source=source_name,
+                    ok=True,
+                    item_count=len(fetched),
+                    method=collection_method(source_name, fetched),
+                )
+            )
             pool.extend(fetched)
         except Exception as error:  # a partial backfill is preferable; health exposes the gap
             fetch_health.append(
@@ -681,6 +688,7 @@ def run_pipeline(
                     ok=True,
                     item_count=len(fetched),
                     error="; ".join(source_notes) if source_notes else None,
+                    method=collection_method(source_name, fetched),
                 )
             )
             for item in fetched:

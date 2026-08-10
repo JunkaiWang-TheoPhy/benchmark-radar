@@ -90,6 +90,10 @@ class SourceHealth:
     item_count: int = 0
     error: str | None = None
     kind: str = "evidence"
+    # How this run actually collected records ("API", "RSS", ...). Derived
+    # from what ran, not a static per-source guess, since connectors like
+    # arXiv fall back from API to RSS mid-run (issue #174).
+    method: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

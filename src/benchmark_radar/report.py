@@ -410,14 +410,15 @@ def render_markdown(
         [
             "## Source health",
             "",
-            "| Source | Status | Records | Detail |",
-            "|---|---:|---:|---|",
+            "| Source | Method | Status | Records | Detail |",
+            "|---|---|---:|---:|---|",
         ]
     )
     for health in run.health:
         detail = _escape(health.error or "")
         lines.append(
-            f"| {health.source} | {'✅' if health.ok else '⚠️'} | {health.item_count} | {detail} |"
+            f"| {health.source} | {health.method} | {'✅' if health.ok else '⚠️'} | "
+            f"{health.item_count} | {detail} |"
         )
     if run.attention_ingest_health or run.producer_health:
         lines.extend(
@@ -432,7 +433,7 @@ def render_markdown(
         for health in run.attention_ingest_health:
             detail = _escape(health.error or "")
             lines.append(
-                f"| Radar ingest | {health.source} | {'✅' if health.ok else '⚠️'} | "
+                f"| Attention ingest | {health.source} | {'✅' if health.ok else '⚠️'} | "
                 f"{health.item_count} | {detail} |"
             )
         for health in run.producer_health:

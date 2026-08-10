@@ -4,8 +4,10 @@ from urllib.error import HTTPError
 import pytest
 
 from benchmark_radar.http import RequestError
+from benchmark_radar.models import RadarItem
 from benchmark_radar.sources import (
     ConnectorPayloadError,
+    collection_method,
     fetch_arxiv,
     fetch_brave,
     fetch_first_party_feeds,
@@ -950,3 +952,29 @@ def test_huggingface_filters_future_rows_before_the_local_cap(monkeypatch):
     assert seen_limit == [51, 51]
     assert [item.source_id for item in items] == ["org/current"]
     assert config["_future_rejections"] == 1
+
+
+def _item(parser_version: str) -> RadarItem:
+    return RadarItem(
+        source="arXiv",
+        source_id="abs/1",
+        title="t",
+        url="https://example.test/1",
+        published_at=datetime(2026, 7, 27, tzinfo=UTC),
+        parser_version=parser_version,
+    )
+
+
+def test_collection_method_reflects_what_actually_ran_not_a_static_guess():
+    # Issue #174 follow-up: arXiv tries its Atom API and falls back to RSS
+    # mid-run, so a static "arxiv -> RSS" label would misreport a run that
+    # succeeded over Atom. The method must come from what the run did.
+    assert collection_method("arxiv", [_item("arxiv-atom/1")]) == "API"
+    assert collection_method("arxiv", [_item("arxiv-rss/1")]) == "RSS"
+
+
+def test_collection_method_falls_back_to_a_static_default_without_items():
+    # An empty-but-healthy fetch, or a failure before any item was parsed,
+    # leaves nothing to inspect; fall back to the connector's usual method.
+    assert collection_method("arxiv", []) == "RSS"
+    assert collection_method("brave", []) == "API"
