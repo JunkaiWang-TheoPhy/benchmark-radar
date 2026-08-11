@@ -499,26 +499,21 @@ function answerCitations(answer) {
 function answerBlock(answer) {
   const insufficient = answer?.sufficient_evidence === false;
   const confidence = String(answer?.confidence || "").trim();
-  return element("article", { className: "answer" }, [
-    // The confidence sits on the question's own line: it qualifies the answer
-    // that follows, so a reader should meet it before reading the claim.
-    element("h4", { className: "answer-question" }, [
-      document.createTextNode(String(answer?.question || "")),
-      ...(confidence
-        ? [
-            element("span", {
-              className: `pill pill-confidence pill-confidence-${confidence}`,
-              text: `${confidence} confidence`,
-            }),
-          ]
-        : []),
-    ]),
-    element("p", { className: "answer-signal", text: String(answer?.signal || "") }),
+  // The question, the confidence, and one line of signal are the decision the
+  // reader came for; the explanation, its sources and the trade-offs back it
+  // up but would otherwise take over the page if all shown at once. So the
+  // answer is a native disclosure, collapsed by default, whose summary is the
+  // compact take while its detail holds everything that supports it. Native
+  // <details>/<summary> gives the reversible expand/re-collapse and keyboard
+  // support (Tab to focus, Enter/Space to toggle) for free and stays collapsed
+  // on load because no `open` attribute is rendered.
+  const citations = answerCitations(answer);
+  const detail = element("div", { className: "answer-detail" }, [
     element("p", { className: "answer-plain" }, [
       element("em", { text: "In plain English: " }),
       document.createTextNode(String(answer?.plain_english || "")),
     ]),
-    answerCitations(answer),
+    citations,
     // Stated on the answer rather than hidden in a tooltip: "the evidence does
     // not support an answer today" is a result, not a rendering failure.
     ...(insufficient
@@ -538,6 +533,35 @@ function answerBlock(answer) {
     element("p", { className: "answer-counter-view" }, [
       element("strong", { text: "Counter-view: " }),
       document.createTextNode(String(answer?.counter_view || "")),
+    ]),
+  ]);
+  return element("article", { className: "answer" }, [
+    // The confidence sits on the question's own line: it qualifies the answer
+    // that follows, so a reader should meet it before reading the claim.
+    element("h4", { className: "answer-question" }, [
+      document.createTextNode(String(answer?.question || "")),
+      ...(confidence
+        ? [
+            element("span", {
+              className: `pill pill-confidence pill-confidence-${confidence}`,
+              text: `${confidence} confidence`,
+            }),
+          ]
+        : []),
+    ]),
+    element("p", { className: "answer-signal", text: String(answer?.signal || "") }),
+    element("details", { className: "answer-disclosure" }, [
+      element("summary", { className: "answer-disclosure-summary" }, [
+        element("span", {
+          className: "answer-disclosure-label",
+          // Promise only what expanding actually reveals: an answer with no
+          // citations must not advertise "sources" it does not carry.
+          text: citations
+            ? "Read the full answer, sources and takeaway"
+            : "Read the full answer and takeaway",
+        }),
+      ]),
+      detail,
     ]),
   ]);
 }
@@ -3729,44 +3753,140 @@ function renderLeaderboard() {
 
   const newEntries = (board.entries || []).filter((entry) => isNewBenchmark(entry, board));
   const newSharedSignals = newEntries.filter((entry) => frontierAdvances(entry).length >= 3);
-  const evidenceStat = (value, label, detail) =>
-    element("article", { className: "evidence-stat" }, [
-      element("strong", { text: Number(value || 0).toLocaleString() }),
-      element("span", { text: label }),
-      element("small", { text: detail }),
+  // Each registry-overview count is a claim about specific records, so every
+  // tile opens to the itemized evidence behind its number (issue #183). They
+  // are native <details>/<summary>: collapsed on load, visible by the marker,
+  // expandable and re-collapsible with the same control.
+  const labelCounts = modelCardLabelCounts(board);
+  const allCards = [...(board.model_cards || [])].sort(
+    (a, b) =>
+      Number(!a.published) - Number(!b.published) ||
+      (b.published || "").localeCompare(a.published || "") ||
+      String(a.organization).localeCompare(String(b.organization)) ||
+      String(a.model).localeCompare(String(b.model)),
+  );
+  const evidenceDisclosure = (stat, items, emptyText) =>
+    element("details", { className: "evidence-stat evidence-disclosure" }, [
+      element("summary", { className: "evidence-stat-summary" }, [
+        element("strong", { text: Number(stat.value || 0).toLocaleString() }),
+        element("span", { text: stat.label }),
+        element("small", { text: stat.detail }),
+      ]),
+      items.length
+        ? element("ul", { className: "evidence-detail-list" }, items)
+        : element("p", { className: "evidence-detail-empty", text: emptyText }),
     ]);
-  replaceChildren(byId("leaderboard-insights"), [
-    evidenceStat(
-      board.model_card_count,
-      "source documents",
-      "Each document counts once per benchmark.",
-    ),
-    evidenceStat(
-      board.organization_count,
-      "organizations",
-      "The denominator for reporting breadth.",
-    ),
-    evidenceStat(
-      Object.keys(board.domains || {}).length,
-      "Domains reported at least once",
-      `${metricLabel(board.benchmark_count, "benchmark")} tracked · ${metricLabel(
-        topEntries.length,
-        "benchmark",
-      )} reported.`,
-    ),
-    evidenceStat(
-      newSharedSignals.length,
-      "new shared signals",
-      "New instruments crossing three dated organizations.",
-    ),
-    element("p", { className: "evidence-thesis" }, [
-      element("strong", { text: "New instruments" }),
+  const modelCardLine = (card) =>
+    element("li", {}, [
+      card.url
+        ? element("a", {
+            className: "adopter-link",
+            text: cardLabel(card, labelCounts),
+            attrs: { href: card.url, target: "_blank", rel: "noopener noreferrer" },
+          })
+        : element("span", { className: "insight-item-name", text: cardLabel(card, labelCounts) }),
       element("span", {
-        text: ` · ${metricLabel(
-          newSharedSignals.length,
-          "benchmark",
-        )} released in the newest 18-month window already appear across three or more dated organizations. Follow their trajectories before reading the raw rank.`,
+        className: "insight-item-meta",
+        text: `${String(card.document_type).replaceAll("_", " ")}${
+          card.published ? ` · ${formatDate(card.published, { dateStyle: "medium" })}` : ""
+        }`,
       }),
+    ]);
+  const benchmarkLine = (entry, meta) =>
+    element("li", {}, [
+      entry.url
+        ? element("a", {
+            className: "adopter-link",
+            text: entry.name,
+            attrs: { href: entry.url, target: "_blank", rel: "noopener noreferrer" },
+          })
+        : element("span", { className: "insight-item-name", text: entry.name }),
+      meta
+        ? element("span", { className: "insight-item-meta", text: meta })
+        : entry.released
+          ? element("span", {
+              className: "insight-item-meta",
+              text: `released ${formatDate(entry.released, { dateStyle: "medium" })}`,
+            })
+          : null,
+    ]);
+  // `board.domains` counts only adopted benchmarks, so it would understate the
+  // spread of everything tracked. Count the distinct domains across all
+  // entries, matching how the filter options are built, so the tracked tile's
+  // breadth claim never collides with the adopted-only figure.
+  const domainCount = new Set((board.entries || []).map((entry) => entry.domain)).size;
+  replaceChildren(byId("leaderboard-insights"), [
+    evidenceDisclosure(
+      { value: board.model_card_count, label: "source documents", detail: "Each document counts once per benchmark." },
+      allCards.map(modelCardLine),
+      "No source documents in the registry yet.",
+    ),
+    evidenceDisclosure(
+      { value: board.organization_count, label: "organizations", detail: "The denominator for reporting breadth." },
+      Object.entries(board.organizations || {})
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([organization, count]) =>
+          element("li", {}, [
+            element("details", { className: "insight-nested" }, [
+              element("summary", { className: "insight-nested-summary" }, [
+                element("span", { className: "insight-item-name", text: organization }),
+                element("span", {
+                  className: "insight-item-meta",
+                  text: metricLabel(Number(count || 0), "card"),
+                }),
+              ]),
+              element(
+                "ul",
+                { className: "evidence-detail-list" },
+                allCards
+                  .filter((card) => card.organization === organization)
+                  .map(modelCardLine),
+              ),
+            ]),
+          ]),
+        ),
+      "No organizations in the registry yet.",
+    ),
+    evidenceDisclosure(
+      {
+        value: board.benchmark_count,
+        label: "Benchmarks tracked",
+        detail: `across ${metricLabel(domainCount, "domain")}${board.entries.length ? ` · ${metricLabel(board.entries.length, "benchmark")} listed` : ""}.`,
+      },
+      (board.entries || []).map((entry) =>
+        benchmarkLine(
+          entry,
+          entry.card_count ? metricLabel(entry.card_count, "model card") : "not yet reported",
+        ),
+      ),
+      "No benchmarks tracked yet.",
+    ),
+    evidenceDisclosure(
+      { value: topEntries.length, label: "Benchmarks reported at least once", detail: "The subset a ranked row can speak to." },
+      topEntries.map((entry) => benchmarkLine(entry, metricLabel(entry.card_count, "model card"))),
+      "No benchmark is reported by a curated card yet.",
+    ),
+    element("details", { className: "evidence-thesis evidence-thesis-disclosure" }, [
+      element("summary", { className: "evidence-thesis-summary" }, [
+        element("strong", { text: "New instruments" }),
+        element("span", {
+          text: ` · ${metricLabel(
+            newSharedSignals.length,
+            "benchmark",
+          )} released in the newest 18-month window already appear across three or more dated organizations. Follow their trajectories before reading the raw rank.`,
+        }),
+      ]),
+      element(
+        "ul",
+        { className: "evidence-detail-list" },
+        [...newSharedSignals]
+          .sort(
+            (a, b) =>
+              (b.released || "").localeCompare(a.released || "") ||
+              a.name.localeCompare(b.name),
+          )
+          .map((entry) => benchmarkLine(entry, metricLabel(entry.card_count, "model card"))),
+      ),
     ]),
   ]);
 

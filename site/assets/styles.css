@@ -558,6 +558,52 @@ input {
   text-transform: lowercase;
 }
 
+/* The full answer (explanation, sources, takeaway, counter-view) is collapsed
+   behind a native disclosure whose summary is the question and its one-line
+   signal (issue #183). Split the supporting text from the headline so a scan
+   of a day's questions stays a scan, and the detail is on demand again. */
+.answer-disclosure {
+  margin-top: 0.55rem;
+  border-top: 1px dashed var(--line);
+}
+
+.answer-disclosure-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0 0.25rem;
+  color: var(--blue-deep);
+  cursor: pointer;
+  font-family: var(--utility);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  list-style: none;
+  text-transform: uppercase;
+}
+
+.answer-disclosure-summary::-webkit-details-marker {
+  display: none;
+}
+
+.answer-disclosure-summary::before {
+  content: "›";
+  font-size: 0.9rem;
+  line-height: 1;
+  transition: transform 140ms ease;
+}
+
+.answer-disclosure[open] > .answer-disclosure-summary::before {
+  transform: rotate(90deg);
+}
+
+.answer-disclosure-summary:hover {
+  color: var(--blue);
+}
+
+.answer-detail {
+  padding-bottom: 0.2rem;
+}
+
 .daily-questions-meta {
   margin: 0.9rem 0 0;
   padding-top: 0.7rem;
@@ -1629,14 +1675,14 @@ td a {
   border-right: 1px solid var(--line);
 }
 
-.evidence-stat strong {
+.evidence-stat-summary strong {
   font-family: var(--display);
   font-size: clamp(2rem, 4vw, 3.4rem);
   font-weight: 500;
   line-height: 1;
 }
 
-.evidence-stat span {
+.evidence-stat-summary span {
   margin-top: 0.25rem;
   font-family: var(--utility);
   font-size: 0.68rem;
@@ -1644,10 +1690,122 @@ td a {
   text-transform: uppercase;
 }
 
-.evidence-stat small {
+.evidence-stat-summary small {
   margin-top: 0.55rem;
   color: var(--muted);
   font-size: 0.76rem;
+}
+
+/* A registry-overview tile now opens to the itemized evidence behind its count
+   (issue #183). The tile stays a stat until expanded; the marker turns the
+   label into an obvious affordance, and opening reveals only the sources that
+   produced the count above it. */
+.evidence-disclosure {
+  display: block;
+}
+
+.evidence-stat-summary {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  cursor: pointer;
+  list-style: none;
+}
+
+.evidence-stat-summary::-webkit-details-marker {
+  display: none;
+}
+
+.evidence-stat-summary::after {
+  content: "›";
+  position: absolute;
+  top: 0.15rem;
+  right: 0;
+  color: var(--blue-deep);
+  font-family: var(--utility);
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 140ms ease;
+}
+
+.evidence-stat[open] > .evidence-stat-summary::after {
+  transform: rotate(90deg);
+}
+
+.evidence-detail-list {
+  margin: 0.9rem 0 0;
+  padding: 0.65rem 0 0;
+  border-top: 1px dashed var(--line);
+  list-style: none;
+}
+
+.evidence-detail-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.3rem 0;
+  font-size: 0.78rem;
+}
+
+.evidence-detail-list li + li {
+  border-top: 1px solid var(--line);
+}
+
+.insight-item-name {
+  color: inherit;
+}
+
+.insight-item-meta {
+  color: var(--muted);
+  font-size: 0.74rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.evidence-detail-empty {
+  margin: 0.9rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+/* An organization row in the overview expands to the documents that produced
+   its card count, and the nested list is the same one every other tile uses. */
+.insight-nested {
+  width: 100%;
+}
+
+.insight-nested-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.insight-nested-summary::-webkit-details-marker {
+  display: none;
+}
+
+.insight-nested-summary::after {
+  content: "›";
+  color: var(--blue-deep);
+  font-family: var(--utility);
+  font-size: 0.9rem;
+  line-height: 1;
+  transition: transform 140ms ease;
+}
+
+.insight-nested[open] > .insight-nested-summary::after {
+  transform: rotate(90deg);
+}
+
+.insight-nested > .evidence-detail-list {
+  margin: 0.4rem 0 0;
+  padding-top: 0.3rem;
+  border-top: 1px dashed var(--line);
 }
 
 .evidence-thesis {
@@ -1657,6 +1815,37 @@ td a {
   background: color-mix(in srgb, var(--sea) 10%, transparent);
   color: var(--ink);
   font-size: 0.88rem;
+}
+
+.evidence-thesis-disclosure summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.evidence-thesis-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.evidence-thesis-disclosure summary::after {
+  content: "›";
+  align-self: center;
+  color: var(--blue-deep);
+  font-family: var(--utility);
+  transition: transform 140ms ease;
+}
+
+.evidence-thesis-disclosure[open] > summary::after {
+  transform: rotate(90deg);
+}
+
+.evidence-thesis-disclosure > .evidence-detail-list {
+  margin: 0.6rem 0 0;
+  padding: 0.6rem 0 0;
+  border-top: 1px dashed var(--line);
 }
 
 .benchmark-workbench {
@@ -3230,8 +3419,21 @@ footer {
     padding: 0.85rem;
   }
 
-  .evidence-stat strong {
+  .evidence-stat-summary strong {
     font-size: 2.15rem;
+  }
+
+  /* A two-column tile is ~half a phone's width, so a nowrap "name · meta"
+     row would push past the strip. Stack them so the count reads first and
+     the provenance wraps beneath it. */
+  .evidence-detail-list li {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+
+  .insight-item-meta {
+    text-align: left;
+    white-space: normal;
   }
 
   #benchmark-shortlist {
