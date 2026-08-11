@@ -13,12 +13,12 @@ on:
     inputs:
       publish:
         # Issue #88: the daily Issue is back as the posting checklist surface.
-        # A manual run with publish=true creates or updates today's daily Issue
-        # so a missed cron run can still be caught up by hand.
+        # Default to true so a plain manual dispatch still creates or updates
+        # today's Issue; opting out is the explicit minority case.
         description: Publish or update today's daily social-checklist Issue
         required: true
         type: boolean
-        default: false
+        default: true
 
 concurrency:
   group: daily-benchmark-radar
