@@ -399,10 +399,13 @@ def test_today_view_shows_total_corpus_counts_by_category():
     assert 'id="corpus-totals-status"' in html
     assert "state.data.corpus?.aggregates?.topics" in script
     assert "state.data.corpus?.aggregates?.entity_types?.artifact" in script
-    # A collapsed <details> next to a long, often multi-screen record list was
-    # reported unreadable ("I cannot see it") -- default it open so the totals
-    # are visible without a click, on both wide and stacked-mobile layouts.
-    assert '<details id="corpus-totals-details" open>' in html
+    # Issue #183: the totals start collapsed so the long topic list never takes
+    # over the page, and the summary still tells the reader the total so no one
+    # has to expand it to learn how big the corpus is. No `open` attribute.
+    assert '<details id="corpus-totals-details">' in html
+    assert 'corpus-totals-details" open>' not in html
+    summary_status = 'corpus-totals-status").textContent = '
+    assert f'{summary_status}`${{totalArtifacts.toLocaleString()}} artifacts`' in script
 
 
 def test_badge_accessible_names_state_the_action():
@@ -589,8 +592,12 @@ def test_leaderboard_names_an_unadopted_benchmark_rather_than_showing_a_bare_zer
     # A tracked benchmark no curated card reports is an observation about the
     # registry, not an empty row, and the domain summary counts only adopted
     # benchmarks so it must not claim to be the same figure as the filter.
+    # Issue #183: the registry-overview coverage counts open to their itemized
+    # evidence, so the tracked-vs-reported split is legible in the tiles too.
     assert '"not yet reported in these cards"' in script
-    assert '"Domains reported at least once"' in script
+    assert '"Benchmarks tracked"' in script
+    assert '"Benchmarks reported at least once"' in script
+    assert '"not yet reported"' in script
 
 
 def test_leaderboard_domain_filter_offers_every_tracked_domain():
@@ -1008,3 +1015,93 @@ def test_rendered_questions_drop_an_evidence_citation_with_an_unsafe_url(tmp_pat
     assert not [node for node in _flatten(rendered) if node["href"]]
     # The answer itself still renders; only the unfollowable citation is dropped.
     assert any(node["className"] == "answer" for node in _flatten(rendered))
+
+
+def test_rendered_answers_hide_supporting_detail_behind_a_collapsed_disclosure():
+    """Issue #183: each Q&A keeps its headline visible but collapses its support.
+
+    The question, confidence and one-line signal stay up front; the explanation,
+    citations, takeaway and counter-view live inside a native <details> that
+    starts collapsed (no `open` attribute, so it is reversible by the same
+    control) and carries the supporting content somewhere beneath the summary.
+    """
+    nodes = list(_flatten(_rendered_questions()))
+    answers = [n for n in nodes if n["className"] == "answer"]
+    disclosures = [n for n in nodes if n["className"] == "answer-disclosure"]
+
+    assert len(answers) == 3
+    assert len(disclosures) == 3
+
+    for answer, disclosure in zip(answers, disclosures, strict=True):
+        # Every rendered answer pairs its disclosure without collapsing the
+        # headline: question + signal stay direct children of the <article>.
+        assert any(n["className"] == "answer-question" for n in answer["children"])
+        signal = next(n for n in answer["children"] if n["className"] == "answer-signal")["text"]
+        # The disclosure is collapsed on load (no `open`) and carries a visible
+        # summary affordance naming what the reader will reveal.
+        assert disclosure["tag"] == "details"
+        assert "open" not in disclosure["attributes"]
+        assert any(n["className"] == "answer-disclosure-summary" for n in disclosure["children"])
+        # The supporting detail sits below the summary and does not repeat the
+        # one-line signal that is already visible above it.
+        detail = next(n for n in disclosure["children"] if n["className"] == "answer-detail")
+        detail_text = "".join(_subtexts(detail))
+        assert detail_text
+        assert signal not in detail_text
+
+    # Across all three answers, the full explanation, takeaway and counter-view
+    # all warm up inside the disclosures rather than crowding the headlines.
+    all_detail = "".join(
+        "".join(_subtexts(detail))
+        for d in disclosures
+        for detail in d.get("children") or []
+        if detail["className"] == "answer-detail"
+    )
+    assert "carry out a task" in all_detail  # a plain-English explanation
+    assert "Treat unscored arrivals as unverified" in all_detail  # a takeaway
+    assert "keyword-filtered" in all_detail  # a counter-view
+
+
+def test_leaderboard_coverage_counts_are_native_disclosures():
+    """Issue #183: the registry-overview counts open to their itemized evidence.
+
+    Each coverage tile is a native <details> whose summary keeps the stat and
+    whose body lists the exact records behind it. No `open` attribute is added,
+    so every tile loads collapsed and can be expanded and re-collapsed with the
+    single, native (and keyboard-operable) control.
+    """
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'className: "evidence-stat evidence-disclosure"' in script
+    assert 'element("details", { className: "evidence-stat evidence-disclosure" }' in script
+    assert 'className: "evidence-stat-summary"' in script
+    assert 'className: "evidence-detail-list"' in script
+    # Collapsed by default: the disclosures are built without an `open` attribute.
+    assert '.attrs: { open' not in script
+    # The itemized evidence is wired to the counts a reader would drill into.
+    assert "Benchmarks tracked" in script
+    assert "modelCardLine" in script
+    assert "benchmarkLine" in script
+
+
+def _subtexts(node):
+    if node["tag"] == "#text":
+        return [node["text"]]
+    out = []
+    for child in node.get("children") or []:
+        out.extend(_subtexts(child))
+    return out
+
+
+def test_connector_failure_marks_the_summary_without_force_opening_the_panel():
+    """Issue #183: a connector failure must change the collapsed Sources
+    summary/status but never force the panel's body open."""
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # The status and a failure class are set on the summary line regardless of
+    # whether the panel is expanded.
+    assert 'byId("health-status").textContent = failedCount' in script
+    assert 'classList.toggle("has-failure", failedCount > 0)' in script
+    # No code path opens the panel's body.
+    assert 'health-panel-details").open' not in script
+    assert 'health-panel-details" ].open' not in script

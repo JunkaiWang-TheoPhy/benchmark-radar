@@ -103,6 +103,7 @@ function walk(node) {
     tag: node.tag,
     className: node.className || "",
     href: node.attributes?.href || "",
+    attributes: node.attributes || {},
     text: node.textContent,
     children: (node.children || []).map(walk),
   };
