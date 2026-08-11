@@ -209,7 +209,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          date_key="$(date -u +%Y-%m-%d)"
+          # The issue must be tied to the report's own day, not the wall clock:
+          # a manual or delayed run crossing midnight UTC would otherwise date
+          # today's checklist with tomorrow, and the next day's run would then
+          # update that same issue and conflate two checklists.
+          date_key="$(python -c 'import json,sys,datetime,os
+          body=json.load(open("generated/out/items.json", encoding="utf-8"))
+          print(datetime.datetime.fromisoformat(body["generated_at"]).astimezone(datetime.timezone.utc).strftime("%Y-%m-%d"))')"
           title="🗣 Daily social checklist — ${date_key}"
           existing="$(gh issue list --state all --search "\"${title}\" in:title" \
             --json number,title --jq ".[] | select(.title == \"${title}\") | .number" | head -1)"
