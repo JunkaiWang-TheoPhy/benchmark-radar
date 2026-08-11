@@ -2065,20 +2065,66 @@ td a {
   stroke-width: 3;
 }
 
-/* A diamond, not a numbered circle. The shape carries the meaning "the count
-   stepped up here" on its own, so it reads without the digit that used to sit
-   inside it restating the y-axis (issue #91). */
-.frontier-point-advance polygon {
-  fill: #f4b65e;
-  stroke: #fff4dd;
+/* A colored circle carrying the reporting organization's brand glyph. The circle
+   takes the organization's frontier color and the glyph sits dark on it, so the
+   mark reads at a glance which organization stepped the count up (issue #178,
+   HLE/harbor style). */
+.frontier-point-face {
+  stroke: #0d1519;
   stroke-width: 2;
   transition: stroke-width 120ms ease;
 }
 
-.frontier-point:focus polygon,
-.frontier-point:hover polygon,
-.frontier-point.is-selected polygon {
+.frontier-point-glyph {
+  color: #0d1519;
+  pointer-events: none;
+  user-select: none;
+}
+
+.frontier-point:focus .frontier-point-face,
+.frontier-point:hover .frontier-point-face,
+.frontier-point.is-selected .frontier-point-face {
   stroke-width: 4;
+}
+
+/* Color key under the chart: one circular chip per reporting organization, in
+   the same color its frontier circle uses and carrying the same brand glyph. */
+.frontier-org-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.1rem;
+  align-items: center;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid #2c383e;
+}
+
+.frontier-org-key-item {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.frontier-org-key-chip {
+  display: inline-grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+}
+
+.frontier-org-key-glyph {
+  width: 11px;
+  height: 11px;
+  color: #0d1519;
+}
+
+.frontier-org-key-name {
+  color: #aebcc1;
+  font-family: var(--utility);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .frontier-point,
@@ -2171,12 +2217,13 @@ td a {
   align-self: center;
 }
 
-.legend-swatch-diamond {
-  width: 11px;
-  height: 11px;
+.legend-swatch-point {
+  width: 13px;
+  height: 13px;
   background: #f4b65e;
-  border: 1px solid #fff4dd;
-  transform: rotate(45deg);
+  border: 2px solid #0d1519;
+  border-radius: 50%;
+  box-sizing: border-box;
 }
 
 .legend-swatch-tick-first,
