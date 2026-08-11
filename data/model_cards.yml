@@ -876,6 +876,12 @@ model_cards:
       - tau_bench
       - livecodebench
       - mrcr
+      # HealthBench (§3.10 Health) and MLE-Bench (§5.1.3.3 AI Self-Improvement)
+      # are both evaluated explicitly in this card, read from the arXiv PDF
+      # (2601.03267). Both are OpenAI-authored instruments, which is why the
+      # card is their most complete single source.
+      - healthbench
+      - mle_bench
 
   - id: openai_o3_o4_mini_system_card
     organization: OpenAI
@@ -986,6 +992,11 @@ model_cards:
       - mmmu
       - mathvista
       - drop
+      # ChartQA and DocVQA: state-of-the-art claim in the abstract and explicit
+      # zero-shot evaluations in the Charts & Documents table (Table 18), with
+      # ANLS reported for DocVQA. Read from the arXiv PDF (2403.05530).
+      - chartqa
+      - docvqa
 
   # Benchmarks read from the Maverick instruction-tuned comparison table
   # published in this post, not from the surrounding prose. ChartQA, DocVQA,
