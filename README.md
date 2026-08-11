@@ -56,9 +56,10 @@ evaluation methods, datasets, and data-quality work, deduplicates records, class
 them with a transparent taxonomy, ranks them using explainable signals, and publishes a
 [cumulative dashboard](https://ktwu01.github.io/benchmark-radar/) with a
 [daily RSS feed](https://ktwu01.github.io/benchmark-radar/feed.xml). The dashboard and RSS
-feed are the reading and subscription surfaces; the daily GitHub Issue that once served as a
-secondary discussion channel was retired (issue #37), and the day's social posting material
-ships as `out/social.md` in each run's evidence artifact. It is inspired by
+feed are the primary reading and subscription surfaces. In addition, each day's run opens one
+GitHub Issue carrying only that day's social posting checklist (issue #88): a checkable list
+of channels for posting the day's benchmark update, plus a copy-paste 发布文案 sample. It is
+inspired by
 [agents-radar](https://github.com/duanyytop/agents-radar), with sources and scoring
 redesigned for benchmark and AI-data research.
 
@@ -317,10 +318,17 @@ with a warning after 240 minutes. The workflow:
 1. collects evidence plus public Hacker News attention and renders with read-only
    repository permission;
 2. validates and uses the snapshot-writer App to persist one snapshot on `main`;
-3. renders the day's social posting material into `out/social.md` inside the evidence
-   artifact;
+3. opens (idempotently, one per day) a GitHub Issue whose body is the social posting
+   checklist: today's benchmark-update and repo-change sentences, a copy-paste 发布文案
+   sample, and a `- [ ]` tick-box per channel so posted channels can be marked off;
 4. lets that App-authenticated push trigger the standalone Pages workflow;
-5. prevents duplicate snapshots on reruns.
+5. prevents duplicate snapshots and daily Issues on reruns.
+
+A manual `workflow_dispatch` run creates or updates the day's Issue only when
+`publish` is checked. The workflow needs repository Issues enabled; the labels
+`daily-radar` and `automated` must exist (they are created during initial setup).
+Tick progress is preserved across reruns: a rerun re-reads the existing Issue body and
+re-applies any boxes already checked.
 
 ## Provenance and limitations
 

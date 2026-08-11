@@ -1,13 +1,13 @@
 """Daily social post material for each day's radar run (issue #88 follow-up).
 
-Every day the radar workflow renders a short "Daily social post" section to
-out/social.md (fetchable from the evidence artifact; the daily GitHub Issue
-that used to carry it was retired in issue #37). The section carries the two
-sentences the post can be built from, a benchmark insight read off the day's
-evidence and a repo-change summary read off the day's git history, a
-ready-to-copy 发布文案 sample from config/social.yml, plus a per-channel
-checklist. When a previous render is supplied with ``--existing-body``, ticks
-already made are re-applied so a re-run never resets posting progress.
+Every day the radar workflow opens one GitHub Issue whose body is this short
+"Daily social post" section (issue #88): a benchmark insight read off the day's
+evidence, a repo-change summary read off the day's git history, a ready-to-copy
+发布文案 sample from config/social.yml, plus a per-channel posting checklist.
+The dashboard and site/feed.xml remain the reading surface (issue #37), so the
+Issue carries only this section, not the full report. When a previous render is
+supplied with ``--existing-body``, ticks already made are re-applied so a re-run
+never resets posting progress.
 """
 
 from __future__ import annotations
@@ -225,7 +225,7 @@ def render_social_section(
     channels: list[dict],
     post_sample: str | None = None,
 ) -> str:
-    """Render the section that ships as out/social.md for the day's radar run."""
+    """Render the "Daily social post" section for today's radar run."""
     lines = [
         SECTION_HEADING,
         "",

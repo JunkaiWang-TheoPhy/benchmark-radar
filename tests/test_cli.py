@@ -408,12 +408,21 @@ def test_daily_radar_yml_enables_and_requires_questions_in_production():
 
 
 def test_daily_radar_yml_renders_social_material_instead_of_an_issue():
-    """Issue #37: the daily GitHub Issue was retired once the dashboard and
-    site/feed.xml became the reading surface. The social posting material must
-    still be rendered deterministically into the evidence artifact."""
+    """Issue #88: the dashboard and site/feed.xml remain the reading surface
+    (issue #37), so the daily Issue carries only the social posting checklist.
+    The publish-issue job must render out/social.md as the issue body so each
+    day gets exactly one checkable posting checklist."""
     workflow_path = Path(".github/workflows/daily-radar.yml")
     workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
-    assert "publish-issue" not in workflow["jobs"]
+    publish_issue = workflow["jobs"].get("publish-issue")
+    assert publish_issue is not None
+    step = next(
+        step
+        for step in publish_issue["steps"]
+        if step.get("name") == "Create idempotent daily social-checklist issue"
+    )
+    assert "--social-output generated/out/body.md" in step["run"]
+    assert "gh issue create --title" in step["run"]
     social_step = next(
         step
         for step in workflow["jobs"]["build-report"]["steps"]
