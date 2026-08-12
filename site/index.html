@@ -61,9 +61,11 @@
           <span class="repo-badge-label">RSS</span>
         </a>
         <!--
-          The export button opens a dialog rather than linking out: handing
-          over a dataset needs a moment of explanation about what is being
-          exported. Reachable without navigating away from the current view.
+          These three open dialogs rather than linking out: exporting a dataset
+          needs a moment of explanation about what is being handed over, and the
+          WeChat and Discord buttons open one contact sheet that keeps email,
+          WeChat, and Discord in a single place. Reachable without navigating
+          away from the current view.
         -->
         <button
           type="button"
@@ -78,6 +80,44 @@
             <path d="M4 21h16"></path>
           </svg>
           <span class="repo-badge-label">Data</span>
+        </button>
+        <button
+          type="button"
+          class="repo-badge"
+          id="badge-wechat"
+          aria-haspopup="dialog"
+          title="Contact on WeChat · ID ktwu001"
+        >
+          <svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05a6.127 6.127 0 0 1-.253-1.72c0-3.571 3.437-6.467 7.678-6.467.233 0 .463.013.694.031C17.02 4.792 13.205 2.188 8.69 2.188z"
+            ></path>
+            <path
+              d="M20.196 9.72c-3.858 0-6.984 2.667-6.984 5.957 0 3.29 3.126 5.957 6.984 5.957.848 0 1.663-.146 2.418-.408a.622.622 0 0 1 .516.07l1.371.802a.235.235 0 0 0 .12.039.213.213 0 0 0 .208-.213c0-.052-.02-.102-.035-.153l-.28-1.067a.426.426 0 0 1 .153-.479c1.359-1.111 2.2-2.707 2.2-4.548 0-3.29-3.126-5.957-6.984-5.957z"
+            ></path>
+            <circle cx="5.59" cy="9.72" r="1.184"></circle>
+            <circle cx="11.1" cy="9.72" r="1.184"></circle>
+            <circle cx="16.331" cy="13.31" r=".996"></circle>
+            <circle cx="20.06" cy="13.31" r=".996"></circle>
+          </svg>
+          <span class="repo-badge-label">WeChat</span>
+        </button>
+        <button
+          type="button"
+          class="repo-badge"
+          id="badge-discord"
+          aria-haspopup="dialog"
+          title="Contact on Discord · ID ktwu01"
+        >
+          <svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.865-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.058a.082.082 0 0 0 .031.056 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.291.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .079.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"
+            ></path>
+            <path
+              d="M8.02 15.331c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.419 0 1.333-.956 2.419-2.157 2.419zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.419 0 1.333-.946 2.419-2.157 2.419z"
+            ></path>
+          </svg>
+          <span class="repo-badge-label">Discord</span>
         </button>
         <!--
           Each badge is a call to action, not a link to a roster. Starring has no
@@ -534,6 +574,16 @@
         aria-label="Close data export"
       >×</button>
       <div id="export-content"></div>
+    </dialog>
+
+    <dialog id="contact-dialog" aria-labelledby="contact-title">
+      <button
+        class="dialog-close"
+        id="contact-close"
+        type="button"
+        aria-label="Close contact options"
+      >×</button>
+      <div id="contact-content"></div>
     </dialog>
 
     <footer>

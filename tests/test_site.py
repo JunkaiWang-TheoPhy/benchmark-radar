@@ -249,10 +249,10 @@ def test_records_expand_inline_without_an_exclusive_accordion_or_record_modal():
     assert "detail-dialog" not in script
     # A shared details[name] would force one row closed when another opens.
     assert "attrs: { name:" not in script
-    # The two dialogs on the page are non-record chrome: the scoring rubric and
-    # the data export. Record detail must stay inline, so any third showModal()
-    # is a regression to a record modal.
-    assert script.count(".showModal()") == 2
+    # The three dialogs on the page are non-record chrome: the scoring rubric,
+    # the data export, and the contact sheet. Record detail must stay inline,
+    # so any fourth showModal() is a regression to a record modal.
+    assert script.count(".showModal()") == 3
 
 
 def test_hugging_face_expansion_links_to_the_full_card():
