@@ -281,6 +281,23 @@ def test_rescore_applies_a_new_category_to_older_snapshots(tmp_path):
     assert all("agentic" in day["evidence_items"][0]["categories"] for day in rescored)
 
 
+def test_rescore_matches_terms_like_the_daily_pipeline_does(tmp_path):
+    """Regression: the rescore pass used a bare substring test, so `corpora`
+    matched inside "incorporates" and the rewritten snapshot diverged from what
+    the daily pipeline (word-start anchored, pipeline.match_phrase) scored on
+    the day. The rewrite must use the same matcher as live scoring."""
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(
+        radar_run(26, title="A Toolchain that Incorporates Benchmark Results"),
+        snapshot_dir,
+    )
+    config = {"taxonomy": {"dataset": ["corpora"]}}
+
+    summary = rescore_snapshot_history(config, snapshot_dir)
+
+    assert summary["after"].get("dataset", 0) == 0
+
+
 def test_rescore_preserves_the_scores_the_run_actually_recorded(tmp_path):
     """Only categories are rewritten. Scores and timestamps describe what the
     pipeline did on the day it ran; rewriting them would turn an audit trail

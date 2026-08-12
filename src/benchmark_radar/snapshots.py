@@ -22,7 +22,7 @@ from .insights import build_insights
 from .kw_bench_tracks import classification_layer, derive_tracks
 from .model_cards import DEFAULT_REGISTRY_PATH, adoption_rank, load_registry
 from .models import RadarRun
-from .pipeline import match_proximity_rule
+from .pipeline import match_phrase, match_proximity_rule
 from .rubric import (
     SCORING_VERSION,
     legacy_rubric_reference,
@@ -1002,7 +1002,13 @@ def rescore_snapshot_history(
                     hit = match_proximity_rule(haystack, terms)
                     matches = [hit] if hit else []
                 else:
-                    matches = [term for term in terms if term.lower() in haystack]
+                    # Same matcher as the daily pipeline (pipeline.score_item):
+                    # a bare substring test lets `corpora` match inside
+                    # "incorporates", re-tagging the corpus differently than
+                    # the run that produced it and making every `reclassified`
+                    # marker describe a matcher difference rather than a rules
+                    # change.
+                    matches = [term for term in terms if match_phrase(haystack, term)]
                 if matches:
                     categories.append(category)
                     matched.extend(str(term) for term in matches[:2])
