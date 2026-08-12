@@ -220,9 +220,10 @@ def test_the_advance_marker_carries_no_number():
     assert "frontier-point-number" not in script
     assert "frontier-point-number" not in styles
     assert "advanceIndex" not in script
-    # A diamond, whose shape says "stepped up here" without a digit.
+    # A brand-colored circle carrying the reporting organization's glyph: the
+    # glyph names the organization that stepped the count up (issue #178).
     assert "frontier-point-advance" in script
-    assert ".frontier-point-advance polygon" in styles
+    assert ".frontier-point-face" in styles
 
 
 def test_a_legend_names_each_mark_and_its_effect_on_the_count():

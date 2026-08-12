@@ -48,8 +48,9 @@ def test_frontier_svg_fits_the_viewport_without_horizontal_scrolling():
     assert "height: auto" in rule
     assert "min-width" not in rule
     # The marker styling this used to check (`.frontier-point-number`) is gone with
-    # the numbers themselves; the advance marker is now a diamond (issue #91).
-    assert ".frontier-point-advance polygon" in styles
+    # the numbers themselves; the advance marker is now a brand-colored circle
+    # carrying the reporting organization's glyph (issue #178).
+    assert ".frontier-point-face" in styles
 
 
 def test_trajectory_points_expose_and_pin_record_details():
@@ -65,7 +66,7 @@ def test_trajectory_points_expose_and_pin_record_details():
     assert '"aria-pressed": "false"' in script
     assert 'label: "Protocol"' in script
     assert 'label: "Source"' in script
-    assert ".frontier-point.is-selected polygon" in styles
+    assert ".frontier-point.is-selected .frontier-point-face" in styles
     assert ".score-point.is-selected circle" in styles
     assert "pinned: selectedFrontierPoint === group" in script
     assert 'record.unit === "percent" ? "%" : ` ${record.unit}`' in script
