@@ -254,7 +254,10 @@ in the snapshot and at the top of the report.
 GitHub search is rate-limited to 10 requests per minute without a token and 30 with one,
 so pagination is bounded by `sources.github.max_requests` and spaced by
 `request_delay_seconds`. Both default by whether `GITHUB_TOKEN` is present; raising
-`max_items_per_source` well beyond the defaults on a tokenless run risks a 403.
+`max_items_per_source` well beyond the defaults on a tokenless run risks a 403. Locally,
+put a personal access token with public-repo read scope in `.env` as `GITHUB_TOKEN`; in
+Actions the built-in `GITHUB_TOKEN` is provided automatically, so a PAT is only ever
+needed for local runs.
 
 Trend comparisons do not cross the transition from historically capped snapshots to the
 uncapped eligible corpus, and only compare snapshots classified by the same taxonomy.
@@ -289,7 +292,14 @@ Optional repository secrets:
 SEMANTIC_SCHOLAR_API_KEY
 OPENALEX_API_KEY
 BRAVE_API_KEY
+OPENAI_API_KEY
 ```
+
+The first three unlock the optional discovery sources above. `OPENAI_API_KEY` is not a
+discovery source: the daily workflow uses it for the opening briefing and the daily Q&A,
+and sets `OPENAI_BRIEFING_REQUIRED` to `true`, so in Actions it is effectively required.
+Locally the briefing falls back to a deterministic summary when the key is absent unless
+`OPENAI_BRIEFING_REQUIRED=true` is set in `.env`.
 
 OpenAlex replaced its old `mailto` polite pool with free API keys in February 2026.
 Create the key at <https://openalex.org/settings/api>. Semantic Scholar keys also start
