@@ -136,7 +136,11 @@ def _request(
             last_error = error
             if attempt + 1 < attempts:
                 time.sleep(min(2**attempt, MAX_RETRY_DELAY_SECONDS))
-    assert last_error is not None
+    if last_error is None:
+        # Unreachable while urlopen can only raise the handled errors, but an
+        # assert here would vanish under `python -O` and leave the type-checks
+        # below reading an unguarded None.
+        raise RequestError(f"No response received from {_safe_url(url)} after {attempts} attempts")
     if isinstance(last_error, urllib.error.HTTPError):
         raise RequestError(
             f"HTTP {last_error.code} from {_safe_url(url)} after {attempts} attempts"
