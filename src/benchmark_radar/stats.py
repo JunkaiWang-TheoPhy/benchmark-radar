@@ -145,9 +145,9 @@ def build_registry(
             window=f"{len(window[0])}-day recent vs {len(window[1])}-day baseline",
             detail={
                 "baseline_share_pct": round(float(shift.get("baseline_share") or 0.0), 1),
-                "shift_points": round(float(shift.get("shift") or 0.0), 1),
-                "direction": shift.get("direction"),
-                "contributing_sources": shift.get("contributing_sources"),
+                "shift_points": round(float(shift.get("shift_points") or 0.0), 1),
+                "direction": "rising" if shift.get("rising") else "falling",
+                "contributing_sources": shift.get("sources_moved"),
             },
         )
 

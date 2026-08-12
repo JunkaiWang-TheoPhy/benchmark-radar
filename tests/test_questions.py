@@ -138,6 +138,45 @@ def test_registry_marks_category_counts_as_overlapping():
     assert all("do not sum to 100%" in stat["detail"]["note"] for stat in tagged)
 
 
+def test_composition_shift_stat_carries_the_values_it_actually_computed():
+    # Regression: the stat detail was mapped from keys composition_shift never
+    # returns (`shift`, `direction`, `contributing_sources`), so a verified
+    # shift shipped with every detail field None and the Q&A layer could only
+    # report an empty framing. The published values must be the finding's own.
+    def day(index: int, agentic: int) -> dict:
+        items = []
+        for position in range(100):
+            categories = ["benchmark"]
+            if position < agentic:
+                categories.append("agentic")
+            items.append(
+                RadarItem(
+                    source=f"source-{position % 4}",
+                    source_id=f"item-{index}-{position}",
+                    title=f"Artifact {index}-{position}",
+                    url=f"https://example.test/{index}/{position}",
+                    published_at=datetime(2026, 8, 1, tzinfo=UTC),
+                    categories=categories,
+                    summary="A scored evaluation dataset with a documented verifier.",
+                    event_kind="released",
+                    metrics={},
+                )
+            )
+        return snapshot_for_run(_run(items, day=index + 2))
+
+    history = [day(index, 10 if index < 9 else 30) for index in range(14)]
+    registry = build_registry(history, history[-1])
+    shift = next(
+        stat for stat in registry["stats"] if stat["label"].startswith("composition shift")
+    )
+
+    assert shift["value"] == 30.0
+    assert shift["detail"]["baseline_share_pct"] == 10.0
+    assert shift["detail"]["shift_points"] == 20.0
+    assert shift["detail"]["direction"] == "rising"
+    assert isinstance(shift["detail"]["contributing_sources"], int)
+
+
 def test_question_set_omits_questions_the_corpus_cannot_answer():
     # The corpus keeps no query identity, rank, or per-query volume, so a
     # "which searches surged" question could only be answered by invention.
