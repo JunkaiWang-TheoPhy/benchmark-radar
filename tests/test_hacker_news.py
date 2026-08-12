@@ -102,6 +102,36 @@ def test_cluster_identity_does_not_change_with_engagement():
     assert preserved["id"] == "hacker-news:2"
 
 
+def test_non_numeric_source_id_sorts_last_instead_of_crashing_the_cluster():
+    # Regression: the cluster minimum assumed every source_id parses as an int,
+    # so a non-numeric id (never produced by this collector, but possible in a
+    # synthetic payload) raised inside min() and took the whole cluster down.
+    # It must sort after every numeric id and leave the numeric minimum as the
+    # canonical observation.
+    def observation(source_id):
+        return {
+            "id": f"hacker-news:{source_id}",
+            "source": "Hacker News",
+            "source_id": source_id,
+            "title": "A benchmark with a malformed id",
+            "url": f"https://news.ycombinator.com/item?id={source_id}",
+            "published_at": "2026-07-27T00:00:00+00:00",
+            "categories": ["benchmark"],
+            "metrics": {"points": 1, "comments": 0},
+            "rationale": [],
+        }
+
+    clustered = cluster_observations(
+        [observation("100"), observation("not-an-id"), observation("99")]
+    )[0]
+
+    assert clustered["id"] == "hacker-news:99"
+    assert [row["source_id"] for row in clustered["supporting_observations"]] == [
+        "not-an-id",
+        "100",
+    ]
+
+
 def test_empty_result_is_healthy():
     observations, health = collect_hacker_news(
         config(),

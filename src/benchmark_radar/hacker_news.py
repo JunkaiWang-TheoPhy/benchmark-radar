@@ -35,6 +35,18 @@ def normalized_title(title: str) -> str:
     return " ".join(re.findall(r"[a-z0-9]+", title.casefold()))
 
 
+def _numeric_id_sort_key(value: dict[str, Any]) -> tuple[bool, int]:
+    """Sort by numeric HN object ID, not lexicographic string order.
+
+    HN IDs are numeric but variable-length strings, so a string comparison
+    puts "100" before "99" and would pick the wrong canonical observation for
+    a cluster. Non-numeric IDs (never produced by this collector) sort last
+    rather than crashing the whole cluster.
+    """
+    text = str(value["source_id"])
+    return (not text.isdigit(), int(text) if text.isdigit() else 0)
+
+
 def cluster_observations(
     observations: list[dict[str, Any]],
     *,
@@ -55,7 +67,7 @@ def cluster_observations(
     clustered: list[dict[str, Any]] = []
     for group in groups.values():
         preferred = [value for value in group if str(value["source_id"]) in preferred_source_ids]
-        primary = min(preferred or group, key=lambda value: str(value["source_id"]))
+        primary = min(preferred or group, key=_numeric_id_sort_key)
         result = {
             **primary,
             "categories": sorted({category for value in group for category in value["categories"]}),
