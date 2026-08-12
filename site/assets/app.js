@@ -4371,6 +4371,189 @@ function observationCard(item, index) {
   );
 }
 
+const CONTACT_EMAIL = "ktwu01@gmail.com";
+const WECHAT_ID = "ktwu001";
+const DISCORD_ID = "ktwu01";
+
+const BRAND_ICON_PATHS = {
+  email: "M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm9 6.9L4.2 6h15.6L12 11.9Zm-8 6.6V8.9l8 5.9 8-5.9v9.6H4Z",
+  wechat:
+    "M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05a6.127 6.127 0 0 1-.253-1.72c0-3.571 3.437-6.467 7.678-6.467.233 0 .463.013.694.031C17.02 4.792 13.205 2.188 8.69 2.188Zm-2.6 4.408c.654 0 1.184.517 1.184 1.154 0 .637-.53 1.154-1.184 1.154-.654 0-1.184-.517-1.184-1.154 0-.637.53-1.154 1.184-1.154Zm5.51 0c.654 0 1.184.517 1.184 1.154 0 .637-.53 1.154-1.184 1.154-.654 0-1.184-.517-1.184-1.154 0-.637.53-1.154 1.184-1.154Zm7.835 3.124c-3.858 0-6.984 2.667-6.984 5.957 0 3.29 3.126 5.957 6.984 5.957.848 0 1.663-.146 2.418-.408a.622.622 0 0 1 .516.07l1.371.802a.235.235 0 0 0 .12.039.213.213 0 0 0 .208-.213c0-.052-.02-.102-.035-.153l-.28-1.067a.426.426 0 0 1 .153-.479c1.359-1.111 2.2-2.707 2.2-4.548 0-3.29-3.126-5.957-6.984-5.957Zm-3.865 3.594c.55 0 .996.435.996.971 0 .537-.446.972-.996.972-.55 0-.996-.435-.996-.972 0-.536.446-.971.996-.971Zm7.729 0c.55 0 .996.435.996.971 0 .537-.446.972-.996.972-.55 0-.996-.435-.996-.972 0-.536.446-.971.996-.971Z",
+  discord:
+    "M20.317 4.3698a19.7913 19.7913 0 0 0-4.8851-1.5152.0741.0741 0 0 0-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 0 0-.0785-.037 19.7363 19.7363 0 0 0-4.8852 1.515.0699.0699 0 0 0-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 0 0 .0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 0 0 .0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 0 0-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 0 1-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 0 1 .0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 0 1 .0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 0 1-.0066.1276 12.2986 12.2986 0 0 1-1.873.8914.0766.0766 0 0 0-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 0 0 .0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 0 0 .0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 0 0-.0312-.0286ZM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0957 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189Zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0957 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z",
+  repo:
+    "M12.75 21a3.25 3.25 0 0 1 3.25-3.25h4.25a.75.75 0 0 0 .75-.75V3.75a.75.75 0 0 0-.75-.75H13.5A3.5 3.5 0 0 0 10 6.5v14.25a3.25 3.25 0 0 1-3.25 3.25Zm-3.5-2.25a2.75 2.75 0 0 1 2.75-2.75h6.25a.75.75 0 0 0 .75-.75V3.75a.75.75 0 0 0-.75-.75h-5A3.25 3.25 0 0 0 9.5 6.5v12.25a.75.75 0 0 1-.75.75ZM3 21.5a2.75 2.75 0 0 0 2.75 2.75h8.75a.75.75 0 0 0 0-1.5H5.75A1.25 1.25 0 0 1 4.5 21.5V3.75A1.25 1.25 0 0 1 5.75 2.5H8A.75.75 0 0 0 8 1H5.75A2.75 2.75 0 0 0 3 3.75Z",
+};
+
+function brandIcon(name) {
+  const svg = svgElement("svg", {
+    viewBox: "0 0 24 24",
+    class: "brand-icon",
+    "aria-hidden": "true",
+  });
+  svg.appendChild(svgElement("path", { d: BRAND_ICON_PATHS[name] }));
+  return svg;
+}
+
+function observationsToCsv(observations) {
+  const columns = [
+    "date",
+    "kind",
+    "title",
+    "summary",
+    "source",
+    "event_kind",
+    "categories",
+    "organizations",
+    "url",
+    "score",
+  ];
+  const escape = (value) => {
+    const text = String(value ?? "");
+    return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  };
+  const rows = observations.map((item) =>
+    [
+      item.snapshot_date,
+      item.observation_kind,
+      escape(item.title),
+      escape(item.summary || ""),
+      escape(item.source),
+      escape(item.event_kind),
+      escape((item.categories || []).join("; ")),
+      escape((item.organizations || []).join("; ")),
+      escape(item.url || item.primary_artifact_url || ""),
+      Number(item.total_score || 0).toFixed(2),
+    ].join(","),
+  );
+  return [columns.join(","), ...rows].join("\r\n");
+}
+
+function downloadText(filename, text, mimeType = "text/plain") {
+  const blob = new Blob([text], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+// The export dialog (issue #193) does two things at once: it states the
+// usecase that makes this more than a dump, and it puts one-click downloads
+// behind a single control. The usecase is the reason the site exists for a
+// reader doing related-work research: find every benchmark on a topic, or take
+// the whole corpus with you. The JSON link and the client-side CSV are both
+// derived from the same in-memory data the dashboard renders, so an export can
+// never disagree with the screen it came from.
+function openExport() {
+  const dialog = byId("export-dialog");
+  if (!state.data) return;
+  const filtered = filteredObservations();
+  replaceChildren(byId("export-content"), [
+    element("p", { className: "detail-source", text: "Benchmark Radar · data export" }),
+    element("h2", {
+      className: "detail-title export-title",
+      text: "Take the data with you",
+      attrs: { id: "export-title" },
+    }),
+    element("p", {
+      className: "detail-summary",
+      text:
+        "Doing related-work research, or hunting for a benchmark on a topic? " +
+        "This database aggregates every benchmark, evaluation, and dataset the " +
+        "radar has surfaced, and you can query it by topic, source, or " +
+        "organization before you export. The full corpus below is the same data " +
+        "the dashboard renders.",
+    }),
+    element("div", { className: "export-actions" }, [
+      element("a", {
+        className: "primary-link",
+        text: "Download full dataset (JSON)",
+        attrs: { href: "data/radar.json", download: "benchmark-radar.json" },
+      }),
+      element("button", {
+        className: "secondary-link export-csv-button",
+        text: `Download current view (CSV · ${filtered.length} rows)`,
+        attrs: { type: "button" },
+      }),
+      element("a", {
+        className: "secondary-link",
+        text: "Leaderboard (CSV)",
+        attrs: { href: "data/leaderboard.csv", download: "leaderboard.csv" },
+      }),
+    ]),
+    element("p", {
+      className: "discovery-note",
+      text:
+        `${allObservations().length} observations across ` +
+        `${state.data.snapshot_count} daily snapshots.`,
+    }),
+  ]);
+  byId("export-content")
+    .querySelector(".export-csv-button")
+    .addEventListener("click", () => {
+      downloadText(
+        `benchmark-radar-${state.todayDate === "all" ? "all" : state.todayDate}.csv`,
+        observationsToCsv(filtered),
+        "text/csv;charset=utf-8",
+      );
+    });
+  dialog.showModal();
+}
+
+// The contact dialog (issue #191) keeps every reach-out channel in one place:
+// email, WeChat, and Discord. Rendering it as a dialog rather than a bare
+// mailto link means a reader lands on a choice rather than being launched out
+// of the page on a guess.
+function openContact() {
+  const dialog = byId("contact-dialog");
+  replaceChildren(byId("contact-content"), [
+    element("p", { className: "detail-source", text: "Benchmark Radar" }),
+    element("h2", {
+      className: "detail-title contact-title",
+      text: "Get in touch",
+      attrs: { id: "contact-title" },
+    }),
+    element("p", {
+      className: "detail-summary",
+      text:
+        "A wrong row in the adoption ranking is a real bug. So is a connector " +
+        "that stopped collecting, or a benchmark you expected the radar to see.",
+    }),
+    element("ul", { className: "contact-list" }, [
+      element("li", {}, [
+        element("span", { className: "contact-label" }, [
+          brandIcon("email"),
+          element("strong", { text: "Email" }),
+        ]),
+        element("a", {
+          className: "contact-value",
+          text: CONTACT_EMAIL,
+          attrs: { href: `mailto:${CONTACT_EMAIL}` },
+        }),
+      ]),
+      element("li", {}, [
+        element("span", { className: "contact-label" }, [
+          brandIcon("wechat"),
+          element("strong", { text: "WeChat" }),
+        ]),
+        element("span", { className: "contact-value", text: `ID ${WECHAT_ID}` }),
+      ]),
+      element("li", {}, [
+        element("span", { className: "contact-label" }, [
+          brandIcon("discord"),
+          element("strong", { text: "Discord" }),
+        ]),
+        element("span", { className: "contact-value", text: `ID ${DISCORD_ID}` }),
+      ]),
+    ]),
+  ]);
+  dialog.showModal();
+}
+
 function bindEvents() {
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -4501,6 +4684,17 @@ function bindEvents() {
   // Reachable without a record in hand, for a reader who wants the method
   // before they trust any single row.
   byId("rubric-nav").addEventListener("click", () => openRubric());
+  byId("badge-export").addEventListener("click", openExport);
+  byId("badge-wechat").addEventListener("click", openContact);
+  byId("badge-discord").addEventListener("click", openContact);
+  byId("export-close").addEventListener("click", () => byId("export-dialog").close());
+  byId("export-dialog").addEventListener("click", (event) => {
+    if (event.target === byId("export-dialog")) byId("export-dialog").close();
+  });
+  byId("contact-close").addEventListener("click", () => byId("contact-dialog").close());
+  byId("contact-dialog").addEventListener("click", (event) => {
+    if (event.target === byId("contact-dialog")) byId("contact-dialog").close();
+  });
 }
 
 const REPO_SLUG = "ktwu01/benchmark-radar";

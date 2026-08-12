@@ -203,6 +203,38 @@ th {
   background: var(--panel);
 }
 
+/* The export and contact controls are <button>s, not <a>s, because they open
+   dialogs instead of navigating. Without these resets a button renders with
+   the user agent's default chrome (grey background, distinct font) over the
+   repo-badge styling shared with the links beside it. */
+button.repo-badge {
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+button.repo-badge svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+/* Brand marks (WeChat, Discord, and the GitHub repo octicon) are single-color
+   glyphs with no meaningful stroke form, so they fill instead of outline. The
+   GitHub repo octicon also appears on the star badge, which is an <a>, so the
+   selector covers both link and button badges. */
+.repo-badge svg.brand-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: currentColor;
+  stroke: none;
+}
+
 .repo-badge-count {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
@@ -3145,6 +3177,96 @@ dialog::backdrop {
   margin: 0.35rem 0 0;
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.export-actions {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1.5rem 0;
+}
+
+.export-actions .primary-link,
+.export-actions .secondary-link {
+  display: block;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  font-family: var(--utility);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.export-actions .primary-link {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.export-actions .primary-link:hover {
+  background: var(--blue);
+  color: var(--panel);
+}
+
+.export-actions button.secondary-link {
+  width: 100%;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.export-actions .secondary-link:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.export-title {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+}
+
+.contact-list {
+  margin: 1.5rem 0 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.contact-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.contact-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.contact-label svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: currentColor;
+  stroke: none;
+}
+
+.contact-label strong {
+  font-family: var(--utility);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.contact-value {
+  color: var(--blue);
+  font-family: var(--display);
+  font-size: 1.05rem;
+  word-break: break-all;
 }
 
 .supporting-signals {
