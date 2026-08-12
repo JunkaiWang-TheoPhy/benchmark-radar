@@ -289,6 +289,28 @@ def test_trend_map_is_keyboard_accessible_and_coordinates_today_filters():
     assert "state.organization" in script
 
 
+def test_dashboard_links_are_validated_escaped_and_non_swallowing():
+    # Regression guards for the browser-side hardening: every external href is
+    # produced by safeHttpUrl; the interactive map is role="group" (ARIA makes
+    # descendants of role="img" presentational, hiding its focusable markers);
+    # CSV export quotes cells that would run as spreadsheet formulas; Escape
+    # yields to an open dialog instead of swallowing the first press; and
+    # clearing the adoption frontier also clears its org color key.
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert "function safeHttpUrl(" in script
+    # Both interactive charts are role="group" (image descendants are
+    # presentational in ARIA, which would hide their focusable marker buttons).
+    # role="img" is allowed only on the two decorative non-interactive widgets
+    # (the adoption bar and the sparse-frontier step diagram).
+    assert 'role: "group"' in script
+    assert script.count('role: "img"') == 2
+    assert "/^[=+\\-@]/" in script
+    assert 'document.querySelector("dialog[open]")' in script
+    assert "Do not swallow Escape" in script
+    assert 'replaceChildren(byId("frontier-org-key"), [])' in script
+
+
 def test_trend_map_shows_the_complete_corpus_and_summarizes_its_shape():
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")

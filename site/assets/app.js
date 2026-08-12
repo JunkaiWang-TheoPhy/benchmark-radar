@@ -724,6 +724,9 @@ function renderDailyQuestions(day) {
 }
 
 function renderToday() {
+  // Events are bound before the data file resolves (initialize), so a nav
+  // click or filter keystroke in the load window must no-op, not throw.
+  if (!state.data) return;
   const showingAllDates = state.todayDate === "all";
   const day = dailySnapshot(showingAllDates ? state.data.latest_date : state.todayDate);
   if (!day) return;
@@ -959,6 +962,7 @@ function coverageNote(day) {
 }
 
 function renderTrends() {
+  if (!state.data) return;
   const categories = state.data.facets.categories;
   byId("trend-released-only").checked = state.trendReleasedOnly;
   replaceChildren(
@@ -1675,7 +1679,7 @@ function expandedRecord(item, teaser) {
                 element("a", {
                   text: `${record.source || item.source} #${record.source_id}`,
                   attrs: {
-                    href: record.url,
+                    href: safeHttpUrl(record.url),
                     target: "_blank",
                     rel: "noopener noreferrer",
                   },
@@ -1689,13 +1693,13 @@ function expandedRecord(item, teaser) {
         ])
       : null;
   const links = element("div", { className: "detail-links" }, [
-    ...(isAttention && primaryArtifact
+    ...(isAttention && safeHttpUrl(primaryArtifact)
       ? [
           element("a", {
             className: "primary-link",
             text: "Open primary artifact ↗",
             attrs: {
-              href: primaryArtifact,
+              href: safeHttpUrl(primaryArtifact),
               target: "_blank",
               rel: "noopener noreferrer",
             },
@@ -1709,7 +1713,7 @@ function expandedRecord(item, teaser) {
         : item.source === "Hugging Face"
           ? "Read full card ↗"
           : "Open primary source ↗",
-      attrs: { href: item.url, target: "_blank", rel: "noopener noreferrer" },
+      attrs: { href: safeHttpUrl(item.url), target: "_blank", rel: "noopener noreferrer" },
     }),
   ]);
   return element("div", { className: "record-detail" }, [
@@ -1836,12 +1840,12 @@ function selectMapNode(entity, relatedEntities) {
         })
       : null,
     viewResults,
-    entity.url
+    safeHttpUrl(entity.url)
       ? element("a", {
           className: "primary-link",
           text: "Open primary source ↗",
           attrs: {
-            href: entity.url,
+            href: safeHttpUrl(entity.url),
             target: "_blank",
             rel: "noopener noreferrer",
           },
@@ -1871,11 +1875,11 @@ function insightDetailList(detail) {
     { className: "insight-detail-list" },
     detail.map(([name, url]) =>
       element("li", {}, [
-        url
+        safeHttpUrl(url)
           ? element("a", {
               className: "adopter-link",
               text: name,
-              attrs: { href: url, target: "_blank", rel: "noopener noreferrer" },
+              attrs: { href: safeHttpUrl(url), target: "_blank", rel: "noopener noreferrer" },
             })
           : element("span", { text: name }),
       ]),
@@ -2330,7 +2334,7 @@ function renderFrontierMilestones(entry, events) {
             className: "milestone-source",
             text: event.organization,
             attrs: {
-              href: event.url,
+              href: safeHttpUrl(event.url),
               target: "_blank",
               rel: "noopener noreferrer",
             },
@@ -2385,12 +2389,12 @@ function renderFrontierTaskPreview(entry) {
           element("p", { text: entry.caveat }),
         ])
       : null,
-    entry.url
+    safeHttpUrl(entry.url)
       ? element("a", {
           className: "frontier-source-link",
           text: "Open official benchmark source ↗",
           attrs: {
-            href: entry.url,
+            href: safeHttpUrl(entry.url),
             target: "_blank",
             rel: "noopener noreferrer",
           },
@@ -2621,12 +2625,12 @@ function frontierTooltipContent(details, pinned) {
         element("dd", { text: value }),
       ]),
     ),
-    pinned && details.url
+    pinned && safeHttpUrl(details.url)
       ? element("a", {
           className: "frontier-tooltip-source",
           text: "Open source record ↗",
           attrs: {
-            href: details.url,
+            href: safeHttpUrl(details.url),
             target: "_blank",
             rel: "noopener noreferrer",
             tabindex: selectedFrontierSourceVisited ? "-1" : "0",
@@ -3547,6 +3551,10 @@ function clearAdoptionFrontier(message) {
   replaceChildren(byId("frontier-task-preview"), []);
   replaceChildren(byId("frontier-score-readout"), []);
   replaceChildren(byId("frontier-legend"), []);
+  // The org color key is rendered only by the populated path; leaving a stale
+  // key from a previously selected benchmark behind an empty chart would
+  // present colors no marker carries.
+  replaceChildren(byId("frontier-org-key"), []);
   replaceChildren(byId("frontier-chart"), [
     element("p", { className: "empty-state", text: message }),
   ]);
@@ -3794,7 +3802,7 @@ function leaderboardRow(entry) {
           className: "adopter-link",
           text: cardLabel(adopter, labelCounts),
           attrs: {
-            href: adopter.url,
+            href: safeHttpUrl(adopter.url),
             target: "_blank",
             rel: "noopener noreferrer",
           },
@@ -3834,11 +3842,11 @@ function leaderboardRow(entry) {
       element("h3", { text: "Reported by" }),
       adopters,
       frontierButton,
-      entry.url
+      safeHttpUrl(entry.url)
         ? element("a", {
             className: "primary-link",
             text: "Benchmark home ↗",
-            attrs: { href: entry.url, target: "_blank", rel: "noopener noreferrer" },
+            attrs: { href: safeHttpUrl(entry.url), target: "_blank", rel: "noopener noreferrer" },
           })
         : null,
     ]),
@@ -3918,11 +3926,11 @@ function renderLeaderboard() {
     ]);
   const modelCardLine = (card) =>
     element("li", {}, [
-      card.url
+      safeHttpUrl(card.url)
         ? element("a", {
             className: "adopter-link",
             text: cardLabel(card, labelCounts),
-            attrs: { href: card.url, target: "_blank", rel: "noopener noreferrer" },
+            attrs: { href: safeHttpUrl(card.url), target: "_blank", rel: "noopener noreferrer" },
           })
         : element("span", { className: "insight-item-name", text: cardLabel(card, labelCounts) }),
       element("span", {
@@ -3934,11 +3942,11 @@ function renderLeaderboard() {
     ]);
   const benchmarkLine = (entry, meta) =>
     element("li", {}, [
-      entry.url
+      safeHttpUrl(entry.url)
         ? element("a", {
             className: "adopter-link",
             text: entry.name,
-            attrs: { href: entry.url, target: "_blank", rel: "noopener noreferrer" },
+            attrs: { href: safeHttpUrl(entry.url), target: "_blank", rel: "noopener noreferrer" },
           })
         : element("span", { className: "insight-item-name", text: entry.name }),
       meta
@@ -4109,12 +4117,12 @@ function modelCardRow(card) {
         { className: "adopter-list" },
         items.map((benchmark) =>
           element("li", {}, [
-            benchmark.url
+            safeHttpUrl(benchmark.url)
               ? element("a", {
                   className: "adopter-link",
                   text: benchmark.name,
                   attrs: {
-                    href: benchmark.url,
+                    href: safeHttpUrl(benchmark.url),
                     target: "_blank",
                     rel: "noopener noreferrer",
                   },
@@ -4150,7 +4158,7 @@ function modelCardRow(card) {
       element("a", {
         className: "primary-link",
         text: "Open source document ↗",
-        attrs: { href: card.url, target: "_blank", rel: "noopener noreferrer" },
+        attrs: { href: safeHttpUrl(card.url), target: "_blank", rel: "noopener noreferrer" },
       }),
       card.retrieved_at
         ? element("p", {
@@ -4165,6 +4173,7 @@ function modelCardRow(card) {
 }
 
 function renderTrendMap() {
+  if (!state.data) return;
   const corpus = state.data.corpus;
   if (!corpus) return;
   const entityById = new Map(corpus.entities.map((entity) => [entity.id, entity]));
@@ -4235,7 +4244,11 @@ function renderTrendMap() {
     viewBox: `0 0 1200 ${height}`,
     width: "1200",
     height,
-    role: "img",
+    // role="group" rather than role="img": the map contains interactive
+    // marker nodes, and ARIA makes descendants of role="img" presentational,
+    // hiding every node from assistive tech. Same choice the adoption
+    // frontier documents for its marker buttons.
+    role: "group",
     "aria-label": "Artifact nodes connected to topics, organizations, and discovery sources",
   });
   typeOrder.forEach((type) => {
@@ -4381,8 +4394,6 @@ const BRAND_ICON_PATHS = {
     "M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05a6.127 6.127 0 0 1-.253-1.72c0-3.571 3.437-6.467 7.678-6.467.233 0 .463.013.694.031C17.02 4.792 13.205 2.188 8.69 2.188Zm-2.6 4.408c.654 0 1.184.517 1.184 1.154 0 .637-.53 1.154-1.184 1.154-.654 0-1.184-.517-1.184-1.154 0-.637.53-1.154 1.184-1.154Zm5.51 0c.654 0 1.184.517 1.184 1.154 0 .637-.53 1.154-1.184 1.154-.654 0-1.184-.517-1.184-1.154 0-.637.53-1.154 1.184-1.154Zm7.835 3.124c-3.858 0-6.984 2.667-6.984 5.957 0 3.29 3.126 5.957 6.984 5.957.848 0 1.663-.146 2.418-.408a.622.622 0 0 1 .516.07l1.371.802a.235.235 0 0 0 .12.039.213.213 0 0 0 .208-.213c0-.052-.02-.102-.035-.153l-.28-1.067a.426.426 0 0 1 .153-.479c1.359-1.111 2.2-2.707 2.2-4.548 0-3.29-3.126-5.957-6.984-5.957Zm-3.865 3.594c.55 0 .996.435.996.971 0 .537-.446.972-.996.972-.55 0-.996-.435-.996-.972 0-.536.446-.971.996-.971Zm7.729 0c.55 0 .996.435.996.971 0 .537-.446.972-.996.972-.55 0-.996-.435-.996-.972 0-.536.446-.971.996-.971Z",
   discord:
     "M20.317 4.3698a19.7913 19.7913 0 0 0-4.8851-1.5152.0741.0741 0 0 0-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 0 0-.0785-.037 19.7363 19.7363 0 0 0-4.8852 1.515.0699.0699 0 0 0-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 0 0 .0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 0 0 .0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 0 0-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 0 1-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 0 1 .0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 0 1 .0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 0 1-.0066.1276 12.2986 12.2986 0 0 1-1.873.8914.0766.0766 0 0 0-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 0 0 .0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 0 0 .0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 0 0-.0312-.0286ZM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0957 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189Zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0957 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z",
-  repo:
-    "M12.75 21a3.25 3.25 0 0 1 3.25-3.25h4.25a.75.75 0 0 0 .75-.75V3.75a.75.75 0 0 0-.75-.75H13.5A3.5 3.5 0 0 0 10 6.5v14.25a3.25 3.25 0 0 1-3.25 3.25Zm-3.5-2.25a2.75 2.75 0 0 1 2.75-2.75h6.25a.75.75 0 0 0 .75-.75V3.75a.75.75 0 0 0-.75-.75h-5A3.25 3.25 0 0 0 9.5 6.5v12.25a.75.75 0 0 1-.75.75ZM3 21.5a2.75 2.75 0 0 0 2.75 2.75h8.75a.75.75 0 0 0 0-1.5H5.75A1.25 1.25 0 0 1 4.5 21.5V3.75A1.25 1.25 0 0 1 5.75 2.5H8A.75.75 0 0 0 8 1H5.75A2.75 2.75 0 0 0 3 3.75Z",
 };
 
 function brandIcon(name) {
@@ -4410,7 +4421,10 @@ function observationsToCsv(observations) {
   ];
   const escape = (value) => {
     const text = String(value ?? "");
-    return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+    // Quotes and separators force quoting; a leading =, +, -, or @ is also
+    // quoted so a scraped cell cannot execute as a spreadsheet formula.
+    const mustQuote = /[",\n\r]/.test(text) || /^[=+\-@]/.test(text);
+    return mustQuote ? `"${text.replaceAll('"', '""')}"` : text;
   };
   const rows = observations.map((item) =>
     [
@@ -4631,7 +4645,14 @@ function bindEvents() {
     if (board) renderAdoptionFrontier(board);
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && selectedFrontierPoint) {
+    // A <dialog>'s native Escape-close is the keydown's default action (its
+    // `cancel` event), so preventDefault() below would swallow the first
+    // Escape while a dialog is open. Yield to the dialog when one is up.
+    if (
+      event.key === "Escape" &&
+      selectedFrontierPoint &&
+      !document.querySelector("dialog[open]")
+    ) {
       clearFrontierPointSelection();
       event.preventDefault();
       return;
