@@ -10,6 +10,11 @@ on:
       # rebuild the dashboard, or the published ranking silently stays behind
       # the registry until some unrelated change happens to trigger Pages.
       - "data/model_cards.yml"
+      # benchmark_scores.yml feeds the score-progression and insights layers of
+      # the same dashboard build, and config.yml sets the published dashboard
+      # URL during `benchmark-radar export`, so both are deploy inputs too.
+      - "data/benchmark_scores.yml"
+      - "config.yml"
       - "site/**"
       - "src/benchmark_radar/snapshots.py"
       - "src/benchmark_radar/feed.py"

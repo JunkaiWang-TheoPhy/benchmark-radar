@@ -163,6 +163,25 @@ def test_a_shift_moving_in_several_sources_is_reported():
     assert finding["sources_comparable"] == 4
 
 
+def test_a_category_collapsed_to_zero_is_still_reported_as_falling():
+    # Regression: the candidate categories used to be collected from today's
+    # shares only, so a category that collapsed out of the recent window was
+    # absent from today and the most complete falling shift there is (30%
+    # across the baseline to 0% throughout the recent window) was silently
+    # skipped as if it had never moved.
+    history = _history(30, 0)
+
+    finding = composition_shift(history, CONFIG)
+
+    assert finding is not None
+    assert finding["category"] == "agentic"
+    assert finding["rising"] is False
+    assert finding["baseline_share"] == 30.0
+    assert finding["recent_share"] == 0.0
+    assert finding["shift_points"] == -30.0
+    assert finding["sources_moved"] == 4
+
+
 def test_a_thin_day_truncates_the_window_rather_than_being_skipped():
     # A one-item day yields 0% or 100% in every category. Skipping it and
     # comparing the days either side would describe non-adjacent days as
