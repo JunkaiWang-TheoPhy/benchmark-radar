@@ -61,6 +61,25 @@
           <span class="repo-badge-label">RSS</span>
         </a>
         <!--
+          The export button opens a dialog rather than linking out: handing
+          over a dataset needs a moment of explanation about what is being
+          exported. Reachable without navigating away from the current view.
+        -->
+        <button
+          type="button"
+          class="repo-badge"
+          id="badge-export"
+          aria-haspopup="dialog"
+          title="Export the dataset"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v12"></path>
+            <path d="m7 8 5 5 5-5"></path>
+            <path d="M4 21h16"></path>
+          </svg>
+          <span class="repo-badge-label">Data</span>
+        </button>
+        <!--
           Each badge is a call to action, not a link to a roster. Starring has no
           GET endpoint (GitHub requires an authenticated POST with a CSRF token,
           so no third-party page can star on a visitor's behalf), so the star
@@ -505,6 +524,16 @@
         aria-label="Close scoring rubric"
       >×</button>
       <div id="rubric-content"></div>
+    </dialog>
+
+    <dialog id="export-dialog" aria-labelledby="export-title">
+      <button
+        class="dialog-close"
+        id="export-close"
+        type="button"
+        aria-label="Close data export"
+      >×</button>
+      <div id="export-content"></div>
     </dialog>
 
     <footer>

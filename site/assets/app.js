@@ -4231,6 +4231,115 @@ function observationCard(item, index) {
   );
 }
 
+function observationsToCsv(observations) {
+  const columns = [
+    "date",
+    "kind",
+    "title",
+    "summary",
+    "source",
+    "event_kind",
+    "categories",
+    "organizations",
+    "url",
+    "score",
+  ];
+  const escape = (value) => {
+    const text = String(value ?? "");
+    return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  };
+  const rows = observations.map((item) =>
+    [
+      item.snapshot_date,
+      item.observation_kind,
+      escape(item.title),
+      escape(item.summary || ""),
+      escape(item.source),
+      escape(item.event_kind),
+      escape((item.categories || []).join("; ")),
+      escape((item.organizations || []).join("; ")),
+      escape(item.url || item.primary_artifact_url || ""),
+      Number(item.total_score || 0).toFixed(2),
+    ].join(","),
+  );
+  return [columns.join(","), ...rows].join("\r\n");
+}
+
+function downloadText(filename, text, mimeType = "text/plain") {
+  const blob = new Blob([text], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+// The export dialog (issue #193) does two things at once: it states the
+// usecase that makes this more than a dump, and it puts one-click downloads
+// behind a single control. The usecase is the reason the site exists for a
+// reader doing related-work research: find every benchmark on a topic, or take
+// the whole corpus with you. The JSON link and the client-side CSV are both
+// derived from the same in-memory data the dashboard renders, so an export can
+// never disagree with the screen it came from.
+function openExport() {
+  const dialog = byId("export-dialog");
+  if (!state.data) return;
+  const filtered = filteredObservations();
+  replaceChildren(byId("export-content"), [
+    element("p", { className: "detail-source", text: "Benchmark Radar · data export" }),
+    element("h2", {
+      className: "detail-title export-title",
+      text: "Take the data with you",
+      attrs: { id: "export-title" },
+    }),
+    element("p", {
+      className: "detail-summary",
+      text:
+        "Doing related-work research, or hunting for a benchmark on a topic? " +
+        "This database aggregates every benchmark, evaluation, and dataset the " +
+        "radar has surfaced, and you can query it by topic, source, or " +
+        "organization before you export. The full corpus below is the same data " +
+        "the dashboard renders.",
+    }),
+    element("div", { className: "export-actions" }, [
+      element("a", {
+        className: "primary-link",
+        text: "Download full dataset (JSON)",
+        attrs: { href: "data/radar.json", download: "benchmark-radar.json" },
+      }),
+      element("button", {
+        className: "secondary-link export-csv-button",
+        text: `Download current view (CSV · ${filtered.length} rows)`,
+        attrs: { type: "button" },
+      }),
+      element("a", {
+        className: "secondary-link",
+        text: "Leaderboard (CSV)",
+        attrs: { href: "data/leaderboard.csv", download: "leaderboard.csv" },
+      }),
+    ]),
+    element("p", {
+      className: "discovery-note",
+      text:
+        `${allObservations().length} observations across ` +
+        `${state.data.snapshot_count} daily snapshots.`,
+    }),
+  ]);
+  byId("export-content")
+    .querySelector(".export-csv-button")
+    .addEventListener("click", () => {
+      downloadText(
+        `benchmark-radar-${state.todayDate === "all" ? "all" : state.todayDate}.csv`,
+        observationsToCsv(filtered),
+        "text/csv;charset=utf-8",
+      );
+    });
+  dialog.showModal();
+}
+
 function bindEvents() {
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -4361,6 +4470,11 @@ function bindEvents() {
   // Reachable without a record in hand, for a reader who wants the method
   // before they trust any single row.
   byId("rubric-nav").addEventListener("click", () => openRubric());
+  byId("badge-export").addEventListener("click", openExport);
+  byId("export-close").addEventListener("click", () => byId("export-dialog").close());
+  byId("export-dialog").addEventListener("click", (event) => {
+    if (event.target === byId("export-dialog")) byId("export-dialog").close();
+  });
 }
 
 const REPO_SLUG = "ktwu01/benchmark-radar";
