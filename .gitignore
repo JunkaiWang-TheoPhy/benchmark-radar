@@ -30,13 +30,14 @@ out/
 # realise it, so a committed list of them is a spam and doxxing vector whatever
 # the intent. The survey itself carries public professional signals only and is
 # safe to share; this file is not.
-/out/benchmark-author-contacts.csv
 benchmark-author-contacts.csv
-/out/benchmark-author-contacts.json
 benchmark-author-contacts.json
 
+# Local tool working dirs. graphify-out/ holds per-run analysis caches and
+# graph dumps from the graphify skill; .claude/ holds the local
+# audit-progressive-disclosure skill that is not part of the registry source.
 .gstack/
 .DS_Store
 .worktrees/
-.worktrees/
-.worktrees/
+graphify-out/
+.claude/
