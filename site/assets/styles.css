@@ -224,8 +224,10 @@ button.repo-badge svg {
   stroke-width: 2;
 }
 
-/* Brand marks (WeChat and Discord) are single-color glyphs with no meaningful
-   stroke form, so they fill instead of outline. */
+/* Brand marks (WeChat, Discord, and the GitHub repo octicon) are single-color
+   glyphs with no meaningful stroke form, so they fill instead of outline. The
+   GitHub repo octicon also appears on the star badge, which is an <a>, so the
+   selector covers both link and button badges. */
 .repo-badge svg.brand-icon {
   width: 0.9rem;
   height: 0.9rem;
