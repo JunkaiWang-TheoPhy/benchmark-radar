@@ -405,7 +405,7 @@ def test_today_view_shows_total_corpus_counts_by_category():
     assert '<details id="corpus-totals-details">' in html
     assert 'corpus-totals-details" open>' not in html
     summary_status = 'corpus-totals-status").textContent = '
-    assert f'{summary_status}`${{totalArtifacts.toLocaleString()}} artifacts`' in script
+    assert f"{summary_status}`${{totalArtifacts.toLocaleString()}} artifacts`" in script
 
 
 def test_badge_accessible_names_state_the_action():
@@ -1077,7 +1077,7 @@ def test_leaderboard_coverage_counts_are_native_disclosures():
     assert 'className: "evidence-stat-summary"' in script
     assert 'className: "evidence-detail-list"' in script
     # Collapsed by default: the disclosures are built without an `open` attribute.
-    assert '.attrs: { open' not in script
+    assert ".attrs: { open" not in script
     # The itemized evidence is wired to the counts a reader would drill into.
     assert "Benchmarks tracked" in script
     assert "modelCardLine" in script
