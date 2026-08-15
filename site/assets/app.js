@@ -435,6 +435,64 @@ function briefingContent(line, citations) {
   return nodes;
 }
 
+// A briefing bullet is model prose of the form "The claim. Why it matters:
+// the point. Evidence: E001, E002. High confidence." For a scan to meet the
+// takeaway first and the support on demand, that one paragraph is split into a
+// short head, an optional body, and a metadata line carrying the confidence and
+// the source count. Bullets that do not follow the shape (older days) fall back
+// to the whole line as the head with no body or meta.
+function briefingParts(line) {
+  let text = String(line).trim();
+  let confidence = "";
+  const confidenceMatch = text.match(/\b(High|Medium|Low|Moderate|Mixed)\s+confidence\.?\s*$/i);
+  if (confidenceMatch) {
+    confidence = confidenceMatch[1];
+    text = text.slice(0, confidenceMatch.index).trim();
+  }
+  // Lift the trailing "Evidence: E001, E002." clause out of the prose in both
+  // the split and the fallback shapes, so the IDs never stay in the running
+  // sentences a scan of the findings has to wade through.
+  const sources = (text.match(/\bE\d{3}\b/g) || []).length;
+  text = text.replace(/\s*\.?\s*Evidence:\s*((?:E\d{3}\s*,\s*)*E\d{3})\.?\s*/i, "").trim();
+  const whyIndex = text.search(/\bWhy it matters:\s*/i);
+  if (whyIndex === -1) return { head: text, body: "", confidence, sources };
+  const head = text.slice(0, whyIndex).trim();
+  const body = text
+    .slice(whyIndex + "Why it matters:".length)
+    .trim();
+  return { head, body, confidence, sources };
+}
+
+function briefingMeta(parts) {
+  const chips = [];
+  if (parts.confidence) {
+    chips.push(element("span", {
+      className: `briefing-chip briefing-chip-${parts.confidence.toLowerCase()}`,
+      text: `${parts.confidence} confidence`,
+    }));
+  }
+  if (parts.sources > 0) {
+    chips.push(element("span", {
+      className: "briefing-chip briefing-chip-sources",
+      text: `${parts.sources} ${parts.sources === 1 ? "source" : "sources"}`,
+    }));
+  }
+  if (!chips.length) return null;
+  return element("p", { className: "briefing-insight-meta" }, chips);
+}
+
+function briefingInsight(line, citations) {
+  const parts = briefingParts(line);
+  const head = element("h3", { className: "briefing-insight-head" },
+    briefingContent(parts.head || line, citations));
+  // The body is the "why it matters" support under the head, and the evidence
+  // clause was lifted out of it into the metadata chips by briefingParts.
+  const body = parts.body
+    ? element("p", { className: "briefing-insight-body" }, briefingContent(parts.body, citations))
+    : null;
+  return element("article", { className: "briefing-insight" }, [head, body, briefingMeta(parts)]);
+}
+
 function briefingProvenance(briefing) {
   if (briefing.generator !== "openai-responses") return null;
   const usage = briefing.usage || {};
@@ -508,10 +566,11 @@ function renderDailyBriefing(day) {
     byId("daily-briefing-body"),
     usable.length
       ? [
-          element("ul", { className: "daily-briefing-list" },
-          // Model prose remains text nodes. Only exact evidence IDs present in
-          // the snapshot's validated citation map become links.
-          usable.map((line) => element("li", {}, briefingContent(line, citations)))),
+          // Model prose becomes a scannable insight block per bullet: a short
+          // head (the takeaway), the "why it matters" support beneath it, and a
+          // metadata line carrying confidence and source count instead of
+          // paragraph-wide prose and mid-sentence evidence IDs.
+          ...usable.map((line) => briefingInsight(line, citations)),
           briefingDetails(briefing, citations),
         ]
       : [
@@ -592,6 +651,25 @@ function answerBlock(answer) {
   // support (Tab to focus, Enter/Space to toggle) for free and stays collapsed
   // on load because no `open` attribute is rendered.
   const citations = answerCitations(answer);
+  const sourceCount = validBriefingCitations(answer?.cited_evidence).length;
+  const meta = element("p", { className: "answer-meta" }, [
+    ...(confidence
+      ? [
+          element("span", {
+            className: `pill pill-confidence pill-confidence-${confidence}`,
+            text: `${confidence} confidence`,
+          }),
+        ]
+      : []),
+    ...(sourceCount
+      ? [
+          element("span", {
+            className: "answer-source-count",
+            text: `${sourceCount} ${sourceCount === 1 ? "source" : "sources"}`,
+          }),
+        ]
+      : []),
+  ]);
   const detail = element("div", { className: "answer-detail" }, [
     element("p", { className: "answer-plain" }, [
       element("em", { text: "In plain English: " }),
@@ -620,30 +698,17 @@ function answerBlock(answer) {
     ]),
   ]);
   return element("article", { className: "answer" }, [
-    // The confidence sits on the question's own line: it qualifies the answer
-    // that follows, so a reader should meet it before reading the claim.
+    // Question first, confidence and sources as a de-emphasized metadata row
+    // beneath it rather than pinned to the question's own line, so a scan of a
+    // day's answers stays a scan of the questions themselves.
     element("h4", { className: "answer-question" }, [
       document.createTextNode(String(answer?.question || "")),
-      ...(confidence
-        ? [
-            element("span", {
-              className: `pill pill-confidence pill-confidence-${confidence}`,
-              text: `${confidence} confidence`,
-            }),
-          ]
-        : []),
     ]),
     element("p", { className: "answer-signal", text: String(answer?.signal || "") }),
+    meta,
     element("details", { className: "answer-disclosure" }, [
       element("summary", { className: "answer-disclosure-summary" }, [
-        element("span", {
-          className: "answer-disclosure-label",
-          // Promise only what expanding actually reveals: an answer with no
-          // citations must not advertise "sources" it does not carry.
-          text: citations
-            ? "Read the full answer, sources and takeaway"
-            : "Read the full answer and takeaway",
-        }),
+        element("span", { className: "answer-disclosure-label", text: "View analysis" }),
       ]),
       detail,
     ]),
