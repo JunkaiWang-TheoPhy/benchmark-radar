@@ -18,6 +18,7 @@ out/
 /site/data/leaderboard.csv
 /site/data/leaderboard.md
 /site/data/leaderboard-badge.json
+/site/data/records-badge.json
 
 # Derived by `benchmark-radar classify` from the snapshots, which are the
 # source. Committing it would let a stale or partially backfilled set of
