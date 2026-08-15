@@ -23,6 +23,17 @@ import yaml
 
 SECTION_HEADING = "## 🗣 Daily social post"
 
+# Issue #206: the record-count badge (same Shields endpoint the README embeds)
+# sits at the top of every day's checklist so the corpus size is visible at a
+# glance on the posting issue. It is data-driven (snapshots.records_badge), so
+# it can only state what the corpus actually holds.
+_RECORDS_BADGE = (
+    "[![benchmark records collected]"
+    "(https://img.shields.io/endpoint?url=https%3A%2F%2Fkoutian.is-a.dev"
+    "%2Fbenchmark-radar%2Fdata%2Frecords-badge.json)]"
+    "(https://koutian.is-a.dev/benchmark-radar/)"
+)
+
 _CHECKBOX_RE = re.compile(r"^-\s+\[([ xX])\]\s+(.+)$")
 
 # Path prefixes that would otherwise read as "src", "data" etc. in a social
@@ -244,6 +255,8 @@ def render_social_section(
     today = today or date.today()
     lines = [
         SECTION_HEADING,
+        "",
+        _RECORDS_BADGE,
         "",
         "Ready-to-post material for today. Rephrase per platform; the two "
         "sentences below are the factual core.",

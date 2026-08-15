@@ -136,6 +136,39 @@ def test_load_channels_daily_only_keeps_everything_when_no_channel_sets_daily(tm
     ]
 
 
+def test_render_section_leads_with_the_records_badge(tmp_path: Path):
+    # Issue #206: the data-driven record-count badge appears at the top of every
+    # day's checklist so the corpus size is visible at a glance on the posting
+    # issue. It points at the published Shields endpoint, never a hand-typed
+    # count, mirroring the README's embedded badge.
+    section = render_social_section(
+        "insight",
+        "repo change",
+        [],
+        [{"name": "X / Twitter"}],
+    )
+    lines = section.splitlines()
+    assert lines[0] == SECTION_HEADING
+    assert lines[1] == ""
+    assert "![benchmark records collected]" in lines[2]
+    assert "img.shields.io/endpoint" in lines[2]
+    assert "records-badge.json" in lines[2]
+
+
+def test_merge_checked_keeps_the_records_badge(tmp_path: Path):
+    # The badge sits above the checklist and carries no checkbox, so re-running
+    # with an existing body must never strip it (issue #206).
+    section = render_social_section(
+        "insight",
+        "repo change",
+        [],
+        [{"name": "X / Twitter"}],
+    )
+    existing = SECTION_HEADING + "\n\n- [x] X / Twitter\n"
+    merged = merge_checked(section, existing)
+    assert "![benchmark records collected]" in merged
+
+
 def test_render_section_lists_every_channel_unchecked(tmp_path: Path):
     channels_path = tmp_path / "social.yml"
     channels_path.write_text(
