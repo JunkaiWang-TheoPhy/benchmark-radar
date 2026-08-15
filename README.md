@@ -4,7 +4,7 @@
 
 I kept running into new benchmarks while doing benchmark research, so I built a crawler that continuously collects benchmark-related signals from across the web.
 
-It now tracks **3,000+ records from 11 sources** and keeps updating every day.
+It now tracks **4,000+ records from 11 sources** and keeps updating every day.
 
 ## Use it
 
