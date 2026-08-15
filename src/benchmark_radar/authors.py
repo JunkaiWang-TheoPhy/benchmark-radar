@@ -71,6 +71,25 @@ DATA_SIGNALS = (
     "data pipeline",
     "etl",
     "data infrastructure",
+    # Geospatial / satellite vendor signals (added from Issue #156 vendor reclassification)
+    "satellite",
+    "imagery",
+    "remote sensing",
+    "geospatial",
+    "gis",
+    "earth observation",
+    "eo ",
+    "satellite data",
+    "aerial",
+    "photogrammetry",
+    "lidar",
+    "radar",
+    "planet",
+    "maxar",
+    "airbus",
+    "earthdaily",
+    "taylor-geospatial",
+    "moregeo",
 )
 
 _GITHUB_REPO = re.compile(r"^https?://github\.com/([^/]+)/([^/?#]+)", re.IGNORECASE)

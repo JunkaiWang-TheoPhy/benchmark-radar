@@ -3343,13 +3343,16 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
           (observation.reported_by ? `, cited by ${observation.reported_by}` : "") +
           ". Click to pin record details.",
       });
+      const pointX = x(observation.reported_at);
+      const pointY = scoreY(observation.value);
       group.append(
         svgElement("circle", {
-          cx: x(observation.reported_at),
-          cy: scoreY(observation.value),
+          cx: pointX,
+          cy: pointY,
           r: 5,
         }),
       );
+      group.append(brandGlyph(observation.organization, pointX, pointY, 8, "score-point-glyph"));
       makeFrontierPointInteractive(group, {
         kind: "Readable score",
         title: `${observation.organization} · ${observation.model}`,
