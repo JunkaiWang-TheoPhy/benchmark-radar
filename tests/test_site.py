@@ -782,6 +782,91 @@ def test_daily_briefing_collapses_verbose_evidence_details_by_default():
     assert 'attrs: { open: "" }' not in script
 
 
+def test_daily_briefing_renders_scannable_insight_blocks():
+    """Issue #203: a briefing bullet is one scannable block, not a dense paragraph.
+
+    The model prose "claim. Why it matters: point." is split into a takeaway
+    head, the support underneath, and a quiet metadata row carrying confidence
+    and source count. Evidence IDs move out of the running prose and into that
+    row, so a scan meets the findings before any citation.
+    """
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert "function briefingParts(line)" in script
+    assert "function briefingInsight(line, citations)" in script
+    assert '"briefing-insight-head"' in script
+    assert '"briefing-insight-body"' in script
+    assert '"briefing-insight-meta"' in script
+    assert "briefing-chip-sources" in script
+    # The takeaway is pulled out of the wider prose by the "Why it matters"
+    # split, never by guessing at sentence boundaries.
+    assert "text.search(/\\bWhy it matters:\\s*/i)" in script
+    # The evidence clause is lifted out of the body into the metadata, so the
+    # IDs read as a source count rather than competing with the conclusion.
+    assert "replace(/\\s*\\.?\\s*Evidence:" in script
+    assert "parts.body" in script
+
+
+def _rendered_briefing(fixture: str | None = None):
+    """Run the real briefing renderer over a fixture and return the DOM tree."""
+    import json
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if not node:
+        import pytest
+
+        pytest.skip("node is not installed")
+    result = subprocess.run(
+        [node, "tests/render_briefing_harness.mjs", *([fixture] if fixture else [])],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=True,
+    )
+    return json.loads(result.stdout)
+
+
+def test_rendered_briefing_splits_each_bullet_into_head_body_and_meta():
+    nodes = list(_flatten(_rendered_briefing()))
+    insights = [n for n in nodes if n["className"] == "briefing-insight"]
+    classnames = " ".join(n["className"] for n in nodes)
+
+    assert len(insights) == 2
+    assert "briefing-insight-head" in classnames
+    assert "briefing-insight-body" in classnames
+    assert "briefing-insight-meta" in classnames
+    assert "briefing-chip-sources" in classnames
+
+    def subtext(node):
+        return node["text"]
+
+    # The structured bullet splits cleanly: the takeaway is only the head prose
+    # (nothing past the "Why it matters" split), the body carries the support,
+    # and the metadata names the confidence and source count.
+    structured = insights[0]
+    head = next(n for n in structured["children"] if n["className"] == "briefing-insight-head")
+    body = next(n for n in structured["children"] if n["className"] == "briefing-insight-body")
+    meta = next(n for n in structured["children"] if n["className"] == "briefing-insight-meta")
+    assert subtext(head).startswith("Several new releases in this captured feed")
+    assert "Why it matters" not in subtext(head)
+    assert subtext(body).startswith("Evaluators should choose suites")
+    assert "Evidence:" not in subtext(body)
+    assert "High confidence" in subtext(meta)
+    assert "3 sources" in subtext(meta)
+
+    # An older bullet without the "Why it matters" structure degrades to a head
+    # with no body, yet its evidence and confidence still move to the metadata.
+    fallback = insights[1]
+    fbhead = next(n for n in fallback["children"] if n["className"] == "briefing-insight-head")
+    fbmeta = next(n for n in fallback["children"] if n["className"] == "briefing-insight-meta")
+    assert subtext(fbhead).startswith("An older-format bullet")
+    assert "Evidence:" not in subtext(fbhead)
+    assert "Medium confidence" in subtext(fbmeta)
+    assert "2 sources" in subtext(fbmeta)
+
+
 def test_today_view_renders_the_daily_questions_under_the_briefing():
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
@@ -1085,6 +1170,30 @@ def test_rendered_answers_hide_supporting_detail_behind_a_collapsed_disclosure()
     assert "carry out a task" in all_detail  # a plain-English explanation
     assert "Treat unscored arrivals as unverified" in all_detail  # a takeaway
     assert "keyword-filtered" in all_detail  # a counter-view
+
+
+def test_rendered_answers_hold_confidence_as_metadata_not_question_text():
+    """Issue #203: confidence is a small badge beneath the question, not text
+    pinned to the question's own line, and sources are counted alongside it."""
+    nodes = list(_flatten(_rendered_questions()))
+    answers = [n for n in nodes if n["className"] == "answer"]
+    assert len(answers) == 3
+
+    for answer in answers:
+        question = next(n for n in answer["children"] if n["className"] == "answer-question")
+        # The question line carries the question and nothing else; the
+        # confidence badge lives in its own metadata row below the signal.
+        assert question["children"] and all(n["tag"] == "#text" for n in question["children"])
+        metas = [n for n in answer["children"] if n["className"] == "answer-meta"]
+        assert metas
+        meta_text = metas[0]["text"]
+        assert " confidence" in meta_text
+        assert any("pill-confidence" in n["className"] for n in nodes)
+
+    # The disclosure's label is the short prompt, not the repeated long sentence.
+    summary = next(n for n in nodes if n["className"] == "answer-disclosure-summary")
+    assert "View analysis" in summary["text"]
+    assert "READ the full answer" not in summary["text"].upper()
 
 
 def test_leaderboard_coverage_counts_are_native_disclosures():

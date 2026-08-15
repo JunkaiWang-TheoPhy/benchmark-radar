@@ -89,7 +89,7 @@ footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 94px;
+  min-height: 72px;
   border-bottom: 1px solid var(--ink);
 }
 
@@ -263,7 +263,7 @@ button.repo-badge svg {
 .view-nav button,
 .view-nav a {
   min-width: 112px;
-  padding: 1rem 1.25rem;
+  padding: 0.85rem 1.25rem;
   border: 0;
   border-right: 1px solid var(--line);
   background: transparent;
@@ -407,31 +407,87 @@ input {
 }
 
 /* The day's narrative leads the view, so it reads as prose rather than as
-   another panel competing with the listings below it. */
+   another panel competing with the listings below it. The heavy bordered box
+   is dropped: whitespace and the section titles carry the separation, and
+   narrow measure keeps the findings scannable without a long line length. */
 .daily-briefing {
-  margin-bottom: 1.5rem;
-  padding: 0.9rem 1.4rem;
-  border: 1px solid var(--ink);
-  background: var(--panel);
+  margin-bottom: 2.25rem;
+  max-width: 78ch;
 }
 
 .daily-briefing-title {
-  margin-bottom: 0.6rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--ink);
   font-size: 1rem;
 }
 
-.daily-briefing-list {
-  margin: 0;
-  padding-left: 1.2rem;
+/* Each briefing bullet becomes its own insight: a bold takeaway head, the
+   "why it matters" support beneath it, and a quiet metadata chip row. */
+.briefing-insight + .briefing-insight {
+  margin-top: 1.35rem;
 }
 
-.daily-briefing-list li + li {
-  margin-top: 0.4rem;
+.briefing-insight-head {
+  margin: 0 0 0.3rem;
+  font-family: var(--display);
+  font-size: 1.12rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.briefing-insight-body {
+  margin: 0 0 0.45rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.briefing-insight-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.briefing-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.14rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.briefing-chip-high {
+  border-color: var(--sea);
+  color: var(--sea);
+}
+
+.briefing-chip-medium {
+  border-color: var(--gold);
+  color: #7d5c14;
+}
+
+.briefing-chip-low,
+.briefing-chip-moderate {
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+.briefing-chip-sources {
+  border-color: var(--ink);
+  color: var(--ink);
+  font-weight: 600;
 }
 
 .briefing-evidence-link {
   color: var(--blue-deep);
-  font-weight: 650;
+  font-weight: 500;
   text-decoration: underline;
   text-decoration-thickness: 0.08em;
   text-underline-offset: 0.14em;
@@ -442,8 +498,8 @@ input {
 }
 
 .daily-briefing-details {
-  margin-top: 0.85rem;
-  padding-top: 0.7rem;
+  margin-top: 1.1rem;
+  padding-top: 0.8rem;
   border-top: 1px solid var(--line);
 }
 
@@ -494,14 +550,14 @@ input {
 }
 
 .daily-questions {
-  margin-bottom: 1.5rem;
-  padding: 0.9rem 1.4rem;
-  border: 1px solid var(--ink);
-  background: var(--panel);
+  margin-bottom: 2.25rem;
+  max-width: 78ch;
 }
 
 .daily-questions-title {
-  margin-bottom: 0.6rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--ink);
   font-size: 1rem;
 }
 
@@ -529,16 +585,13 @@ input {
 }
 
 .answer + .answer {
-  margin-top: 0.9rem;
+  margin-top: 1.15rem;
 }
 
 .answer-question {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem;
-  margin: 0 0 0.3rem;
-  font-size: 0.95rem;
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  line-height: 1.3;
 }
 
 .answer-signal,
@@ -547,6 +600,27 @@ input {
 .answer-counter-view {
   margin: 0.35rem 0 0;
   font-size: 0.9rem;
+}
+
+.answer-signal {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.answer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.45rem 0 0;
+}
+
+.answer-source-count {
+  align-self: center;
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .answer-plain {
@@ -586,8 +660,25 @@ input {
 
 .pill-confidence {
   flex: none;
+  align-self: flex-start;
   font-weight: 600;
   text-transform: lowercase;
+}
+
+.pill-confidence-high {
+  border-color: var(--sea);
+  color: var(--sea);
+}
+
+.pill-confidence-medium {
+  border-color: var(--gold);
+  color: #7d5c14;
+}
+
+.pill-confidence-low,
+.pill-confidence-moderate {
+  border-color: var(--line);
+  color: var(--muted);
 }
 
 /* The full answer (explanation, sources, takeaway, counter-view) is collapsed
@@ -3423,7 +3514,7 @@ footer {
   }
 
   .masthead {
-    min-height: 76px;
+    min-height: 64px;
   }
 
   /* Keep the badges reachable on narrow screens, but drop the word so the
