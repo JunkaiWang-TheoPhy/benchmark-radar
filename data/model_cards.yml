@@ -1519,3 +1519,26 @@ model_cards:
       - gpqa_diamond
       - simpleqa
       - livecodebench
+
+  - id: ai2_olmo_3
+    organization: Ai2
+    model: Olmo 3 (7B and 32B)
+    document_type: release_post
+    published: 2025-11-20
+    url: https://allenai.org/blog/olmo3
+    retrieved_at: 2026-08-15
+    benchmarks:
+      - mmlu
+      - mmlu_pro
+      - gpqa
+      - agieval
+      - gsm8k
+      - aime
+      - humaneval
+      - mbpp
+      - livecodebench
+      - drop
+      - ifeval
+      - ifbench
+      - simpleqa
+      - bfcl
