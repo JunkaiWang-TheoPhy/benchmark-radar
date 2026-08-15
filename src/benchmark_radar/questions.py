@@ -222,10 +222,13 @@ _NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
 # "doi:10.1000"). A token abutting one of these is an identifier fragment.
 _IDENTIFIER_GLUE = set("-._/:#")
 # The registry's own notes and the instructions carry the caveat that category
-# shares overlap and do not sum to 100%. That negative phrasing, and only that
-# phrasing, lets a 100 appear without a citable statistic; a bare "sum to 100%"
-# claim is not sanctioned.
-_CAVEAT_HUNDRED = re.compile(r"do\s+not\s+sum\s+to\s+100\s*%")
+# tags overlap and do not sum to 100%. That specific subject, and only it,
+# lets a 100 appear without a citable statistic; the same phrase applied to a
+# different quantity ("Source shares do not sum to 100%") is not sanctioned.
+_CAVEAT_HUNDRED = re.compile(
+    r"categor\w*[^.!?\n]*?do\s+not\s+sum\s+to\s+100\s*%",
+    re.IGNORECASE,
+)
 
 
 def _is_identifier_fragment(text: str, match: re.Match[str]) -> bool:
