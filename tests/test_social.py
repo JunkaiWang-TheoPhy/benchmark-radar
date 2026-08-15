@@ -1,10 +1,12 @@
 import json
+from datetime import timedelta
 from pathlib import Path
 
 from benchmark_radar import cli
 from benchmark_radar.social import (
     SECTION_HEADING,
     GitChange,
+    _WEEKLY_ANCHOR,
     build_insight_sentence,
     extract_checked,
     load_channels,
@@ -152,6 +154,47 @@ def test_render_section_lists_every_channel_unchecked(tmp_path: Path):
     assert "- [ ] X / Twitter" in section
     assert "- [ ] 知乎" in section
     assert "- [x]" not in section
+
+
+def test_render_section_groups_daily_and_weekly_channels():
+    # The checklist must show every configured channel that is active for the
+    # day, grouped by cadence: daily targets plus weekly channels on their
+    # trigger day (issue #206), so low-volume subreddits and personal contacts
+    # stay visible and tickable on their 7-day cycle without pinging daily.
+    section = render_social_section(
+        "insight",
+        "repo change",
+        [],
+        [
+            {"name": "X / Twitter", "daily": True},
+            {"name": "https://www.reddit.com/r/agi/", "daily": False},
+        ],
+        today=_WEEKLY_ANCHOR,
+    )
+    assert "**Daily targets:**" in section
+    assert "**Weekly (every 7 days):**" in section
+    assert "- [ ] X / Twitter" in section
+    assert "- [ ] https://www.reddit.com/r/agi/" in section
+
+
+def test_weekly_channels_are_omitted_between_trigger_days():
+    # A day after the weekly trigger must not list the weekly channels, or the
+    # 7-day cadence would be meaningless; only daily targets remain so the
+    # checklist does not nag a low-volume channel every day (issue #206).
+    section = render_social_section(
+        "insight",
+        "repo change",
+        [],
+        [
+            {"name": "X / Twitter", "daily": True},
+            {"name": "https://www.reddit.com/r/agi/", "daily": False},
+        ],
+        today=_WEEKLY_ANCHOR + timedelta(days=1),
+    )
+    assert "**Daily targets:**" in section
+    assert "- [ ] X / Twitter" in section
+    assert "**Weekly" not in section
+    assert "reddit.com" not in section
 
 
 def test_render_section_includes_the_copy_paste_post_sample():

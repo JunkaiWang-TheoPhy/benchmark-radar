@@ -16,6 +16,7 @@ import re
 import subprocess
 from collections import Counter
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 import yaml
@@ -43,6 +44,14 @@ _NOISE_SUBJECT_PREFIXES = (
     "Record daily radar snapshot",
     "Merge ",
 )
+
+# Issue #206: channels marked ``daily: false`` are weekly, not daily. They are
+# triggered on the day they enter rotation and then every seven days after it,
+# so a personal contact or low-volume subreddit is left alone between trigger
+# days instead of receiving a daily ping. ``_WEEKLY_ANCHOR`` is the reference
+# trigger day; a weekly channel appears in the checklist only on days at a
+# multiple-of-seven offset from it.
+_WEEKLY_ANCHOR = date(2026, 8, 15)
 
 
 @dataclass(frozen=True)
@@ -218,14 +227,21 @@ def merge_checked(section: str, existing_body: str) -> str:
     return "\n".join(lines)
 
 
+def _is_weekly_trigger_day(day: date) -> bool:
+    """True only on days that are a multiple-of-seven offset from the anchor."""
+    return (day - _WEEKLY_ANCHOR).days % 7 == 0
+
+
 def render_social_section(
     insight: str,
     repo_sentence: str,
     commit_subjects: list[str],
     channels: list[dict],
     post_sample: str | None = None,
+    today: date | None = None,
 ) -> str:
     """Render the "Daily social post" section for today's radar run."""
+    today = today or date.today()
     lines = [
         SECTION_HEADING,
         "",
@@ -256,10 +272,26 @@ def render_social_section(
             "",
         ]
     )
-    for channel in channels:
-        name = str(channel.get("name") or "").strip()
-        if not name:
-            continue
-        lines.append(f"- [ ] {_escape(name)}")
+    daily_channels = [channel for channel in channels if channel.get("daily")]
+    weekly_channels = [
+        channel
+        for channel in channels
+        if not channel.get("daily") and _is_weekly_trigger_day(today)
+    ]
+    if daily_channels:
+        lines.append("**Daily targets:**")
+        lines.append("")
+        for channel in daily_channels:
+            name = str(channel.get("name") or "").strip()
+            if name:
+                lines.append(f"- [ ] {_escape(name)}")
+        lines.append("")
+    if weekly_channels:
+        lines.append("**Weekly (every 7 days):**")
+        lines.append("")
+        for channel in weekly_channels:
+            name = str(channel.get("name") or "").strip()
+            if name:
+                lines.append(f"- [ ] {_escape(name)}")
     lines.append("")
     return "\n".join(lines)

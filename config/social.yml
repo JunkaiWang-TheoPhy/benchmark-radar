@@ -7,13 +7,15 @@
 # Edit this list freely. Changes apply to future days only: the checked state
 # of past days stays in the issues themselves.
 #
-# "daily" marks the channels the daily post targets. The remaining channels
-# are single-shot launch channels kept here so the checklist matches the
-# platform list in docs/launch-posts.md, or personal contacts that must not
-# receive daily outreach (issue #206): direct messages to individuals and
-# professional self-promotion read as spam when sent every day. Reach those
-# people only occasionally, roughly monthly, and leave private groups to their
-# own rhythm.
+# Each channel carries a cadence:
+#
+# - "daily: true": the channel is a daily posting target and appears in every
+#   day's checklist.
+# - "daily: false": the channel is weekly (issue #206). It is triggered on the
+#   day it enters rotation and then every seven days after that, so direct
+#   messages to individuals, professional self-promotion, and low-volume
+#   subreddits are left alone between trigger days instead of getting a daily
+#   ping that would read as spam.
 #
 # "post_sample" is the ready-to-copy 发布文案 rendered under each day's issue.
 # It is static text, not re-derived per day: refresh it when the L0-L5 picture
@@ -35,9 +37,9 @@ social:
     - name: "LinkedIn"
       daily: false
     - name: "Reddit r/MachineLearning"
-      daily: true
+      daily: false
     - name: "Reddit r/LocalLLaMA"
-      daily: true
+      daily: false
     - name: "https://www.reddit.com/r/ArtificialInteligence/"
       daily: false
     - name: "https://www.reddit.com/r/LLM/"

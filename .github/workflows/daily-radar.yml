@@ -162,11 +162,12 @@ jobs:
   # Issue #88: one daily Issue carrying only the day's social posting checklist.
   # The dashboard and site/feed.xml remain the reading surface (issue #37), so
   # the Issue does not duplicate the report; its body is just the rendered
-  # out/social.md section. Each day exactly one Issue is created (idempotent on
-  # title), and a rerun re-applies ticks the user already made on that day's
-  # Issue so posting progress is never reset. The social section is rendered
-  # deterministically here (never by a model) from the artifact's items.json
-  # plus the last 24 hours of git history.
+  # out/social.md section. A rerun re-applies ticks the user already made on
+  # that day's OPEN Issue so posting progress is never reset. A closed Issue is
+  # never reused: once the user closes that day's checklist, the next trigger
+  # opens a fresh one for the same day with the re-rendered channel list. The
+  # social section is rendered deterministically here (never by a model) from
+  # the artifact's items.json plus the last 24 hours of git history.
   publish-issue:
     needs: [build-report, persist-snapshot]
     if: >-
@@ -217,7 +218,7 @@ jobs:
           body=json.load(open("generated/out/items.json", encoding="utf-8"))
           print(datetime.datetime.fromisoformat(body["generated_at"]).astimezone(datetime.timezone.utc).strftime("%Y-%m-%d"))')"
           title="🗣 Daily social checklist — ${date_key}"
-          existing="$(gh issue list --state all --search "\"${title}\" in:title" \
+          existing="$(gh issue list --state open --search "\"${title}\" in:title" \
             --json number,title --jq ".[] | select(.title == \"${title}\") | .number" | head -1)"
           existing_body_args=()
           if [[ -n "${existing}" ]]; then

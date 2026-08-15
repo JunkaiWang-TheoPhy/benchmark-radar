@@ -384,8 +384,9 @@ def main() -> None:
             build_insight_sentence(items),
             repo_sentence,
             commit_subjects,
-            load_channels(args.channels, daily_only=True),
+            load_channels(args.channels, daily_only=False),
             post_sample=load_post_sample(args.channels),
+            today=now.date(),
         )
         if args.existing_body and args.existing_body.exists():
             section = merge_checked(section, args.existing_body.read_text(encoding="utf-8"))
