@@ -931,6 +931,36 @@ def dashboard_data(
     }
 
 
+def records_badge(dashboard: dict[str, Any]) -> str:
+    """A Shields.io endpoint reporting how many records the corpus holds.
+
+    This is the number that used to be hand-edited into the README ("4,000+
+    records") and drifted out of date on every collection. Deriving it from the
+    same dashboard bundle the leaderboard and feed are built from means the
+    badge can only ever state what the corpus actually contains. `observation_count`
+    is the count of records pulled in across every snapshot; a benchmark re-seen
+    on a later day counts again, because the number describes crawled activity,
+    not unique artifacts. A single number seen without context is the same
+    misreading the leaderboard badge guards against, so the day count ships as
+    the denominator.
+    """
+    corpus = dashboard["corpus"]
+    days = dashboard.get("snapshot_count") or 0
+    return (
+        json.dumps(
+            {
+                "schemaVersion": 1,
+                "label": "benchmark records collected",
+                "message": f"{corpus['observation_count']} records · {days} days",
+                "color": "blue",
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n"
+    )
+
+
 def rebuild_dashboard(
     snapshot_dir: Path,
     output: Path,
@@ -948,6 +978,13 @@ def rebuild_dashboard(
         kw_bench_store_path=kw_bench_store_path,
     )
     _write_json(output, value)
+    # The record-count badge lives beside radar.json so it deploys with the same
+    # dashboard build and can never report a corpus newer than the page it sits
+    # on. It is the single self-describing "how much have we collected" signal
+    # that a hyperlink citation wants, the same shape the leaderboard badge uses.
+    badge_path = output.parent / "records-badge.json"
+    badge_path.parent.mkdir(parents=True, exist_ok=True)
+    badge_path.write_text(records_badge(value), encoding="utf-8")
     if feed_output is not None:
         write_feed(snapshots, feed_output)
     return value

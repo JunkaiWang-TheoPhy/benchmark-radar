@@ -18,6 +18,7 @@ from benchmark_radar.snapshots import (
     load_snapshots,
     migrate_snapshot_history,
     rebuild_dashboard,
+    records_badge,
     rescore_snapshot_history,
     snapshot_for_run,
     validate_snapshot,
@@ -326,6 +327,41 @@ def test_rescore_is_idempotent(tmp_path):
     assert second["records_changed"] == 0
     assert first["after"] == second["after"]
     assert first_bytes == sorted(path.read_bytes() for path in snapshot_dir.glob("*.json"))
+
+
+def test_records_badge_reports_the_corpus_observation_count(tmp_path):
+    # The README used to hand-type "4,000+ records" and let it drift out of
+    # date. The badge must derive the number from the corpus it is built
+    # beside, so it can only ever state what was actually collected (issue
+    # #197).
+    snapshot_dir = tmp_path / "snapshots"
+    for day in range(1, 6):
+        write_snapshot(radar_run(day), snapshot_dir)
+    output = tmp_path / "radar.json"
+    dashboard = rebuild_dashboard(snapshot_dir, output)
+
+    document = json.loads(records_badge(dashboard))
+    assert document["schemaVersion"] == 1
+    assert document["label"] == "benchmark records collected"
+    # 5 days x one record each, with the expected denominators.
+    assert document["message"] == f"{dashboard['corpus']['observation_count']} records · 5 days"
+    assert str(dashboard["corpus"]["observation_count"]) in document["message"]
+
+
+def test_records_badge_writes_beside_the_dashboard(tmp_path):
+    # The badge is a standalone artefact that deploys with radar.json, so a
+    # hyperlink citation of it can never disagree with the dashboard the page
+    # renders (issue #197).
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(1), snapshot_dir)
+    output = tmp_path / "site" / "data" / "radar.json"
+
+    rebuild_dashboard(snapshot_dir, output)
+
+    badge_path = tmp_path / "site" / "data" / "records-badge.json"
+    assert badge_path.exists()
+    document = json.loads(badge_path.read_text(encoding="utf-8"))
+    assert "records" in document["message"]
 
 
 def test_thirty_snapshots_replay_into_one_deterministic_cumulative_entity(tmp_path):
