@@ -38,7 +38,35 @@ social:
       daily: true
     - name: "Reddit r/LocalLLaMA"
       daily: true
-    - name: "Hacker News"
+    - name: "https://www.reddit.com/r/ArtificialInteligence/"
+      daily: false
+    - name: "https://www.reddit.com/r/LLM/"
+      daily: false
+    - name: "https://www.reddit.com/r/agi/"
+      daily: false
+    - name: "https://www.reddit.com/r/artificial/"
+      daily: false
+    - name: "https://www.reddit.com/r/TheAIBrain/"
+      daily: false
+    - name: "https://www.reddit.com/r/automation/"
+      daily: false
+    - name: "https://www.reddit.com/r/artificielle/"
+      daily: false
+    - name: "https://www.reddit.com/r/artificialintelligenc/"
+      daily: false
+    - name: "https://www.reddit.com/r/machinelearningnews/"
+      daily: false
+    - name: "https://www.reddit.com/r/ArtificialNtelligence/"
+      daily: false
+    - name: "https://www.reddit.com/r/AIDiscussion/"
+      daily: false
+    - name: "https://www.reddit.com/r/OpenAI/"
+      daily: false
+    - name: "https://www.reddit.com/r/LLMDevs/"
+      daily: false
+    - name: "https://www.reddit.com/r/RagAI/"
+      daily: false
+    - name: "Hacker News https://news.ycombinator.com/submit"
       daily: true
     - name: "Hugging Face Forums"
       daily: false
