@@ -259,6 +259,88 @@ def test_prose_may_not_state_a_number_the_registry_does_not_hold():
         )
 
 
+def test_prose_may_not_state_an_uncited_hundred():
+    # 100 is not in the bare-number allowlist: it is a plausible corpus
+    # measurement, not an ordinal or a self-referential count, so a model may
+    # not state it without a statistic that computes to 100. Previously it was
+    # allowlisted (issue #165) and let a fabricated quantity through.
+    stats = {"S001": {"id": "S001", "label": "x", "value": 2, "unit": "count"}}
+    answer = {
+        "signal": "100 benchmarks arrived today.",
+        "plain_english": "",
+        "takeaway": "",
+        "counter_view": "",
+    }
+
+    with pytest.raises(BriefingError, match="uncited quantity"):
+        questions._reject_uncited_quantities(answer, stats)
+
+
+def test_an_uncited_hundred_is_fine_when_a_statistic_is_hundred():
+    # Removing 100 from the bare allowlist must not reject a quantity the
+    # registry actually computed: a registry value of 100 remains citable.
+    stats = {"S001": {"id": "S001", "label": "share", "value": 100, "unit": "percent"}}
+
+    questions._reject_uncited_quantities(
+        {"signal": "100 percent share.", "plain_english": "", "takeaway": "", "counter_view": ""},
+        stats,
+    )
+
+
+def test_an_uncited_hundred_percent_caveat_is_fine():
+    # The registry's own notes and the instructions supply the caveat "shares do
+    # not sum to 100%". The model may reproduce that sanctioned wording even
+    # when no statistic computes to 100; the exemption is the caveat, not every
+    # percentage (issue #165 / Codex review).
+    stats = {"S001": {"id": "S001", "label": "x", "value": 2, "unit": "count"}}
+
+    questions._reject_uncited_quantities(
+        {
+            "signal": "category shares do not sum to 100%.",
+            "plain_english": "",
+            "takeaway": "",
+            "counter_view": "",
+        },
+        stats,
+    )
+
+
+def test_an_unsupported_percentage_is_still_rejected():
+    # Only the sanctioned negative caveat exempts a 100; a fabricated percentage
+    # such as "100% of today's records" must still fail when no statistic
+    # computes to 100 (issue #165 / Codex review).
+    stats = {"S001": {"id": "S001", "label": "x", "value": 2, "unit": "count"}}
+
+    with pytest.raises(BriefingError, match="uncited quantity"):
+        questions._reject_uncited_quantities(
+            {
+                "signal": "100% of today's records are benchmarks.",
+                "plain_english": "",
+                "takeaway": "",
+                "counter_view": "",
+            },
+            stats,
+        )
+
+
+def test_a_positive_sum_to_hundred_is_not_the_sanctioned_caveat():
+    # The exemption is the registry's negative caveat ("do not sum to 100%").
+    # The affirmative "shares sum to 100%" is a fabricated claim, not that
+    # caveat, and must be rejected when no statistic computes to 100.
+    stats = {"S001": {"id": "S001", "label": "x", "value": 2, "unit": "count"}}
+
+    with pytest.raises(BriefingError, match="uncited quantity"):
+        questions._reject_uncited_quantities(
+            {
+                "signal": "category shares sum to 100%.",
+                "plain_english": "",
+                "takeaway": "",
+                "counter_view": "",
+            },
+            stats,
+        )
+
+
 def test_prose_may_state_identifier_fragments_the_registry_does_not_hold():
     # "26-001", "S001", "v2.001", "2026-001," are version and artifact codes,
     # not corpus measurements, so they must not fail a day's Q&A (a production
