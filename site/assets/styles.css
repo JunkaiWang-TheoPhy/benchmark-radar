@@ -224,15 +224,27 @@ button.repo-badge svg {
   stroke-width: 2;
 }
 
-/* Brand marks (WeChat, Discord, and the GitHub repo octicon) are single-color
-   glyphs with no meaningful stroke form, so they fill instead of outline. The
-   GitHub repo octicon also appears on the star badge, which is an <a>, so the
-   selector covers both link and button badges. */
+/* Brand marks (the GitHub repo octicon, star) are single-color glyphs with no
+   meaningful stroke form, so they fill instead of outline. The GitHub repo
+   octicon also appears on the star badge, which is an <a>, so the selector
+   covers both link and button badges. */
 .repo-badge svg.brand-icon {
   width: 0.9rem;
   height: 0.9rem;
   fill: currentColor;
   stroke: none;
+}
+
+/* Outline icons (globe, fork, issues) use stroke rather than fill, matching
+   the button badge icons. Applies to link and button badges alike so every
+   top-right icon renders at the same size (issue #213). */
+.repo-badge svg.outline-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2;
 }
 
 .repo-badge-count {

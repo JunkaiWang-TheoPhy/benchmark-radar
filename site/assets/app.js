@@ -4587,9 +4587,10 @@ function openExport() {
 }
 
 // The contact dialog (issue #191) keeps every reach-out channel in one place:
-// email, WeChat, and Discord. Rendering it as a dialog rather than a bare
-// mailto link means a reader lands on a choice rather than being launched out
-// of the page on a guess.
+// email, WeChat, and Discord. The header badge (issue #213) merged the two
+// separate WeChat and Discord buttons into a single Contact control that
+// opens this dialog, so a reader lands on a choice rather than being launched
+// out of the page on a guess.
 function openContact() {
   const dialog = byId("contact-dialog");
   replaceChildren(byId("contact-content"), [
@@ -4774,8 +4775,7 @@ function bindEvents() {
   // before they trust any single row.
   byId("rubric-nav").addEventListener("click", () => openRubric());
   byId("badge-export").addEventListener("click", openExport);
-  byId("badge-wechat").addEventListener("click", openContact);
-  byId("badge-discord").addEventListener("click", openContact);
+  byId("badge-contact").addEventListener("click", openContact);
   byId("export-close").addEventListener("click", () => byId("export-dialog").close());
   byId("export-dialog").addEventListener("click", (event) => {
     if (event.target === byId("export-dialog")) byId("export-dialog").close();
