@@ -4,9 +4,9 @@ from pathlib import Path
 
 from benchmark_radar import cli
 from benchmark_radar.social import (
+    _WEEKLY_ANCHOR,
     SECTION_HEADING,
     GitChange,
-    _WEEKLY_ANCHOR,
     build_insight_sentence,
     extract_checked,
     load_channels,
