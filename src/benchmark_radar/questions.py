@@ -212,13 +212,20 @@ def _payload(model: str, serialized: str) -> dict[str, Any]:
 _PROSE_FIELDS = ("signal", "plain_english", "takeaway", "counter_view")
 # Quantities the model may write without citing a statistic: ordinals and small
 # counts that describe its own answer ("both readings", "the first of two")
-# rather than measurements of the corpus.
-_ALLOWED_BARE_NUMBERS = {"0", "1", "2", "3", "100"}
+# rather than measurements of the corpus. `100` is deliberately absent: it is a
+# plausible corpus measurement, not a self-referential count, so a bare one is
+# a falsifiable claim.
+_ALLOWED_BARE_NUMBERS = {"0", "1", "2", "3"}
 _NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
 # Characters that glue a digit run into a version, id, or other code rather
 # than leaving it a free-standing measurement ("26-001", "S001", "v2.001",
 # "doi:10.1000"). A token abutting one of these is an identifier fragment.
 _IDENTIFIER_GLUE = set("-._/:#")
+# The registry's own notes and the instructions carry the caveat that category
+# shares overlap and do not sum to 100%. That negative phrasing, and only that
+# phrasing, lets a 100 appear without a citable statistic; a bare "sum to 100%"
+# claim is not sanctioned.
+_CAVEAT_HUNDRED = re.compile(r"do\s+not\s+sum\s+to\s+100\s*%")
 
 
 def _is_identifier_fragment(text: str, match: re.Match[str]) -> bool:
@@ -270,10 +277,16 @@ def _reject_uncited_quantities(
         allowed.update(_registry_number_forms(stat))
     for field in _PROSE_FIELDS:
         text = str(answer.get(field) or "")
+        # The registry's own notes and the instructions supply the caveat
+        # "shares do not sum to 100%"; reproducing it must not fail the day.
+        # Only that sanctioned context exempts a 100, never a bare percentage.
+        caveat_spans = [m.span() for m in _CAVEAT_HUNDRED.finditer(text)]
         for match in _NUMBER.finditer(text):
             token = match.group(0)
             # A year or a date fragment is context, not a measurement.
             if token in allowed or token.rstrip(",") in allowed:
+                continue
+            if token == "100" and any(start <= match.start() < end for start, end in caveat_spans):
                 continue
             if re.fullmatch(r"20\d\d", token):
                 continue
