@@ -341,6 +341,24 @@ def test_a_positive_sum_to_hundred_is_not_the_sanctioned_caveat():
         )
 
 
+def test_the_caveat_exemption_only_applies_to_category_shares():
+    # The sanctioned caveat is about category tags overlapping. Applying the
+    # same negative phrase to another quantity is a fabricated percentage and
+    # must be rejected when no statistic computes to 100.
+    stats = {"S001": {"id": "S001", "label": "x", "value": 2, "unit": "count"}}
+
+    with pytest.raises(BriefingError, match="uncited quantity"):
+        questions._reject_uncited_quantities(
+            {
+                "signal": "Source shares do not sum to 100%.",
+                "plain_english": "",
+                "takeaway": "",
+                "counter_view": "",
+            },
+            stats,
+        )
+
+
 def test_prose_may_state_identifier_fragments_the_registry_does_not_hold():
     # "26-001", "S001", "v2.001", "2026-001," are version and artifact codes,
     # not corpus measurements, so they must not fail a day's Q&A (a production
