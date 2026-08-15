@@ -12,9 +12,6 @@ web. It pulls evidence from **arXiv, GitHub, Hugging Face, OpenAlex, OpenReview,
 first-party lab feeds, Brave Search, Semantic Scholar, Hacker News, and more**
 every day, and keeps updating.
 
-The badge above reads the same corpus the dashboard renders, so the count is the
-data, not a claim typed into a README.
-
 **简体中文版本请见 [README.zh-CN.md](README.zh-CN.md).**
 
 ## Use it

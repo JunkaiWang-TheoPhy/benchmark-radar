@@ -6,8 +6,6 @@
 
 做 benchmark 研究的时候发现新东西太多了，所以我搞了一个持续爬虫，每天自动从全网抓新的 benchmark 相关信息。它目前每天从 **arXiv、GitHub、Hugging Face、OpenAlex、OpenReview、各家实验室官方 feed、Brave Search、Semantic Scholar、Hacker News** 等来源采集，并持续更新。
 
-上面这个 badge 读取的是和 dashboard 同源的语料，所以它显示的数字就是真实数据，而不是在 README 里手写的一个约数。
-
 **English version: [README.md](README.md).**
 
 ## 使用方法
