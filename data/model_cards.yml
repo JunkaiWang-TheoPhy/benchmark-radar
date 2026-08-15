@@ -1520,6 +1520,29 @@ model_cards:
       - simpleqa
       - livecodebench
 
+  - id: qwen3_8_model_card
+    organization: Qwen
+    model: Qwen3.8-27B
+    document_type: model_card
+    published: 2026-08-05
+    url: https://ollama.com/library/qwen3.8
+    retrieved_at: 2026-08-15
+    # Transcribed from the card's text-performance and VL-performance tables.
+    # The card also reports NL2Repo-Bench, DeepSWE 1.1, QwenSWEBench,
+    # CoWorkBench, JobBench, Agents' Last Exam, WebArena-Verified, AndroidWorld,
+    # RecreationBench, ClawEval-MM, SWE-MM, Vision2Web, BabyVision, CharXiv
+    # (RQ), RealWorldQA and ERQA, none of which the registry tracks.
+    benchmarks:
+      - terminal_bench
+      - swe_bench_pro
+      - ifbench
+      - gpqa_diamond
+      - hle
+      - livecodebench
+      - osworld
+      - mathvision
+      - omnidocbench
+
   - id: ai2_olmo_3
     organization: Ai2
     model: Olmo 3 (7B and 32B)
