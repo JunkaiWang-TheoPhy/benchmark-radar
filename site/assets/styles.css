@@ -220,8 +220,8 @@ button.repo-badge {
 }
 
 button.repo-badge svg {
-  width: 0.9rem;
-  height: 0.9rem;
+  width: 1.2rem;
+  height: 1.2rem;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -235,9 +235,9 @@ button.repo-badge svg {
 .repo-badge svg,
 .repo-badge svg.brand-icon,
 .repo-badge svg.outline-icon {
-  width: 0.9rem;
-  height: 0.9rem;
-  flex: 0 0 0.9rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: 0 0 1.2rem;
 }
 
 .repo-badge svg.brand-icon {
@@ -287,7 +287,7 @@ button.repo-badge svg {
    rather than a pictogram: a character reads as "language" directly, where a
    globe or document icon does not. */
 .repo-badge-glyph {
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 700;
   line-height: 1;
 }
@@ -451,11 +451,13 @@ input {
 
 /* The day's narrative leads the view, so it reads as prose rather than as
    another panel competing with the listings below it. The heavy bordered box
-   is dropped: whitespace and the section titles carry the separation, and
-   narrow measure keeps the findings scannable without a long line length. */
+   is dropped: whitespace and the section titles carry the separation. The
+   block spans the same width as the results grid beneath it (issue #225), so
+   it no longer floats as a half-width column with empty space to its right;
+   long lines are kept readable by capping the prose body, not the section. */
 .daily-briefing {
   margin-bottom: 2.25rem;
-  max-width: 78ch;
+  max-width: calc(100% - 22rem);
 }
 
 .daily-briefing-title {
@@ -484,6 +486,7 @@ input {
   margin: 0 0 0.45rem;
   color: var(--muted);
   font-size: 0.9rem;
+  max-width: 72ch;
 }
 
 .briefing-insight-meta {
@@ -3514,6 +3517,13 @@ footer {
 
   .content-grid {
     grid-template-columns: 1fr;
+  }
+
+  /* Below 1050px the results grid loses its 320px sidebar and goes single
+     column, so the briefing's sidebar-derived width cap no longer applies
+     and it fills the view like the results beneath it (issue #225). */
+  .daily-briefing {
+    max-width: 100%;
   }
 
   .benchmark-workbench {

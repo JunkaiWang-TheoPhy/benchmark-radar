@@ -155,7 +155,7 @@ def test_top_right_utilities_use_shared_icon_geometry_and_contact_control():
     assert 'class="repo-badge-glyph" id="lang-toggle-label">中<' in html
     assert 'class="brand-icon github-icon"' in html
     assert "grid-template-columns: repeat(7, 2.1rem)" in styles
-    assert "flex: 0 0 0.9rem" in styles
+    assert "flex: 0 0 1.2rem" in styles
     assert ".repo-badge svg," in styles
 
 
