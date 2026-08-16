@@ -172,6 +172,14 @@ def test_language_toggle_and_contact_labels_are_translated():
         assert key in script
 
 
+def test_language_toggle_click_handler_is_wired():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # The 中文 button must actually respond to a click: bindEvents has to attach
+    # toggleLang to #lang-toggle, otherwise clicking it silently does nothing.
+    assert 'langToggle.addEventListener("click", toggleLang)' in script
+
+
 def test_rubric_dialog_is_linkable_by_url_hash():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
