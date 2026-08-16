@@ -285,24 +285,31 @@ def render_social_section(
             "",
         ]
     )
-    daily_channels = [channel for channel in channels if channel.get("daily")]
-    weekly_channels = [
-        channel
-        for channel in channels
-        if not channel.get("daily") and _is_weekly_trigger_day(today)
-    ]
-    if daily_channels:
-        lines.append("**Daily targets:**")
-        lines.append("")
-        for channel in daily_channels:
-            name = str(channel.get("name") or "").strip()
-            if name:
-                lines.append(f"- [ ] {_escape(name)}")
-        lines.append("")
-    if weekly_channels:
-        lines.append("**Weekly (every 7 days):**")
-        lines.append("")
-        for channel in weekly_channels:
+    explicit = any(channel.get("daily") is not None for channel in channels)
+    if explicit:
+        daily_channels = [channel for channel in channels if channel.get("daily")]
+        weekly_channels = [
+            channel
+            for channel in channels
+            if not channel.get("daily") and _is_weekly_trigger_day(today)
+        ]
+        if daily_channels:
+            lines.append("**Daily targets:**")
+            lines.append("")
+            for channel in daily_channels:
+                name = str(channel.get("name") or "").strip()
+                if name:
+                    lines.append(f"- [ ] {_escape(name)}")
+            lines.append("")
+        if weekly_channels:
+            lines.append("**Weekly (every 7 days):**")
+            lines.append("")
+            for channel in weekly_channels:
+                name = str(channel.get("name") or "").strip()
+                if name:
+                    lines.append(f"- [ ] {_escape(name)}")
+    else:
+        for channel in channels:
             name = str(channel.get("name") or "").strip()
             if name:
                 lines.append(f"- [ ] {_escape(name)}")
