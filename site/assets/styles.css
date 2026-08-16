@@ -81,7 +81,7 @@ a {
 .view-nav,
 main,
 footer {
-  width: min(1440px, calc(100% - 48px));
+  width: min(1680px, calc(100% - 48px));
   margin-inline: auto;
 }
 
