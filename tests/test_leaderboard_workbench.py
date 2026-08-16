@@ -23,7 +23,7 @@ def test_one_organization_history_uses_milestones_instead_of_an_empty_plot():
     assert 'id="frontier-milestones"' in html
     assert "frontier.length < 2" in script
     assert 'className: "frontier-sparse"' in script
-    assert 'text: "Awaiting an independent second organization"' in script
+    assert 'text: t("Awaiting an independent second organization")' in script
     assert "Too early to infer" in script
 
 
@@ -35,7 +35,7 @@ def test_reporting_stages_are_explicitly_about_the_curated_registry():
     )[0]
     assert "advances / total >= 0.8" in stage
     assert "isNewBenchmark(entry, board) && advances <= 4" in stage
-    assert 'label: "Saturated reporting"' in stage
+    assert 'label: t("Saturated reporting")' in stage
     assert "curated registry" in stage
     assert "convention, not quality" in stage
 
@@ -64,8 +64,8 @@ def test_trajectory_points_expose_and_pin_record_details():
     assert 'event.key === "Escape"' in script
     assert 'classList.add("is-selected")' in script
     assert '"aria-pressed": "false"' in script
-    assert 'label: "Protocol"' in script
-    assert 'label: "Source"' in script
+    assert 'label: t("Protocol")' in script
+    assert 'label: t("Source")' in script
     assert ".frontier-point.is-selected .frontier-point-face" in styles
     assert ".score-point.is-selected circle" in styles
     assert "pinned: selectedFrontierPoint === group" in script
@@ -74,7 +74,7 @@ def test_trajectory_points_expose_and_pin_record_details():
     assert 'event.key === "Escape" && selectedFrontierPoint' in script
     assert 'view !== "leaderboard" && selectedFrontierPoint' in script
     assert 'pinned ? "dialog" : "tooltip"' in script
-    assert 'text: "Open source record ↗"' in script
+    assert 'text: t("Open source record ↗")' in script
     assert 'byId("frontier-tooltip").querySelector("a")?.focus()' in script
     assert "tooltip?.contains(document.activeElement)" in script
     assert "if (focused) show()" in script

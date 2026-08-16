@@ -37,7 +37,7 @@
     <script src="assets/app.js" type="module"></script>
   </head>
   <body>
-    <a class="skip-link" href="#main-content">Skip to content</a>
+    <a class="skip-link" href="#main-content" data-i18n="Skip to content">Skip to content</a>
 
     <header class="masthead">
       <a class="brand" href="./" aria-label="Benchmark Radar home">
@@ -52,6 +52,7 @@
           href="feed.xml"
           title="Subscribe to Benchmark Radar via RSS"
           aria-label="Subscribe to Benchmark Radar via RSS"
+          data-i18n-title="Subscribe to Benchmark Radar via RSS"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="5" cy="19" r="2"></circle>
@@ -61,24 +62,25 @@
           <span class="repo-badge-label">RSS</span>
         </a>
         <!--
-          Issue #212: a language toggle so Chinese-language readers can find the
-          README translation without scanning the repo tree.
+          The language toggle switches the interface between English and Chinese
+          in place. It replaces the earlier badge that only linked to the
+          translated README: a reader who wants Chinese wants the dashboard, not
+          a tour of the repository tree.
         -->
-        <a
+        <button
+          type="button"
           class="repo-badge"
-          id="badge-zh"
-          href="https://github.com/ktwu01/benchmark-radar/blob/main/README.zh-CN.md"
-          target="_blank"
-          rel="noopener noreferrer"
-          title="View Chinese version (中文)"
+          id="lang-toggle"
+          aria-pressed="false"
+          title="Switch to Chinese (中文)"
         >
           <svg class="outline-icon" viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="12" r="10"></circle>
             <path d="M2 12h20"></path>
             <path d="M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20"></path>
           </svg>
-          <span class="repo-badge-label">中文</span>
-        </a>
+          <span class="repo-badge-label" id="lang-toggle-label">中文</span>
+        </button>
         <!--
           These two open dialogs rather than linking out: exporting a dataset
           needs a moment of explanation about what is being handed over, and the
@@ -92,13 +94,14 @@
           id="badge-export"
           aria-haspopup="dialog"
           title="Export the dataset"
+          data-i18n-title="Export the dataset"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3v12"></path>
             <path d="m7 8 5 5 5-5"></path>
             <path d="M4 21h16"></path>
           </svg>
-          <span class="repo-badge-label">Data</span>
+          <span class="repo-badge-label" data-i18n="Data">Data</span>
         </button>
         <button
           type="button"
@@ -106,13 +109,14 @@
           id="badge-contact"
           aria-haspopup="dialog"
           title="Get in touch · Email, WeChat, Discord"
+          data-i18n-title="Get in touch · Email, WeChat, Discord"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path
               d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
             ></path>
           </svg>
-          <span class="repo-badge-label">Contact</span>
+          <span class="repo-badge-label" data-i18n="Contact">Contact</span>
         </button>
         <!--
           Each badge is a call to action, not a link to a roster. Starring has no
@@ -128,6 +132,7 @@
             target="_blank"
             rel="noopener noreferrer"
             title="Open the repository and star it"
+            data-i18n-title="Open the repository and star it"
           >
             <svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true">
               <path
@@ -140,7 +145,7 @@
                 d="M3 21.5a2.75 2.75 0 0 0 2.75 2.75h8.75a.75.75 0 0 0 0-1.5H5.75A1.25 1.25 0 0 1 4.5 21.5V3.75A1.25 1.25 0 0 1 5.75 2.5H8A.75.75 0 0 0 8 1H5.75A2.75 2.75 0 0 0 3 3.75Z"
               ></path>
             </svg>
-            <span class="repo-badge-label">Star</span>
+            <span class="repo-badge-label" data-i18n="Star">Star</span>
             <span class="repo-badge-count" data-count>—</span>
           </a>
           <a
@@ -150,6 +155,7 @@
             target="_blank"
             rel="noopener noreferrer"
             title="Fork this repository"
+            data-i18n-title="Fork this repository"
           >
             <svg class="outline-icon" viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="12" cy="18" r="3"></circle>
@@ -158,7 +164,7 @@
               <path d="M18 9v2c0 .6-.5 1.2-1.2 1.7l-3.6 2.4"></path>
               <path d="M6 9v2c0 .6.5 1.2 1.2 1.7l3.6 2.4"></path>
             </svg>
-            <span class="repo-badge-label">Fork</span>
+            <span class="repo-badge-label" data-i18n="Fork">Fork</span>
             <span class="repo-badge-count" data-count>—</span>
           </a>
           <a
@@ -168,6 +174,7 @@
             target="_blank"
             rel="noopener noreferrer"
             title="Open a new issue"
+            data-i18n-title="Open a new issue"
           >
             <svg class="outline-icon" viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="12" cy="12" r="9"></circle>
@@ -178,7 +185,7 @@
                 style="fill: currentColor; stroke: none"
               ></circle>
             </svg>
-            <span class="repo-badge-label">Issues</span>
+            <span class="repo-badge-label" data-i18n="Issues">Issues</span>
             <span class="repo-badge-count" data-count>—</span>
           </a>
         </div>
@@ -187,14 +194,14 @@
 
     <p class="stale-banner" id="stale-banner" hidden></p>
 
-    <nav class="view-nav" aria-label="Dashboard views">
-      <button type="button" data-view="today" aria-controls="today-view">Today</button>
-      <button type="button" data-view="leaderboard" aria-controls="leaderboard-view">
+    <nav class="view-nav" aria-label="Dashboard views" data-i18n-aria="Dashboard views">
+      <button type="button" data-view="today" aria-controls="today-view" data-i18n="Today">Today</button>
+      <button type="button" data-view="leaderboard" aria-controls="leaderboard-view" data-i18n="Leaderboard">
         Leaderboard
       </button>
-      <button type="button" data-view="trends" aria-controls="trends-view">Trends</button>
-      <button type="button" data-view="map" aria-controls="map-view">Trend map</button>
-      <button type="button" id="rubric-nav" aria-haspopup="dialog">Rubric</button>
+      <button type="button" data-view="trends" aria-controls="trends-view" data-i18n="Trends">Trends</button>
+      <button type="button" data-view="map" aria-controls="map-view" data-i18n="Trend map">Trend map</button>
+      <button type="button" id="rubric-nav" aria-haspopup="dialog" data-i18n="Rubric">Rubric</button>
     </nav>
 
     <main id="main-content" tabindex="-1">
@@ -202,7 +209,7 @@
         <!-- The day's narrative, above the filters because it describes the
              whole scan date rather than the filtered subset below it. -->
         <section class="daily-briefing" id="daily-briefing" aria-labelledby="daily-briefing-heading">
-          <h2 class="daily-briefing-title" id="daily-briefing-heading">Daily briefing</h2>
+          <h2 class="daily-briefing-title" id="daily-briefing-heading" data-i18n="Daily briefing">Daily briefing</h2>
           <div id="daily-briefing-body"></div>
         </section>
         <!-- The day's Q&A sits directly under the briefing: the briefing says
@@ -213,54 +220,55 @@
           id="daily-questions"
           aria-labelledby="daily-questions-heading"
         >
-          <h2 class="daily-questions-title" id="daily-questions-heading">Questions for today</h2>
+          <h2 class="daily-questions-title" id="daily-questions-heading" data-i18n="Questions for today">Questions for today</h2>
           <div id="daily-questions-body"></div>
         </section>
         <form class="filter-panel today-filters" id="filters">
           <label class="search-field">
-            Search
+            <span data-i18n="Search">Search</span>
             <input
               id="search-filter"
               name="q"
               type="search"
               placeholder="Title, summary, or source"
+              data-i18n-placeholder="Title, summary, or source"
             >
           </label>
           <label>
-            Scan date
+            <span data-i18n="Scan date">Scan date</span>
             <select id="today-date" name="date"></select>
           </label>
           <label>
-            Kind
+            <span data-i18n="Kind">Kind</span>
             <select id="kind-filter" name="kind"></select>
           </label>
           <label>
-            Category
+            <span data-i18n="Category">Category</span>
             <select id="category-filter" name="category"></select>
           </label>
           <label>
-            Source
+            <span data-i18n="Source">Source</span>
             <select id="source-filter" name="source"></select>
           </label>
           <label>
-            Organization
+            <span data-i18n="Organization">Organization</span>
             <select id="organization-filter" name="organization"></select>
           </label>
           <label>
-            Event
+            <span data-i18n="Event">Event</span>
             <select id="event-filter" name="event"></select>
           </label>
-          <button class="clear-button" id="clear-filters" type="button">Clear filters</button>
+          <button class="clear-button" id="clear-filters" type="button" data-i18n="Clear filters">Clear filters</button>
         </form>
 
         <div class="content-grid">
           <div>
             <div class="section-title">
-              <h2>Matching observations</h2>
+              <h2 data-i18n="view.today.matching">Matching observations</h2>
               <span id="today-count" aria-live="polite"></span>
             </div>
             <div class="signal-list" id="today-list"></div>
-            <button class="secondary-link today-show-more" id="today-show-more" type="button" hidden>
+            <button class="secondary-link today-show-more" id="today-show-more" type="button" hidden data-i18n="Show more results">
               Show more results
             </button>
           </div>
@@ -268,7 +276,7 @@
             <aside class="health-panel" id="source-health-panel" aria-labelledby="health-heading">
               <details id="health-panel-details">
                 <summary>
-                  <span class="health-panel-title" id="health-heading">Sources</span>
+                  <span class="health-panel-title" id="health-heading" data-i18n="Source">Sources</span>
                   <span class="health-panel-status" id="health-status"></span>
                 </summary>
                 <ul id="health-list"></ul>
@@ -277,7 +285,7 @@
             <aside class="health-panel corpus-totals-panel" aria-labelledby="corpus-totals-heading">
               <details id="corpus-totals-details">
                 <summary>
-                  <span class="health-panel-title" id="corpus-totals-heading">Corpus totals</span>
+                  <span class="health-panel-title" id="corpus-totals-heading" data-i18n="Corpus totals">Corpus totals</span>
                   <span class="health-panel-status" id="corpus-totals-status"></span>
                 </summary>
                 <ul id="corpus-totals-list"></ul>
@@ -295,18 +303,18 @@
       >
         <header class="leaderboard-intro">
           <div class="leaderboard-title-block">
-            <p class="eyebrow">Model Card Adoption Rank</p>
-            <h1 id="leaderboard-heading">Which benchmarks do model cards report?</h1>
+            <p class="eyebrow" data-i18n="Model Card Adoption Rank">Model Card Adoption Rank</p>
+            <h1 id="leaderboard-heading" data-i18n="Which benchmarks do model cards report?">Which benchmarks do model cards report?</h1>
             <p class="leaderboard-deck" id="leaderboard-measures"></p>
           </div>
           <details class="method-note">
-            <summary>How to read this evidence</summary>
-            <p>
+            <summary data-i18n="How to read this evidence">How to read this evidence</summary>
+            <p data-i18n="leaderboard.method.note1">
               This ranks reporting convention, not benchmark quality. One model card
               contributes at most one mention to a benchmark, however many configurations
               it reports.
             </p>
-            <p>
+            <p data-i18n="leaderboard.method.note2">
               Some model cards publish their benchmark table as an image, and those rows
               were transcribed by OCR. A transcription can be wrong. The
               <a href="#leaderboard-cards-heading">source ledger</a> lists every recorded
@@ -315,13 +323,13 @@
           </details>
         </header>
 
-        <div class="evidence-strip" id="leaderboard-insights" aria-label="Registry overview"></div>
+        <div class="evidence-strip" id="leaderboard-insights" aria-label="Registry overview" data-i18n-aria="Registry overview"></div>
 
         <section class="findings-panel" id="benchmark-findings" aria-labelledby="findings-heading" hidden>
           <div class="section-title">
             <div>
-              <p class="eyebrow">What the two layers say</p>
-              <h2 id="findings-heading">Stated findings</h2>
+              <p class="eyebrow" data-i18n="What the two layers say">What the two layers say</p>
+              <h2 id="findings-heading" data-i18n="Stated findings">Stated findings</h2>
             </div>
             <span id="findings-count" aria-live="polite"></span>
           </div>
@@ -332,9 +340,9 @@
 
         <div class="benchmark-workbench">
           <aside class="benchmark-navigator" aria-labelledby="benchmark-navigator-heading">
-            <p class="eyebrow">Benchmarks to watch</p>
-            <h2 id="benchmark-navigator-heading">Choose a reporting story</h2>
-            <p>
+            <p class="eyebrow" data-i18n="Benchmarks to watch">Benchmarks to watch</p>
+            <h2 id="benchmark-navigator-heading" data-i18n="Choose a reporting story">Choose a reporting story</h2>
+            <p data-i18n="leaderboard.navigator.note">
               Start with signals that distinguish emerging instruments from established
               standards and saturated conventions.
             </p>
@@ -344,8 +352,8 @@
           <section class="frontier-panel" id="adoption-frontier" aria-labelledby="frontier-heading">
             <div class="frontier-heading-row">
               <div>
-                <p class="eyebrow">Reporting over time</p>
-                <h2 id="frontier-heading">Benchmark adoption frontier</h2>
+                <p class="eyebrow" data-i18n="Reporting over time">Reporting over time</p>
+                <h2 id="frontier-heading" data-i18n="Benchmark adoption frontier">Benchmark adoption frontier</h2>
               </div>
               <div class="frontier-controls">
                 <span class="frontier-stage" id="frontier-stage"></span>
@@ -355,7 +363,7 @@
                 </label>
               </div>
             </div>
-            <p class="section-note" id="frontier-explainer">
+            <p class="section-note" id="frontier-explainer" data-i18n="frontier.explainer.tl1">
               Three readings on one time axis. Each orange diamond marks an organization's first
               report of this benchmark, which is the only event that raises the cumulative count.
               The rug beneath it puts one tick per dated model card, so later cards from an
@@ -364,6 +372,8 @@
               bands, though it is still counted in the totals above. A long flat run is
               reporting saturation observed within this curated registry, not a claim about
               benchmark score saturation.
+            </p>
+            <p class="section-note frontier-explainer-sub" data-i18n="frontier.explainer.sub">
               The score track below it is a separate reading: every value that could be read
               verbatim from a cited document, connected only where the instrument and protocol
               are identical. A flat score tail usually means no newer number could be read, which
@@ -376,21 +386,21 @@
             <div class="score-readout" id="frontier-score-readout"></div>
             <div class="frontier-evidence">
               <section aria-labelledby="frontier-milestones-heading">
-                <h3 id="frontier-milestones-heading">Frontier milestones</h3>
+                <h3 id="frontier-milestones-heading" data-i18n="Frontier milestones">Frontier milestones</h3>
                 <div id="frontier-milestones"></div>
               </section>
               <aside class="frontier-context" aria-labelledby="frontier-task-heading">
                 <div id="frontier-task-preview"></div>
                 <details class="pareto-readiness">
-                  <summary>What would make this a true Pareto frontier?</summary>
-                  <p>
+                  <summary data-i18n="pareto.readiness.summary">What would make this a true Pareto frontier?</summary>
+                  <p data-i18n="pareto.readiness.note1">
                     Comparable score observations need the benchmark version and split,
                     metric direction, model, harness or scaffold, reasoning budget, cost or
                     latency, publication date, and source. Only compatible configurations can
                     share a score frontier; this registry currently stores mentions, not those
                     measurements.
                   </p>
-                  <p>
+                  <p data-i18n="pareto.readiness.note2">
                     With those observations, a Harbor-style view can put cost or latency on the
                     x-axis and score on the y-axis, connect only nondominated observations, and
                     use a publication-time slider to reveal how the frontier moved.
@@ -432,7 +442,7 @@
               Clear filters
             </button>
           </form>
-          <p class="section-note">
+          <p class="section-note" data-i18n="leaderboard.filters.note">
             Each model card counts once per benchmark. A card reporting AIME in four
             configurations counts the same as a card reporting it once, so a long appendix
             cannot outweigh a different vendor. Organizations breaks the tie: the same count
@@ -447,13 +457,13 @@
         <details class="ledger" aria-labelledby="leaderboard-cards-heading">
           <summary class="ledger-summary">
             <span>
-              <span class="eyebrow">Audit the counts</span>
-              <strong id="leaderboard-cards-heading">Model cards in the registry</strong>
+              <span class="eyebrow" data-i18n="Audit the counts">Audit the counts</span>
+              <strong id="leaderboard-cards-heading" data-i18n="Model cards in the registry">Model cards in the registry</strong>
             </span>
             <span id="leaderboard-cards-count"></span>
           </summary>
           <div class="ledger-body">
-            <p class="section-note">
+            <p class="section-note" data-i18n="leaderboard.ledger.note">
               The curated source list this ranking is computed from. Expand any card to see
               every benchmark it reports, grouped the way the source document groups them, so
               our data can be checked line by line against the original.
@@ -466,10 +476,10 @@
       <section class="view" id="map-view" aria-labelledby="map-heading" hidden>
         <header class="view-heading">
           <div>
-            <p class="eyebrow">Cumulative corpus</p>
-            <h1 id="map-heading">Artifacts and their context</h1>
+            <p class="eyebrow" data-i18n="Cumulative corpus">Cumulative corpus</p>
+            <h1 id="map-heading" data-i18n="Artifacts and their context">Artifacts and their context</h1>
           </div>
-          <p class="heading-note">
+          <p class="heading-note" data-i18n="map.heading.note">
             The overview summarizes the full corpus. The relationship canvas includes every
             artifact and connected organization, source, and topic; select a node to carry it
             into the Today filters.
@@ -486,9 +496,9 @@
             tabindex="0"
           ></div>
           <aside class="map-detail" id="map-detail" aria-live="polite">
-            <p class="eyebrow">Select a node</p>
-            <h2>Inspect a relationship</h2>
-            <p>
+            <p class="eyebrow" data-i18n="Select a node">Select a node</p>
+            <h2 data-i18n="Inspect a relationship">Inspect a relationship</h2>
+            <p data-i18n="map.detail.note">
               Topic, source, and organization nodes set the corresponding Today filter.
               Artifact nodes set the date and title search.
             </p>
@@ -499,15 +509,15 @@
       <section class="view" id="trends-view" aria-labelledby="trends-heading" hidden>
         <header class="view-heading">
           <div>
-            <p class="eyebrow">Corpus rhythm</p>
-            <h1 id="trends-heading">Signals over time</h1>
+            <p class="eyebrow" data-i18n="Corpus rhythm">Corpus rhythm</p>
+            <h1 id="trends-heading" data-i18n="Signals over time">Signals over time</h1>
           </div>
-          <p class="heading-note">Counts describe discovery volume, not scientific quality.</p>
+          <p class="heading-note" data-i18n="trends.heading.note">Counts describe discovery volume, not scientific quality.</p>
         </header>
 
         <div class="domain-panel">
           <div class="section-title">
-            <h2 id="domain-heading">New by domain</h2>
+            <h2 id="domain-heading" data-i18n="New by domain">New by domain</h2>
             <span id="domain-date"></span>
           </div>
           <div class="domain-grid" id="domain-grid" aria-labelledby="domain-heading"></div>
@@ -515,16 +525,16 @@
 
         <div class="trend-panel">
           <div class="section-title">
-            <h2>Daily evidence and attention volume</h2>
+            <h2 data-i18n="trends.daily.title">Daily evidence and attention volume</h2>
             <div class="legend" id="trend-legend" aria-label="Category legend"></div>
           </div>
-          <p class="section-note">
+          <p class="section-note" data-i18n="trends.daily.note">
             Category tags overlap. Each bar is an independent count, not a part of a stacked total.
           </p>
           <label class="trend-filter">
             <input type="checkbox" id="trend-released-only" />
-            Releases only
-            <span class="heading-note">
+            <span data-i18n="trends.releaseOnly">Releases only</span>
+            <span class="heading-note" data-i18n="trends.releaseOnly.note">
               Excludes records re-announced as an update to something already surfaced.
             </span>
           </label>
@@ -539,10 +549,10 @@
 
         <section class="ledger" aria-labelledby="ledger-heading">
           <div class="section-title">
-            <h2 id="ledger-heading">Daily ledger</h2>
+            <h2 id="ledger-heading" data-i18n="Daily ledger">Daily ledger</h2>
             <span id="snapshot-count"></span>
           </div>
-          <p class="section-note">
+          <p class="section-note" data-i18n="trends.ledger.note">
             Source mix counts ranked evidence after scoring. Fetch health counts raw records
             returned before scoring, so a source can be ok and still empty.
           </p>
@@ -550,14 +560,14 @@
             <table>
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Coverage (UTC)</th>
-                  <th>Evidence</th>
-                  <th>Source mix</th>
-                  <th>Categories</th>
-                  <th>Events</th>
-                  <th>Attention</th>
-                  <th>Fetch health</th>
+                  <th data-i18n="Date">Date</th>
+                  <th data-i18n="Coverage (UTC)">Coverage (UTC)</th>
+                  <th data-i18n="Evidence">Evidence</th>
+                  <th data-i18n="Source mix">Source mix</th>
+                  <th data-i18n="Categories">Categories</th>
+                  <th data-i18n="Events">Events</th>
+                  <th data-i18n="Attention">Attention</th>
+                  <th data-i18n="Fetch health">Fetch health</th>
                 </tr>
               </thead>
               <tbody id="trend-table"></tbody>
@@ -567,12 +577,10 @@
       </section>
 
       <section class="error-state" id="error-state" hidden>
-        <p class="eyebrow">Dashboard unavailable</p>
-        <h1>The validated data file could not be loaded.</h1>
-        <p>Try refreshing, or inspect the latest daily Issue while the dashboard rebuilds.</p>
-        <a href="https://github.com/ktwu01/benchmark-radar/issues?q=is%3Aissue+label%3Adaily-radar">
-          Open daily Issues ↗
-        </a>
+        <p class="eyebrow" data-i18n="Dashboard unavailable">Dashboard unavailable</p>
+        <h1 data-i18n="The validated data file could not be loaded.">The validated data file could not be loaded.</h1>
+        <p data-i18n="error.note">Try refreshing, or inspect the latest daily Issue while the dashboard rebuilds.</p>
+        <a href="https://github.com/ktwu01/benchmark-radar/issues?q=is%3Aissue+label%3Adaily-radar" data-i18n="Open daily Issues">Open daily Issues ↗</a>
       </section>
     </main>
 

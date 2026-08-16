@@ -254,7 +254,7 @@ def test_the_axis_and_header_name_distinct_organizations():
     assert 'metricLabel(frontier.length, "distinct organization")' in script
     # And the organization count is qualified when some card carries no date, since
     # card_count includes those while the plotted count cannot.
-    assert '" with a dated card"' in script
+    assert 't("with a dated card")' in script
 
 
 def test_the_chart_does_not_collapse_on_a_narrow_viewport():

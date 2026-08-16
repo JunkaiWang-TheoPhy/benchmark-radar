@@ -106,6 +106,610 @@ const LEGACY_SOURCE_COLLECTION_METHODS = {
 };
 
 const byId = (id) => document.getElementById(id);
+
+// Interface language. English is the truth inside this file: every UI string
+// is emitted through t(), which returns the key unchanged until a zh entry
+// exists below, so the default build stays byte-for-byte English and the
+// dictionary is auditable against the code that renders each string.
+const LANGS = ["en", "zh"];
+const LANG_HTML = { en: "en", zh: "zh-CN" };
+const LANG_STORAGE_KEY = "benchmark-radar:lang";
+
+let lang = "en";
+
+function getLang() {
+  return lang;
+}
+
+function setLang(next) {
+  lang = LANGS.includes(next) ? next : "en";
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(LANG_STORAGE_KEY, lang);
+    }
+  } catch (_) {
+    // Storage can be unavailable (private browsing, some readers).
+  }
+  if (typeof document !== "undefined" && document.documentElement) {
+    document.documentElement.setAttribute("lang", LANG_HTML[lang]);
+  }
+}
+
+function t(key, params) {
+  let value = I18N[getLang()]?.[key] ?? key;
+  if (params) {
+    for (const [name, replacement] of Object.entries(params)) {
+      value = value.replaceAll(`{${name}}`, String(replacement));
+    }
+  }
+  return value;
+}
+
+function initialLang() {
+  const param = new URLSearchParams(window.location.search).get("lang");
+  if (LANGS.includes(param)) return param;
+  try {
+    const saved = localStorage.getItem(LANG_STORAGE_KEY);
+    if (LANGS.includes(saved)) return saved;
+  } catch (_) {
+    // Storage can be unavailable (private browsing, some readers).
+  }
+  return "en";
+}
+
+// Static text in index.html is annotated with data-i18n / data-i18n-title /
+// data-i18n-placeholder / data-i18n-aria slots keyed by this dictionary; the
+// first pass captures the English default so a toggle back restores it exactly.
+// Captured defaults that contain inline markup (<a>, <strong>, <em>...) are
+// kept as live nodes rather than as a serialized string, so restoring a
+// translated paragraph does not strip its link (serializing the captured nodes
+// to a string for storage is forbidden project-wide).
+const staticI18nMarkup = new Map();
+
+function applyStaticI18n() {
+  if (typeof document === "undefined") return;
+  const table = I18N[getLang()] || {};
+  document.querySelectorAll("[data-i18n]").forEach((node) => {
+    if (node.dataset.i18nEn === undefined) {
+      node.dataset.i18nEn = node.textContent;
+      if (node.querySelector("a,strong,em,code")) {
+        staticI18nMarkup.set(node, node.cloneNode(true));
+      }
+    }
+    const text = table[node.dataset.i18n];
+    if (text !== undefined) {
+      if (text.includes("<")) {
+        node.replaceChildren();
+        node.insertAdjacentHTML("afterbegin", text);
+      } else {
+        node.textContent = text;
+      }
+    } else if (staticI18nMarkup.has(node)) {
+      node.replaceChildren(staticI18nMarkup.get(node).cloneNode(true));
+    } else {
+      node.textContent = node.dataset.i18nEn;
+    }
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((node) => {
+    if (node.dataset.i18nTitleEn === undefined) {
+      node.dataset.i18nTitleEn = node.getAttribute("title") || "";
+    }
+    const text = table[node.dataset.i18nTitle];
+    node.setAttribute("title", text ?? node.dataset.i18nTitleEn);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((node) => {
+    if (node.dataset.i18nPlaceholderEn === undefined) {
+      node.dataset.i18nPlaceholderEn = node.getAttribute("placeholder") || "";
+    }
+    const text = table[node.dataset.i18nPlaceholder];
+    node.setAttribute("placeholder", text ?? node.dataset.i18nPlaceholderEn);
+  });
+  document.querySelectorAll("[data-i18n-aria]").forEach((node) => {
+    if (node.dataset.i18nAriaEn === undefined) {
+      node.dataset.i18nAriaEn = node.getAttribute("aria-label") || "";
+    }
+    const text = table[node.dataset.i18nAria];
+    node.setAttribute("aria-label", text ?? node.dataset.i18nAriaEn);
+  });
+}
+
+function syncLangToggle() {
+  const toggle = byId("lang-toggle");
+  if (!toggle) return;
+  const zh = getLang() === "zh";
+  toggle.setAttribute("aria-pressed", String(zh));
+  byId("lang-toggle-label").textContent = zh ? "EN" : "中文";
+  toggle.setAttribute("title", zh ? "Switch to English" : "Switch to Chinese (中文)");
+}
+
+function rerenderAll() {
+  if (!state.data) return;
+  renderTodayDateOptions();
+  renderToday();
+  renderLeaderboard();
+  renderTrends();
+  renderTrendMap();
+  renderStaleBanner();
+  renderBuildMeta();
+}
+
+function toggleLang() {
+  setLang(getLang() === "zh" ? "en" : "zh");
+  applyStaticI18n();
+  syncLangToggle();
+  rerenderAll();
+}
+
+const I18N = {
+  en: {},
+  zh: {
+    // --- Brackets and chrome -------------------------------------------------
+    "Skip to content": "跳到主要内容",
+    "Subscribe to Benchmark Radar via RSS": "通过 RSS 订阅 Benchmark Radar",
+    "Export the dataset": "导出数据集",
+    "Get in touch · Email, WeChat, Discord": "联系我 · 邮件、微信、Discord",
+    Data: "数据",
+    Contact: "联系",
+    "Support this repository": "支持这个仓库",
+    "Open the repository and star it": "打开仓库并给个 Star",
+    Star: "Star",
+    "Fork this repository": "Fork 这个仓库",
+    Fork: "Fork",
+    "Open a new issue": "新建 Issue",
+    Issues: "Issues",
+    "Dashboard views": "仪表盘视图",
+    Today: "今日",
+    Leaderboard: "排行榜",
+    Trends: "趋势",
+    "Trend map": "趋势图",
+    Rubric: "评分标准",
+    "Daily briefing": "每日简报",
+    "Questions for today": "今日问答",
+    Search: "搜索",
+    "Title, summary, or source": "标题、摘要或来源",
+    "Scan date": "扫描日期",
+    Kind: "类型",
+    Category: "类别",
+    Source: "来源",
+    Organization: "机构",
+    Event: "事件",
+    "Clear filters": "清除筛选",
+    "Matching observations": "匹配结果",
+    "Show more results": "显示更多结果",
+    Sources: "来源",
+    "Corpus totals": "语料统计",
+    All: "全部",
+    "view.today.matching": "匹配结果",
+    // --- Leaderboard ---------------------------------------------------------
+    "Model Card Adoption Rank": "模型卡采用排名",
+    "Which benchmarks do model cards report?": "模型卡报告了哪些基准?",
+    "How to read this evidence": "如何解读这些证据",
+    "leaderboard.method.note1":
+      "这是报告惯例的排名,不是基准质量排名。一张模型卡无论报告了多少种配置,对同一基准最多计为一次提及。",
+    "leaderboard.method.note2":
+      "部分模型卡把基准表做成图片发布,这些行是通过 OCR 转录的,转录结果可能出错。<a href=\"#leaderboard-cards-heading\">来源台账</a> 列出了每一条记录的基准和原始文档,以便逐条核对每个计数。",
+    "Registry overview": "总览",
+    "What the two layers say": "两层信息说了什么",
+    "Stated findings": "明确结论",
+    "Benchmarks to watch": "值得关注的基准",
+    "Choose a reporting story": "选择一个报告故事",
+    "leaderboard.navigator.note":
+      "从能把新兴工具与成熟标准、饱和惯例区分开来的信号入手。",
+    "Reporting over time": "随时间的变化",
+    "Benchmark adoption frontier": "基准采用前沿",
+    "All tracked benchmarks": "所有追踪的基准",
+    "Frontier milestones": "前沿里程碑",
+    "What would make this a true Pareto frontier?": "怎样才算真正的帕累托前沿?",
+    "Benchmarks by model card adoption": "按模型卡采用排名的基准",
+    "Benchmark name or alias": "基准名称或别名",
+    Domain: "领域",
+    "Benchmark released": "基准发布",
+    "Audit the counts": "核对数量",
+    "Model cards in the registry": "登记册中的模型卡",
+    "Dashboard unavailable": "仪表盘不可用",
+    "The validated data file could not be loaded.": "无法加载校验过的数据文件。",
+    "Try refreshing, or inspect the latest daily Issue while the dashboard rebuilds.": "请尝试刷新,或在仪表盘重建时查看最新的每日 Issue。",
+    "Open daily Issues ↗": "打开每日 Issue ↗",
+    "error.note": "请尝试刷新,或在仪表盘重建时查看最新的每日 Issue。",
+    "Open daily Issues": "打开每日 Issue ↗",
+    "Select a node": "选择一个节点",
+    "All dates": "所有日期",
+    "frontier.explainer.tl1":
+      "同一时间轴上有三条读数。每个橙色菱形标记一家机构首次报告该基准,这是唯一会抬高累计次数的事件。其下的地毯为每张有日期的模型卡放一个刻度,已被计数的机构之后发布的卡显示为灰色刻度,楼梯保持水平。没有发布日期的卡无法放在时间线上,从两条带中都缺席,但仍计入上面的总数。长而平稳的一段是在这个精选登记册中观察到的报告饱和,并非对基准分数饱和的判断。",
+    "frontier.explainer.sub":
+      "下面的分数轨道是另一条独立的读数:每个能从引文文档中逐字读到的数值,只在工具与协议完全一致时才相连。分数末端趋于平直通常意味着没有更新的数字可读,因此缺口被标出而不是用线穿过。",
+    "leaderboard.filters.note":
+      "每张模型卡对同一基准只计一次。一张在四个配置中报告 AIME 的卡,与只报告一次的卡计数相同,因此冗长的附录不能压过不同的供应商。机构可以打破平局:六个供应商报告同一计数是共同标准,只有一个供应商报告则是自家风格。",
+    "leaderboard.ledger.note":
+      "这是计算排名的精选来源列表。展开任意一张卡可看到其报告的全部基准,并按源文档的分组方式分组,以便我们的数据能逐行对照原文核查。",
+    "pareto.readiness.summary": "怎样才算真正的帕累托前沿?",
+    "pareto.readiness.note1":
+      "可比的分数观测需要基准版本与划分、指标方向、模型、评测框架或脚手架、推理预算、成本或延迟、发布日期与来源。只有兼容的配置才能共享一个分数前沿;这个登记册目前存储的是提及次数,而不是这些测量值。",
+    "pareto.readiness.note2":
+      "有了这些观测数据,Harbor 风格视图可以把成本或延迟放在 x 轴、分数放在 y 轴,只连接不受支配的观测点,并用发布时间滑块揭示前沿如何移动。",
+    "map.heading.note":
+      "总览概括整个语料。关系画布包含每个工件及其关联的机构、来源与主题;选择一个节点会把它带进今天的筛选器。",
+    "map.detail.note":
+      "主题、来源和机构节点会设置对应的今日筛选器。工件节点会设置日期与标题搜索。",
+    "trends.heading.note": "计数描述的是发现数量,不是科学质量。",
+    "trends.daily.title": "每日证据与关注量",
+    "trends.daily.note": "类别标签会有重叠。每个条形都是独立计数,不是堆叠总量的一部分。",
+    "trends.releaseOnly": "仅看新发布",
+    "trends.releaseOnly.note": "排除对已出现内容的更新式再公告记录。",
+    Updated: "更新于",
+    Unknown: "未知",
+    // --- Metric nouns (singular/plural both map to the same zh noun) --------
+    point: "分",
+    points: "分",
+    comment: "条评论",
+    comments: "条评论",
+    source: "个来源",
+    sources: "个来源",
+    "evidence record": "条证据",
+    "model card": "张模型卡",
+    "model cards": "张模型卡",
+    "dated organization": "家过日期机构",
+    "dated organizations": "家过日期机构",
+    organization: "个机构",
+    "repeat report": "次重复报告",
+    "repeat reports": "次重复报告",
+    benchmark: "个基准",
+    benchmarks: "个基准",
+    value: "个值",
+    values: "个值",
+    date: "个日期",
+    dates: "个日期",
+    domain: "个领域",
+    domains: "个领域",
+    artifact: "个工件",
+    artifacts: "个工件",
+    day: "天",
+    days: "天",
+    month: "个月",
+    months: "个月",
+    topic: "个主题",
+    topics: "个主题",
+    // --- Today / health ------------------------------------------------------
+    "Evidence cited by GPT": "GPT 引用的证据",
+    "Caveat: ": "注意: ",
+    "No briefing was recorded for this day.": "这一天没有记录简报。",
+    "No observations match these filters. Clear one or more filters to widen the view.":
+      "没有符合条件的记录。清除一个或多个筛选条件以扩大范围。",
+    "Evidence: ": "证据: ",
+    "Attention: active": "关注度:活跃",
+    "No categorized records in this scan.": "本次扫描没有分类记录。",
+    "more categories": "更多类别",
+    "None observed today": "今日无记录",
+    "No records today": "今日无记录",
+    "all ok": "全部正常",
+    empty: "为空",
+    "Active attention": "活跃关注度",
+    "Evidence": "证据",
+    new: "新增",
+    active: "活跃",
+    none: "无",
+    result: "条结果",
+    results: "条结果",
+    evidence: "条证据",
+    attention: "个关注信号",
+    Show: "显示",
+    more: "更多",
+    remaining: "条剩余",
+    flat: "持平",
+    up: "上升",
+    down: "下降",
+    found: "已找到",
+    failed: "失败",
+    ok: "正常",
+    "Attention ingest": "关注度采集",
+    "Evidence ingest": "证据采集",
+    "Producer report": "生产者报告",
+    "Truncated at the record per-source limit": "在单项来源上限处被截断",
+    "History begins": "历史始于",
+    "At least two daily snapshots are required to calculate a trend": "计算趋势至少需要两个每日快照",
+    Baseline: "基线",
+    "active attention signals": "条活跃关注信号",
+    "Two snapshots are available. The chart shows the first comparable daily change; broader trend language begins with three snapshots.":
+      "已有两个快照。图表显示第一次可比较的日变化;更完整的趋势表述需要三个快照。",
+    "Two snapshots are available, but their connector coverage or report limit differs, so the change between them is not comparable.":
+      "已有两个快照,但两者的连接器覆盖范围或报告上限不同,因此它们之间的变化不可比较。",
+    "Compared with": "与",
+    "surfaced evidence is": "相比,已出现的证据",
+    "active attention is": ",活跃关注度",
+    "Biggest domain moves": "最大的领域变化",
+    "used different connector coverage or a different report limit than": "使用了与",
+    "so the two scans": "不同的连接器覆盖范围或报告上限,因此这两次扫描",
+    "are not directly comparable. Counts are shown without a change figure.": "不可直接比较。计数将不附带变化数值显示。",
+    "vs previous scan": "对比上次扫描",
+    "not comparable": "不可比较",
+    "recent daily average": "近期日平均",
+    "not enough history": "历史不足",
+    cumulative: "累计",
+    "vs its average": "对比其平均值",
+    "also updated (not counted above)": "另有更新(未计入上方)",
+    "no change": "无变化",
+    "New releases only. Re-announced updates are tracked separately.":
+      "仅统计新发布。重新宣布的更新单独跟踪。",
+    snapshots: "个快照",
+    "category match": "个类别匹配",
+    "category matches": "个类别匹配",
+    // --- Questions -----------------------------------------------------------
+    "In plain English: ": "用简单的话说: ",
+    "Evidence is insufficient to answer this today.": "目前证据不足以回答这个问题。",
+    "Takeaway: ": "要点: ",
+    "Counter-view: ": "反面观点: ",
+    "View analysis": "查看分析",
+    "Answered by": "由",
+    confidence: "置信度",
+    in: "花费了",
+    calls: "次调用",
+    "input tokens": "输入 token",
+    "output tokens": "输出 token",
+    "every figure computed before the call and cited by ID": "所有数字都在调用前计算并通过 ID 引用",
+    "OpenAI model": "OpenAI 模型",
+    "GPT synthesis": "GPT 综合",
+    "via OpenAI Responses API": "经由 OpenAI Responses API",
+    "evidence records": "条证据记录",
+    "history days injected": "天历史记录被注入",
+    and: "和",
+    "Evidence & briefing details": "证据与简报详情",
+    "Briefing details": "简报详情",
+    "Daily questions were not enabled for this run.": "本次运行未启用每日问答。",
+    "Daily questions failed to generate": "每日问答生成失败",
+    "No questions were answered for this day.": "这一天没有可回答的问题。",
+    "Why it matters": "为什么重要",
+    // --- Score blocks --------------------------------------------------------
+    "Priority score": "优先度评分",
+    Recommended: "推荐",
+    "Recommended to review": "推荐复核",
+    "Priority score meets this scan's": "本次扫描的优先度分数达到",
+    " triage threshold; not an endorsement.": " 分诊阈值,并非背书。",
+    "not an endorsement": "并非背书",
+    "uncategorized": "未分类",
+    "How is this scored?": "这个分数怎么来的?",
+    "Not quality-scored": "未做质量评分",
+    "This is a public attention signal. Its activity is shown separately from scientific evidence and priority.":
+      "这是一个公开的关注度信号。它的活跃度与科学证据和优先度分开展示。",
+    "Supporting submissions": "支撑提交",
+    "Open primary artifact ↗": "打开主要工件 ↗",
+    "Why surfaced": "为什么出现",
+    "Open primary source ↗": "打开主要来源 ↗",
+    "View matching observations →": "查看匹配记录 →",
+    "Selected node": "已选节点",
+    "Connected to": "连接到",
+    "Paraphrased example": "转述示例",
+    Scenario: "场景",
+    "Evaluated artifact": "被评估的工件",
+    "Comparison caveat": "对比注意事项",
+    "Open official benchmark source ↗": "打开官方基准来源 ↗",
+    "Benchmarks": "基准",
+    // --- Trends --------------------------------------------------------------
+    "Corpus rhythm": "语料节奏",
+    "Signals over time": "随时间变化的信号",
+    "Counts describe discovery volume, not scientific quality.": "计数描述的是发现量,不是科学质量。",
+    "New by domain": "按领域的新内容",
+    "Daily evidence and attention volume": "每日证据与关注度量",
+    "Category tags overlap. Each bar is an independent count, not a part of a stacked total.":
+      "类别标签有重叠。每个柱是独立计数,不是堆叠总量的组成部分。",
+    "Releases only": "仅发布",
+    "Excludes records re-announced as an update to something already surfaced.":
+      "排除作为已出现内容的更新而再次宣布的记录。",
+    "Daily ledger": "每日台账",
+    "trends.ledger.note":
+      "来源结构统计的是评分后的排序证据;抓取状态统计的是评分前的原始记录,所以一个来源可能正常却仍为空。",
+    Date: "日期",
+    "Coverage (UTC)": "覆盖范围 (UTC)",
+    "Source mix": "来源结构",
+    Categories: "类别",
+    Events: "事件",
+    Attention: "关注度",
+    "Fetch health": "抓取状态",
+    // --- Map ----------------------------------------------------------------
+    "Cumulative corpus": "累计语料",
+    "Artifacts and their context": "工件及其背景",
+    "view.map.note":
+      "总览概括了整个语料库。关系画布包含每一个工件以及与其相连的机构、来源和主题;选择节点即可将其带入今日筛选。",
+    "Inspect a relationship": "检查一个关系",
+    "view.map.detail.note": "主题、来源和机构节点会设置对应的今日筛选。工件节点会设置日期和标题搜索。",
+    // --- Frontier / workbench -------------------------------------------------
+    "Priority & evidence": "优先度与证据",
+    "Early signal": "早期信号",
+    "New & spreading": "新增且扩散中",
+    "Established": "已确立",
+    "Saturated reporting": "报告饱和",
+    "View adoption frontier ↑": "查看采用前沿 ↑",
+    "Show on the chart ↑": "在图表中显示 ↑",
+    "Model cards": "模型卡",
+    "Best on record": "历史最佳",
+    "Headroom left": "剩余空间",
+    "Readable values": "可读数值",
+    "Supports: ": "支持: ",
+    "Does not support: ": "不支持: ",
+    "Readable score": "可读分数",
+    Model: "模型",
+    Adoption: "采用",
+    "Open source record ↗": "打开来源记录 ↗",
+    "Open source document ↗": "打开来源文档 ↗",
+    "Read from": "读取自",
+    "Cited by": "被引用",
+    Instrument: "工具",
+    Protocol: "协议",
+    "new instrument": "新工具",
+    "Not yet reported": "尚未报告",
+    "not yet reported in these cards": "这些模型卡中尚未报告",
+    "Reported by": "报告机构",
+    "Benchmark home ↗": "基准主页 ↗",
+    "Top cards": "头部模型卡",
+    "Disclosure": "披露",
+    "No benchmarks match these filters. Clear one or more filters to widen the view.":
+      "没有符合条件的基准。清除一个或多个筛选条件以扩大范围。",
+    "source documents": "来源文档",
+    "Each document counts once per benchmark.": "每份文档对每个基准只计一次。",
+    organizations: "机构",
+    "The denominator for reporting breadth.": "衡量报告广度时的分母。",
+    "Benchmarks tracked": "追踪的基准数",
+    "Benchmarks reported at least once": "被报告至少一次的基准数",
+    "The subset a ranked row can speak to.": "排名行所能覆盖的子集。",
+    "New instruments": "新工具",
+    "Benchmarks this document reports": "此文档报告的基准",
+    "Last read by a human on": "人工最后读取于",
+    "date unknown": "日期未知",
+    "shown": "显示",
+    "tracked": "追踪",
+    "of": "共",
+    // --- Export / contact -----------------------------------------------------
+    "Benchmark Radar · data export": "Benchmark Radar · 数据导出",
+    "Take the data with you": "把数据带走",
+    "Download full dataset (JSON)": "下载全量数据集 (JSON)",
+    "Download current view (CSV · {rows} rows)": "下载当前视图 (CSV · {rows} 行)",
+    "Benchmark Radar": "Benchmark Radar",
+    "Get in touch": "联系我",
+    Email: "邮件",
+    WeChat: "微信",
+    Discord: "Discord",
+    // --- Remaining dynamic strings ------------------------------------------
+    " on a": " 以",
+    " scored records on": " 项已评分记录,以",
+    " · current": " · 现行",
+    " · superseded": " · 已取代",
+    "(zoom)": "(缩放)",
+    "(zoomed)": "(已缩放)",
+    "A wrong row in the adoption ranking is a real bug. So is a connector that stopped collecting, or a benchmark you expected the radar to see.":
+      "采用排行中的一行错误就是真实的 bug;连接器停止采集,或者一个你期待雷达发现的基准没有出现,同样是 bug。",
+    "All domains": "所有领域",
+    "All organizations": "所有机构",
+    "Any release date": "任意发布日期",
+    "Artifact nodes connected to topics, organizations, and discovery sources":
+      "连接到主题、机构与发现来源的工件节点",
+    Artifacts: "工件",
+    "At least 80% of organizations in this curated registry report it; that is convention, not quality.":
+      "该精选登记册中至少 80% 的机构报告了它;这是惯例,不是质量。",
+    Authors: "作者",
+    "Awaiting an independent second organization": "等待第二个独立机构",
+    "Click the marker to pin these details": "点击标记以固定这些详情",
+    "Click to pin record details": "点击固定记录详情",
+    Comments: "评论",
+    "Corpus coverage": "语料覆盖",
+    "Dashed score connection": "虚线分数连接",
+    "Discovery sources": "发现来源",
+    "Doing related-work research, or hunting for a benchmark on a topic? This database aggregates every benchmark, evaluation, and dataset the radar has surfaced, and you can query it by topic, source, or organization before you export. The full corpus below is the same data the dashboard renders.":
+      "在做相关工作研究,或想按主题查找基准?这个数据库汇总了雷达发现过的每一个基准、评测与数据集,可以在导出前按主题、来源或机构查询。下方的完整语料与仪表盘渲染的是同一份数据。",
+    "Every benchmark this document puts in front of readers, counted once each. These are mentions, not scores: the source records the configuration, and this registry deliberately does not.":
+      "此文档呈现给读者的每个基准,各计一次。这是提及次数,不是分数:来源记录了配置,而这个登记册刻意不记录。",
+    "Every record matching at least one taxonomy category is retained. A score of":
+      "只要匹配至少一个分类类别的记录都会被保留。达到分数",
+    "First card from that organization": "该机构的第一张模型卡",
+    "First reporting organization": "首个报告机构",
+    "How priority is scored": "优先度如何评分",
+    "Later card, organization already counted": "之后的模型卡,机构已计入",
+    "Leaderboard (CSV)": "排行榜 (CSV)",
+    "Most represented organizations": "出现最多的机构",
+    "New organization": "新机构",
+    "No benchmark is reported by a curated card yet.": "目前还没有精选模型卡报告任何基准。",
+    "No corpus entities yet.": "还没有语料实体。",
+    "No dated model-card mentions yet.": "还没有带日期的模型卡提及。",
+    "No dated report": "没有日期记录",
+    "No description published at the source.": "来源没有发布描述。",
+    "No discovery sources yet.": "还没有发现来源。",
+    "No further description beyond the preview above.": "除了上面的预览,没有更多描述。",
+    "No organizations identified yet.": "还没有识别出机构。",
+    "No score for this benchmark could be read verbatim from the cited documents, so the chart shows adoption only. An absent value is not a zero and not a plateau.":
+      "引用的文档中读不到该基准的逐字分数,因此图表只显示采用情况。缺失的数值既不是零,也不是平台期。",
+    "No source documents in the registry yet.": "登记册中还没有来源文档。",
+    "No topics assigned yet.": "还没有分配主题。",
+    "Not a verbatim benchmark item. This description paraphrases the official source; open it for exact tasks and protocol.":
+      "不是逐字的基准条目。此描述转述自官方来源;请打开它以查看确切的题目与协议。",
+    "Not a verbatim benchmark item. This is an illustrative format based on the recorded domain; use the official source for exact tasks and protocol.":
+      "不是逐字的基准条目。这是根据记录领域生成的示例格式;请使用官方来源查看确切的题目与协议。",
+    "Only one dated organization is visible so far. It is too early to infer a plateau.":
+      "目前只看到一个有日期的机构。推断平台期还为时过早。",
+    "Open public discussion ↗": "打开公开讨论 ↗",
+    Organizations: "机构",
+    "Pinned · click the marker again or press Escape to close": "已固定 · 再次点击标记或按 Escape 关闭",
+    Priority: "优先度",
+    "Priority is the weighted mean of four components, each measured on a 0 to":
+      "优先度是四个维度的加权平均,每个维度都以 0 到",
+    "Producer discovered": "发现者发现于",
+    Published: "发布",
+    "Radar first observed": "雷达首次观察到",
+    "Read full card ↗": "阅读完整模型卡 ↗",
+    Recency: "新鲜度",
+    "Release date unrecorded": "未记录发布日期",
+    Released: "发布于",
+    "Released in the newest 18-month window and already reported by several independent organizations.":
+      "在最近 18 个月的窗口内发布,且已被多个独立机构报告。",
+    Relevance: "相关性",
+    "Reported across multiple organizations, but not yet a corpus-wide convention in this registry.":
+      "已被多个机构报告,但尚未成为本登记册中的语料级惯例。",
+    "Reporting stage": "报告阶段",
+    "Representative task shape": "代表性任务形态",
+    "Rubric v": "评分标准 v",
+    Score: "分数",
+    Scored: "已评分",
+    "Scores from the": "分数来自",
+    "Scoring rubric v": "评分标准 v",
+    "Show the first 18 benchmarks": "显示前 18 个基准",
+    "Showing all": "显示全部",
+    "Solid score connection": "实线分数连接",
+    Submissions: "提交数",
+    "The current rubric is v": "当前评分标准为 v",
+    "This benchmark has no dated mentions.": "该基准没有带日期的提及。",
+    "This historical scan used": "本次历史扫描采用了",
+    "This record scores": "该记录得分",
+    "This record was scored by rubric v": "该记录由评分标准 v",
+    "Too early to infer a reporting plateau": "推断报告平台期为时尚早",
+    "Topic coverage": "主题覆盖",
+    Topics: "主题",
+    "What this score does not claim": "这个分数的含义之外",
+    "adoption trajectory": "采用轨迹",
+    after: "之后",
+    "an inclusion cutoff. Records below it were not retained.": "为纳入门槛。低于它的记录未被保留。",
+    as: "作为",
+    "author nodes summarized above and omitted from the canvas": "个作者节点已在上面汇总,并从画布中省略",
+    "best on record": "历史最佳",
+    by: "由",
+    "cited by": "被引用",
+    "connected only at one instrument and protocol": "仅在单一工具与协议连接",
+    contributes: "贡献",
+    "count unchanged": "计数不变",
+    "cumulative count increases": "累计计数增加",
+    "cumulative distinct organizations": "累计独立机构",
+    "did not add a new organization to the frontier": "未向前沿新增机构",
+    "distinct orgs": "独立机构",
+    "first dated mention": "首次带日期的提及",
+    "first readable score": "首个可读分数",
+    "has only one dated reporting organization; it is too early to infer a plateau":
+      "只有一个带日期的报告机构;推断平台期还为时过早",
+    "here are third parties": "有第三方",
+    "here is a third party": "有第三方",
+    "last new organization": "最近新增机构",
+    listed: "已列出",
+    "no readable score in this window": "此窗口中无可读分数",
+    "not yet reported": "尚未报告",
+    "points to zero, the floor of this metric": "指向零,该指标的底线",
+    protocol: "协议",
+    "publication time": "发布时间",
+    "quoting another vendor's figure, marked with a ring on the chart":
+      "引用另一家供应商的数据,图表中以圆环标出",
+    release: "发布",
+    "release date unrecorded": "未记录发布日期",
+    released: "发布于",
+    "same instrument and protocol across organizations": "跨机构的相同工具与协议",
+    "same instrument and protocol, one organization only": "单一机构,相同工具与协议",
+    "scale. Every number below is read from the same definition the pipeline applies.":
+      "的标尺。下面每个数字都按流程应用的同一套定义读取。",
+    "still leaves one frontier step": "仍剩一个前沿台阶",
+    "the previous frontier step": "前一个前沿台阶",
+    "the tick under the jump": "跳变下方的刻度",
+    to: "到",
+    "to the total": "到总分",
+    "two versions are not directly comparable, and past records are not rescored.":
+      "两个版本不可直接比较,过去的记录不会重新评分。",
+    weight: "权重",
+    "with a dated card": "有日期的模型卡",
+  },
+};
+
 const state = {
   data: null,
   view: "today",
@@ -158,9 +762,9 @@ function replaceChildren(target, children) {
 }
 
 function formatDate(value, options = { dateStyle: "long" }) {
-  if (!value) return "Unknown";
+  if (!value) return t("Unknown");
   const withTime = value.length === 10 ? `${value}T00:00:00Z` : value;
-  return new Intl.DateTimeFormat("en", { timeZone: "UTC", ...options }).format(
+  return new Intl.DateTimeFormat(getLang() === "zh" ? "zh" : "en", { timeZone: "UTC", ...options }).format(
     new Date(withTime),
   );
 }
@@ -312,9 +916,11 @@ function scoreBlock(item) {
   const max = scoreMax(item);
   const width = Math.max(0, Math.min(100, (score / max) * 100));
   const recommendationScore = Number(item.recommendation_score);
+  const triagePrefix = t("Priority score meets this scan's");
+  const triageSuffix = t(" triage threshold; not an endorsement.");
   const recommendationExplanation = Number.isFinite(recommendationScore)
-    ? `Priority score meets this scan's ${recommendationScore.toFixed(0)}-point triage threshold; not an endorsement.`
-    : "Priority score meets this scan's triage threshold; not an endorsement.";
+    ? `${triagePrefix} ${recommendationScore.toFixed(0)}-point${triageSuffix}`
+    : `${triagePrefix}${triageSuffix}`;
   const trackFill = element("span", {});
   const track = element("div", { className: "score-track" }, [trackFill]);
   trackFill.style.width = `${width}%`;
@@ -325,10 +931,10 @@ function scoreBlock(item) {
     className: "score-label score-explain",
     attrs: {
       type: "button",
-      "aria-label": `Priority score ${score.toFixed(2)} of ${max.toFixed(2)}. How is this scored?`,
+      "aria-label": `${t("Priority score")} ${score.toFixed(2)} ${t("of")} ${max.toFixed(2)}. ${t("How is this scored?")}`,
     },
   }, [
-    element("span", { text: "Priority score" }),
+    element("span", { text: t("Priority score") }),
     element("span", { className: "info-mark", text: "i", attrs: { "aria-hidden": "true" } }),
   ]);
   explain.addEventListener("click", (event) => {
@@ -343,10 +949,10 @@ function scoreBlock(item) {
       ? [
           element("span", {
             className: "recommendation-badge",
-            text: "Recommended",
+            text: t("Recommended"),
             attrs: {
               title: recommendationExplanation,
-              "aria-label": `Recommended to review. ${recommendationExplanation}`,
+              "aria-label": `${t("Recommended to review")}. ${recommendationExplanation}`,
             },
           }),
         ]
@@ -372,7 +978,7 @@ function pillBar(item) {
     ),
   ];
   if (!(item.categories || []).length) {
-    pills.push(element("span", { className: "pill", text: "uncategorized" }));
+    pills.push(element("span", { className: "pill", text: t("uncategorized") }));
   }
   return element("div", { className: "pill-bar" }, pills);
 }
@@ -468,13 +1074,13 @@ function briefingMeta(parts) {
   if (parts.confidence) {
     chips.push(element("span", {
       className: `briefing-chip briefing-chip-${parts.confidence.toLowerCase()}`,
-      text: `${parts.confidence} confidence`,
+      text: `${parts.confidence} ${t("confidence")}`,
     }));
   }
   if (parts.sources > 0) {
     chips.push(element("span", {
       className: "briefing-chip briefing-chip-sources",
-      text: `${parts.sources} ${parts.sources === 1 ? "source" : "sources"}`,
+      text: `${parts.sources} ${parts.sources === 1 ? t("source") : t("sources")}`,
     }));
   }
   if (!chips.length) return null;
@@ -499,7 +1105,7 @@ function briefingProvenance(briefing) {
   const input = briefing.input || {};
   return element("p", {
     className: "daily-briefing-meta",
-    text: `GPT synthesis: ${briefing.model || "OpenAI model"} via OpenAI Responses API · ${Number(usage.input_tokens || 0).toLocaleString()} input / ${Number(usage.output_tokens || 0).toLocaleString()} output tokens · ${Number(input.evidence_items || 0).toLocaleString()} evidence records and ${Number(input.history_days || 0).toLocaleString()} history days injected.`,
+    text: `${t("GPT synthesis")}: ${briefing.model || t("OpenAI model")} ${t("via OpenAI Responses API")} · ${Number(usage.input_tokens || 0).toLocaleString()} ${t("input tokens")} / ${Number(usage.output_tokens || 0).toLocaleString()} ${t("output tokens")} · ${Number(input.evidence_items || 0).toLocaleString()} ${t("evidence records")} ${t("and")} ${Number(input.history_days || 0).toLocaleString()} ${t("history days injected")}.`,
   });
 }
 
@@ -511,7 +1117,7 @@ function briefingEvidenceList(citations) {
   }, [
     element("h3", {
       className: "daily-briefing-evidence-title",
-      text: "Evidence cited by GPT",
+      text: t("Evidence cited by GPT"),
       attrs: { id: "daily-briefing-evidence-heading" },
     }),
     element("ul", {}, citations.map((citation) =>
@@ -533,7 +1139,7 @@ function briefingDetails(briefing, citations) {
   const provenance = briefingProvenance(briefing);
   const caveat = briefing.caveat
     ? element("p", { className: "daily-briefing-caveat" }, [
-        element("strong", { text: "Caveat: " }),
+        element("strong", { text: t("Caveat: ") }),
         document.createTextNode(String(briefing.caveat)),
       ])
     : null;
@@ -541,8 +1147,8 @@ function briefingDetails(briefing, citations) {
   if (!provenance && !caveat && !evidence) return null;
 
   const label = citations.length
-    ? `Evidence & briefing details · ${citations.length.toLocaleString()} sources`
-    : "Briefing details";
+    ? `${t("Evidence & briefing details")} · ${citations.length.toLocaleString()} ${t("sources")}`
+    : t("Briefing details");
   return element("details", { className: "daily-briefing-details" }, [
     element("summary", { text: label }),
     provenance,
@@ -576,7 +1182,7 @@ function renderDailyBriefing(day) {
       : [
           element("p", {
             className: "empty-state",
-            text: "No briefing was recorded for this day.",
+            text: t("No briefing was recorded for this day."),
           }),
         ],
   );
@@ -657,7 +1263,7 @@ function answerBlock(answer) {
       ? [
           element("span", {
             className: `pill pill-confidence pill-confidence-${confidence}`,
-            text: `${confidence} confidence`,
+            text: `${confidence} ${t("confidence")}`,
           }),
         ]
       : []),
@@ -665,14 +1271,14 @@ function answerBlock(answer) {
       ? [
           element("span", {
             className: "answer-source-count",
-            text: `${sourceCount} ${sourceCount === 1 ? "source" : "sources"}`,
+            text: `${sourceCount} ${sourceCount === 1 ? t("source") : t("sources")}`,
           }),
         ]
       : []),
   ]);
   const detail = element("div", { className: "answer-detail" }, [
     element("p", { className: "answer-plain" }, [
-      element("em", { text: "In plain English: " }),
+      element("em", { text: t("In plain English: ") }),
       document.createTextNode(String(answer?.plain_english || "")),
     ]),
     citations,
@@ -682,18 +1288,18 @@ function answerBlock(answer) {
       ? [
           element("p", {
             className: "answer-insufficient",
-            text: "Evidence is insufficient to answer this today.",
+            text: t("Evidence is insufficient to answer this today."),
           }),
         ]
       : []),
     element("p", { className: "answer-takeaway" }, [
-      element("strong", { text: "Takeaway: " }),
+      element("strong", { text: t("Takeaway: ") }),
       document.createTextNode(String(answer?.takeaway || "")),
     ]),
     // The counter-view is the point of the format: an answer that only ever
     // confirms itself teaches a reader nothing about how much to trust it.
     element("p", { className: "answer-counter-view" }, [
-      element("strong", { text: "Counter-view: " }),
+      element("strong", { text: t("Counter-view: ") }),
       document.createTextNode(String(answer?.counter_view || "")),
     ]),
   ]);
@@ -708,7 +1314,7 @@ function answerBlock(answer) {
     meta,
     element("details", { className: "answer-disclosure" }, [
       element("summary", { className: "answer-disclosure-summary" }, [
-        element("span", { className: "answer-disclosure-label", text: "View analysis" }),
+        element("span", { className: "answer-disclosure-label", text: t("View analysis") }),
       ]),
       detail,
     ]),
@@ -720,7 +1326,7 @@ function questionsProvenance(questions) {
   const usage = questions.usage || {};
   return element("p", {
     className: "daily-questions-meta",
-    text: `Answered by ${questions.model || "OpenAI model"} in ${Number(questions.calls || 0).toLocaleString()} calls · ${Number(usage.input_tokens || 0).toLocaleString()} input / ${Number(usage.output_tokens || 0).toLocaleString()} output tokens · every figure computed before the call and cited by ID.`,
+    text: `${t("Answered by")} ${questions.model || t("OpenAI model")} ${t("in")} ${Number(questions.calls || 0).toLocaleString()} ${t("calls")} · ${Number(usage.input_tokens || 0).toLocaleString()} ${t("input tokens")} / ${Number(usage.output_tokens || 0).toLocaleString()} ${t("output tokens")} · ${t("every figure computed before the call and cited by ID")}.`,
   });
 }
 
@@ -731,12 +1337,12 @@ function questionsProvenance(questions) {
 function absentQuestionsMessage(questions) {
   const status = questions.status;
   if (status === "disabled") {
-    return questions.reason || "Daily questions were not enabled for this run.";
+    return questions.reason || t("Daily questions were not enabled for this run.");
   }
   if (status === "error") {
-    return `Daily questions failed to generate: ${questions.reason || "unknown error"}.`;
+    return `${t("Daily questions failed to generate")}: ${questions.reason || "unknown error"}.`;
   }
-  return "No questions were answered for this day.";
+  return t("No questions were answered for this day.");
 }
 
 function renderDailyQuestions(day) {
@@ -788,6 +1394,30 @@ function renderDailyQuestions(day) {
   );
 }
 
+function renderTodayDateOptions() {
+  if (!state.data) return;
+  replaceChildren(
+    byId("today-date"),
+    [
+      option("all", t("All dates"), state.todayDate === "all"),
+      ...[...state.data.facets.dates].reverse().map((date) =>
+        option(date, formatDate(date, { dateStyle: "medium" }), date === state.todayDate),
+      ),
+    ],
+  );
+}
+
+function renderBuildMeta() {
+  if (!state.data) return;
+  byId("build-meta").textContent = `${t("Updated")} ${formatDate(
+    state.data.generated_at,
+    {
+      dateStyle: "medium",
+      timeStyle: "short",
+    },
+  )} UTC`;
+}
+
 function renderToday() {
   // Events are bound before the data file resolves (initialize), so a nav
   // click or filter keystroke in the load window must no-op, not throw.
@@ -829,15 +1459,15 @@ function renderToday() {
   const showMore = byId("today-show-more");
   showMore.hidden = remainingResults <= 0;
   showMore.textContent = remainingResults > 0
-    ? `Show ${Math.min(ALL_DATES_PAGE_SIZE, remainingResults)} more · ${remainingResults} remaining`
-    : "Show more results";
+    ? `${t("Show")} ${Math.min(ALL_DATES_PAGE_SIZE, remainingResults)} ${t("more")} · ${remainingResults} ${t("remaining")}`
+    : t("Show more results");
   const evidenceCount = observations.filter(
     (item) => item.observation_kind === "evidence",
   ).length;
   const attentionCount = observations.length - evidenceCount;
   byId("today-count").textContent =
-    `${observations.length} result${observations.length === 1 ? "" : "s"} · ` +
-    `${evidenceCount} evidence · ${attentionCount} attention`;
+    `${observations.length} ${observations.length === 1 ? t("result") : t("results")} · ` +
+    `${evidenceCount} ${t("evidence")} · ${attentionCount} ${t("attention")}`;
   replaceChildren(
     byId("today-list"),
     visibleObservations.length
@@ -853,13 +1483,13 @@ function renderToday() {
   const healthEntries = [
     ...day.ingest_health.map((entry) => ({
       ...entry,
-      layer: entry.kind === "attention" ? "Attention ingest" : "Evidence ingest",
+      layer: entry.kind === "attention" ? t("Attention ingest") : t("Evidence ingest"),
       method:
         entry.method ||
         (entry.ok ? LEGACY_SOURCE_COLLECTION_METHODS[entry.source] : "") ||
         "",
     })),
-    ...day.producer_health.map((entry) => ({ ...entry, layer: "Producer report" })),
+    ...day.producer_health.map((entry) => ({ ...entry, layer: t("Producer report") })),
   ];
   // Fetch plumbing is not what the reader came for, so the roster stays
   // collapsed to one line and the reader expands it on demand. The summary
@@ -868,8 +1498,8 @@ function renderToday() {
   // force-opening on every one of them buried the list beside it.
   const failedCount = healthEntries.filter((entry) => !entry.ok).length;
   byId("health-status").textContent = failedCount
-    ? `${failedCount} of ${healthEntries.length} failed`
-    : `${healthEntries.length} ok`;
+    ? `${failedCount} ${t("of")} ${healthEntries.length} ${t("failed")}`
+    : `${healthEntries.length} ${t("ok")}`;
   byId("health-status").classList.toggle("has-failure", failedCount > 0);
   // Absent on snapshots written before the cap was published, in which case no
   // count can be identified as truncated and all are shown as-is.
@@ -892,11 +1522,11 @@ function renderToday() {
           // a measured total.
           text: entry.ok
             ? entry.item_count
-              ? `${entry.item_count}${entry.item_count === ingestCap ? "+" : ""} found`
-              : "empty"
-            : "failed",
+              ? `${entry.item_count}${entry.item_count === ingestCap ? "+" : ""} ${t("found")}`
+              : t("empty")
+            : t("failed"),
           ...(entry.item_count === ingestCap
-            ? { attrs: { title: `Truncated at the ${ingestCap}-record per-source limit` } }
+            ? { attrs: { title: t("Truncated at the record per-source limit") } }
             : {}),
         }),
       ];
@@ -913,7 +1543,7 @@ function renderToday() {
   // outside the trend map.
   const topics = state.data.corpus?.aggregates?.topics || [];
   const totalArtifacts = Number(state.data.corpus?.aggregates?.entity_types?.artifact || 0);
-  byId("corpus-totals-status").textContent = `${totalArtifacts.toLocaleString()} artifacts`;
+  byId("corpus-totals-status").textContent = `${totalArtifacts.toLocaleString()} ${t("artifacts")}`;
   replaceChildren(
     byId("corpus-totals-list"),
     [...topics]
@@ -936,7 +1566,7 @@ function renderToday() {
 }
 
 function deltaText(value) {
-  if (!value) return "no change";
+  if (!value) return t("no change");
   return value > 0 ? `+${value}` : String(value);
 }
 
@@ -948,22 +1578,22 @@ function domainCard(category, trend, index) {
   const comparable = trend.delta !== null && trend.delta !== undefined;
   const delta = comparable ? Number(trend.delta) : 0;
   const rows = [
-    ["vs previous scan", comparable ? deltaText(delta) : "not comparable"],
+    [t("vs previous scan"), comparable ? deltaText(delta) : t("not comparable")],
     [
-      "recent daily average",
+      t("recent daily average"),
       trend.baseline === null || trend.baseline === undefined
-        ? "not enough history"
+        ? t("not enough history")
         : Number(trend.baseline).toFixed(2),
     ],
-    ["cumulative", Number(trend.cumulative || 0).toLocaleString()],
+    [t("cumulative"), Number(trend.cumulative || 0).toLocaleString()],
   ];
   if (trend.momentum !== null && trend.momentum !== undefined) {
     const percent = Math.round(Number(trend.momentum) * 100);
-    rows.splice(2, 0, ["vs its average", `${percent > 0 ? "+" : ""}${percent}%`]);
+    rows.splice(2, 0, [t("vs its average"), `${percent > 0 ? "+" : ""}${percent}%`]);
   }
   const updatedOnly = Math.max(0, (trend.total_count || 0) - (trend.count || 0));
   if (updatedOnly) {
-    rows.push(["also updated (not counted above)", updatedOnly.toLocaleString()]);
+    rows.push([t("also updated (not counted above)"), updatedOnly.toLocaleString()]);
   }
   return element(
     "article",
@@ -978,7 +1608,7 @@ function domainCard(category, trend, index) {
       element("p", {
         className: "domain-count",
         text: String(trend.count ?? 0),
-        attrs: { title: "New releases only. Re-announced updates are tracked separately." },
+        attrs: { title: t("New releases only. Re-announced updates are tracked separately.") },
       }),
       element(
         "dl",
@@ -1007,7 +1637,7 @@ function renderDomainMetrics(day) {
       : [
           element("p", {
             className: "empty-state",
-            text: "No categorized records in this scan.",
+            text: t("No categorized records in this scan."),
           }),
         ],
   );
@@ -1038,14 +1668,14 @@ function renderTrends() {
         swatch.style.setProperty("--swatch", categoryColor(category, index));
         return element("span", { className: "legend-item" }, [
           swatch,
-          element("span", { text: `Evidence: ${category.replaceAll("_", " ")}` }),
+          element("span", { text: `${t("Evidence")}: ${category.replaceAll("_", " ")}` }),
         ]);
       }),
       (() => {
         const swatch = element("span", { className: "legend-swatch attention-swatch" });
         return element("span", { className: "legend-item" }, [
           swatch,
-          element("span", { text: "Attention: active" }),
+          element("span", { text: t("Attention: active") }),
         ]);
       })(),
     ],
@@ -1057,17 +1687,17 @@ function renderTrends() {
   if (dayCount === 1) {
     const only = state.data.days[0];
     trendMessage.textContent =
-      `History begins ${formatDate(only.date)}. At least two daily snapshots are required to calculate a trend. ` +
-      `Baseline: ${only.evidence_count} evidence records and ${only.attention.active_count} active attention signals.`;
+      `${t("History begins")} ${formatDate(only.date)}. ${t("At least two daily snapshots are required to calculate a trend")}. ` +
+      `${t("Baseline")}: ${only.evidence_count} ${t("evidence records")} ${t("and")} ${only.attention.active_count} ${t("active attention signals")}.`;
     trendChart.hidden = true;
   } else if (dayCount === 2) {
     trendMessage.textContent = sameCollectionContext(
       state.data.days[1],
       state.data.days[0],
     )
-      ? "Two snapshots are available. The chart shows the first comparable daily change; broader trend language begins with three snapshots." +
+      ? t("Two snapshots are available. The chart shows the first comparable daily change; broader trend language begins with three snapshots.") +
         coverageNote(state.data.days[1])
-      : "Two snapshots are available, but their connector coverage or report limit differs, so the change between them is not comparable.";
+      : t("Two snapshots are available, but their connector coverage or report limit differs, so the change between them is not comparable.");
     trendChart.hidden = false;
   } else {
     const latest = state.data.days[dayCount - 1];
@@ -1079,20 +1709,21 @@ function renderTrends() {
     if (comparable) {
       const evidenceDelta = latest.evidence_count - previous.evidence_count;
       const attentionDelta = latest.attention.active_count - previous.attention.active_count;
-      const direction = (value) => (value > 0 ? `up ${value}` : value < 0 ? `down ${Math.abs(value)}` : "flat");
+      const direction = (value) =>
+      value > 0 ? `${t("up")} ${value}` : value < 0 ? `${t("down")} ${Math.abs(value)}` : t("flat");
       const movers = Object.entries(latest.category_trends || {})
         .filter(([, trend]) => trend.delta)
         .sort((a, b) => Math.abs(b[1].delta) - Math.abs(a[1].delta))
         .slice(0, 2)
         .map(([category, trend]) => `${category.replaceAll("_", " ")} ${deltaText(trend.delta)}`);
       trendMessage.textContent =
-        `Compared with ${previous.date}, surfaced evidence is ${direction(evidenceDelta)} and active attention is ${direction(attentionDelta)}.` +
-        (movers.length ? ` Biggest domain moves: ${movers.join(", ")}.` : "") +
+        `${t("Compared with")} ${previous.date}, ${t("surfaced evidence is")} ${direction(evidenceDelta)} ${t("and")} ${t("active attention is")} ${direction(attentionDelta)}.` +
+        (movers.length ? ` ${t("Biggest domain moves")}: ${movers.join(", ")}.` : "") +
         coverageNote(latest);
     } else {
       trendMessage.textContent =
-        `${latest.date} used different connector coverage or a different report limit than ${previous.date}, so the two scans ` +
-        "are not directly comparable. Counts are shown without a change figure.";
+        `${latest.date} ${t("used different connector coverage or a different report limit than")} ${previous.date}, ${t("so the two scans")} ` +
+        t("are not directly comparable. Counts are shown without a change figure.");
     }
     trendChart.hidden = false;
   }
@@ -1157,7 +1788,7 @@ function renderTrends() {
     }),
   );
   hideDayTooltip();
-  byId("snapshot-count").textContent = `${state.data.snapshot_count} snapshots`;
+  byId("snapshot-count").textContent = `${state.data.snapshot_count} ${t("snapshots")}`;
   replaceChildren(
     byId("trend-table"),
     [...state.data.days].reverse().map((day) => {
@@ -1180,7 +1811,7 @@ function renderTrends() {
         }),
         element("td", { text: countMapText(day.event_kind_counts) }),
         element("td", {
-          text: `${day.attention.new_count} new · ${day.attention.active_count} active`,
+          text: `${day.attention.new_count} ${t("new")} · ${day.attention.active_count} ${t("active")}`,
         }),
         element("td", { text: healthSummary(day.ingest_health) }),
       ]);
@@ -1241,7 +1872,7 @@ function showDayTooltip(column, day, previous, dayCounts, categories) {
       element("span", { className: "day-tooltip-row day-tooltip-rest" }, [
         element("span", {
           className: "day-tooltip-name",
-          text: `+${ranked.length - shown.length} more categories`,
+          text: `+${ranked.length - shown.length} ${t("more categories")}`,
         }),
         element("span", { className: "day-tooltip-value", text: restCount }),
       ]),
@@ -1257,13 +1888,13 @@ function showDayTooltip(column, day, previous, dayCounts, categories) {
         (previousTotal === null
           ? ""
           : total === previousTotal
-            ? ` · flat vs ${previous.date.slice(5)}`
+            ? ` · ${t("flat")} vs ${previous.date.slice(5)}`
             : ` · ${deltaText(total - previousTotal)} vs ${previous.date.slice(5)}`),
     }),
     rows.length ? element("span", { className: "day-tooltip-rows" }, rows) : null,
     element("span", {
       className: "day-tooltip-attention",
-      text: `Active attention: ${day.attention.active_count}`,
+      text: `${t("Active attention")}: ${day.attention.active_count}`,
     }),
   ]);
 
@@ -1415,7 +2046,8 @@ function releaseDayTooltip() {
 
 function metricLabel(value, singular, plural = `${singular}s`) {
   const count = Number(value || 0);
-  return `${count.toLocaleString()} ${count === 1 ? singular : plural}`;
+  const noun = count === 1 ? t(singular) : t(plural);
+  return `${count.toLocaleString()} ${noun}`;
 }
 
 function countMapText(values) {
@@ -1424,7 +2056,7 @@ function countMapText(values) {
     ? entries
         .map(([name, count]) => `${name.replaceAll("_", " ")} ${count}`)
         .join(" · ")
-    : "none";
+    : t("none");
 }
 
 function healthSummary(entries) {
@@ -1433,8 +2065,8 @@ function healthSummary(entries) {
   const total = entries.length;
   const ok = entries.filter((entry) => entry.ok).length;
   const empty = entries.filter((entry) => entry.ok && entry.item_count === 0).length;
-  const base = ok === total ? "all ok" : `${ok}/${total} ok`;
-  return empty ? `${base} · ${empty} empty` : base;
+  const base = ok === total ? t("all ok") : `${ok}/${total} ${t("ok")}`;
+  return empty ? `${base} · ${empty} ${t("empty")}` : base;
 }
 
 function allObservations() {
@@ -1560,18 +2192,18 @@ function openRubric(item = null, versionOverride = null) {
   const header = [
     element("p", {
       className: "detail-source",
-      text: `Scoring rubric v${version}${isLegacy ? " · superseded" : " · current"}`,
+      text: `${t("Scoring rubric v")}${version}${isLegacy ? t(" · superseded") : t(" · current")}`,
     }),
     element("h2", {
       className: "detail-title rubric-title",
-      text: "How priority is scored",
+      text: t("How priority is scored"),
       attrs: { id: "rubric-title" },
     }),
     element("p", {
       className: "detail-summary",
       text:
-        `Priority is the weighted mean of four components, each measured on a 0 to ${max.toFixed(2)} ` +
-        "scale. Every number below is read from the same definition the pipeline applies.",
+        `${t("Priority is the weighted mean of four components, each measured on a 0 to")} ${max.toFixed(2)} ` +
+        t("scale. Every number below is read from the same definition the pipeline applies."),
     }),
     ...(isLegacy
       ? [
@@ -1579,11 +2211,11 @@ function openRubric(item = null, versionOverride = null) {
             className: "discovery-note",
             text:
               (item
-                ? `This record was scored by rubric v${version} on a 0 to ${max.toFixed(2)} scale. `
-                : `Rubric v${version} scored records on a 0 to ${max.toFixed(2)} scale. `) +
-              `The current rubric is v${current} on a 0 to ` +
-              `${(Number(state.data?.rubric?.score_max) || 100).toFixed(2)} scale. Scores from the ` +
-              "two versions are not directly comparable, and past records are not rescored.",
+                ? `${t("This record was scored by rubric v")}${version}${t(" on a")} 0 ${t("to")} ${max.toFixed(2)} scale. `
+                : `${t("Rubric v")}${version}${t(" scored records on")} 0 ${t("to")} ${max.toFixed(2)} scale. `) +
+              `${t("The current rubric is v")}${current}${t(" on a")} 0 ${t("to")} ` +
+              `${(Number(state.data?.rubric?.score_max) || 100).toFixed(2)} scale. ${t("Scores from the")} ` +
+              t("two versions are not directly comparable, and past records are not rescored."),
           }),
         ]
       : []),
@@ -1593,7 +2225,7 @@ function openRubric(item = null, versionOverride = null) {
   if (item) {
     header.push(
       element("div", { className: "rubric-worked" }, [
-        element("strong", { text: `This record scores ${Number(item.total_score || 0).toFixed(2)}` }),
+        element("strong", { text: `${t("This record scores")} ${Number(item.total_score || 0).toFixed(2)}` }),
         element("p", {
           text: components
             .map(
@@ -1614,7 +2246,7 @@ function openRubric(item = null, versionOverride = null) {
         element("h3", { text: component.label }),
         element("span", {
           className: "rubric-weight",
-          text: `weight ${component.weight.toFixed(2)}`,
+          text: `${t("weight")} ${component.weight.toFixed(2)}`,
         }),
       ]),
       element("p", { text: component.summary }),
@@ -1627,8 +2259,8 @@ function openRubric(item = null, versionOverride = null) {
         ? element("p", { className: "rubric-contribution" }, [
             element("span", {
               text:
-                `Scored ${Number(item[`${component.key}_score`] || 0).toFixed(2)}` +
-                ` · contributes ${contribution(component).toFixed(2)} to the total`,
+                `${t("Scored")} ${Number(item[`${component.key}_score`] || 0).toFixed(2)}` +
+                ` · ${t("contributes")} ${contribution(component).toFixed(2)} ${t("to the total")}`,
             }),
           ])
         : null,
@@ -1638,7 +2270,7 @@ function openRubric(item = null, versionOverride = null) {
   const limits =
     (data.limits || []).length
       ? element("section", { className: "rubric-limits" }, [
-          element("h3", { text: "What this score does not claim" }),
+          element("h3", { text: t("What this score does not claim") }),
           element(
             "ul",
             {},
@@ -1664,16 +2296,17 @@ function openRubric(item = null, versionOverride = null) {
       ? element("p", {
           className: "discovery-note",
           text:
-            `Every record matching at least one taxonomy category is retained. A score of ` +
-            `${Number(recommendationScore).toFixed(2)} or above adds the Recommended ` +
-            "badge; it does not control inclusion. Watchlisted artifacts are also retained.",
+            `${t("Every record matching at least one taxonomy category is retained. A score of")} ` +
+            `${Number(recommendationScore).toFixed(2)} ${t(
+              "or above adds the Recommended badge; it does not control inclusion. Watchlisted artifacts are also retained.",
+            )}`,
         })
       : historicalMinimum !== undefined && historicalMinimum !== null
         ? element("p", {
             className: "discovery-note",
             text:
-              `This historical scan used ${Number(historicalMinimum).toFixed(2)} as an ` +
-              "inclusion cutoff. Records below it were not retained.",
+              `${t("This historical scan used")} ${Number(historicalMinimum).toFixed(2)} ${t("as")} ` +
+              t("an inclusion cutoff. Records below it were not retained."),
           })
         : null;
 
@@ -1703,21 +2336,21 @@ function expandedRecord(item, teaser) {
   const scoreEntries = isAttention
     ? [
         [
-          item.source === "Hacker News" ? "HN points" : "Activity points",
+          t(item.source === "Hacker News" ? "HN points" : "Activity points"),
           Number(item.metrics?.points || 0).toLocaleString(),
         ],
-        ["Comments", Number(item.metrics?.comments || 0).toLocaleString()],
-        ["Submissions", Number(item.metrics?.submissions ?? 1).toLocaleString()],
-        ["Published", formatDate(item.published_at, { dateStyle: "medium" })],
+        [t("Comments"), Number(item.metrics?.comments || 0).toLocaleString()],
+        [t("Submissions"), Number(item.metrics?.submissions ?? 1).toLocaleString()],
+        [t("Published"), formatDate(item.published_at, { dateStyle: "medium" })],
       ]
     : [
-        ["Priority", Number(item.total_score || 0).toFixed(2)],
-        ["Relevance", Number(item.relevance_score || 0).toFixed(2)],
-        ["Evidence", Number(item.evidence_score || 0).toFixed(2)],
-        ["Recency", Number(item.recency_score || 0).toFixed(2)],
+        [t("Priority"), Number(item.total_score || 0).toFixed(2)],
+        [t("Relevance"), Number(item.relevance_score || 0).toFixed(2)],
+        [t("Evidence"), Number(item.evidence_score || 0).toFixed(2)],
+        [t("Recency"), Number(item.recency_score || 0).toFixed(2)],
         // Adoption is weighted into the total, so hiding it here left the
         // four shown components unable to explain the priority above them.
-        ["Adoption", Number(item.adoption_score || 0).toFixed(2)],
+        [t("Adoption"), Number(item.adoption_score || 0).toFixed(2)],
       ];
   const rationale = element(
     "ul",
@@ -1726,7 +2359,7 @@ function expandedRecord(item, teaser) {
   );
   const attentionNotice = isAttention
     ? element("div", { className: "attention-notice" }, [
-        element("strong", { text: "Not quality-scored" }),
+        element("strong", { text: t("Not quality-scored") }),
         element("p", {
           text: "This is a public attention signal. Its activity is shown separately from scientific evidence and priority.",
         }),
@@ -1762,7 +2395,7 @@ function expandedRecord(item, teaser) {
       ? [
           element("a", {
             className: "primary-link",
-            text: "Open primary artifact ↗",
+            text: t("Open primary artifact ↗"),
             attrs: {
               href: safeHttpUrl(primaryArtifact),
               target: "_blank",
@@ -1774,10 +2407,10 @@ function expandedRecord(item, teaser) {
     element("a", {
       className: isAttention ? "secondary-link" : "primary-link",
       text: isAttention
-        ? "Open public discussion ↗"
+        ? t("Open public discussion ↗")
         : item.source === "Hugging Face"
-          ? "Read full card ↗"
-          : "Open primary source ↗",
+          ? t("Read full card ↗")
+          : t("Open primary source ↗"),
       attrs: { href: safeHttpUrl(item.url), target: "_blank", rel: "noopener noreferrer" },
     }),
   ]);
@@ -1790,9 +2423,9 @@ function expandedRecord(item, teaser) {
       className: item.summary ? "detail-summary" : "detail-summary signal-nodesc",
       text: item.summary
         ? teaser
-          ? summaryRemainder(item.summary, teaser) || "No further description beyond the preview above."
+          ? summaryRemainder(item.summary, teaser) || t("No further description beyond the preview above.")
           : item.summary
-        : "No description published at the source.",
+        : t("No description published at the source."),
     }),
     attentionNotice,
     element(
@@ -1800,15 +2433,15 @@ function expandedRecord(item, teaser) {
       { className: "detail-grid" },
       scoreEntries.map(([label, value]) => definition(label, value)),
     ),
-    element("h3", { text: "Why surfaced" }),
+    element("h3", { text: t("Why surfaced") }),
     rationale,
     supporting,
     isAttention
       ? element("p", {
           className: "discovery-note",
           text:
-            `Producer discovered ${formatDate(item.discovered_at, { dateStyle: "medium", timeStyle: "short" })} UTC · ` +
-            `Radar first observed ${formatDate(item.observed_at, { dateStyle: "medium", timeStyle: "short" })} UTC`,
+            `${t("Producer discovered")} ${formatDate(item.discovered_at, { dateStyle: "medium", timeStyle: "short" })} UTC · ` +
+            `${t("Radar first observed")} ${formatDate(item.observed_at, { dateStyle: "medium", timeStyle: "short" })} UTC`,
         })
       : null,
     links,
@@ -1877,7 +2510,7 @@ function selectMapNode(entity, relatedEntities) {
   ];
   const viewResults = element("button", {
     className: "primary-link map-view-results",
-    text: "View matching observations →",
+    text: t("View matching observations →"),
     attrs: { type: "button" },
   });
   viewResults.addEventListener("click", () => {
@@ -1886,7 +2519,7 @@ function selectMapNode(entity, relatedEntities) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
   replaceChildren(byId("map-detail"), [
-    element("p", { className: "eyebrow", text: "Selected node" }),
+    element("p", { className: "eyebrow", text: t("Selected node") }),
     element("h2", { text: entity.label }),
     element("p", {
       text:
@@ -1898,7 +2531,7 @@ function selectMapNode(entity, relatedEntities) {
     relatedEntities.length
       ? element("p", {
           className: "discovery-note",
-          text: `Connected to ${relatedEntities
+          text: `${t("Connected to")} ${relatedEntities
             .slice(0, 8)
             .map((related) => related.label)
             .join(", ")}${relatedEntities.length > 8 ? "…" : ""}`,
@@ -1908,7 +2541,7 @@ function selectMapNode(entity, relatedEntities) {
     safeHttpUrl(entity.url)
       ? element("a", {
           className: "primary-link",
-          text: "Open primary source ↗",
+          text: t("Open primary source ↗"),
           attrs: {
             href: safeHttpUrl(entity.url),
             target: "_blank",
@@ -2004,20 +2637,20 @@ function renderMapInsights(corpus) {
     ([organization, count]) => [organization, metricLabel(count, "observation")],
   );
   const coverageEntries = [
-    ["Artifacts", Number(entityTypes.artifact || 0).toLocaleString()],
-    ["Organizations", Number(entityTypes.organization || 0).toLocaleString()],
-    ["Authors", Number(entityTypes.person || 0).toLocaleString()],
-    ["Discovery sources", Number(entityTypes.source || 0).toLocaleString()],
-    ["Topics", Number(entityTypes.topic || 0).toLocaleString()],
+    [t("Artifacts"), Number(entityTypes.artifact || 0).toLocaleString()],
+    [t("Organizations"), Number(entityTypes.organization || 0).toLocaleString()],
+    [t("Authors"), Number(entityTypes.person || 0).toLocaleString()],
+    [t("Discovery sources"), Number(entityTypes.source || 0).toLocaleString()],
+    [t("Topics"), Number(entityTypes.topic || 0).toLocaleString()],
   ];
   replaceChildren(byId("map-insights"), [
-    mapInsightCard("Corpus coverage", coverageEntries, "No corpus entities yet."),
-    mapInsightCard("Topic coverage", topicEntries, "No topics assigned yet."),
-    mapInsightCard("Discovery sources", sourceEntries, "No discovery sources yet."),
+    mapInsightCard(t("Corpus coverage"), coverageEntries, t("No corpus entities yet.")),
+    mapInsightCard(t("Topic coverage"), topicEntries, t("No topics assigned yet.")),
+    mapInsightCard(t("Discovery sources"), sourceEntries, t("No discovery sources yet.")),
     mapInsightCard(
-      "Most represented organizations",
+      t("Most represented organizations"),
       organizationEntries,
-      "No organizations identified yet.",
+      t("No organizations identified yet."),
     ),
   ]);
 }
@@ -2159,32 +2792,28 @@ function reportingStage(entry, board) {
   if (advances < 2) {
     return {
       id: "early",
-      label: "Early signal",
-      description:
-        "Only one dated organization is visible so far. It is too early to infer a plateau.",
+      label: t("Early signal"),
+      description: t("Only one dated organization is visible so far. It is too early to infer a plateau."),
     };
   }
   if (total > 0 && advances / total >= 0.8) {
     return {
       id: "saturated",
-      label: "Saturated reporting",
-      description:
-        "At least 80% of organizations in this curated registry report it; that is convention, not quality.",
+      label: t("Saturated reporting"),
+      description: t("At least 80% of organizations in this curated registry report it; that is convention, not quality."),
     };
   }
   if (isNewBenchmark(entry, board) && advances <= 4) {
     return {
       id: "emerging",
-      label: "New & spreading",
-      description:
-        "Released in the newest 18-month window and already reported by several independent organizations.",
+      label: t("New & spreading"),
+      description: t("Released in the newest 18-month window and already reported by several independent organizations."),
     };
   }
   return {
     id: "established",
-    label: "Established",
-    description:
-      "Reported across multiple organizations, but not yet a corpus-wide convention in this registry.",
+    label: t("Established"),
+    description: t("Reported across multiple organizations, but not yet a corpus-wide convention in this registry."),
   };
 }
 
@@ -2310,10 +2939,10 @@ function taskShape(entry) {
 function renderBenchmarkNavigator(board) {
   const adopted = (board.entries || []).filter((entry) => entry.card_count > 0);
   const stageOrder = [
-    ["emerging", "New & spreading"],
-    ["early", "Early signals"],
-    ["established", "Established"],
-    ["saturated", "Saturated reporting"],
+    ["emerging", t("New & spreading")],
+    ["early", t("Early signal")],
+    ["established", t("Established")],
+    ["saturated", t("Saturated reporting")],
   ];
   const groups = stageOrder
     .map(([stageId, label]) => {
@@ -2390,8 +3019,8 @@ function renderFrontierMilestones(entry, events) {
             text: `${formatDate(event.published, { dateStyle: "medium" })}${
               elapsed === null
                 ? ""
-                : ` · ${metricLabel(elapsed, "day")} after ${
-                    index ? "the previous frontier step" : "release"
+                : ` · ${metricLabel(elapsed, "day")} ${t("after")} ${
+                    index ? t("the previous frontier step") : t("release")
                   }`
             }`,
           }),
@@ -2413,14 +3042,14 @@ function renderFrontierMilestones(entry, events) {
     entry.released
       ? element("p", {
           className: "milestone-release",
-          text: `Released ${formatDate(entry.released, { dateStyle: "medium" })}`,
+          text: `${t("Released")} ${formatDate(entry.released, { dateStyle: "medium" })}`,
         })
       : null,
     list,
     repeats
       ? element("p", {
           className: "milestone-repeat-note",
-          text: `${metricLabel(repeats, "repeat report")} did not add a new organization to the frontier.`,
+          text: `${metricLabel(repeats, "repeat report")} ${t("did not add a new organization to the frontier")}.`,
         })
       : null,
   ]);
@@ -2431,22 +3060,22 @@ function renderFrontierTaskPreview(entry) {
   replaceChildren(byId("frontier-task-preview"), [
     element("p", {
       className: "eyebrow",
-      text: shape.provenance || "Representative task shape",
+      text: shape.provenance || t("Representative task shape"),
     }),
     element("h3", { text: shape.title, attrs: { id: "frontier-task-heading" } }),
     element("div", { className: "task-shape" }, [
-      shape.example ? element("span", { text: "Paraphrased example" }) : null,
+      shape.example ? element("span", { text: t("Paraphrased example") }) : null,
       shape.example ? element("p", { text: shape.example }) : null,
-      element("span", { text: "Scenario" }),
+      element("span", { text: t("Scenario") }),
       element("p", { text: shape.scenario }),
-      element("span", { text: "Evaluated artifact" }),
+      element("span", { text: t("Evaluated artifact") }),
       element("p", { text: shape.artifact }),
     ]),
     element("p", {
       className: "task-shape-note",
       text: shape.provenance
-        ? "Not a verbatim benchmark item. This description paraphrases the official source; open it for exact tasks and protocol."
-        : "Not a verbatim benchmark item. This is an illustrative format based on the recorded domain; use the official source for exact tasks and protocol.",
+        ? t("Not a verbatim benchmark item. This description paraphrases the official source; open it for exact tasks and protocol.")
+        : t("Not a verbatim benchmark item. This is an illustrative format based on the recorded domain; use the official source for exact tasks and protocol."),
     }),
     entry.caveat
       ? element("div", { className: "frontier-caveat" }, [
@@ -2457,7 +3086,7 @@ function renderFrontierTaskPreview(entry) {
     safeHttpUrl(entry.url)
       ? element("a", {
           className: "frontier-source-link",
-          text: "Open official benchmark source ↗",
+          text: t("Open official benchmark source ↗"),
           attrs: {
             href: safeHttpUrl(entry.url),
             target: "_blank",
@@ -2477,35 +3106,35 @@ function sparseFrontier(entry, events) {
       className: "frontier-sparse",
       attrs: {
         role: "img",
-        "aria-label": `${entry.name} has only one dated reporting organization; it is too early to infer a plateau.`,
+        "aria-label": `${entry.name} ${t("has only one dated reporting organization; it is too early to infer a plateau")}.`,
       },
     },
     [
       element("div", { className: "frontier-sparse-step is-complete" }, [
         element("span", { text: "01" }),
-        element("strong", { text: "Benchmark released" }),
+        element("strong", { text: t("Benchmark released") }),
         element("small", {
           text: entry.released
             ? formatDate(entry.released, { dateStyle: "medium" })
-            : "Release date unrecorded",
+            : t("Release date unrecorded"),
         }),
       ]),
       element("div", { className: "frontier-sparse-step is-complete" }, [
         element("span", { text: "02" }),
-        element("strong", { text: "First reporting organization" }),
+        element("strong", { text: t("First reporting organization") }),
         element("small", {
           text: first
             ? `${first.organization} · ${formatDate(first.published, { dateStyle: "medium" })}`
-            : "No dated report",
+            : t("No dated report"),
         }),
       ]),
       element("div", { className: "frontier-sparse-step is-awaiting" }, [
         element("span", { text: "03" }),
-        element("strong", { text: "Awaiting an independent second organization" }),
+        element("strong", { text: t("Awaiting an independent second organization") }),
         element("small", {
           text: repeatCount
-            ? `${metricLabel(repeatCount, "later repeat")} still leaves one frontier step`
-            : "Too early to infer a reporting plateau",
+            ? `${metricLabel(repeatCount, "later repeat")} ${t("still leaves one frontier step")}`
+            : t("Too early to infer a reporting plateau"),
         }),
       ]),
     ],
@@ -2551,7 +3180,7 @@ function scoreReadout(entry, record) {
   const evidence = record.evidence;
   const rows = [
     element("div", { className: "score-readout-figure" }, [
-      element("span", { text: "Best on record" }),
+      element("span", { text: t("Best on record") }),
       element("strong", {
         text: `${saturation.best_value}${record.unit === "percent" ? "%" : ""}`,
       }),
@@ -2566,7 +3195,7 @@ function scoreReadout(entry, record) {
   if (saturation.headroom !== null) {
     rows.push(
       element("div", { className: "score-readout-figure" }, [
-        element("span", { text: "Headroom left" }),
+        element("span", { text: t("Headroom left") }),
         element("strong", { text: `${saturation.headroom}` }),
         // On a lower-is-better metric the backend measures headroom to zero, not
         // to `bound`. Naming the bound in both cases would print "10 points to
@@ -2574,15 +3203,17 @@ function scoreReadout(entry, record) {
         element("small", {
           text:
             record.direction === "lower_is_better"
-              ? "points to zero, the floor of this metric"
-              : `points to the ${saturation.bound}-point bound of this metric`,
+              ? t("points to zero, the floor of this metric")
+              : t("points to the {bound}-point bound of this metric", {
+                  bound: saturation.bound,
+                }),
         }),
       ]),
     );
   }
   rows.push(
     element("div", { className: "score-readout-figure" }, [
-      element("span", { text: "Readable values" }),
+      element("span", { text: t("Readable values") }),
       element("strong", { text: String(record.observation_count) }),
       element("small", {
         text: `${metricLabel(record.dated_observation_count, "date")} · ${metricLabel(
@@ -2598,11 +3229,11 @@ function scoreReadout(entry, record) {
     element("div", { className: `score-evidence score-evidence-${evidence.id}` }, [
       element("strong", { text: evidence.label }),
       element("p", {}, [
-        element("span", { className: "score-evidence-yes", text: "Supports: " }),
+        element("span", { className: "score-evidence-yes", text: t("Supports: ") }),
         document.createTextNode(evidence.supports),
       ]),
       element("p", {}, [
-        element("span", { className: "score-evidence-no", text: "Does not support: " }),
+        element("span", { className: "score-evidence-no", text: t("Does not support: ") }),
         document.createTextNode(evidence.does_not_support),
       ]),
     ]),
@@ -2611,9 +3242,9 @@ function scoreReadout(entry, record) {
           className: "score-readout-note",
           // The verb has to agree with the count, not stay singular beside a
           // pluralized noun ("4 values here is a third party...").
-          text: `${metricLabel(record.third_party_count, "value")} here ${
-            record.third_party_count === 1 ? "is a third party" : "are third parties"
-          } quoting another vendor's figure, marked with a ring on the chart.`,
+          text: `${metricLabel(record.third_party_count, "value")} ${
+            record.third_party_count === 1 ? t("here is a third party") : t("here are third parties")
+          } ${t("quoting another vendor's figure, marked with a ring on the chart")}.`,
         })
       : null,
   ]);
@@ -2628,8 +3259,7 @@ function renderScoreReadout(entry) {
       element("p", {
         className: "score-readout-empty",
         text:
-          "No score for this benchmark could be read verbatim from the cited documents, so the " +
-          "chart shows adoption only. An absent value is not a zero and not a plateau.",
+          t("No score for this benchmark could be read verbatim from the cited documents, so the chart shows adoption only. An absent value is not a zero and not a plateau."),
       }),
     ]);
     return;
@@ -2693,7 +3323,7 @@ function frontierTooltipContent(details, pinned) {
     pinned && safeHttpUrl(details.url)
       ? element("a", {
           className: "frontier-tooltip-source",
-          text: "Open source record ↗",
+          text: t("Open source record ↗"),
           attrs: {
             href: safeHttpUrl(details.url),
             target: "_blank",
@@ -2705,8 +3335,8 @@ function frontierTooltipContent(details, pinned) {
     element("span", {
       className: "frontier-tooltip-hint",
       text: pinned
-        ? "Pinned · click the marker again or press Escape to close"
-        : "Click the marker to pin these details",
+        ? t("Pinned · click the marker again or press Escape to close")
+        : t("Click the marker to pin these details"),
     }),
   ];
 }
@@ -2926,36 +3556,36 @@ function renderFrontierLegend(entry, record, { sparse = false } = {}) {
   const items = sparse
     ? []
     : [
-        ["legend-swatch-point", "New organization", "cumulative count increases"],
+        ["legend-swatch-point", t("New organization"), t("cumulative count increases")],
         [
           "legend-swatch-tick-first",
-          "First card from that organization",
-          "the tick under the jump",
+          t("First card from that organization"),
+          t("the tick under the jump"),
         ],
         [
           "legend-swatch-tick-repeat",
-          "Later card, organization already counted",
-          "count unchanged",
+          t("Later card, organization already counted"),
+          t("count unchanged"),
         ],
       ];
   if (record) {
     items.push([
       "legend-swatch-score",
-      "Readable score",
-      "connected only at one instrument and protocol",
+      t("Readable score"),
+      t("connected only at one instrument and protocol"),
     ]);
     if (record.series.some((series) => series.connectable && !series.single_organization)) {
       items.push([
         "legend-swatch-score-line",
-        "Solid score connection",
-        "same instrument and protocol across organizations",
+        t("Solid score connection"),
+        t("same instrument and protocol across organizations"),
       ]);
     }
     if (record.series.some((series) => series.connectable && series.single_organization)) {
       items.push([
         "legend-swatch-score-line-single-org",
-        "Dashed score connection",
-        "same instrument and protocol, one organization only",
+        t("Dashed score connection"),
+        t("same instrument and protocol, one organization only"),
       ]);
     }
   }
@@ -3381,7 +4011,7 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
       svgElement(
         "text",
         { x: width - margin.right, y: bestY - 6, "text-anchor": "end", class: "score-best-label" },
-        `best on record ${record.saturation.best_value}`,
+        `${t("best on record")} ${record.saturation.best_value}`,
       ),
     );
 
@@ -3391,7 +4021,7 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
       );
       const sourceLabel = source
         ? `${source.organization} · ${source.model} (${String(
-            source.document_type || "model card",
+            source.document_type || t("model card"),
           ).replaceAll("_", " ")})`
         : observation.source_id.replaceAll("_", " ");
       const group = svgElement("g", {
@@ -3401,12 +4031,12 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
         "aria-pressed": "false",
         "data-frontier-point": "",
         "aria-label":
-          `${observation.value} ${record.metric} by ${observation.model} ` +
+          `${observation.value} ${record.metric} ${t("by")} ${observation.model} ` +
           `(${observation.organization}), ${formatDate(observation.reported_at, {
             dateStyle: "medium",
-          })}, protocol ${observation.protocol}` +
-          (observation.reported_by ? `, cited by ${observation.reported_by}` : "") +
-          ". Click to pin record details.",
+          })}, ${t("protocol")} ${observation.protocol}` +
+          (observation.reported_by ? `, ${t("cited by")} ${observation.reported_by}` : "") +
+          `. ${t("Click to pin record details")}.`,
       });
       const pointX = x(observation.reported_at);
       const pointY = scoreY(observation.value);
@@ -3419,25 +4049,25 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
       );
       group.append(brandGlyph(observation.organization, pointX, pointY, 8, "score-point-glyph"));
       makeFrontierPointInteractive(group, {
-        kind: "Readable score",
+        kind: t("Readable score"),
         title: `${observation.organization} · ${observation.model}`,
         rows: [
-          { label: "Organization", value: observation.organization },
-          { label: "Model", value: observation.model },
+          { label: t("Organization"), value: observation.organization },
+          { label: t("Model"), value: observation.model },
           {
-            label: "Date",
+            label: t("Date"),
             value: formatDate(observation.reported_at, { dateStyle: "medium" }),
           },
           {
-            label: "Score",
+            label: t("Score"),
             value: `${observation.value}${record.unit === "percent" ? "%" : ` ${record.unit}`} ${record.metric}`,
           },
-          { label: "Instrument", value: observation.instrument },
-          { label: "Protocol", value: observation.protocol },
-          { label: "Source", value: sourceLabel },
-          { label: "Read from", value: observation.read_from.replaceAll("_", " ") },
+          { label: t("Instrument"), value: observation.instrument },
+          { label: t("Protocol"), value: observation.protocol },
+          { label: t("Source"), value: sourceLabel },
+          { label: t("Read from"), value: observation.read_from.replaceAll("_", " ") },
           ...(observation.reported_by
-            ? [{ label: "Cited by", value: observation.reported_by }]
+            ? [{ label: t("Cited by"), value: observation.reported_by }]
             : []),
         ],
         url: source?.url,
@@ -3503,7 +4133,7 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
             "text-anchor": "middle",
             class: "score-gap-label",
           },
-          "no readable score in this window",
+          t("no readable score in this window"),
         ),
       );
     }
@@ -3524,7 +4154,7 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
         // ticks. Removing it left small screens with no indication that the axis
         // is magnified, which is the one thing about this band a reader must not
         // misjudge. Abbreviated instead, so it still fits the rotated label.
-        narrow ? `${record.metric} (zoom)` : `${record.metric} (zoomed)`,
+        narrow ? `${record.metric} ${t("(zoom)")}` : `${record.metric} ${t("(zoomed)")}`,
       ),
     );
   }
@@ -3546,10 +4176,10 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
       "text",
       { x: releaseX + 8, y: margin.top + 14, class: "frontier-release-label" },
       entry.released
-        ? "release"
+        ? t("release")
         : events.length
-          ? "first dated mention"
-          : "first readable score",
+          ? t("first dated mention")
+          : t("first readable score"),
     ),
   );
   for (const [date, anchor] of [
@@ -3580,7 +4210,7 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
         // label itself that a second card from a counted vendor moves nothing.
         // Shortened on a narrow viewport, where the rotated full text is longer
         // than the plot is tall and would be clipped at the viewBox edge.
-        narrow ? "distinct orgs" : "cumulative distinct organizations",
+        narrow ? t("distinct orgs") : t("cumulative distinct organizations"),
       ),
     );
   }
@@ -3588,7 +4218,7 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
     svgElement(
       "text",
       { x: margin.left + plotWidth / 2, y: height - 7, "text-anchor": "middle", class: "frontier-axis-label" },
-      "publication time",
+      t("publication time"),
     ),
   );
   enableFrontierTouchTargets(svg);
@@ -3632,7 +4262,7 @@ function renderAdoptionFrontier(board) {
   const adopted = (board.entries || []).filter((entry) => entry.card_count > 0);
   const defaultEntry = frontierDefaultEntry(board);
   if (!adopted.length || !defaultEntry) {
-    clearAdoptionFrontier("No dated model-card mentions yet.");
+    clearAdoptionFrontier(t("No dated model-card mentions yet."));
     return;
   }
   if (!adopted.some((entry) => entry.benchmark_id === state.lfrontier)) {
@@ -3649,7 +4279,7 @@ function renderAdoptionFrontier(board) {
   renderBenchmarkNavigator(board);
 
   const entry = adopted.find((candidate) => candidate.benchmark_id === state.lfrontier);
-  byId("frontier-heading").textContent = `${entry.name} adoption trajectory`;
+  byId("frontier-heading").textContent = `${entry.name} ${t("adoption trajectory")}`;
   const events = frontierEvents(entry);
   if (!events.length) {
     // No dated mention means no adoption timeline can be drawn. The score
@@ -3658,7 +4288,7 @@ function renderAdoptionFrontier(board) {
     // every readable score because the *other* layer had no usable date. So the
     // score track still draws, on its own, with the points and comparable series
     // intact rather than reduced to the aggregate readout.
-    clearAdoptionFrontier("This benchmark has no dated mentions.");
+    clearAdoptionFrontier(t("This benchmark has no dated mentions."));
     const record = scoreRecord(entry.benchmark_id);
     renderFrontierLegend(entry, record, { sparse: true });
     if (record) {
@@ -3673,7 +4303,7 @@ function renderAdoptionFrontier(board) {
   const stage = reportingStage(entry, board);
   const stageElement = byId("frontier-stage");
   stageElement.className = `frontier-stage frontier-stage-${stage.id}`;
-  stageElement.textContent = `Reporting stage · ${stage.label}`;
+  stageElement.textContent = `${t("Reporting stage")} · ${stage.label}`;
   replaceChildren(byId("frontier-summary"), [
     element("strong", { text: entry.name }),
     // "23 cards · 10 of 10 dated organizations" read as one ratio about a single
@@ -3687,10 +4317,10 @@ function renderAdoptionFrontier(board) {
       text:
         `${metricLabel(entry.card_count, "model card")} · ` +
         `${metricLabel(frontier.length, "distinct organization")}` +
-        ((entry.adopters || []).some((adopter) => !adopter.published) ? " with a dated card" : ""),
+        ((entry.adopters || []).some((adopter) => !adopter.published) ? ` ${t("with a dated card")}` : ""),
     }),
     element("span", {
-      text: `last new organization ${formatDate(lastAdvance.published, { dateStyle: "medium" })}`,
+      text: `${t("last new organization")} ${formatDate(lastAdvance.published, { dateStyle: "medium" })}`,
     }),
     element("span", { className: "frontier-stage-description", text: stage.description }),
   ]);
@@ -3854,7 +4484,7 @@ function leaderboardRow(entry) {
         element("span", { text: `/ ${board.model_card_count}` }),
       ]),
       adoptionBar(entry, maxCount),
-      element("p", { className: "score-label", text: "Model cards" }),
+      element("p", { className: "score-label", text: t("Model cards") }),
     ]),
   ]);
 
@@ -3888,13 +4518,13 @@ function leaderboardRow(entry) {
   const isNew = isNewBenchmark(entry, board);
   if (isNew) {
     header.querySelector(".signal-meta").prepend(
-      element("span", { className: "benchmark-new-badge", text: "new instrument" }),
+      element("span", { className: "benchmark-new-badge", text: t("new instrument") }),
     );
   }
 
   const frontierButton = element("button", {
     className: "secondary-link frontier-jump",
-    text: "View adoption frontier ↑",
+    text: t("View adoption frontier ↑"),
     attrs: { type: "button" },
   });
   frontierButton.addEventListener("click", () => {
@@ -3907,13 +4537,13 @@ function leaderboardRow(entry) {
   return element("details", { className: `record-card${isNew ? " benchmark-new" : ""}` }, [
     header,
     element("div", { className: "record-detail" }, [
-      element("h3", { text: "Reported by" }),
+      element("h3", { text: t("Reported by") }),
       adopters,
       frontierButton,
       safeHttpUrl(entry.url)
         ? element("a", {
             className: "primary-link",
-            text: "Benchmark home ↗",
+            text: t("Benchmark home ↗"),
             attrs: { href: safeHttpUrl(entry.url), target: "_blank", rel: "noopener noreferrer" },
           })
         : null,
@@ -3927,20 +4557,20 @@ function renderLeaderboardFilters(board) {
   // would be listed in the table with no way to filter to it.
   const domains = [...new Set((board.entries || []).map((entry) => entry.domain))].sort();
   replaceChildren(byId("leaderboard-domain"), [
-    option("", "All domains", !state.ldomain),
+    option("", t("All domains"), !state.ldomain),
     ...domains.map((domain) =>
       option(domain, domain.replaceAll("_", " "), domain === state.ldomain),
     ),
   ]);
   const organizations = Object.keys(board.organizations || {}).sort();
   replaceChildren(byId("leaderboard-organization"), [
-    option("", "All organizations", !state.lorg),
+    option("", t("All organizations"), !state.lorg),
     ...organizations.map((organization) =>
       option(organization, organization, organization === state.lorg),
     ),
   ]);
   replaceChildren(byId("leaderboard-era"), [
-    option("", "Any release date", !state.lera),
+    option("", t("Any release date"), !state.lera),
     ...LEADERBOARD_ERAS.map((era) => option(era.value, era.label, era.value === state.lera)),
   ]);
   if (byId("leaderboard-search").value !== state.lq) {
@@ -4022,7 +4652,7 @@ function renderLeaderboard() {
         : entry.released
           ? element("span", {
               className: "insight-item-meta",
-              text: `released ${formatDate(entry.released, { dateStyle: "medium" })}`,
+              text: `${t("released")} ${formatDate(entry.released, { dateStyle: "medium" })}`,
             })
           : null,
     ]);
@@ -4033,12 +4663,12 @@ function renderLeaderboard() {
   const domainCount = new Set((board.entries || []).map((entry) => entry.domain)).size;
   replaceChildren(byId("leaderboard-insights"), [
     evidenceDisclosure(
-      { value: board.model_card_count, label: "source documents", detail: "Each document counts once per benchmark." },
+      { value: board.model_card_count, label: t("source documents"), detail: t("Each document counts once per benchmark.") },
       allCards.map(modelCardLine),
-      "No source documents in the registry yet.",
+      t("No source documents in the registry yet."),
     ),
     evidenceDisclosure(
-      { value: board.organization_count, label: "organizations", detail: "The denominator for reporting breadth." },
+      { value: board.organization_count, label: t("organizations"), detail: t("The denominator for reporting breadth.") },
       Object.entries(board.organizations || {})
         .sort((a, b) => a[0].localeCompare(b[0]))
         .map(([organization, count]) =>
@@ -4066,30 +4696,32 @@ function renderLeaderboard() {
     evidenceDisclosure(
       {
         value: board.benchmark_count,
-        label: "Benchmarks tracked",
-        detail: `across ${metricLabel(domainCount, "domain")}${board.entries.length ? ` · ${metricLabel(board.entries.length, "benchmark")} listed` : ""}.`,
+        label: t("Benchmarks tracked"),
+        detail: t("across {domains}{listed}.", {
+          domains: metricLabel(domainCount, "domain"),
+          listed: board.entries.length ? ` · ${metricLabel(board.entries.length, "benchmark")} ${t("listed")}` : "",
+        }),
       },
       (board.entries || []).map((entry) =>
         benchmarkLine(
           entry,
-          entry.card_count ? metricLabel(entry.card_count, "model card") : "not yet reported",
+          entry.card_count ? metricLabel(entry.card_count, "model card") : t("not yet reported"),
         ),
       ),
       "No benchmarks tracked yet.",
     ),
     evidenceDisclosure(
-      { value: topEntries.length, label: "Benchmarks reported at least once", detail: "The subset a ranked row can speak to." },
+      { value: topEntries.length, label: t("Benchmarks reported at least once"), detail: t("The subset a ranked row can speak to.") },
       topEntries.map((entry) => benchmarkLine(entry, metricLabel(entry.card_count, "model card"))),
-      "No benchmark is reported by a curated card yet.",
+      t("No benchmark is reported by a curated card yet."),
     ),
     element("details", { className: "evidence-thesis evidence-thesis-disclosure" }, [
       element("summary", { className: "evidence-thesis-summary" }, [
-        element("strong", { text: "New instruments" }),
+        element("strong", { text: t("New instruments") }),
         element("span", {
-          text: ` · ${metricLabel(
-            newSharedSignals.length,
-            "benchmark",
-          )} released in the newest 18-month window already appear across three or more dated organizations. Follow their trajectories before reading the raw rank.`,
+          text: t(" · {count} released in the newest 18-month window already appear across three or more dated organizations. Follow their trajectories before reading the raw rank.", {
+            count: metricLabel(newSharedSignals.length, "benchmark"),
+          }),
         }),
       ]),
       element(
@@ -4111,8 +4743,8 @@ function renderLeaderboard() {
   const visibleEntries =
     filtersActive || state.leaderboardShowAll ? entries : entries.slice(0, 18);
   byId("leaderboard-count").textContent = filtersActive
-    ? `${metricLabel(entries.length, "benchmark")} of ${board.entries.length}`
-    : `${visibleEntries.length} shown · ${board.entries.length} tracked`;
+    ? `${metricLabel(entries.length, "benchmark")} ${t("of")} ${board.entries.length}`
+    : `${visibleEntries.length} ${t("shown")} · ${board.entries.length} ${t("tracked")}`;
   replaceChildren(
     byId("leaderboard-list"),
     visibleEntries.length
@@ -4120,15 +4752,15 @@ function renderLeaderboard() {
       : [
           element("p", {
             className: "empty-state",
-            text: "No benchmarks match these filters. Clear one or more filters to widen the view.",
+            text: t("No benchmarks match these filters. Clear one or more filters to widen the view."),
           }),
         ],
   );
   const showAllButton = byId("leaderboard-show-all");
   showAllButton.hidden = filtersActive || entries.length <= 18;
   showAllButton.textContent = state.leaderboardShowAll
-    ? "Show the first 18 benchmarks"
-    : `Show all ${entries.length} benchmarks`;
+    ? t("Show the first 18 benchmarks")
+    : t("Show all {count} benchmarks", { count: entries.length });
 
   const cards = board.model_cards || [];
   byId("leaderboard-cards-count").textContent = metricLabel(cards.length, "document");
@@ -4154,7 +4786,7 @@ function modelCardRow(card) {
         element("span", {
           text: card.published
             ? formatDate(card.published, { dateStyle: "medium" })
-            : "date unknown",
+            : t("date unknown"),
         }),
       ]),
       element("h3", { text: card.model }),
@@ -4163,7 +4795,7 @@ function modelCardRow(card) {
       element("div", { className: "score-value" }, [
         element("strong", { text: String(card.benchmark_count) }),
       ]),
-      element("p", { className: "score-label", text: "Benchmarks" }),
+      element("p", { className: "score-label", text: t("Benchmarks") }),
     ]),
   ]);
 
@@ -4199,8 +4831,8 @@ function modelCardRow(card) {
             element("span", {
               className: "adopter-meta",
               text: benchmark.released
-                ? `released ${formatDate(benchmark.released, { dateStyle: "medium" })}`
-                : "release date unrecorded",
+                ? `${t("released")} ${formatDate(benchmark.released, { dateStyle: "medium" })}`
+                : t("release date unrecorded"),
             }),
           ]),
         ),
@@ -4211,27 +4843,21 @@ function modelCardRow(card) {
   return element("details", { className: "record-card" }, [
     summary,
     element("div", { className: "record-detail" }, [
-      element("h3", { text: "Benchmarks this document reports" }),
+      element("h3", { text: t("Benchmarks this document reports") }),
       element("p", {
         className: "section-note",
-        // Says what the reader is and is not looking at, at the point of
-        // looking. A mention is not a score, and the expanded list would
-        // otherwise read as if it were an extract of the card's results table.
-        text:
-          "Every benchmark this document puts in front of readers, counted once each. " +
-          "These are mentions, not scores: the source records the configuration, and " +
-          "this registry deliberately does not.",
+        text: t("Every benchmark this document puts in front of readers, counted once each. These are mentions, not scores: the source records the configuration, and this registry deliberately does not."),
       }),
       ...groups,
       element("a", {
         className: "primary-link",
-        text: "Open source document ↗",
+        text: t("Open source document ↗"),
         attrs: { href: safeHttpUrl(card.url), target: "_blank", rel: "noopener noreferrer" },
       }),
       card.retrieved_at
         ? element("p", {
             className: "adopter-meta",
-            text: `Last read by a human on ${formatDate(card.retrieved_at, {
+            text: `${t("Last read by a human on")} ${formatDate(card.retrieved_at, {
               dateStyle: "medium",
             })}`,
           })
@@ -4317,7 +4943,7 @@ function renderTrendMap() {
     // hiding every node from assistive tech. Same choice the adoption
     // frontier documents for its marker buttons.
     role: "group",
-    "aria-label": "Artifact nodes connected to topics, organizations, and discovery sources",
+    "aria-label": t("Artifact nodes connected to topics, organizations, and discovery sources"),
   });
   typeOrder.forEach((type) => {
     svg.append(
@@ -4383,11 +5009,11 @@ function renderTrendMap() {
   replaceChildren(byId("map-canvas"), [svg]);
   const authorCount = Number(corpus.aggregates?.entity_types?.person || 0);
   byId("map-summary").textContent =
-    `Showing all ${artifacts.length.toLocaleString()} artifacts · ` +
-    `${groups.organization.length.toLocaleString()} organizations · ` +
-    `${groups.source.length.toLocaleString()} sources · ${groups.topic.length.toLocaleString()} topics` +
+    `${t("Showing all")} ${artifacts.length.toLocaleString()} ${t("artifacts")} · ` +
+    `${groups.organization.length.toLocaleString()} ${t("organizations")} · ` +
+    `${groups.source.length.toLocaleString()} ${t("sources")} · ${groups.topic.length.toLocaleString()} ${t("topics")}` +
     (authorCount
-      ? ` · ${authorCount.toLocaleString()} author nodes summarized above and omitted from the canvas`
+      ? ` · ${authorCount.toLocaleString()} ${t("author nodes summarized above and omitted from the canvas")}`
       : "");
   if (selectedFromUrl) {
     const related = corpus.edges
@@ -4416,13 +5042,13 @@ function observationCard(item, index) {
   const isAttention = item.observation_kind === "attention";
   const metadata = isAttention
     ? element("div", { className: "signal-meta" }, [
-        element("span", { className: "attention-badge", text: "attention" }),
+        element("span", { className: "attention-badge", text: t("attention") }),
         element("span", { text: `${item.source} · ${item.event_kind}` }),
       ])
     : pillBar(item);
   const summary = (item.summary || "").trim()
     ? shorten(item.summary)
-    : "No description published at the source.";
+    : t("No description published at the source.");
   const header = element("summary", { className: "record-summary" }, [
     element("span", {
       className: "signal-rank",
@@ -4535,43 +5161,39 @@ function openExport() {
   if (!state.data) return;
   const filtered = filteredObservations();
   replaceChildren(byId("export-content"), [
-    element("p", { className: "detail-source", text: "Benchmark Radar · data export" }),
+    element("p", { className: "detail-source", text: t("Benchmark Radar · data export") }),
     element("h2", {
       className: "detail-title export-title",
-      text: "Take the data with you",
+      text: t("Take the data with you"),
       attrs: { id: "export-title" },
     }),
     element("p", {
       className: "detail-summary",
-      text:
-        "Doing related-work research, or hunting for a benchmark on a topic? " +
-        "This database aggregates every benchmark, evaluation, and dataset the " +
-        "radar has surfaced, and you can query it by topic, source, or " +
-        "organization before you export. The full corpus below is the same data " +
-        "the dashboard renders.",
+      text: t("Doing related-work research, or hunting for a benchmark on a topic? This database aggregates every benchmark, evaluation, and dataset the radar has surfaced, and you can query it by topic, source, or organization before you export. The full corpus below is the same data the dashboard renders."),
     }),
     element("div", { className: "export-actions" }, [
       element("a", {
         className: "primary-link",
-        text: "Download full dataset (JSON)",
+        text: t("Download full dataset (JSON)"),
         attrs: { href: "data/radar.json", download: "benchmark-radar.json" },
       }),
       element("button", {
         className: "secondary-link export-csv-button",
-        text: `Download current view (CSV · ${filtered.length} rows)`,
+        text: t("Download current view (CSV · {rows} rows)", { rows: filtered.length }),
         attrs: { type: "button" },
       }),
       element("a", {
         className: "secondary-link",
-        text: "Leaderboard (CSV)",
+        text: t("Leaderboard (CSV)"),
         attrs: { href: "data/leaderboard.csv", download: "leaderboard.csv" },
       }),
     ]),
     element("p", {
       className: "discovery-note",
-      text:
-        `${allObservations().length} observations across ` +
-        `${state.data.snapshot_count} daily snapshots.`,
+      text: t("{observations} observations across {snapshots} daily snapshots.", {
+        observations: allObservations().length,
+        snapshots: state.data.snapshot_count,
+      }),
     }),
   ]);
   byId("export-content")
@@ -4597,20 +5219,18 @@ function openContact() {
     element("p", { className: "detail-source", text: "Benchmark Radar" }),
     element("h2", {
       className: "detail-title contact-title",
-      text: "Get in touch",
+      text: t("Get in touch"),
       attrs: { id: "contact-title" },
     }),
     element("p", {
       className: "detail-summary",
-      text:
-        "A wrong row in the adoption ranking is a real bug. So is a connector " +
-        "that stopped collecting, or a benchmark you expected the radar to see.",
+      text: t("A wrong row in the adoption ranking is a real bug. So is a connector that stopped collecting, or a benchmark you expected the radar to see."),
     }),
     element("ul", { className: "contact-list" }, [
       element("li", {}, [
         element("span", { className: "contact-label" }, [
           brandIcon("email"),
-          element("strong", { text: "Email" }),
+          element("strong", { text: t("Email") }),
         ]),
         element("a", {
           className: "contact-value",
@@ -4621,14 +5241,14 @@ function openContact() {
       element("li", {}, [
         element("span", { className: "contact-label" }, [
           brandIcon("wechat"),
-          element("strong", { text: "WeChat" }),
+          element("strong", { text: t("WeChat") }),
         ]),
         element("span", { className: "contact-value", text: `ID ${WECHAT_ID}` }),
       ]),
       element("li", {}, [
         element("span", { className: "contact-label" }, [
           brandIcon("discord"),
-          element("strong", { text: "Discord" }),
+          element("strong", { text: t("Discord") }),
         ]),
         element("span", { className: "contact-value", text: `ID ${DISCORD_ID}` }),
       ]),
@@ -4792,9 +5412,9 @@ const REPO_SLUG = "ktwu01/benchmark-radar";
 // a bare statistic. The accessible name states the action and keeps the count
 // as context, so the control sounds like the invitation it is.
 const BADGE_ACTIONS = {
-  "badge-stars": (count) => `Star this repository on GitHub. ${count} stars`,
-  "badge-forks": (count) => `Fork this repository on GitHub. ${count} forks`,
-  "badge-issues": (count) => `Open a new issue on GitHub. ${count} issues open`,
+  "badge-stars": (count) => t("Star this repository on GitHub. {count} stars", { count }),
+  "badge-forks": (count) => t("Fork this repository on GitHub. {count} forks", { count }),
+  "badge-issues": (count) => t("Open a new issue on GitHub. {count} issues open", { count }),
 };
 
 function setBadgeCount(id, value) {
@@ -4854,16 +5474,21 @@ function renderStaleBanner() {
   const parts = [];
   if (ageHours > STALE_AFTER_HOURS) {
     parts.push(
-      `Latest snapshot is from ${formatDate(state.data.generated_at, {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })} UTC (${Math.floor(ageHours)}h ago) — the scheduled run may have failed.`,
+      t("Latest snapshot is from {date} UTC ({hours}h ago) — the scheduled run may have failed.", {
+        date: formatDate(state.data.generated_at, {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }),
+        hours: Math.floor(ageHours),
+      }),
     );
   }
   if (degraded) {
     parts.push(
-      `Required source failures on ${latestDay.date}: ` +
-        `${latestDay.required_coverage_gaps.join(", ")}.`,
+      t("Required source failures on {date}: {gaps}.", {
+        date: latestDay.date,
+        gaps: latestDay.required_coverage_gaps.join(", "),
+      }),
     );
   }
   banner.textContent = parts.join(" ");
@@ -4872,6 +5497,9 @@ function renderStaleBanner() {
 }
 
 async function initialize() {
+  setLang(initialLang());
+  applyStaticI18n();
+  syncLangToggle();
   readUrl();
   bindEvents();
   // Independent of the data file, so badges still render on an error state.
@@ -4890,15 +5518,7 @@ async function initialize() {
     if (state.todayDate !== "all" && !state.data.facets.dates.includes(state.todayDate)) {
       state.todayDate = state.data.latest_date;
     }
-    replaceChildren(
-      byId("today-date"),
-      [
-        option("all", "All dates", state.todayDate === "all"),
-        ...[...state.data.facets.dates].reverse().map((date) =>
-          option(date, formatDate(date, { dateStyle: "medium" }), date === state.todayDate),
-        ),
-      ],
-    );
+    renderTodayDateOptions();
     renderToday();
     renderLeaderboard();
     renderTrends();
@@ -4910,10 +5530,7 @@ async function initialize() {
       state.view = "today";
     }
     setView(state.view, false);
-    byId("build-meta").textContent = `Updated ${formatDate(state.data.generated_at, {
-      dateStyle: "medium",
-      timeStyle: "short",
-    })} UTC`;
+    renderBuildMeta();
     renderStaleBanner();
     if (state.rubric && state.data.rubrics?.[state.rubric]) {
       openRubric(null, state.rubric);

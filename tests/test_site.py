@@ -59,7 +59,7 @@ def test_recommendation_threshold_is_a_badge_not_an_inclusion_gate():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     assert 'className: "recommendation-badge"' in script
-    assert 'text: "Recommended"' in script
+    assert 'text: t("Recommended")' in script
     assert "Recommended to review" in script
     assert "not an endorsement" in script
     assert "it does not control inclusion" in script
@@ -86,7 +86,7 @@ def test_scan_date_can_be_reset_to_all_dates():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
     html = Path("site/index.html").read_text(encoding="utf-8")
 
-    assert 'option("all", "All dates", state.todayDate === "all")' in script
+    assert 'option("all", t("All dates"), state.todayDate === "all")' in script
     assert 'state.todayDate === "all" || item.snapshot_date === state.todayDate' in script
     assert 'state.todayDate = "all";' in script
     assert 'params.set("date", "all")' in script
@@ -174,7 +174,7 @@ def test_detail_grid_shows_every_component_that_moves_the_total():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     for component in ("Priority", "Relevance", "Evidence", "Recency", "Adoption"):
-        assert f'["{component}", Number(item.' in script
+        assert f'[t("{component}"), Number(item.' in script
 
 
 def test_today_view_has_one_filterable_observation_list_and_one_source_status():
@@ -214,9 +214,9 @@ def test_site_does_not_render_source_content_as_html():
 def test_attention_signals_use_activity_metrics_not_quality_scores():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
-    assert 'text: "Not quality-scored"' in script
-    assert '["Submissions", Number(item.metrics?.submissions ?? 1).toLocaleString()]' in script
-    assert '["Published", formatDate(item.published_at' in script
+    assert 'text: t("Not quality-scored")' in script
+    assert '[t("Submissions"), Number(item.metrics?.submissions ?? 1).toLocaleString()]' in script
+    assert '[t("Published"), formatDate(item.published_at' in script
     assert "supporting_observations" in script
     assert "total_score: 0" not in script
     assert "evidence_score: 0" not in script
@@ -318,7 +318,7 @@ def test_trend_map_shows_the_complete_corpus_and_summarizes_its_shape():
     assert 'id="map-insights"' in html
     assert "renderMapInsights(corpus)" in script
     assert "Most represented organizations" in script
-    assert "Showing all ${artifacts.length.toLocaleString()} artifacts" in script
+    assert "${t(\"Showing all\")} ${artifacts.length.toLocaleString()}" in script
     assert ".slice(0, 16)" not in script
     assert "author nodes summarized above and omitted from the canvas" in script
 
@@ -381,7 +381,7 @@ def test_one_snapshot_trend_explains_history_requirement():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
     styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
 
-    assert "At least two daily snapshots are required to calculate a trend." in script
+    assert 't("At least two daily snapshots are required to calculate a trend")' in script
     assert "dayCount === 1" in script
     assert "[hidden]" in styles
     assert "display: none !important" in styles
@@ -430,7 +430,7 @@ def test_today_view_shows_total_corpus_counts_by_category():
     assert '<details id="corpus-totals-details">' in html
     assert 'corpus-totals-details" open>' not in html
     summary_status = 'corpus-totals-status").textContent = '
-    assert f"{summary_status}`${{totalArtifacts.toLocaleString()}} artifacts`" in script
+    assert f"{summary_status}`${{totalArtifacts.toLocaleString()}} ${{t(\"artifacts\")}}`" in script
 
 
 def test_badge_accessible_names_state_the_action():
@@ -674,7 +674,7 @@ def test_new_benchmarks_are_visually_prioritized_without_changing_the_rank():
 
     assert "function isNewBenchmark(entry, board)" in script
     assert "cutoff.setUTCDate(cutoff.getUTCDate() - 548)" in script
-    assert 'text: "new instrument"' in script
+    assert 'text: t("new instrument")' in script
     assert '"New instruments"' in script
     assert ".benchmark-new" in styles
     assert "board.entries?.[0]?.card_count" in script
@@ -767,8 +767,8 @@ def test_daily_briefing_renders_its_provenance_caveat_and_evidence_ledger():
     assert "via OpenAI Responses API" in script
     assert "input.evidence_items" in script
     assert "input.history_days" in script
-    assert 'text: "Caveat: "' in script
-    assert 'text: "Evidence cited by GPT"' in script
+    assert 'text: t("Caveat: ")' in script
+    assert 'text: t("Evidence cited by GPT")' in script
     assert "briefingEvidenceList(citations)" in script
     assert "`${citation.id} — ${citation.title}`" in script
 
@@ -777,7 +777,7 @@ def test_daily_briefing_collapses_verbose_evidence_details_by_default():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     assert 'element("details", { className: "daily-briefing-details" }' in script
-    assert "Evidence & briefing details · ${citations.length.toLocaleString()} sources" in script
+    assert "{t(\"Evidence & briefing details\")} · ${citations.length.toLocaleString()} ${t(\"sources\")}" in script
     assert "briefingDetails(briefing, citations)" in script
     assert 'attrs: { open: "" }' not in script
 
@@ -913,9 +913,9 @@ def test_daily_questions_show_the_counter_view_and_admitted_insufficiency():
 
     # A daily feed that only ever confirms itself teaches a reader nothing about
     # how much to trust it, so the counter-view is rendered, never collapsed.
-    assert 'text: "Counter-view: "' in script
-    assert 'text: "Takeaway: "' in script
-    assert "Evidence is insufficient to answer this today." in script
+    assert 'text: t("Counter-view: ")' in script
+    assert 'text: t("Takeaway: ")' in script
+    assert 't("Evidence is insufficient to answer this today.")' in script
     assert "answer?.sufficient_evidence === false" in script
 
 
@@ -927,7 +927,7 @@ def test_daily_questions_flag_an_uncertified_comparison_window():
     assert "questions.comparable === false" in script
     assert "questions.comparability_note" in script
     assert 'questions.generator !== "openai-responses"' in script
-    assert "every figure computed before the call and cited by ID." in script
+    assert 't("every figure computed before the call and cited by ID")}.`' in script
 
 
 def test_daily_questions_link_only_validated_http_evidence():
