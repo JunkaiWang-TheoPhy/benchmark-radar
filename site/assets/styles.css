@@ -3552,7 +3552,19 @@ footer {
   }
 
   .masthead-end {
-    grid-template-columns: repeat(7, 2.6rem);
+    /* 7 * 2.2rem + 6 * 0.5rem gaps = 289px, so every control still fits
+       beside the brand on a 320px-wide phone (issue #213 squares). */
+    grid-template-columns: repeat(7, 2.2rem);
+    gap: 0.5rem;
+  }
+
+  .repo-badges {
+    gap: 0.5rem;
+  }
+
+  .repo-badge {
+    width: 2.2rem;
+    height: 2.2rem;
   }
 
   .view-nav {
