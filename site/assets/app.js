@@ -5263,6 +5263,8 @@ function openContact() {
 }
 
 function bindEvents() {
+  const langToggle = byId("lang-toggle");
+  if (langToggle) langToggle.addEventListener("click", toggleLang);
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.addEventListener("click", () => {
       setView(button.dataset.view);
