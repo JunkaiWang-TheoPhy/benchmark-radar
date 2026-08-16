@@ -283,6 +283,15 @@ button.repo-badge svg {
   white-space: nowrap;
 }
 
+/* The language toggle shows its target script as a text glyph ("中" / "EN")
+   rather than a pictogram: a character reads as "language" directly, where a
+   globe or document icon does not. */
+.repo-badge-glyph {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .feed-badge svg circle {
   fill: currentColor;
   stroke: none;
