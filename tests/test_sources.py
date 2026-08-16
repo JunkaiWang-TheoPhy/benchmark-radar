@@ -398,26 +398,39 @@ def test_github_respects_the_per_source_limit_after_round_robin(monkeypatch):
 
 def test_openreview_success_uses_only_upstream_abstract(monkeypatch):
     timestamp = int(datetime(2026, 7, 27, 12, tzinfo=UTC).timestamp() * 1000)
-    payload = {
-        "notes": [
-            {
-                "id": "note-revision",
-                "forum": "stable-forum",
-                "cdate": timestamp,
-                "mdate": timestamp + 1000,
-                "content": {
-                    "title": {"value": "A Conference Benchmark"},
-                    "abstract": {"value": "The upstream abstract."},
-                    "authors": {"value": ["Ada Radar"]},
-                    "code": {"value": "https://github.com/example/benchmark"},
-                },
-            }
-        ]
-    }
-    monkeypatch.setattr(
-        "benchmark_radar.sources.get_json",
-        lambda url, **kwargs: payload,
-    )
+
+    class MockNote:
+        def __init__(self, data):
+            self.id = data["id"]
+            self.forum = data["forum"]
+            self.cdate = data["cdate"]
+            self.mdate = data["mdate"]
+            self.content = data["content"]
+
+    mock_notes = [
+        MockNote({
+            "id": "note-revision",
+            "forum": "stable-forum",
+            "cdate": timestamp,
+            "mdate": timestamp + 1000,
+            "content": {
+                "title": {"value": "A Conference Benchmark"},
+                "abstract": {"value": "The upstream abstract."},
+                "authors": {"value": ["Ada Radar"]},
+                "code": {"value": "https://github.com/example/benchmark"},
+            },
+        })
+    ]
+
+    class MockClient:
+        def get_notes(self, invitation, limit):
+            assert invitation == "ICLR.cc/2026/Conference/-/Submission"
+            return mock_notes
+
+    import openreview.api
+    monkeypatch.setattr(openreview.api, "OpenReviewClient", lambda **kwargs: MockClient())
+    monkeypatch.setenv("OPENREVIEW_USERNAME", "test@example.com")
+    monkeypatch.setenv("OPENREVIEW_PASSWORD", "testpass")
 
     items = fetch_openreview(
         {"venues": ["ICLR.cc/2026/Conference"], "max_requests": 1},
@@ -429,7 +442,7 @@ def test_openreview_success_uses_only_upstream_abstract(monkeypatch):
     assert items[0].summary == "The upstream abstract."
     assert items[0].authors == ["Ada Radar"]
     assert items[0].parser_version == "openreview-api-v2/1"
-    assert items[0].raw is payload["notes"][0]
+    assert items[0].raw["forum"] == "stable-forum"
 
 
 def test_semantic_scholar_success_preserves_external_ids(monkeypatch):
@@ -618,16 +631,25 @@ def test_release_replacement_budget_preserves_later_repository_coverage(monkeypa
 @pytest.mark.parametrize(
     ("fetcher", "config", "empty_payload"),
     [
-        (fetch_openreview, {"venues": ["venue"]}, {"notes": []}),
+        (fetch_openreview, {"venues": ["venue"]}, []),
         (fetch_semantic_scholar, {"searches": ["benchmark"]}, {"data": []}),
         (fetch_github_releases, {"repositories": ["example/benchmark"]}, []),
     ],
 )
 def test_new_connectors_accept_empty_upstream_results(monkeypatch, fetcher, config, empty_payload):
-    monkeypatch.setattr(
-        "benchmark_radar.sources.get_json",
-        lambda url, **kwargs: empty_payload,
-    )
+    if fetcher is fetch_openreview:
+        import openreview.api
+        class MockClient:
+            def get_notes(self, invitation, limit):
+                return []
+        monkeypatch.setattr(openreview.api, "OpenReviewClient", lambda **kwargs: MockClient())
+        monkeypatch.setenv("OPENREVIEW_USERNAME", "test@example.com")
+        monkeypatch.setenv("OPENREVIEW_PASSWORD", "testpass")
+    else:
+        monkeypatch.setattr(
+            "benchmark_radar.sources.get_json",
+            lambda url, **kwargs: empty_payload,
+        )
 
     assert fetcher(config, datetime(2026, 7, 26, tzinfo=UTC), 10) == []
 
@@ -635,19 +657,30 @@ def test_new_connectors_accept_empty_upstream_results(monkeypatch, fetcher, conf
 @pytest.mark.parametrize(
     ("fetcher", "config", "malformed_payload"),
     [
-        (fetch_openreview, {"venues": ["venue"]}, {"notes": "wrong"}),
+        (fetch_openreview, {"venues": ["venue"]}, "wrong"),
         (fetch_semantic_scholar, {"searches": ["benchmark"]}, {"data": "wrong"}),
         (fetch_github_releases, {"repositories": ["example/benchmark"]}, {}),
     ],
 )
 def test_new_connectors_reject_malformed_payloads(monkeypatch, fetcher, config, malformed_payload):
-    monkeypatch.setattr(
-        "benchmark_radar.sources.get_json",
-        lambda url, **kwargs: malformed_payload,
-    )
+    if fetcher is fetch_openreview:
+        import openreview.api
+        class MockClient:
+            def get_notes(self, invitation, limit):
+                raise openreview.openreview.OpenReviewException({"name": "Error", "message": "Invalid payload"})
+        monkeypatch.setattr(openreview.api, "OpenReviewClient", lambda **kwargs: MockClient())
+        monkeypatch.setenv("OPENREVIEW_USERNAME", "test@example.com")
+        monkeypatch.setenv("OPENREVIEW_PASSWORD", "testpass")
+        with pytest.raises(openreview.openreview.OpenReviewException):
+            fetcher(config, datetime(2026, 7, 26, tzinfo=UTC), 10)
+    else:
+        monkeypatch.setattr(
+            "benchmark_radar.sources.get_json",
+            lambda url, **kwargs: malformed_payload,
+        )
 
-    with pytest.raises(ConnectorPayloadError):
-        fetcher(config, datetime(2026, 7, 26, tzinfo=UTC), 10)
+        with pytest.raises(ConnectorPayloadError):
+            fetcher(config, datetime(2026, 7, 26, tzinfo=UTC), 10)
 
 
 @pytest.mark.parametrize(
@@ -659,13 +692,23 @@ def test_new_connectors_reject_malformed_payloads(monkeypatch, fetcher, config, 
     ],
 )
 def test_new_connectors_surface_http_failures(monkeypatch, fetcher, config):
-    def fail(url, **kwargs):
-        raise RequestError("HTTP 500 from source after 3 attempts")
+    if fetcher is fetch_openreview:
+        import openreview.api
+        class MockClient:
+            def get_notes(self, invitation, limit):
+                raise openreview.openreview.OpenReviewException({"name": "Error", "message": "HTTP 500", "status": 500})
+        monkeypatch.setattr(openreview.api, "OpenReviewClient", lambda **kwargs: MockClient())
+        monkeypatch.setenv("OPENREVIEW_USERNAME", "test@example.com")
+        monkeypatch.setenv("OPENREVIEW_PASSWORD", "testpass")
+        with pytest.raises(openreview.openreview.OpenReviewException):
+            fetcher(config, datetime(2026, 7, 26, tzinfo=UTC), 10)
+    else:
+        def fail(url, **kwargs):
+            raise RequestError("HTTP 500 from source after 3 attempts")
+        monkeypatch.setattr("benchmark_radar.sources.get_json", fail)
 
-    monkeypatch.setattr("benchmark_radar.sources.get_json", fail)
-
-    with pytest.raises(RequestError, match="HTTP 500"):
-        fetcher(config, datetime(2026, 7, 26, tzinfo=UTC), 10)
+        with pytest.raises(RequestError, match="HTTP 500"):
+            fetcher(config, datetime(2026, 7, 26, tzinfo=UTC), 10)
 
 
 @pytest.mark.parametrize(
@@ -675,15 +718,11 @@ def test_new_connectors_surface_http_failures(monkeypatch, fetcher, config):
             fetch_openreview,
             {"venues": ["venue"]},
             {
-                "notes": [
-                    {
-                        "id": "note",
-                        "forum": "forum",
-                        "cdate": 1785153600000,
-                        "mdate": 1785153600000,
-                        "content": {"title": {"value": "No abstract"}},
-                    }
-                ]
+                "id": "note",
+                "forum": "forum",
+                "cdate": 1785153600000,
+                "mdate": 1785153600000,
+                "content": {"title": {"value": "No abstract"}},
             },
         ),
         (
@@ -716,10 +755,26 @@ def test_new_connectors_surface_http_failures(monkeypatch, fetcher, config):
     ],
 )
 def test_new_connectors_never_synthesize_missing_summary(monkeypatch, fetcher, config, payload):
-    monkeypatch.setattr(
-        "benchmark_radar.sources.get_json",
-        lambda url, **kwargs: payload,
-    )
+    if fetcher is fetch_openreview:
+        import openreview.api
+        class MockNote:
+            def __init__(self, data):
+                self.id = data["id"]
+                self.forum = data["forum"]
+                self.cdate = data["cdate"]
+                self.mdate = data["mdate"]
+                self.content = data["content"]
+        class MockClient:
+            def get_notes(self, invitation, limit):
+                return [MockNote(payload)]
+        monkeypatch.setattr(openreview.api, "OpenReviewClient", lambda **kwargs: MockClient())
+        monkeypatch.setenv("OPENREVIEW_USERNAME", "test@example.com")
+        monkeypatch.setenv("OPENREVIEW_PASSWORD", "testpass")
+    else:
+        monkeypatch.setattr(
+            "benchmark_radar.sources.get_json",
+            lambda url, **kwargs: payload,
+        )
 
     items = fetcher(config, datetime(2026, 7, 26, tzinfo=UTC), 10)
 

@@ -13,6 +13,7 @@ dependencies = [
   "certifi>=2025.1.31",
   "tiktoken>=0.11,<1",
   "PyYAML>=6.0.2,<7",
+  "openreview-py>=2.4,<3",
 ]
 
 [project.optional-dependencies]

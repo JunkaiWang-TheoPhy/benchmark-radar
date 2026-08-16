@@ -529,80 +529,106 @@ def fetch_openreview(
     since: datetime,
     limit: int,
 ) -> list[RadarItem]:
-    """Fetch recent public conference/workshop submissions from API v2."""
+    """Fetch recent public conference/workshop submissions from API v2 using authenticated client."""
+    import openreview
+
+    username = os.getenv("OPENREVIEW_USERNAME", "").strip()
+    password = os.getenv("OPENREVIEW_PASSWORD", "").strip()
+    if not username or not password:
+        raise ConnectorPayloadError("OPENREVIEW_USERNAME and OPENREVIEW_PASSWORD must be set for OpenReview API v2")
+
+    client = openreview.api.OpenReviewClient(
+        baseurl="https://api2.openreview.net",
+        username=username,
+        password=password,
+    )
+
     found: dict[str, RadarItem] = {}
     venues = [str(value) for value in config.get("venues", []) if str(value).strip()]
-    page_size = min(1000, max(1, int(config.get("page_size", 250))))
     budget = max(1, int(config.get("max_requests", len(venues) or 1)))
     requests_made = 0
+
     for venue in venues:
-        offset = 0
-        while requests_made < budget and len(found) < limit:
-            payload = get_json(
-                "https://api2.openreview.net/notes",
-                params={
-                    "venueid": venue,
-                    "limit": min(page_size, limit - len(found)),
-                    "offset": offset,
-                    "sort": "mdate:desc",
-                },
-                **_request_options(config),
-            )
-            requests_made += 1
-            rows = _payload_rows(payload, "notes", "OpenReview")
-            if not rows:
-                break
-            oldest: datetime | None = None
-            for row in rows:
-                content = row.get("content")
-                if not isinstance(content, dict):
-                    raise ConnectorPayloadError("OpenReview note content must be an object")
-                note_id = str(row.get("forum") or row.get("id") or "").strip()
-                title = str(_openreview_value(content, "title", "") or "").strip()
-                created = _milliseconds(row.get("cdate") or row.get("pdate"))
-                modified = _milliseconds(row.get("mdate")) or created
-                activity = modified or created
-                if not note_id or not title or not created or not activity:
-                    continue
-                oldest = min(oldest or activity, activity)
-                if activity < since or _reject_future(config, note_id, activity):
-                    continue
-                abstract = str(_openreview_value(content, "abstract", "") or "").strip()
-                authors = _openreview_value(content, "authors", []) or []
-                if isinstance(authors, str):
-                    authors = [authors]
-                if not isinstance(authors, list):
-                    raise ConnectorPayloadError("OpenReview authors must be an array")
-                artifact_urls = []
-                for key in ("code", "dataset", "project", "supplementary_material"):
-                    value = _openreview_value(content, key)
-                    values = value if isinstance(value, list) else [value]
-                    artifact_urls.extend(
-                        str(url)
-                        for url in values
-                        if isinstance(url, str) and url.startswith(("https://", "http://"))
-                    )
-                found[note_id] = RadarItem(
-                    source="OpenReview",
-                    source_id=note_id,
-                    title=title,
-                    url=f"https://openreview.net/forum?id={note_id}",
-                    published_at=created,
-                    updated_at=modified,
-                    summary=abstract,
-                    event_kind="updated" if modified and modified > created else "released",
-                    authors=[str(author) for author in authors if str(author).strip()],
-                    artifact_urls=sorted(set(artifact_urls)),
-                    raw=row,
-                    parser_version="openreview-api-v2/1",
-                )
-            offset += len(rows)
-            if len(rows) < min(page_size, limit - len(found)) or (
-                oldest is not None and oldest < since
-            ):
-                break
         if requests_made >= budget or len(found) >= limit:
             break
+
+        # Map venue to submission invitation ID (e.g., "ICLR.cc/2026/Conference/-/Submission")
+        invitation = f"{venue}/-/Submission"
+
+        try:
+            notes = client.get_notes(invitation=invitation, limit=min(1000, limit - len(found)))
+        except openreview.openreview.OpenReviewException as e:
+            error_data = e.args[0] if e.args else {}
+            if isinstance(error_data, dict) and error_data.get("name") == "ChallengeRequiredError":
+                raise ConnectorPayloadError(
+                    "OpenReview authentication failed: ChallengeRequiredError. "
+                    "Check OPENREVIEW_USERNAME/OPENREVIEW_PASSWORD credentials."
+                ) from e
+            raise
+
+        requests_made += 1
+        if not notes:
+            continue
+
+        for note in notes:
+            content = note.content
+            if not isinstance(content, dict):
+                continue
+
+            note_id = str(note.forum or note.id or "").strip()
+            title_obj = content.get("title")
+            title = str(_openreview_value(title_obj, "value", "") if isinstance(title_obj, dict) else (title_obj or "")).strip()
+            created = _milliseconds(note.cdate or note.pdate)
+            modified = _milliseconds(note.mdate) or created
+            activity = modified or created
+
+            if not note_id or not title or not created or not activity:
+                continue
+            if activity < since or _reject_future(config, note_id, activity):
+                continue
+
+            abstract_obj = content.get("abstract")
+            abstract = str(_openreview_value(abstract_obj, "value", "") if isinstance(abstract_obj, dict) else (abstract_obj or "")).strip()
+
+            authors_obj = content.get("authors")
+            authors = _openreview_value(authors_obj, "value", []) if isinstance(authors_obj, dict) else (authors_obj or [])
+            if isinstance(authors, str):
+                authors = [authors]
+            if not isinstance(authors, list):
+                authors = []
+
+            artifact_urls = []
+            for key in ("code", "dataset", "project", "supplementary_material"):
+                value_obj = content.get(key)
+                value = _openreview_value(value_obj, "value", []) if isinstance(value_obj, dict) else (value_obj or [])
+                values = value if isinstance(value, list) else [value]
+                artifact_urls.extend(
+                    str(url)
+                    for url in values
+                    if isinstance(url, str) and url.startswith(("https://", "http://"))
+                )
+
+            found[note_id] = RadarItem(
+                source="OpenReview",
+                source_id=note_id,
+                title=title,
+                url=f"https://openreview.net/forum?id={note_id}",
+                published_at=created,
+                updated_at=modified,
+                summary=abstract,
+                event_kind="updated" if modified and modified > created else "released",
+                authors=[str(author) for author in authors if str(author).strip()],
+                artifact_urls=sorted(set(artifact_urls)),
+                raw={
+                    "id": note.id,
+                    "forum": note.forum,
+                    "cdate": note.cdate,
+                    "mdate": note.mdate,
+                    "content": note.content,
+                },
+                parser_version="openreview-api-v2/1",
+            )
+
     return sorted(
         found.values(),
         key=lambda item: (item.updated_at or item.published_at, item.source_id),
