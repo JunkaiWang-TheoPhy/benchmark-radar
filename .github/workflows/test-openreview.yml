@@ -1,0 +1,31 @@
+name: Test OpenReview Auth
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-openreview:
+    runs-on: ubuntu-latest
+    env:
+      OPENREVIEW_USERNAME: ${{ secrets.OPENREVIEW_USERNAME }}
+      OPENREVIEW_PASSWORD: ${{ secrets.OPENREVIEW_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install openreview-py
+      - run: |
+          python3 -c "
+          import openreview
+          client = openreview.api.OpenReviewClient(
+              baseurl='https://api2.openreview.net',
+              username='\$OPENREVIEW_USERNAME',
+              password='\$OPENREVIEW_PASSWORD',
+          )
+          notes = client.get_notes(invitation='ICLR.cc/2026/Conference/-/Submission', limit=5)
+          print(f'Success! Got {len(notes)} notes')
+          for n in notes:
+              title = n.content.get('title', {}).get('value', 'N/A')
+              print(f'  {n.id}: {title[:80]}')
+          "
