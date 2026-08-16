@@ -285,19 +285,26 @@ def render_social_section(
             "",
         ]
     )
-    daily_channels = [channel for channel in channels if channel.get("daily")]
+    # Only ``daily: false`` opts a channel into the weekly cadence. A missing
+    # flag keeps the legacy daily behaviour so partially migrated configs and
+    # unmarked channels never vanish from the checklist for six days a week.
     weekly_channels = [
         channel
         for channel in channels
-        if not channel.get("daily") and _is_weekly_trigger_day(today)
+        if channel.get("daily") is False and _is_weekly_trigger_day(today)
     ]
+    daily_channels = [
+        channel
+        for channel in channels
+        if channel.get("daily") is not False and str(channel.get("name") or "").strip()
+    ]
+    has_daily_flag = any(channel.get("daily") is True for channel in channels)
     if daily_channels:
-        lines.append("**Daily targets:**")
-        lines.append("")
+        if weekly_channels or has_daily_flag:
+            lines.append("**Daily targets:**")
+            lines.append("")
         for channel in daily_channels:
-            name = str(channel.get("name") or "").strip()
-            if name:
-                lines.append(f"- [ ] {_escape(name)}")
+            lines.append(f"- [ ] {_escape(str(channel.get('name')).strip())}")
         lines.append("")
     if weekly_channels:
         lines.append("**Weekly (every 7 days):**")
