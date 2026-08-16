@@ -246,7 +246,7 @@ const I18N = {
   zh: {
     // --- Brackets and chrome -------------------------------------------------
     "Skip to content": "跳到主要内容",
-    "Benchmark Radar": "Benchmark Radar",
+    "Benchmark Radar": "Benchmark 雷达日报",
     "Subscribe to Benchmark Radar via RSS": "通过 RSS 订阅 Benchmark Radar",
     "Site utilities": "网站工具",
     "Switch to Chinese (中文)": "切换到中文",
@@ -567,7 +567,7 @@ const I18N = {
     "Take the data with you": "把数据带走",
     "Download full dataset (JSON)": "下载全量数据集 (JSON)",
     "Download current view (CSV · {rows} rows)": "下载当前视图 (CSV · {rows} 行)",
-    "Benchmark Radar": "Benchmark Radar",
+    "Benchmark Radar": "Benchmark 雷达日报",
     "Get in touch": "联系我",
     Email: "邮件",
     WeChat: "微信",
