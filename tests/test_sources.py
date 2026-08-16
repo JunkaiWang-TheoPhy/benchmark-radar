@@ -667,7 +667,9 @@ def test_new_connectors_reject_malformed_payloads(monkeypatch, fetcher, config, 
         import openreview.api
         class MockClient:
             def get_notes(self, invitation, limit):
-                raise openreview.openreview.OpenReviewException({"name": "Error", "message": "Invalid payload"})
+                raise openreview.openreview.OpenReviewException(
+                    {"name": "Error", "message": "Invalid payload"}
+                )
         monkeypatch.setattr(openreview.api, "OpenReviewClient", lambda **kwargs: MockClient())
         monkeypatch.setenv("OPENREVIEW_USERNAME", "test@example.com")
         monkeypatch.setenv("OPENREVIEW_PASSWORD", "testpass")
@@ -696,7 +698,9 @@ def test_new_connectors_surface_http_failures(monkeypatch, fetcher, config):
         import openreview.api
         class MockClient:
             def get_notes(self, invitation, limit):
-                raise openreview.openreview.OpenReviewException({"name": "Error", "message": "HTTP 500", "status": 500})
+                raise openreview.openreview.OpenReviewException(
+                    {"name": "Error", "message": "HTTP 500", "status": 500}
+                )
         monkeypatch.setattr(openreview.api, "OpenReviewClient", lambda **kwargs: MockClient())
         monkeypatch.setenv("OPENREVIEW_USERNAME", "test@example.com")
         monkeypatch.setenv("OPENREVIEW_PASSWORD", "testpass")

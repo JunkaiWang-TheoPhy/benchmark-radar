@@ -2,7 +2,9 @@
 """Test OpenReview authentication in GitHub Actions."""
 
 import os
+
 import openreview
+
 
 def main():
     username = os.getenv("OPENREVIEW_USERNAME")

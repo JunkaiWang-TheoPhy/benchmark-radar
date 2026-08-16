@@ -187,6 +187,13 @@ def _openreview_value(content: dict[str, Any], key: str, default: Any = None) ->
     return value
 
 
+def _openreview_content(content: dict[str, Any], key: str, default: Any = None) -> Any:
+    value = content.get(key)
+    if isinstance(value, dict):
+        return _openreview_value(value, "value", default)
+    return value or default
+
+
 def _milliseconds(value: Any) -> datetime | None:
     if value in (None, ""):
         return None
@@ -529,13 +536,15 @@ def fetch_openreview(
     since: datetime,
     limit: int,
 ) -> list[RadarItem]:
-    """Fetch recent public conference/workshop submissions from API v2 using authenticated client."""
+    """Fetch recent public conference/workshop submissions from API v2 via authenticated client."""
     import openreview
 
     username = os.getenv("OPENREVIEW_USERNAME", "").strip()
     password = os.getenv("OPENREVIEW_PASSWORD", "").strip()
     if not username or not password:
-        raise ConnectorPayloadError("OPENREVIEW_USERNAME and OPENREVIEW_PASSWORD must be set for OpenReview API v2")
+        raise ConnectorPayloadError(
+            "OPENREVIEW_USERNAME and OPENREVIEW_PASSWORD must be set for OpenReview API v2"
+        )
 
     client = openreview.api.OpenReviewClient(
         baseurl="https://api2.openreview.net",
@@ -576,8 +585,7 @@ def fetch_openreview(
                 continue
 
             note_id = str(note.forum or note.id or "").strip()
-            title_obj = content.get("title")
-            title = str(_openreview_value(title_obj, "value", "") if isinstance(title_obj, dict) else (title_obj or "")).strip()
+            title = str(_openreview_content(content, "title", "")).strip()
             created = _milliseconds(note.cdate or note.pdate)
             modified = _milliseconds(note.mdate) or created
             activity = modified or created
@@ -587,11 +595,9 @@ def fetch_openreview(
             if activity < since or _reject_future(config, note_id, activity):
                 continue
 
-            abstract_obj = content.get("abstract")
-            abstract = str(_openreview_value(abstract_obj, "value", "") if isinstance(abstract_obj, dict) else (abstract_obj or "")).strip()
+            abstract = str(_openreview_content(content, "abstract", "")).strip()
 
-            authors_obj = content.get("authors")
-            authors = _openreview_value(authors_obj, "value", []) if isinstance(authors_obj, dict) else (authors_obj or [])
+            authors = _openreview_content(content, "authors", [])
             if isinstance(authors, str):
                 authors = [authors]
             if not isinstance(authors, list):
@@ -599,8 +605,7 @@ def fetch_openreview(
 
             artifact_urls = []
             for key in ("code", "dataset", "project", "supplementary_material"):
-                value_obj = content.get(key)
-                value = _openreview_value(value_obj, "value", []) if isinstance(value_obj, dict) else (value_obj or [])
+                value = _openreview_content(content, key, [])
                 values = value if isinstance(value, list) else [value]
                 artifact_urls.extend(
                     str(url)
