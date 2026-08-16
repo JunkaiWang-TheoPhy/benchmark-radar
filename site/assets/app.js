@@ -246,6 +246,7 @@ const I18N = {
   zh: {
     // --- Brackets and chrome -------------------------------------------------
     "Skip to content": "跳到主要内容",
+    "Benchmark Radar": "Benchmark Radar",
     "Subscribe to Benchmark Radar via RSS": "通过 RSS 订阅 Benchmark Radar",
     "Site utilities": "网站工具",
     "Switch to Chinese (中文)": "切换到中文",

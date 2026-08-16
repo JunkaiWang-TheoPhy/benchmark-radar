@@ -148,7 +148,12 @@ def test_top_right_utilities_use_shared_icon_geometry_and_contact_control():
     assert 'id="badge-discord"' not in html
     assert 'id="lang-toggle"' in html
     assert 'class="repo-badge"' in html
-    assert "min-height: 2rem" in styles
+    assert "grid-template-columns: repeat(7, 2.6rem)" in styles
+    assert "width: 2.6rem" in styles
+    assert "height: 2.6rem" in styles
+    assert "grid-column: span 3" in styles
+    assert 'class="brand-icon language-icon"' in html
+    assert 'class="brand-icon github-icon"' in html
     assert "flex: 0 0 0.9rem" in styles
     assert ".repo-badge svg," in styles
 
