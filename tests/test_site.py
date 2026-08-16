@@ -139,6 +139,33 @@ def test_site_has_an_icon():
     assert parser.icon_hrefs, "index.html declares no icon"
 
 
+def test_top_right_utilities_use_shared_icon_geometry_and_contact_control():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    assert 'id="badge-contact"' in html
+    assert 'id="badge-wechat"' not in html
+    assert 'id="badge-discord"' not in html
+    assert 'id="lang-toggle"' in html
+    assert 'class="repo-badge"' in html
+    assert "min-height: 2rem" in styles
+    assert "flex: 0 0 0.9rem" in styles
+    assert ".repo-badge svg," in styles
+
+
+def test_language_toggle_and_contact_labels_are_translated():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'data-i18n-title="Switch to Chinese (中文)"' in html
+    for key in (
+        '"Site utilities": "网站工具"',
+        '"Switch to Chinese (中文)": "切换到中文"',
+        'Contact: "联系"',
+    ):
+        assert key in script
+
+
 def test_rubric_dialog_is_linkable_by_url_hash():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
@@ -318,7 +345,7 @@ def test_trend_map_shows_the_complete_corpus_and_summarizes_its_shape():
     assert 'id="map-insights"' in html
     assert "renderMapInsights(corpus)" in script
     assert "Most represented organizations" in script
-    assert "${t(\"Showing all\")} ${artifacts.length.toLocaleString()}" in script
+    assert '${t("Showing all")} ${artifacts.length.toLocaleString()}' in script
     assert ".slice(0, 16)" not in script
     assert "author nodes summarized above and omitted from the canvas" in script
 
@@ -430,7 +457,7 @@ def test_today_view_shows_total_corpus_counts_by_category():
     assert '<details id="corpus-totals-details">' in html
     assert 'corpus-totals-details" open>' not in html
     summary_status = 'corpus-totals-status").textContent = '
-    assert f"{summary_status}`${{totalArtifacts.toLocaleString()}} ${{t(\"artifacts\")}}`" in script
+    assert f'{summary_status}`${{totalArtifacts.toLocaleString()}} ${{t("artifacts")}}`' in script
 
 
 def test_badge_accessible_names_state_the_action():
@@ -777,7 +804,10 @@ def test_daily_briefing_collapses_verbose_evidence_details_by_default():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     assert 'element("details", { className: "daily-briefing-details" }' in script
-    assert "{t(\"Evidence & briefing details\")} · ${citations.length.toLocaleString()} ${t(\"sources\")}" in script
+    assert (
+        '{t("Evidence & briefing details")} · ${citations.length.toLocaleString()} '
+        '${t("sources")}' in script
+    )
     assert "briefingDetails(briefing, citations)" in script
     assert 'attrs: { open: "" }' not in script
 

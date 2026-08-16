@@ -219,7 +219,8 @@ function syncLangToggle() {
   const zh = getLang() === "zh";
   toggle.setAttribute("aria-pressed", String(zh));
   byId("lang-toggle-label").textContent = zh ? "EN" : "中文";
-  toggle.setAttribute("title", zh ? "Switch to English" : "Switch to Chinese (中文)");
+  const titleKey = zh ? "Switch to English" : "Switch to Chinese (中文)";
+  toggle.setAttribute("title", t(titleKey));
 }
 
 function rerenderAll() {
@@ -246,6 +247,9 @@ const I18N = {
     // --- Brackets and chrome -------------------------------------------------
     "Skip to content": "跳到主要内容",
     "Subscribe to Benchmark Radar via RSS": "通过 RSS 订阅 Benchmark Radar",
+    "Site utilities": "网站工具",
+    "Switch to Chinese (中文)": "切换到中文",
+    "Switch to English": "切换到英文",
     "Export the dataset": "导出数据集",
     "Get in touch · Email, WeChat, Discord": "联系我 · 邮件、微信、Discord",
     Data: "数据",
