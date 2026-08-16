@@ -183,8 +183,11 @@ th {
 
 .repo-badge {
   display: inline-flex;
+  min-height: 2rem;
+  min-width: 2rem;
   gap: 0.4rem;
   align-items: center;
+  justify-content: center;
   padding: 0.32rem 0.6rem;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -228,9 +231,15 @@ button.repo-badge svg {
    meaningful stroke form, so they fill instead of outline. The GitHub repo
    octicon also appears on the star badge, which is an <a>, so the selector
    covers both link and button badges. */
-.repo-badge svg.brand-icon {
+.repo-badge svg,
+.repo-badge svg.brand-icon,
+.repo-badge svg.outline-icon {
   width: 0.9rem;
   height: 0.9rem;
+  flex: 0 0 0.9rem;
+}
+
+.repo-badge svg.brand-icon {
   fill: currentColor;
   stroke: none;
 }
@@ -239,8 +248,6 @@ button.repo-badge svg {
    the button badge icons. Applies to link and button badges alike so every
    top-right icon renders at the same size (issue #213). */
 .repo-badge svg.outline-icon {
-  width: 0.9rem;
-  height: 0.9rem;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -248,13 +255,12 @@ button.repo-badge svg {
 }
 
 .repo-badge-count {
+  min-width: 1.1ch;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
 }
 
 .feed-badge svg {
-  width: 0.9rem;
-  height: 0.9rem;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -3541,6 +3547,7 @@ footer {
   }
 
   .repo-badge {
+    min-width: 2.2rem;
     padding-inline: 0.5rem;
   }
 
