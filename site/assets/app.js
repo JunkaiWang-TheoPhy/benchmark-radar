@@ -218,7 +218,7 @@ function syncLangToggle() {
   if (!toggle) return;
   const zh = getLang() === "zh";
   toggle.setAttribute("aria-pressed", String(zh));
-  byId("lang-toggle-label").textContent = zh ? "EN" : "中文";
+  byId("lang-toggle-label").textContent = zh ? "EN" : "中";
   const titleKey = zh ? "Switch to English" : "Switch to Chinese (中文)";
   toggle.setAttribute("title", t(titleKey));
 }
