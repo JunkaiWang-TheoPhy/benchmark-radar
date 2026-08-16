@@ -1588,6 +1588,22 @@ model_cards:
       - mcp_atlas
       - tool_decathlon
 
+  - id: deepseek_v4_pro_0813_model_card
+    organization: DeepSeek
+    model: DeepSeek-V4-Pro-0813
+    document_type: model_card
+    published: 2026-08-13
+    url: https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813
+    retrieved_at: 2026-08-15
+    # Transcribed from the card's benchmark table. The card also reports NL2Repo,
+    # Cybergym, DeepSWE, Agents' Last Exam and two internal DSBench variants,
+    # none of which the registry tracks.
+    benchmarks:
+      - hle
+      - terminal_bench
+      - tool_decathlon
+      - automationbench
+
   - id: ai2_olmo_3
     organization: Ai2
     model: Olmo 3 (7B and 32B)
