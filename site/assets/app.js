@@ -755,6 +755,26 @@ function element(tag, options = {}, children = []) {
   return node;
 }
 
+// Coalesce bursts of input (typing in a filter box) into a single trailing
+// render, so the corpus is not re-filtered and the DOM rebuilt on every
+// keystroke. Used by the filter panels that re-render their whole view.
+function debounce(fn, waitMs = 140) {
+  let timer = null;
+  const debounced = (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      fn(...args);
+    }, waitMs);
+  };
+  debounced.flush = (...args) => {
+    clearTimeout(timer);
+    timer = null;
+    fn(...args);
+  };
+  return debounced;
+}
+
 function svgElement(tag, attrs = {}, text = null) {
   const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
   Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, String(value)));
@@ -5262,6 +5282,17 @@ function openContact() {
   dialog.showModal();
 }
 
+// renderToday() re-filters the whole corpus and rebuilds the results DOM, so
+// filter keystrokes go through a debounce instead of firing it per character.
+const scheduleTodayRender = debounce(() => renderToday());
+
+// Same for the leaderboard, which re-sorts the registry and rewrites the URL
+// on every keystroke otherwise.
+const scheduleLeaderboardRender = debounce(() => {
+  renderLeaderboard();
+  writeUrl();
+});
+
 function bindEvents() {
   const langToggle = byId("lang-toggle");
   if (langToggle) langToggle.addEventListener("click", toggleLang);
@@ -5283,8 +5314,7 @@ function bindEvents() {
     state.ldomain = byId("leaderboard-domain").value;
     state.lorg = byId("leaderboard-organization").value;
     state.lera = byId("leaderboard-era").value;
-    renderLeaderboard();
-    writeUrl();
+    scheduleLeaderboardRender();
   });
   byId("leaderboard-clear").addEventListener("click", () => {
     state.lq = "";
@@ -5369,7 +5399,7 @@ function bindEvents() {
     state.source = byId("source-filter").value;
     state.organization = byId("organization-filter").value;
     state.event = byId("event-filter").value;
-    renderToday();
+    scheduleTodayRender();
   });
   // Both filter panels are <form>s whose state lives in the URL query we
   // build ourselves. Enter in a search field would otherwise trigger an
@@ -5512,7 +5542,12 @@ async function initialize() {
   // Independent of the data file, so badges still render on an error state.
   renderRepoBadges();
   try {
-    const response = await fetch("data/radar.json", { cache: "no-store" });
+    // radar.json is ~34MB and regenerated once a day. Let the browser cache
+    // it (GitHub Pages serves conditional headers, so a repeat visit reuses
+    // the cached copy and revalidates rather than re-downloading the whole
+    // corpus). cache: "no-store" forced a full re-download every load, which
+    // was the dominant part of the page's slow first interaction (issue #222).
+    const response = await fetch("data/radar.json");
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     state.data = await response.json();
     if (
