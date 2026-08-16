@@ -1543,6 +1543,51 @@ model_cards:
       - mathvision
       - omnidocbench
 
+  - id: zai_glm_5_1_model_card
+    organization: Z.ai
+    model: GLM-5.1
+    document_type: model_card
+    published: 2026-04-03
+    url: https://huggingface.co/zai-org/GLM-5.1
+    retrieved_at: 2026-08-15
+    # Transcribed from the card's benchmark table. The card also reports NL2Repo,
+    # CyberGym and Vending Bench 2, none of which the registry tracks.
+    benchmarks:
+      - hle
+      - aime
+      - hmmt
+      - imo_answer_bench
+      - gpqa_diamond
+      - swe_bench_pro
+      - terminal_bench
+      - browsecomp
+      - tau2_bench
+      - mcp_atlas
+      - tool_decathlon
+      - vending_bench
+
+  - id: zai_glm_5_2_model_card
+    organization: Z.ai
+    model: GLM-5.2
+    document_type: model_card
+    published: 2026-06-16
+    url: https://huggingface.co/zai-org/GLM-5.2
+    retrieved_at: 2026-08-15
+    # Transcribed from the card's benchmark table. The card also reports NL2Repo,
+    # DeepSWE, ProgramBench and SWE-Marathon, none of which the registry tracks.
+    benchmarks:
+      - hle
+      - critpt
+      - aime
+      - hmmt
+      - imo_answer_bench
+      - gpqa_diamond
+      - swe_bench_pro
+      - terminal_bench
+      - posttrainbench
+      - mcp_atlas
+      - tool_decathlon
+
   - id: ai2_olmo_3
     organization: Ai2
     model: Olmo 3 (7B and 32B)
