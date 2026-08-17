@@ -28,3 +28,6 @@ github.com/ktwu01/benchmark-radar，每天更新，并支持一键导出数据
 - **支持 / 反馈：** [提交 issue](https://github.com/ktwu01/benchmark-radar/issues)
 - **联系：** [@ktwu01](https://github.com/ktwu01)
 - **开源协议：** MIT
+- 微信群
+
+
