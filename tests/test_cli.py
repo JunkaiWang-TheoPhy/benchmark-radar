@@ -417,6 +417,27 @@ def test_pages_rebuilds_when_any_package_module_changes():
     assert "src/benchmark_radar/**" in paths
 
 
+def test_daily_radar_persists_only_a_fresh_target_day_snapshot():
+    """A queued run must not overlay its full, potentially stale history."""
+    workflow_path = Path(".github/workflows/daily-radar.yml")
+    workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+    build_steps = workflow["jobs"]["build-report"]["steps"]
+    checkout = next(
+        step for step in build_steps if step.get("uses", "").startswith("actions/checkout@")
+    )
+    assert checkout["with"]["ref"] == "main"
+    assert any(step.get("name") == "Isolate the target-day snapshot" for step in build_steps)
+    persist_script = next(
+        step["run"]
+        for step in workflow["jobs"]["persist-snapshot"]["steps"]
+        if step.get("name") == "Persist UTC snapshot"
+    )
+    assert "snapshot-date.txt" in persist_script
+    assert "snapshot-${snapshot_date}.json" in persist_script
+    assert "Refusing to replace a newer" in persist_script
+    assert "generated/data/snapshots/*.json" not in persist_script
+
+
 def test_daily_radar_yml_enables_chinese_rendering_in_production():
     """Issue #231: production must ask for the zh rendering, or the flags would
     exist but never be set and the Chinese dashboard would always show English."""
