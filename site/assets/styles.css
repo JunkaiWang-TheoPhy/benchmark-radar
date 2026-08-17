@@ -2613,26 +2613,39 @@ td a {
   stroke-dasharray: 7 4;
 }
 
-.score-point circle {
-  fill: #6ea8dc;
-  stroke: #0d1519;
+.score-point-face {
+  fill: #f8f6ef;
+  stroke: #6ea8dc;
   stroke-width: 2;
   transition: r 120ms ease;
 }
 
 /* A third-party citation is a publisher repeating a competitor's figure. The
    ring marks it on the chart so it is not read as a first-party report. */
-.score-point-third-party circle {
-  fill: #0d1519;
-  stroke: #6ea8dc;
+.score-point-citation-ring {
+  fill: none;
+  stroke: #0d1519;
   stroke-width: 2.5;
+  stroke-dasharray: 2 2;
+  transition: r 120ms ease;
 }
 
-.score-point:focus circle,
-.score-point:hover circle,
-.score-point.is-selected circle {
-  r: 8px;
+.score-point-glyph {
+  pointer-events: none;
+  user-select: none;
+}
+
+.score-point:focus .score-point-face,
+.score-point:hover .score-point-face,
+.score-point.is-selected .score-point-face {
+  r: 10px;
   stroke-width: 4;
+}
+
+.score-point:focus .score-point-citation-ring,
+.score-point:hover .score-point-citation-ring,
+.score-point.is-selected .score-point-citation-ring {
+  r: 13px;
 }
 
 .score-best-line {

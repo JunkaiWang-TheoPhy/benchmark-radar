@@ -67,7 +67,7 @@ def test_trajectory_points_expose_and_pin_record_details():
     assert 'label: t("Protocol")' in script
     assert 'label: t("Source")' in script
     assert ".frontier-point.is-selected .frontier-point-face" in styles
-    assert ".score-point.is-selected circle" in styles
+    assert ".score-point.is-selected .score-point-face" in styles
     assert "pinned: selectedFrontierPoint === group" in script
     assert 'record.unit === "percent" ? "%" : ` ${record.unit}`' in script
     assert 'role: "group"' in script
