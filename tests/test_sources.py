@@ -408,18 +408,20 @@ def test_openreview_success_uses_only_upstream_abstract(monkeypatch):
             self.content = data["content"]
 
     mock_notes = [
-        MockNote({
-            "id": "note-revision",
-            "forum": "stable-forum",
-            "cdate": timestamp,
-            "mdate": timestamp + 1000,
-            "content": {
-                "title": {"value": "A Conference Benchmark"},
-                "abstract": {"value": "The upstream abstract."},
-                "authors": {"value": ["Ada Radar"]},
-                "code": {"value": "https://github.com/example/benchmark"},
-            },
-        })
+        MockNote(
+            {
+                "id": "note-revision",
+                "forum": "stable-forum",
+                "cdate": timestamp,
+                "mdate": timestamp + 1000,
+                "content": {
+                    "title": {"value": "A Conference Benchmark"},
+                    "abstract": {"value": "The upstream abstract."},
+                    "authors": {"value": ["Ada Radar"]},
+                    "code": {"value": "https://github.com/example/benchmark"},
+                },
+            }
+        )
     ]
 
     class MockClient:
@@ -428,6 +430,7 @@ def test_openreview_success_uses_only_upstream_abstract(monkeypatch):
             return mock_notes
 
     import openreview.api
+
     monkeypatch.setattr(openreview.api, "OpenReviewClient", lambda **kwargs: MockClient())
     monkeypatch.setenv("OPENREVIEW_USERNAME", "test@example.com")
     monkeypatch.setenv("OPENREVIEW_PASSWORD", "testpass")
@@ -639,9 +642,11 @@ def test_release_replacement_budget_preserves_later_repository_coverage(monkeypa
 def test_new_connectors_accept_empty_upstream_results(monkeypatch, fetcher, config, empty_payload):
     if fetcher is fetch_openreview:
         import openreview.api
+
         class MockClient:
             def get_notes(self, invitation, limit):
                 return []
+
         monkeypatch.setattr(openreview.api, "OpenReviewClient", lambda **kwargs: MockClient())
         monkeypatch.setenv("OPENREVIEW_USERNAME", "test@example.com")
         monkeypatch.setenv("OPENREVIEW_PASSWORD", "testpass")
@@ -665,11 +670,13 @@ def test_new_connectors_accept_empty_upstream_results(monkeypatch, fetcher, conf
 def test_new_connectors_reject_malformed_payloads(monkeypatch, fetcher, config, malformed_payload):
     if fetcher is fetch_openreview:
         import openreview.api
+
         class MockClient:
             def get_notes(self, invitation, limit):
                 raise openreview.openreview.OpenReviewException(
                     {"name": "Error", "message": "Invalid payload"}
                 )
+
         monkeypatch.setattr(openreview.api, "OpenReviewClient", lambda **kwargs: MockClient())
         monkeypatch.setenv("OPENREVIEW_USERNAME", "test@example.com")
         monkeypatch.setenv("OPENREVIEW_PASSWORD", "testpass")
@@ -696,19 +703,23 @@ def test_new_connectors_reject_malformed_payloads(monkeypatch, fetcher, config, 
 def test_new_connectors_surface_http_failures(monkeypatch, fetcher, config):
     if fetcher is fetch_openreview:
         import openreview.api
+
         class MockClient:
             def get_notes(self, invitation, limit):
                 raise openreview.openreview.OpenReviewException(
                     {"name": "Error", "message": "HTTP 500", "status": 500}
                 )
+
         monkeypatch.setattr(openreview.api, "OpenReviewClient", lambda **kwargs: MockClient())
         monkeypatch.setenv("OPENREVIEW_USERNAME", "test@example.com")
         monkeypatch.setenv("OPENREVIEW_PASSWORD", "testpass")
         with pytest.raises(openreview.openreview.OpenReviewException):
             fetcher(config, datetime(2026, 7, 26, tzinfo=UTC), 10)
     else:
+
         def fail(url, **kwargs):
             raise RequestError("HTTP 500 from source after 3 attempts")
+
         monkeypatch.setattr("benchmark_radar.sources.get_json", fail)
 
         with pytest.raises(RequestError, match="HTTP 500"):
@@ -761,6 +772,7 @@ def test_new_connectors_surface_http_failures(monkeypatch, fetcher, config):
 def test_new_connectors_never_synthesize_missing_summary(monkeypatch, fetcher, config, payload):
     if fetcher is fetch_openreview:
         import openreview.api
+
         class MockNote:
             def __init__(self, data):
                 self.id = data["id"]
@@ -768,9 +780,11 @@ def test_new_connectors_never_synthesize_missing_summary(monkeypatch, fetcher, c
                 self.cdate = data["cdate"]
                 self.mdate = data["mdate"]
                 self.content = data["content"]
+
         class MockClient:
             def get_notes(self, invitation, limit):
                 return [MockNote(payload)]
+
         monkeypatch.setattr(openreview.api, "OpenReviewClient", lambda **kwargs: MockClient())
         monkeypatch.setenv("OPENREVIEW_USERNAME", "test@example.com")
         monkeypatch.setenv("OPENREVIEW_PASSWORD", "testpass")
