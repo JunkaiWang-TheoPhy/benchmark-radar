@@ -407,6 +407,16 @@ def test_daily_radar_yml_enables_and_requires_questions_in_production():
     assert str(env.get("OPENAI_QUESTIONS_REQUIRED")).lower() == "true"
 
 
+def test_pages_rebuilds_when_any_package_module_changes():
+    """Dashboard output depends on transitive package imports, not snapshots.py alone."""
+    workflow_path = Path(".github/workflows/pages.yml")
+    workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+    # PyYAML's YAML 1.1 loader parses the GitHub Actions `on` key as True.
+    trigger = workflow.get("on", workflow.get(True))
+    paths = next(iter(trigger.values()))["paths"]
+    assert "src/benchmark_radar/**" in paths
+
+
 def test_daily_radar_yml_enables_chinese_rendering_in_production():
     """Issue #231: production must ask for the zh rendering, or the flags would
     exist but never be set and the Chinese dashboard would always show English."""

@@ -16,6 +16,10 @@ on:
       - "data/benchmark_scores.yml"
       - "config.yml"
       - "site/**"
+      # The dashboard build imports the package transitively through
+      # snapshots.py. Keep the trigger broad so a new scoring, insight, rubric,
+      # or export dependency cannot merge without rebuilding the published site.
+      - "src/benchmark_radar/**"
       - "src/benchmark_radar/snapshots.py"
       - "src/benchmark_radar/feed.py"
       - "src/benchmark_radar/corpus.py"
