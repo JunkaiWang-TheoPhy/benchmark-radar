@@ -33,3 +33,9 @@ If this is useful, **star the repo**.
 - **Support / bugs:** [open an issue](https://github.com/ktwu01/benchmark-radar/issues)
 - **Contact:** [@ktwu01](https://github.com/ktwu01)
 - **License:** MIT
+
+## Join the WeChat group
+
+Scan the QR code to join the WeChat group for daily benchmark updates and eval discussions:
+
+<img src="assets/wechat-group-qr.jpg" alt="WeChat group QR code" width="280" />
