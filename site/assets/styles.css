@@ -183,6 +183,7 @@ th {
 }
 
 .repo-badge {
+  position: relative;
   display: inline-flex;
   width: 2.6rem;
   height: 2.6rem;
@@ -198,13 +199,48 @@ th {
   letter-spacing: 0.06em;
   text-decoration: none;
   text-transform: uppercase;
-  transition: border-color 120ms ease, background 120ms ease;
+  transition: border-color 60ms ease, background 60ms ease, color 60ms ease,
+    transform 60ms ease;
 }
 
 .repo-badge:hover,
 .repo-badge:focus-visible {
   border-color: var(--ink);
-  background: var(--panel);
+  background: var(--ink);
+  color: var(--panel);
+  transform: translateY(-1px);
+}
+
+/* Utility labels should appear with the interaction, not after the browser's
+   delayed native-title timeout. JavaScript supplies the localized text. */
+.repo-badge::after {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.55rem);
+  left: 50%;
+  padding: 0.38rem 0.52rem;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--panel);
+  content: attr(data-tooltip);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  opacity: 0;
+  pointer-events: none;
+  text-transform: none;
+  transform: translate(-50%, -0.2rem);
+  transition: opacity 60ms ease, transform 60ms ease;
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+.repo-badge:hover::after,
+.repo-badge:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  visibility: visible;
 }
 
 /* The export and contact controls are <button>s, not <a>s, because they open
@@ -3606,6 +3642,10 @@ footer {
   .repo-badge {
     width: 2.1rem;
     height: 2.1rem;
+  }
+
+  .repo-badge::after {
+    display: none;
   }
 
   .view-nav {

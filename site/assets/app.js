@@ -236,7 +236,16 @@ function applyStaticI18n() {
       node.dataset.i18nTitleEn = node.getAttribute("title") || "";
     }
     const text = table[node.dataset.i18nTitle];
-    node.setAttribute("title", text ?? node.dataset.i18nTitleEn);
+    const resolved = text ?? node.dataset.i18nTitleEn;
+    if (node.classList.contains("repo-badge")) {
+      // Native title tooltips wait roughly a second before appearing. Header
+      // utilities need immediate feedback, so CSS reads this attribute instead.
+      node.setAttribute("data-tooltip", resolved);
+      node.removeAttribute("title");
+      if (!node.hasAttribute("aria-label")) node.setAttribute("aria-label", resolved);
+    } else {
+      node.setAttribute("title", resolved);
+    }
   });
   document.querySelectorAll("[data-i18n-placeholder]").forEach((node) => {
     if (node.dataset.i18nPlaceholderEn === undefined) {
@@ -261,7 +270,9 @@ function syncLangToggle() {
   toggle.setAttribute("aria-pressed", String(zh));
   byId("lang-toggle-label").textContent = zh ? "EN" : "中";
   const titleKey = zh ? "Switch to English" : "Switch to Chinese (中文)";
-  toggle.setAttribute("title", t(titleKey));
+  toggle.setAttribute("data-tooltip", t(titleKey));
+  toggle.setAttribute("aria-label", t(titleKey));
+  toggle.setAttribute("title", "");
 }
 
 function rerenderCurrentView() {

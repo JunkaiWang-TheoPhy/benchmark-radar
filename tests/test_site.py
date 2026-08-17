@@ -172,6 +172,21 @@ def test_top_right_utilities_use_shared_icon_geometry_and_contact_control():
     assert ".repo-badge svg," in styles
 
 
+def test_top_right_utilities_have_immediate_visible_feedback():
+    """Issue #228: feedback includes a fast high-contrast state and label."""
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    assert 'node.setAttribute("data-tooltip", resolved)' in script
+    assert 'node.removeAttribute("title")' in script
+    badge = styles.split(".repo-badge {", 1)[1].split("}", 1)[0]
+    feedback = styles.split(".repo-badge:hover,", 1)[1].split("}", 1)[0]
+    assert "60ms" in badge
+    assert "background: var(--ink)" in feedback
+    assert "color: var(--panel)" in feedback
+    assert "content: attr(data-tooltip)" in styles
+
+
 def test_language_toggle_and_contact_labels_are_translated():
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
