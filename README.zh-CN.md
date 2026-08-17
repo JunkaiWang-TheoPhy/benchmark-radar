@@ -28,6 +28,11 @@ github.com/ktwu01/benchmark-radar，每天更新，并支持一键导出数据
 - **支持 / 反馈：** [提交 issue](https://github.com/ktwu01/benchmark-radar/issues)
 - **联系：** [@ktwu01](https://github.com/ktwu01)
 - **开源协议：** MIT
-- 微信群
+
+## 加入微信群
+
+扫码加入微信群，获取每日 benchmark 更新、交流评测相关话题：
+
+<img src="assets/wechat-group-qr.jpg" alt="微信群二维码" width="280" />
 
 
