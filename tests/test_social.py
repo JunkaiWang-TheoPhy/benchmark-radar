@@ -4,6 +4,7 @@ from pathlib import Path
 
 from benchmark_radar import cli
 from benchmark_radar.social import (
+    _MONTHLY_ANCHOR,
     _WEEKLY_ANCHOR,
     SECTION_HEADING,
     GitChange,
@@ -228,6 +229,62 @@ def test_weekly_channels_are_omitted_between_trigger_days():
     assert "- [ ] X / Twitter" in section
     assert "**Weekly" not in section
     assert "reddit.com" not in section
+
+
+def test_render_section_groups_monthly_channels_on_the_monthly_trigger_day():
+    # ``monthly: true`` opts a channel into the once-a-month cadence, shown on
+    # the anchor's day-of-month like the weekly channels are shown on their
+    # 7-day cycle. A monthly contact must not appear in the daily or weekly
+    # groups.
+    section = render_social_section(
+        "insight",
+        "repo change",
+        [],
+        [
+            {"name": "X / Twitter", "daily": True},
+            {"name": "Junwei Zhou", "monthly": True},
+        ],
+        today=_MONTHLY_ANCHOR,
+    )
+    assert "**Daily targets:**" in section
+    assert "**Monthly:**" in section
+    assert "- [ ] X / Twitter" in section
+    assert "- [ ] Junwei Zhou" in section
+    assert "**Weekly" not in section
+
+
+def test_monthly_channels_are_omitted_between_trigger_days():
+    # A day that is not the anchor's day-of-month must not list monthly
+    # channels, or the once-a-month cadence would be meaningless.
+    section = render_social_section(
+        "insight",
+        "repo change",
+        [],
+        [
+            {"name": "X / Twitter", "daily": True},
+            {"name": "Junwei Zhou", "monthly": True},
+        ],
+        today=_MONTHLY_ANCHOR + timedelta(days=1),
+    )
+    assert "**Daily targets:**" in section
+    assert "- [ ] X / Twitter" in section
+    assert "**Monthly" not in section
+    assert "Junwei Zhou" not in section
+
+
+def test_load_channels_daily_only_excludes_monthly_channels(tmp_path: Path):
+    path = tmp_path / "social.yml"
+    path.write_text(
+        "social:\n"
+        "  channels:\n"
+        "    - name: X / Twitter\n"
+        "      daily: true\n"
+        "    - name: Junwei Zhou\n"
+        "      monthly: true\n",
+        encoding="utf-8",
+    )
+    assert [c["name"] for c in load_channels(path, daily_only=True)] == ["X / Twitter"]
+    assert [c["name"] for c in load_channels(path)] == ["X / Twitter", "Junwei Zhou"]
 
 
 def test_render_section_includes_the_copy_paste_post_sample():
