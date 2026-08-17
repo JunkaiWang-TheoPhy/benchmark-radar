@@ -597,7 +597,11 @@ input {
 
 .daily-questions {
   margin-bottom: 2.25rem;
-  max-width: 78ch;
+  max-width: calc(100% - 22rem);
+}
+
+#daily-questions-body {
+  max-width: 72ch;
 }
 
 .daily-questions-title {
@@ -3535,7 +3539,8 @@ footer {
   /* Below 1050px the results grid loses its 320px sidebar and goes single
      column, so the briefing's sidebar-derived width cap no longer applies
      and it fills the view like the results beneath it (issue #225). */
-  .daily-briefing {
+  .daily-briefing,
+  .daily-questions {
     max-width: 100%;
   }
 

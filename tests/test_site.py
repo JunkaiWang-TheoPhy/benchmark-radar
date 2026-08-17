@@ -939,6 +939,20 @@ def test_today_view_renders_the_daily_questions_under_the_briefing():
     assert 'byId("daily-questions").hidden = showingAllDates' in script
 
 
+def test_daily_questions_use_the_results_column_width_without_long_prose_lines():
+    """Issue #223: the section fills the desktop column while prose stays readable."""
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    questions = styles.split(".daily-questions {", 1)[1].split("}", 1)[0]
+    body = styles.split("#daily-questions-body {", 1)[1].split("}", 1)[0]
+    responsive = styles.split("@media (max-width: 1050px)", 1)[1].split(
+        "@media (max-width: 760px)", 1
+    )[0]
+    assert "max-width: calc(100% - 22rem)" in questions
+    assert "max-width: 72ch" in body
+    assert ".daily-briefing,\n  .daily-questions" in responsive
+
+
 def test_daily_questions_withhold_another_days_answers_and_name_an_absent_set():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
