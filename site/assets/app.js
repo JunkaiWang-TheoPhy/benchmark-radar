@@ -223,13 +223,13 @@ function syncLangToggle() {
   toggle.setAttribute("title", t(titleKey));
 }
 
-function rerenderAll() {
+function rerenderCurrentView() {
   if (!state.data) return;
   renderTodayDateOptions();
-  renderToday();
-  renderLeaderboard();
-  renderTrends();
-  renderTrendMap();
+  if (state.view === "today") renderToday();
+  if (state.view === "leaderboard") renderLeaderboard();
+  if (state.view === "trends") renderTrends();
+  if (state.view === "map") renderTrendMap();
   renderStaleBanner();
   renderBuildMeta();
 }
@@ -238,7 +238,7 @@ function toggleLang() {
   setLang(getLang() === "zh" ? "en" : "zh");
   applyStaticI18n();
   syncLangToggle();
-  rerenderAll();
+  rerenderCurrentView();
 }
 
 const I18N = {
@@ -740,6 +740,7 @@ const state = {
   leaderboardShowAll: false,
   todayResultsKey: "",
   todayResultsLimit: ALL_DATES_PAGE_SIZE,
+  observations: null,
 };
 
 function element(tag, options = {}, children = []) {
@@ -758,7 +759,7 @@ function element(tag, options = {}, children = []) {
 // Coalesce bursts of input (typing in a filter box) into a single trailing
 // render, so the corpus is not re-filtered and the DOM rebuilt on every
 // keystroke. Used by the filter panels that re-render their whole view.
-function debounce(fn, waitMs = 140) {
+function debounce(fn, waitMs = 80) {
   let timer = null;
   const debounced = (...args) => {
     clearTimeout(timer);
@@ -1443,7 +1444,7 @@ function renderBuildMeta() {
   )} UTC`;
 }
 
-function renderToday() {
+function renderToday({ resultsOnly = false } = {}) {
   // Events are bound before the data file resolves (initialize), so a nav
   // click or filter keystroke in the load window must no-op, not throw.
   if (!state.data) return;
@@ -1452,17 +1453,18 @@ function renderToday() {
   if (!day) return;
   byId("today-date").value = state.todayDate;
 
-  // The briefing and connector health describe one scan, not an archive-wide
-  // result set. Hiding them in All dates mode keeps latest-day context from
-  // appearing to explain observations collected across the full history.
-  byId("daily-briefing").hidden = showingAllDates;
-  byId("daily-questions").hidden = showingAllDates;
-  byId("source-health-panel").hidden = showingAllDates;
+  if (!resultsOnly) {
+    // The briefing and connector health describe one scan, not an archive-wide
+    // result set. Hiding them in All dates mode keeps latest-day context from
+    // appearing to explain observations collected across the full history.
+    byId("daily-briefing").hidden = showingAllDates;
+    byId("daily-questions").hidden = showingAllDates;
+    byId("source-health-panel").hidden = showingAllDates;
 
-  renderDailyBriefing(day);
-  renderDailyQuestions(day);
-
-  syncFilters();
+    renderDailyBriefing(day);
+    renderDailyQuestions(day);
+    syncFilters();
+  }
   const observations = filteredObservations();
   const resultsKey = [
     state.todayDate,
@@ -1477,9 +1479,10 @@ function renderToday() {
     state.todayResultsKey = resultsKey;
     state.todayResultsLimit = ALL_DATES_PAGE_SIZE;
   }
-  const visibleObservations = showingAllDates
-    ? observations.slice(0, state.todayResultsLimit)
-    : observations;
+  // A single busy scan can carry hundreds of observations. Bound every render,
+  // not just the all-dates archive, so initial load and filter feedback never
+  // have to build the entire card list before the reader can interact.
+  const visibleObservations = observations.slice(0, state.todayResultsLimit);
   const remainingResults = observations.length - visibleObservations.length;
   const showMore = byId("today-show-more");
   showMore.hidden = remainingResults <= 0;
@@ -1504,6 +1507,11 @@ function renderToday() {
           }),
         ],
   );
+
+  if (resultsOnly) {
+    writeUrl();
+    return;
+  }
 
   const healthEntries = [
     ...day.ingest_health.map((entry) => ({
@@ -2095,6 +2103,7 @@ function healthSummary(entries) {
 }
 
 function allObservations() {
+  if (state.observations) return state.observations;
   const evidence = state.data.days.flatMap((day) =>
     day.evidence_items.map((item) => ({
       ...item,
@@ -2120,10 +2129,11 @@ function allObservations() {
       observation_kind: "attention",
     })),
   );
-  return [...evidence, ...attention].sort((a, b) => {
+  state.observations = [...evidence, ...attention].sort((a, b) => {
     const dateOrder = String(b.snapshot_date).localeCompare(String(a.snapshot_date));
     return dateOrder || Number(b.total_score || 0) - Number(a.total_score || 0);
   });
+  return state.observations;
 }
 
 function populateSelect(target, values, label, selected) {
@@ -5282,9 +5292,9 @@ function openContact() {
   dialog.showModal();
 }
 
-// renderToday() re-filters the whole corpus and rebuilds the results DOM, so
-// filter keystrokes go through a debounce instead of firing it per character.
-const scheduleTodayRender = debounce(() => renderToday());
+// Filter keystrokes only rebuild the bounded result list. Briefing, questions,
+// health, and corpus totals do not change while a reader types.
+const scheduleTodayRender = debounce(() => renderToday({ resultsOnly: true }));
 
 // Same for the leaderboard, which re-sorts the registry and rewrites the URL
 // on every keystroke otherwise.
@@ -5342,7 +5352,7 @@ function bindEvents() {
   });
   byId("today-show-more").addEventListener("click", () => {
     state.todayResultsLimit += ALL_DATES_PAGE_SIZE;
-    renderToday();
+    renderToday({ resultsOnly: true });
   });
   byId("trend-released-only").addEventListener("change", (event) => {
     state.trendReleasedOnly = event.target.checked;
@@ -5561,17 +5571,22 @@ async function initialize() {
       state.todayDate = state.data.latest_date;
     }
     renderTodayDateOptions();
-    renderToday();
-    renderLeaderboard();
-    renderTrends();
-    renderTrendMap();
     // A permalink to ?view=leaderboard on a build without the curated registry
     // has nothing to show, so fall back to Today rather than opening a blank
-    // section behind a nav entry that renderLeaderboard just hid.
+    // section behind a navigation entry that has no data.
     if (state.view === "leaderboard" && !state.data.model_card_leaderboard) {
       state.view = "today";
     }
     setView(state.view, false);
+
+    // Rendering all four views up front made the reader wait for charts and
+    // thousands of hidden nodes. Build only the requested view; the navigation
+    // handlers render another view when the reader opens it.
+    if (state.view === "today") renderToday();
+    if (state.view === "leaderboard") renderLeaderboard();
+    if (state.view === "trends") renderTrends();
+    if (state.view === "map") renderTrendMap();
+
     renderBuildMeta();
     renderStaleBanner();
     if (state.rubric && state.data.rubrics?.[state.rubric]) {

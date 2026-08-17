@@ -98,6 +98,19 @@ def test_scan_date_can_be_reset_to_all_dates():
     assert 'byId("source-health-panel").hidden = showingAllDates' in script
 
 
+def test_dashboard_bounds_work_before_and_during_filtering():
+    """Issue #222: hidden views and unbounded card lists must not block input."""
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert "state.observations = [...evidence, ...attention].sort" in script
+    assert "if (state.observations) return state.observations" in script
+    assert "const visibleObservations = observations.slice(0, state.todayResultsLimit)" in script
+    assert "renderToday({ resultsOnly: true })" in script
+    assert 'if (state.view === "today") renderToday()' in script
+    assert 'if (state.view === "leaderboard") renderLeaderboard()' in script
+    assert "function rerenderCurrentView()" in script
+
+
 def test_automatic_frontier_default_does_not_leak_into_unrelated_urls():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
