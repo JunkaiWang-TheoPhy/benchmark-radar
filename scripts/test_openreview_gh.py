@@ -27,12 +27,13 @@ def main():
     invitation = "ICLR.cc/2026/Conference/-/Submission"
     notes = client.get_notes(invitation=invitation, limit=5)
     print(f"SUCCESS: Got {len(notes)} notes from {invitation}")
-    
+
     for n in notes:
         title = n.content.get("title", {}).get("value", "N/A")
         print(f"  {n.id}: {title[:80]}")
-    
+
     return 0
+
 
 if __name__ == "__main__":
     exit(main())

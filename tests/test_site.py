@@ -98,6 +98,19 @@ def test_scan_date_can_be_reset_to_all_dates():
     assert 'byId("source-health-panel").hidden = showingAllDates' in script
 
 
+def test_dashboard_bounds_work_before_and_during_filtering():
+    """Issue #222: hidden views and unbounded card lists must not block input."""
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert "state.observations = [...evidence, ...attention].sort" in script
+    assert "if (state.observations) return state.observations" in script
+    assert "const visibleObservations = observations.slice(0, state.todayResultsLimit)" in script
+    assert "renderToday({ resultsOnly: true })" in script
+    assert 'if (state.view === "today") renderToday()' in script
+    assert 'if (state.view === "leaderboard") renderLeaderboard()' in script
+    assert "function rerenderCurrentView()" in script
+
+
 def test_automatic_frontier_default_does_not_leak_into_unrelated_urls():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
@@ -157,6 +170,21 @@ def test_top_right_utilities_use_shared_icon_geometry_and_contact_control():
     assert "grid-template-columns: repeat(7, 2.1rem)" in styles
     assert "flex: 0 0 1.5rem" in styles
     assert ".repo-badge svg," in styles
+
+
+def test_top_right_utilities_have_immediate_visible_feedback():
+    """Issue #228: feedback includes a fast high-contrast state and label."""
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    assert 'node.setAttribute("data-tooltip", resolved)' in script
+    assert 'node.removeAttribute("title")' in script
+    badge = styles.split(".repo-badge {", 1)[1].split("}", 1)[0]
+    feedback = styles.split(".repo-badge:hover,", 1)[1].split("}", 1)[0]
+    assert "60ms" in badge
+    assert "background: var(--ink)" in feedback
+    assert "color: var(--panel)" in feedback
+    assert "content: attr(data-tooltip)" in styles
 
 
 def test_language_toggle_and_contact_labels_are_translated():
@@ -924,6 +952,20 @@ def test_today_view_renders_the_daily_questions_under_the_briefing():
     assert "renderDailyQuestions(day)" in script
     # Both describe one scan date, so neither is shown over the whole archive.
     assert 'byId("daily-questions").hidden = showingAllDates' in script
+
+
+def test_daily_questions_use_the_results_column_width_without_long_prose_lines():
+    """Issue #223: the section fills the desktop column while prose stays readable."""
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    questions = styles.split(".daily-questions {", 1)[1].split("}", 1)[0]
+    body = styles.split("#daily-questions-body {", 1)[1].split("}", 1)[0]
+    responsive = styles.split("@media (max-width: 1050px)", 1)[1].split(
+        "@media (max-width: 760px)", 1
+    )[0]
+    assert "max-width: calc(100% - 22rem)" in questions
+    assert "max-width: 72ch" in body
+    assert ".daily-briefing,\n  .daily-questions" in responsive
 
 
 def test_daily_questions_withhold_another_days_answers_and_name_an_absent_set():

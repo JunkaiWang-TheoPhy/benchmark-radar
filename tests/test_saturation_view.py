@@ -61,7 +61,25 @@ def test_a_third_party_citation_is_marked_on_the_chart():
 
     assert "score-point-third-party" in script
     assert "observation.reported_by" in script
-    assert ".score-point-third-party circle" in styles
+    assert "score-point-citation-ring" in script
+    assert ".score-point-citation-ring" in styles
+
+
+def test_score_points_carry_recognizable_model_family_marks():
+    """Issue #195: saturation points identify models before interaction."""
+    script = source("site/assets/app.js")
+    styles = source("site/assets/styles.css")
+    chart = script.split("function adoptionFrontierChart(", 1)[1].split(
+        "\nfunction clearAdoptionFrontier", 1
+    )[0]
+
+    for family in ("Claude", "Gemini", "Grok"):
+        assert f"{family}: [" in script
+    assert "modelGlyph(" in chart
+    assert "observation.model" in chart
+    assert 'r: 9,\n          class: "score-point-face"' in chart
+    assert ".score-point-glyph" in styles
+    assert "stroke: #6ea8dc" in styles.split(".score-point-face", 1)[1][:120]
 
 
 def test_the_reading_gap_is_labelled_rather_than_drawn_through():

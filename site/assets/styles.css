@@ -183,6 +183,7 @@ th {
 }
 
 .repo-badge {
+  position: relative;
   display: inline-flex;
   width: 2.6rem;
   height: 2.6rem;
@@ -198,13 +199,48 @@ th {
   letter-spacing: 0.06em;
   text-decoration: none;
   text-transform: uppercase;
-  transition: border-color 120ms ease, background 120ms ease;
+  transition: border-color 60ms ease, background 60ms ease, color 60ms ease,
+    transform 60ms ease;
 }
 
 .repo-badge:hover,
 .repo-badge:focus-visible {
   border-color: var(--ink);
-  background: var(--panel);
+  background: var(--ink);
+  color: var(--panel);
+  transform: translateY(-1px);
+}
+
+/* Utility labels should appear with the interaction, not after the browser's
+   delayed native-title timeout. JavaScript supplies the localized text. */
+.repo-badge::after {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.55rem);
+  left: 50%;
+  padding: 0.38rem 0.52rem;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--panel);
+  content: attr(data-tooltip);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  opacity: 0;
+  pointer-events: none;
+  text-transform: none;
+  transform: translate(-50%, -0.2rem);
+  transition: opacity 60ms ease, transform 60ms ease;
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+.repo-badge:hover::after,
+.repo-badge:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  visibility: visible;
 }
 
 /* The export and contact controls are <button>s, not <a>s, because they open
@@ -597,7 +633,11 @@ input {
 
 .daily-questions {
   margin-bottom: 2.25rem;
-  max-width: 78ch;
+  max-width: calc(100% - 22rem);
+}
+
+#daily-questions-body {
+  max-width: 72ch;
 }
 
 .daily-questions-title {
@@ -2613,26 +2653,39 @@ td a {
   stroke-dasharray: 7 4;
 }
 
-.score-point circle {
-  fill: #6ea8dc;
-  stroke: #0d1519;
+.score-point-face {
+  fill: #f8f6ef;
+  stroke: #6ea8dc;
   stroke-width: 2;
   transition: r 120ms ease;
 }
 
 /* A third-party citation is a publisher repeating a competitor's figure. The
    ring marks it on the chart so it is not read as a first-party report. */
-.score-point-third-party circle {
-  fill: #0d1519;
-  stroke: #6ea8dc;
+.score-point-citation-ring {
+  fill: none;
+  stroke: #0d1519;
   stroke-width: 2.5;
+  stroke-dasharray: 2 2;
+  transition: r 120ms ease;
 }
 
-.score-point:focus circle,
-.score-point:hover circle,
-.score-point.is-selected circle {
-  r: 8px;
+.score-point-glyph {
+  pointer-events: none;
+  user-select: none;
+}
+
+.score-point:focus .score-point-face,
+.score-point:hover .score-point-face,
+.score-point.is-selected .score-point-face {
+  r: 10px;
   stroke-width: 4;
+}
+
+.score-point:focus .score-point-citation-ring,
+.score-point:hover .score-point-citation-ring,
+.score-point.is-selected .score-point-citation-ring {
+  r: 13px;
 }
 
 .score-best-line {
@@ -3522,7 +3575,8 @@ footer {
   /* Below 1050px the results grid loses its 320px sidebar and goes single
      column, so the briefing's sidebar-derived width cap no longer applies
      and it fills the view like the results beneath it (issue #225). */
-  .daily-briefing {
+  .daily-briefing,
+  .daily-questions {
     max-width: 100%;
   }
 
@@ -3588,6 +3642,10 @@ footer {
   .repo-badge {
     width: 2.1rem;
     height: 2.1rem;
+  }
+
+  .repo-badge::after {
+    display: none;
   }
 
   .view-nav {
