@@ -124,7 +124,7 @@ step, not writing a new loader.
 
 Checked three ways, because "should we crawl both?" turns on which overlap you mean.
 
-**Crawl-to-crawl coverage — small.** After case- and punctuation-folding:
+**Crawl-to-crawl coverage, small.** After case- and punctuation-folding:
 
 | | count |
 |---|---|
@@ -135,7 +135,7 @@ Checked three ways, because "should we crawl both?" turns on which overlap you m
 | OpenCompass only | 384 |
 | union | 1,066 |
 
-**llm-stats upstream vs. our own curated layer — heavy.** 5,410 of 5,544 llm-stats scores
+**llm-stats upstream vs. our own curated layer, heavy.** 5,410 of 5,544 llm-stats scores
 are `self_reported=True` and every organization is a model vendor (Qwen 1,652, OpenAI 662,
 Google 611, Anthropic 292, DeepSeek 276, ...). Those are vendor-announced numbers, the same
 upstream `model_cards.yml` and `benchmark_scores.yml` already read from primary documents
@@ -143,7 +143,7 @@ with protocol attached and a join rule enforced. 1,944 of the 5,544 rows come fr
 organizations the curated progression already tracks. llm-stats is a lower-fidelity copy of
 a stream we already collect at higher fidelity.
 
-**Score layer between the crawls — different eras, not redundant.** OpenCompass's 94
+**Score layer between the crawls, different eras, not redundant.** OpenCompass's 94
 embedded leaderboards hold 5,708 rows, comparable in volume to llm-stats' 5,544, but they
 are ChatGLM3-6B, Baichuan2-13B, Qwen-72B-Chat and GPT-4: a 2023-24 snapshot. llm-stats is
 4,608 of 5,544 rows from 2025-26 models across 339 distinct models. Only 27 of the 94

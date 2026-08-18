@@ -1,4 +1,4 @@
-# LLM Stats session — what to send (very little)
+# LLM Stats session - what to send (very little)
 
 **Short answer: do not re-run the llm-stats session on a big brief.** Almost none of the
 remaining llm-stats work is crawl work, so a long prompt was the wrong instrument. Send the
@@ -28,7 +28,7 @@ llm-stats is our **score layer** and it is the only frontier-model score source 
 crawl (4,608 of 5,544 rows are 2025-26 models; the OpenCompass embedded leaderboards are
 2023-24 era). It is not going to be our identity layer.
 
-## A1 — the only thing worth sending to that session
+## A1 - the only thing worth sending to that session
 
 > One small follow-up, no bulk crawling. Fetch a handful of
 > `https://llm-stats.com/benchmarks/{benchmark_id}` pages (`gpqa-diamond`,
@@ -42,7 +42,7 @@ crawl (4,608 of 5,544 rows are 2025-26 models; the OpenCompass embedded leaderbo
 That is the whole ask. It settles permanently whether llm-stats identity is obtainable, and
 costs five page fetches.
 
-## A2 — repo work, not session work
+## A2 - repo work, not session work
 
 Do these in `benchmark-radar` against the checked-in CSVs:
 
@@ -63,30 +63,30 @@ Do these in `benchmark-radar` against the checked-in CSVs:
 
 ---
 
-# Part B — DEFERRED. Do not start unless explicitly asked.
+# Part B - DEFERRED. Do not start unless explicitly asked.
 
 Kept here so the reasoning is not lost. If we ever run this, it is scoped to the **74
 benchmarks that are both score-dense (≥10 score rows) and unmatched** in the registry and
-in the OpenCompass crawl — not 687. We will supply that list.
+in the OpenCompass crawl, not 687. We will supply that list.
 
-### B1 — external identity resolution
+### B1 - external identity resolution
 
 For each of the 74 benchmarks in the scoped list, resolve identity from outside llm-stats using the name
 and the `description` field already in `benchmarks.csv`. For each benchmark produce:
 
-- `paper_url` — arXiv/ACL/OpenReview/DOI, plus `paper_title` and `paper_year`
-- `repo_url` — the canonical GitHub/GitLab repo for the benchmark itself
-- `dataset_url` — Hugging Face dataset, Zenodo, or direct download
-- `site_url` — project or leaderboard homepage
-- `publisher` — `{name, role, evidence_url}` where role is `paper_org | maintainer`.
+- `paper_url` - arXiv/ACL/OpenReview/DOI, plus `paper_title` and `paper_year`
+- `repo_url` - the canonical GitHub/GitLab repo for the benchmark itself
+- `dataset_url` - Hugging Face dataset, Zenodo, or direct download
+- `site_url` - project or leaderboard homepage
+- `publisher` - `{name, role, evidence_url}` where role is `paper_org | maintainer`.
   The organization behind the benchmark, not a full author list: "who made it" is answered
   by an org plus a paper link, and hundreds of author-affiliation assertions are hundreds
   of chances to be wrong for no added answer.
-- `dates` — not one "release date". Paper submission, repo creation, and dataset
+- `dates` - not one "release date". Paper submission, repo creation, and dataset
   publication routinely differ by months and there is no authority that reconciles them.
   Emit `{paper_first_version, repo_created, dataset_published}`, each ISO 8601 or null,
   each with its own `evidence_url`. The site picks a display date; you do not.
-- `version_reported` — the version string **as the source states it**, verbatim, or null.
+- `version_reported` - the version string **as the source states it**, verbatim, or null.
   Do not parse a version out of the name. `Diamond` is a split, `Verified` is a filtered
   subset, `Pro` may be marketing, `v5` may be a harness version. Guessing which of those a
   suffix means is how two different instruments get merged.
@@ -125,26 +125,26 @@ not softer. Least evidence is where fuzzy matching is most likely to invent a ma
 expect most of these to land in `candidate_matches[]`. Do not treat a thin description as
 licence to accept a weaker anchor.
 
-### B2 — openness and size, for resolved benchmarks only
+### B2 - openness and size, for resolved benchmarks only
 
 Where B1 produced a `repo_url` or `dataset_url`, fetch it and extract:
 
-- `code_license` — SPDX id from the GitHub licence API. Describes the **repository code**,
+- `code_license` - SPDX id from the GitHub licence API. Describes the **repository code**,
   which for most benchmarks is the eval harness, not the data.
-- `data_license` — SPDX id from the HF dataset card YAML, the dataset page, or an explicit
+- `data_license` - SPDX id from the HF dataset card YAML, the dataset page, or an explicit
   statement about the data. Never inherit it from `code_license`; eval code is routinely
   Apache-2.0 while the data is CC-BY-NC, and that gap is the thing users are asking about.
   A file named LICENSE whose contents you did not parse is `null` with
   `license_evidence: "file_present_unparsed"`.
-- `data_located` — `found | gated | not_found_at_this_location`. `found` needs a concrete
+- `data_located` - `found | gated | not_found_at_this_location`. `found` needs a concrete
   artifact in view (HF parquet/JSON config, a release asset, a populated data directory).
   A repo with only eval code is `not_found_at_this_location`, **not** "the data is
-  unavailable" — the data may live somewhere you did not look, and a `false` here would be
+  unavailable", the data may live somewhere you did not look, and a `false` here would be
   read downstream as "closed".
-- `harness_public` — is the evaluation code itself public and in that repo
-- `sizes[]` — `{value, unit, split, measures, evidence_url}`. Units: `questions | tasks |
+- `harness_public` - is the evaluation code itself public and in that repo
+- `sizes[]` - `{value, unit, split, measures, evidence_url}`. Units: `questions | tasks |
   items | images | videos | audio_clips | hours | tokens | repos | episodes`. `measures` is
-  `eval_set | train_set | total | unclear` — a count whose referent is unknown is worse
+  `eval_set | train_set | total | unclear`, a count whose referent is unknown is worse
   than no count. Prefer HF dataset viewer row counts (exact, per split) over a number in a
   README abstract. If both exist and disagree, emit both rows and set `size_conflict: true`.
   Never sum across splits into a single total.

@@ -1,4 +1,4 @@
-# Follow-up crawl prompt — OpenCompass Hub session
+# Follow-up crawl prompt - OpenCompass Hub session
 
 Paste this into the session that produced `Crawl Data from OpenCompass Hub Website.zip`.
 
@@ -33,7 +33,7 @@ strong leads to verify in step 3, not as settled facts.
 **Do not re-crawl `getDetailV2` for fields you already have.** Where round 2 needs the hub
 at all it is only for the three gaps in step 1.
 
-## Step 1 — close the small hub gaps
+## Step 1 - close the small hub gaps
 
 - Skip the 61 blank `card.creator_info.name` values. `creator_info` is the person who
   uploaded the hub card, which is usually not the benchmark's creator, so resolving those
@@ -46,7 +46,7 @@ at all it is only for the three gaps in step 1.
   definition of each. We need to know what 开源收录 formally certifies before we render
   it as an openness signal.
 
-## Step 2 — parse `detail.readme`, do not re-fetch it
+## Step 2 - parse `detail.readme`, do not re-fetch it
 
 All 461 READMEs are already in the bundle and are the richest unexploited field.
 Measured signal: 86 mention a countable size, 97 mention a licence keyword. Extract
@@ -54,41 +54,41 @@ into structured form:
 
 - `sizes[]` as `{value, unit, split, measures, evidence_quote}`. Units: `questions |
   tasks | items | images | videos | audio_clips | hours | tokens | repos | episodes`.
-  `measures` is `eval_set | train_set | total | unclear` — README numbers routinely
+  `measures` is `eval_set | train_set | total | unclear`, README numbers routinely
   describe training data, a superset, an earlier version, or a related dataset, and a count
   whose referent is unknown is worse than no count. When the sentence does not say what the
   number counts, `measures` is `unclear`. Never sum splits into one total.
-- `license_mention` — the literal string found, plus surrounding sentence. Do not map it
+- `license_mention` - the literal string found, plus surrounding sentence. Do not map it
   to an SPDX id from the README alone; step 3 does that from the authoritative source.
-- `metric_mention` — the metric name(s) the README states (accuracy, pass@1, F1, Elo,
+- `metric_mention` - the metric name(s) the README states (accuracy, pass@1, F1, Elo,
   BLEU, win rate), plus direction if stated.
 - `languages[]`, `splits[]`, `version` if stated.
 
 Every extraction carries the ≤200-character quote it came from. A regex hit with no
 readable supporting sentence is not an extraction.
 
-## Step 3 — resolve openness and size from the linked targets
+## Step 3 - resolve openness and size from the linked targets
 
 This is the main body of work. For each of the 428 records with a `github_link` and the
 241 with `downloadUrls` (330 records mention Hugging Face somewhere), fetch the target:
 
-- `code_license` — from the GitHub licence API (`GET /repos/{owner}/{repo}` →
+- `code_license` - from the GitHub licence API (`GET /repos/{owner}/{repo}` →
   `license.spdx_id`). This describes the **repository code**, which for most benchmarks is
   the eval harness, not the data.
-- `data_license` — from the HF dataset card YAML `license:` key, the dataset page, or an
+- `data_license` - from the HF dataset card YAML `license:` key, the dataset page, or an
   explicit statement about the data. Never inherit it from `code_license`. Eval code is
   routinely Apache-2.0 while the data is CC-BY-NC, and that gap is exactly the thing our
   users are asking about.
-- `data_located` — `found | gated | not_found_at_this_location`. `found` needs a concrete
+- `data_located` - `found | gated | not_found_at_this_location`. `found` needs a concrete
   artifact in view (HF parquet/JSON config, release asset, populated data directory).
-  A repo with only eval code is `not_found_at_this_location` — the data may live elsewhere;
+  A repo with only eval code is `not_found_at_this_location`, the data may live elsewhere;
   do not report it as unavailable.
-- `harness_public` — `true` only when the repo contains a runnable evaluation entry point
+- `harness_public` - `true` only when the repo contains a runnable evaluation entry point
   (a scoring script, an OpenCompass/lm-eval config, or a documented `evaluate`/`score`
   command). Name the file you saw. Do not infer it from the repo merely existing.
-- `access_gate` — `none | hf_gated | request_form | registration | paywall`.
-- `link_status` — `ok | redirect | 404 | 410 | timeout`, per fetched URL.
-- `sizes[]` — prefer HF dataset viewer per-split row counts over any README number, and
+- `access_gate` - `none | hf_gated | request_form | registration | paywall`.
+- `link_status` - `ok | redirect | 404 | 410 | timeout`, per fetched URL.
+- `sizes[]` - prefer HF dataset viewer per-split row counts over any README number, and
   carry `measures` as in step 2. Where README and HF disagree, emit both and set
   `size_conflict: true`.
 
@@ -112,7 +112,7 @@ not appear in any openness computation. The same applies to `certificate_level`:
 is a hub curation label with no licence attached, so it may be reported as a hub signal but
 never used as a truth-table input.
 
-## Step 4 — normalize the 94 embedded leaderboards
+## Step 4 - normalize the 94 embedded leaderboards
 
 `detail.leaderboard` is present on 94 records as a dict of leaderboard-name → list of
 free-form column dicts, with per-benchmark column names (`node(n-f1)`, `chain(e-f1)`,
@@ -139,7 +139,7 @@ Emit `leaderboard_columns_inventory.json` listing every distinct column name, it
 frequency, and the distribution of `value_kind` within it. This is a build report for a
 human to read once, not product data.
 
-## Step 5 — cross-source identity, for the merge
+## Step 5 - cross-source identity, for the merge
 
 76 benchmark names in this bundle collide with names in our LLM Stats crawl under a
 case- and punctuation-folded normalizer (agieval, bbh, ceval, cmmlu, blink, mmmu,
@@ -169,7 +169,7 @@ wrongly merged.
 
 - `opencompass_leaderboard_rows.jsonl` (step 4)
 - `leaderboard_columns_inventory.json` (step 4, build report)
-- `opencompass_round2_validation.json` — per-field fill counts over 461, count by
+- `opencompass_round2_validation.json` - per-field fill counts over 461, count by
   `openness.status` and by `openness_basis` row, count of `size_conflict`, count of
   `measures: unclear`, count of `access_gate` by value, count of `link_status` by value,
   and the licence distribution split by `code_license` vs `data_license`

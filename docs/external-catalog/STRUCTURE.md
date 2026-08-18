@@ -37,7 +37,7 @@ llm-stats-only record whose `publisher`, `artifacts`, `sizes` and `openness` are
 is not a gap to be filled by a later crawl. It is the accurate representation of what that
 source knows, and the schema exists to hold it. See `AUDIT.md` §3-4.
 
-## Layer 1 — `source_records.jsonl`
+## Layer 1 - `source_records.jsonl`
 
 One line per `(source, source_benchmark_id)`. 1,148 lines. Never deduplicated across
 sources: two sources describing the same benchmark stay two rows.
@@ -94,7 +94,7 @@ wrongly in the exact direction that matters.
 
 **`sizes` is a list of `{value, unit, split, measures, evidence}`, and empty is normal.**
 Units: `questions | tasks | items | images | videos | audio_clips | hours | tokens |
-repos | episodes`. `measures` is `eval_set | train_set | total | unclear` — README counts
+repos | episodes`. `measures` is `eval_set | train_set | total | unclear`, README counts
 frequently describe training data or a superset, and a number with no idea what it counts
 is worse than no number. Never sum across splits.
 
@@ -112,7 +112,7 @@ retained raw response (`card.paper_link`) is exact, stable, and small. Quotes ar
 for fields an agent *judged* rather than read: size extraction, licence interpretation,
 identity claims. That is where a quote actually constrains anything.
 
-## Layer 2 — `identity.yml`
+## Layer 2 - `identity.yml`
 
 The only hand-edited file. Two distinct relations, because conflating them is how you
 publish "GPQA Diamond" scores that came from GPQA full.
@@ -139,7 +139,7 @@ variants:
 
 `anchors` is the reviewable evidence: a shared arXiv id, a shared `owner/repo`, or a
 shared `hf:owner/name`. A shared *name* is not an anchor. **A group with fewer than two
-independent anchors does not go in `equivalent`** — it goes in a `candidates:` block for
+independent anchors does not go in `equivalent`**, it goes in a `candidates:` block for
 a human to clear.
 
 `equivalent` groups do not require a `canonical_id`. 76 names collide between the two
@@ -150,7 +150,7 @@ Explicit rather than computed because the join count moved from 65 to 72 canonic
 between two sessions purely by changing the normalizer. An automatic join hides that;
 a checked-in file makes it reviewable.
 
-## Layer 3 — `score_observations.jsonl`
+## Layer 3 - `score_observations.jsonl`
 
 One line per reported cell.
 
@@ -247,7 +247,7 @@ fails the loader; external scores never enter `benchmark_score_progression`.
 
 ## Artifacts out
 
-`site/data/benchmark-index.json` — one entry **per source record**, not per merged group.
+`site/data/benchmark-index.json`, one entry **per source record**, not per merged group.
 Merging happens in the UI at render time using `identity.yml`, so a bad group is a display
 bug rather than baked-in data loss.
 
@@ -262,7 +262,7 @@ bug rather than baked-in data loss.
 a `group_id` collapse into one result showing both source badges; ungrouped duplicates
 show as separate rows, labelled.
 
-`site/data/benchmarks/<slug>.json` — full record, its group siblings, and its score rows
+`site/data/benchmarks/<slug>.json`, full record, its group siblings, and its score rows
 partitioned by source in the file itself, so no client code can flatten them.
 
 ## Minimum viable display
