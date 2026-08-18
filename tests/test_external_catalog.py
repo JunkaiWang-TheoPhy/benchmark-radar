@@ -262,3 +262,288 @@ def test_index_has_one_row_per_source_record(normalized: dict) -> None:
     assert len(index) == 1148
     assert len({row["key"] for row in index}) == 1148
     assert len({row["slug"] for row in index}) == 1148
+
+
+@pytest.fixture(scope="module")
+def all_records(normalized: dict) -> list[dict]:
+    from benchmark_radar.external_opencompass import normalize_opencompass
+
+    return normalized["source_records"] + normalize_opencompass()["source_records"]
+
+
+# Identity candidate generation
+
+
+def test_candidates_only_promote_pairs_sharing_two_anchors(all_records: list[dict]) -> None:
+    """A shared name is not an anchor; two independent anchors is the bar."""
+    from benchmark_radar.external_identity import _anchors, build_identity_candidates
+
+    candidates = build_identity_candidates(all_records)
+    by_key = {record["key"]: record for record in all_records}
+    for candidate in candidates["equivalent_candidates"]:
+        left, right = candidate["members"]
+        shared = _anchors(by_key[left]) & _anchors(by_key[right])
+        assert len(shared) >= 2
+        assert set(candidate["anchors"]) == shared
+
+
+def test_name_only_block_is_cross_source_and_not_anchor_backed(
+    all_records: list[dict],
+) -> None:
+    """The MMLU-Pro-twice case: same name across crawls, no shared anchor."""
+    from benchmark_radar.external_identity import _anchors, build_identity_candidates
+
+    candidates = build_identity_candidates(all_records)
+    by_key = {record["key"]: record for record in all_records}
+    names = {pair["name"] for pair in candidates["name_only"]}
+    assert "MMLU-Pro" in names
+    for pair in candidates["name_only"]:
+        left, right = pair["members"]
+        assert by_key[left]["source"] != by_key[right]["source"]
+        assert len(_anchors(by_key[left]) & _anchors(by_key[right])) < 2
+
+
+def test_llm_stats_records_have_no_anchors(all_records: list[dict]) -> None:
+    """llm-stats carries no artifacts, so no llm-stats pair can ever auto-merge."""
+    from benchmark_radar.external_identity import _anchors
+
+    for record in all_records:
+        if record["source"] == "llm_stats":
+            assert _anchors(record) == set()
+
+
+# Identity loader
+
+
+def _write_identity(tmp_path: Path, payload: dict) -> Path:
+    path = tmp_path / "identity.yml"
+    path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+    return path
+
+
+def test_identity_seed_loads_against_the_records(all_records: list[dict]) -> None:
+    """The checked-in seed must resolve against the real records or the build lies."""
+    from benchmark_radar.external_identity import DEFAULT_IDENTITY_PATH, load_identity
+
+    identity = load_identity(all_records, DEFAULT_IDENTITY_PATH)
+    # Every seed variant is cross-linked both ways as a sibling.
+    assert identity.siblings_for("opencompass:517")  # RACE(Middle) -> RACE(High)
+    assert identity.siblings_for("opencompass:516")  # and back
+
+
+def test_loader_rejects_equivalent_group_with_one_anchor(
+    all_records: list[dict], tmp_path: Path
+) -> None:
+    """One anchor is a candidate, not an equivalence. This is the enforcement point."""
+    from benchmark_radar.external_identity import IdentityError, load_identity
+
+    member = all_records[0]["key"]
+    other = all_records[1]["key"]
+    path = _write_identity(
+        tmp_path,
+        {
+            "schema_version": 1,
+            "equivalent": [
+                {"group_id": "g", "members": [member, other], "anchors": ["arxiv:1"]}
+            ],
+        },
+    )
+    with pytest.raises(IdentityError, match="two independent anchors"):
+        load_identity(all_records, path)
+
+
+def test_loader_rejects_member_that_is_not_a_record(
+    all_records: list[dict], tmp_path: Path
+) -> None:
+    from benchmark_radar.external_identity import IdentityError, load_identity
+
+    path = _write_identity(
+        tmp_path,
+        {
+            "schema_version": 1,
+            "equivalent": [
+                {
+                    "group_id": "g",
+                    "members": ["llm-stats:does-not-exist", all_records[0]["key"]],
+                    "anchors": ["arxiv:1", "gh:a/b"],
+                }
+            ],
+        },
+    )
+    with pytest.raises(IdentityError, match="not a source record"):
+        load_identity(all_records, path)
+
+
+def test_loader_rejects_duplicate_group_id(
+    all_records: list[dict], tmp_path: Path
+) -> None:
+    from benchmark_radar.external_identity import IdentityError, load_identity
+
+    a, b, c = (record["key"] for record in all_records[:3])
+    group = {"members": [a, b], "anchors": ["arxiv:1", "gh:a/b"]}
+    path = _write_identity(
+        tmp_path,
+        {
+            "schema_version": 1,
+            "equivalent": [
+                {"group_id": "dup", **group},
+                {"group_id": "dup", "members": [c], "anchors": ["arxiv:2", "gh:c/d"]},
+            ],
+        },
+    )
+    with pytest.raises(IdentityError, match="duplicate group_id"):
+        load_identity(all_records, path)
+
+
+def test_loader_rejects_key_in_two_equivalent_groups(
+    all_records: list[dict], tmp_path: Path
+) -> None:
+    from benchmark_radar.external_identity import IdentityError, load_identity
+
+    a, b, c = (record["key"] for record in all_records[:3])
+    path = _write_identity(
+        tmp_path,
+        {
+            "schema_version": 1,
+            "equivalent": [
+                {"group_id": "g1", "members": [a, b], "anchors": ["arxiv:1", "gh:a/b"]},
+                {"group_id": "g2", "members": [a, c], "anchors": ["arxiv:2", "gh:c/d"]},
+            ],
+        },
+    )
+    with pytest.raises(IdentityError, match="two equivalent groups"):
+        load_identity(all_records, path)
+
+
+def test_loader_rejects_wrong_schema_version(
+    all_records: list[dict], tmp_path: Path
+) -> None:
+    from benchmark_radar.external_identity import IdentityError, load_identity
+
+    path = _write_identity(tmp_path, {"schema_version": 99, "equivalent": []})
+    with pytest.raises(IdentityError, match="schema_version"):
+        load_identity(all_records, path)
+
+
+def test_missing_identity_file_is_not_an_error(all_records: list[dict], tmp_path: Path) -> None:
+    """The identity layer is the one piece the catalog can ship without."""
+    from benchmark_radar.external_identity import load_identity
+
+    identity = load_identity(all_records, tmp_path / "absent.yml")
+    assert identity.siblings_for(all_records[0]["key"]) == []
+
+
+# Shards
+
+
+@pytest.fixture(scope="module")
+def shard_inputs(normalized: dict, all_records: list[dict]) -> dict:
+    from benchmark_radar.external_identity import DEFAULT_IDENTITY_PATH, load_identity
+
+    return {
+        "records": all_records,
+        "identity": load_identity(all_records, DEFAULT_IDENTITY_PATH),
+        "series": normalized["score_series"],
+        "observations": normalized["score_observations"],
+    }
+
+
+def _build_all_shards(shard_inputs: dict, output_dir: Path) -> dict:
+    from benchmark_radar.external_shards import write_shards
+
+    return write_shards(
+        shard_inputs["records"],
+        identity=shard_inputs["identity"],
+        series=shard_inputs["series"],
+        observations=shard_inputs["observations"],
+        output_dir=output_dir,
+    )
+
+
+def test_one_shard_per_source_record(shard_inputs: dict, tmp_path: Path) -> None:
+    report = _build_all_shards(shard_inputs, tmp_path / "benchmarks")
+    files = list((tmp_path / "benchmarks").glob("*.json"))
+    assert report["shard_count"] == 1148
+    assert len(files) == 1148
+
+
+def test_scores_are_a_keyed_object_never_a_flat_array(
+    shard_inputs: dict, tmp_path: Path
+) -> None:
+    """A keyed object cannot be .sort()ed into a cross-source ranking."""
+    import json
+
+    _build_all_shards(shard_inputs, tmp_path / "benchmarks")
+    for path in (tmp_path / "benchmarks").glob("*.json"):
+        shard = json.loads(path.read_text(encoding="utf-8"))
+        scores = shard["scores_by_source"]
+        assert isinstance(scores, dict)
+        for source, block in scores.items():
+            # No `source` field lives on a row: the source is the key, so the
+            # rows of two sources are never in one flattenable list.
+            for row in block["rows"]:
+                assert "source" not in row
+            assert source == "llm_stats"
+
+
+def test_llm_stats_shard_carries_its_scores(shard_inputs: dict, tmp_path: Path) -> None:
+    import json
+
+    _build_all_shards(shard_inputs, tmp_path / "benchmarks")
+    shard = json.loads(
+        (tmp_path / "benchmarks" / "llm-stats-gpqa.json").read_text(encoding="utf-8")
+    )
+    block = shard["scores_by_source"]["llm_stats"]
+    assert len(block["rows"]) == 239
+    assert block["series"]["display_scale"] is None
+
+
+def test_opencompass_shard_has_empty_scores(shard_inputs: dict, tmp_path: Path) -> None:
+    """OpenCompass supplies no observations, so absence renders as absence."""
+    import json
+
+    _build_all_shards(shard_inputs, tmp_path / "benchmarks")
+    shard = json.loads(
+        (tmp_path / "benchmarks" / "opencompass-498-mmlu.json").read_text(encoding="utf-8")
+    )
+    assert shard["scores_by_source"] == {}
+
+
+def test_zero_score_llm_stats_record_still_gets_a_shard(
+    shard_inputs: dict, tmp_path: Path
+) -> None:
+    """Counted, not dropped: a benchmark with no scores is still addressable."""
+    _build_all_shards(shard_inputs, tmp_path / "benchmarks")
+    assert (tmp_path / "benchmarks" / "llm-stats-cvtg-2k.json").exists()
+
+
+def test_variant_siblings_are_cross_linked_in_the_shard(
+    shard_inputs: dict, tmp_path: Path
+) -> None:
+    import json
+
+    _build_all_shards(shard_inputs, tmp_path / "benchmarks")
+    shard = json.loads(
+        (tmp_path / "benchmarks" / "opencompass-517-race-middle.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    siblings = {sibling["key"] for sibling in shard["siblings"]}
+    assert "opencompass:516" in siblings
+
+
+def test_stale_shards_are_swapped_out(shard_inputs: dict, tmp_path: Path) -> None:
+    """A removed benchmark must not leave a live URL serving last month's data."""
+    output_dir = tmp_path / "benchmarks"
+    _build_all_shards(shard_inputs, output_dir)
+    stale = output_dir / "ghost-benchmark.json"
+    stale.write_text("{}", encoding="utf-8")
+    _build_all_shards(shard_inputs, output_dir)
+    assert not stale.exists()
+
+
+def test_shards_are_byte_identical_across_runs(shard_inputs: dict, tmp_path: Path) -> None:
+    _build_all_shards(shard_inputs, tmp_path / "a")
+    _build_all_shards(shard_inputs, tmp_path / "b")
+    for path in (tmp_path / "a").glob("*.json"):
+        assert path.read_bytes() == (tmp_path / "b" / path.name).read_bytes()
