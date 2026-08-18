@@ -147,3 +147,27 @@ def test_apex_agents_links_to_its_actual_paper():
     assert "https://arxiv.org/abs/2601.14242" in apex
     assert "released: 2026-01-20" in apex
     assert "2512.02141" not in apex
+
+
+def test_issue_240_sections_default_collapsed_but_visible():
+    # "Benchmarks by model card adoption", "Model cards in the registry", and
+    # "What the two layers say - Stated findings" are <details> with no `open`:
+    # present on first load, closed until the reader asks.
+    html = source("site/index.html")
+
+    assert '<details class="findings-panel" id="benchmark-findings"' in html
+    assert '<details class="trend-panel adoption-table" id="adoption-table">' in html
+    assert '<details class="ledger" aria-labelledby="leaderboard-cards-heading">' in html
+    assert 'id="benchmark-findings" open' not in html
+    assert 'adoption-table" open' not in html
+    assert 'class="ledger" open' not in html
+
+    # The empty-findings behaviour is unchanged: hidden entirely, since an
+    # empty panel reads as "we looked and the field is uneventful". Collapsed
+    # by default applies only when findings exist.
+    script = source("site/assets/app.js")
+    renderer = script.split("function renderBenchmarkFindings(board)", 1)[1].split(
+        "\nfunction modelCardLabelCounts", 1
+    )[0]
+    assert "panel.hidden = true" in renderer
+    assert "panel.hidden = false" in renderer

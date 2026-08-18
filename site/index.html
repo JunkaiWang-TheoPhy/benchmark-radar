@@ -315,18 +315,18 @@
 
         <div class="evidence-strip" id="leaderboard-insights" aria-label="Registry overview" data-i18n-aria="Registry overview"></div>
 
-        <section class="findings-panel" id="benchmark-findings" aria-labelledby="findings-heading" hidden>
-          <div class="section-title">
-            <div>
-              <p class="eyebrow" data-i18n="What the two layers say">What the two layers say</p>
-              <h2 id="findings-heading" data-i18n="Stated findings">Stated findings</h2>
-            </div>
+        <details class="findings-panel" id="benchmark-findings" aria-labelledby="findings-heading" hidden>
+          <summary class="section-title findings-summary">
+            <span>
+              <span class="eyebrow" data-i18n="What the two layers say">What the two layers say</span>
+              <strong id="findings-heading" data-i18n="Stated findings">Stated findings</strong>
+            </span>
             <span id="findings-count" aria-live="polite"></span>
-          </div>
+          </summary>
           <p class="section-note" id="findings-measures"></p>
           <div class="findings-list" id="findings-list"></div>
           <p class="section-note findings-limits" id="findings-limits"></p>
-        </section>
+        </details>
 
         <div class="benchmark-workbench">
           <aside class="benchmark-navigator" aria-labelledby="benchmark-navigator-heading">
@@ -412,11 +412,13 @@
           </section>
         </div>
 
-        <div class="trend-panel">
-          <div class="section-title">
-            <h2 id="leaderboard-table-heading">Benchmarks by model card adoption</h2>
+        <details class="trend-panel adoption-table" id="adoption-table">
+          <summary class="section-title adoption-table-summary">
+            <span>
+              <strong id="leaderboard-table-heading">Benchmarks by model card adoption</strong>
+            </span>
             <span id="leaderboard-count" aria-live="polite"></span>
-          </div>
+          </summary>
           <form class="filter-panel leaderboard-filters" id="leaderboard-filters">
             <label class="search-field">
               Search
@@ -453,7 +455,7 @@
           <div class="leaderboard-list-actions">
             <button class="secondary-link" id="leaderboard-show-all" type="button"></button>
           </div>
-        </div>
+        </details>
 
         <details class="ledger" aria-labelledby="leaderboard-cards-heading">
           <summary class="ledger-summary">

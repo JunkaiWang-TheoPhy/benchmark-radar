@@ -4013,3 +4013,45 @@ footer {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* Issue #240 collapse defaults: the findings panel and the adoption table are
+   <details>, closed on load but visible. The summary keeps the section-title
+   layout so the heading reads the same open or closed; the +/- affordance
+   matches the method-note pattern rather than the platform triangle. */
+.findings-summary,
+.adoption-table-summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.findings-summary::-webkit-details-marker,
+.adoption-table-summary::-webkit-details-marker {
+  display: none;
+}
+
+.findings-summary::after,
+.adoption-table-summary::after {
+  content: "+";
+  font-size: 1rem;
+}
+
+.findings-panel[open] .findings-summary::after,
+.adoption-table[open] .adoption-table-summary::after {
+  content: "−";
+}
+
+.findings-summary strong,
+.adoption-table-summary strong {
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 1.35rem;
+}
+
+.findings-summary .eyebrow {
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.adoption-table > *:not(summary) {
+  margin-top: 1rem;
+}
