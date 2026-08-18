@@ -333,7 +333,7 @@ def main() -> None:
             normalized["source_records"] + opencompass["source_records"],
             series_by_key,
         )
-        index_path = write_benchmark_index(index, DEFAULT_OUTPUT_DIR / "benchmark-index.json")
+        index_path = write_benchmark_index(index, Path("site/data/benchmark-index.json"))
 
         oc_report = opencompass["validation"]
         print(
