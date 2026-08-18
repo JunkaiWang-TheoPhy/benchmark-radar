@@ -846,6 +846,8 @@ const state = {
   lera: "",
   lfrontier: "",
   lfrontierExplicit: false,
+  benchmarkIndex: null,
+  benchmarkQuery: "",
   leaderboardShowAll: false,
   todayResultsKey: "",
   todayResultsLimit: ALL_DATES_PAGE_SIZE,
@@ -3095,6 +3097,174 @@ function taskShape(entry) {
   );
 }
 
+// The searchable catalog over every benchmark we know of: the curated registry
+// plus every crawled external record. The stage-grouped shortlist above it is a
+// curated browse surface and stays; this is the "choose anyone" path, because
+// the shortlist can only ever show about 13 of 1,148.
+//
+// One row per source record, never per merged group. Two sources describing the
+// same benchmark stay two labelled rows until identity.yml says otherwise under
+// human review, since a wrong merge is invisible to a reader and two labelled
+// duplicates are not.
+const BENCHMARK_SEARCH_LIMIT = 50;
+
+let benchmarkIndexPromise = null;
+
+function loadBenchmarkIndex() {
+  if (!benchmarkIndexPromise) {
+    benchmarkIndexPromise = fetch("data/benchmark-index.json")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then((payload) => payload.benchmarks || [])
+      .catch(() => null);
+  }
+  return benchmarkIndexPromise;
+}
+
+function foldName(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function searchBenchmarkIndex(records, query) {
+  const needle = foldName(query);
+  if (!needle) return [];
+  const scored = [];
+  for (const record of records) {
+    const name = foldName(record.name);
+    if (!name.includes(needle)) continue;
+    // Prefix beats substring, then a record that can answer more of the
+    // reader's questions beats one that cannot, then shorter names first so
+    // "MMLU" outranks "MMLU-Pro-Extended" for the query "mmlu".
+    const answers =
+      (record.publisher ? 1 : 0) +
+      (record.openness !== "unknown" ? 1 : 0) +
+      (record.has_size ? 1 : 0) +
+      (record.score_count > 0 ? 1 : 0);
+    scored.push({ record, rank: [name.startsWith(needle) ? 0 : 1, -answers, name.length] });
+  }
+  scored.sort(
+    (a, b) =>
+      a.rank[0] - b.rank[0] ||
+      a.rank[1] - b.rank[1] ||
+      a.rank[2] - b.rank[2] ||
+      a.record.name.localeCompare(b.record.name),
+  );
+  return scored.map((item) => item.record);
+}
+
+// Openness is a three-state answer and `unknown` is the common one. It renders
+// as a neutral chip, never a warning: the reader is being told what we know,
+// not that something is wrong with the benchmark.
+function opennessChip(status) {
+  const label = {
+    open: t("open"),
+    restricted: t("restricted"),
+    unknown: t("openness not established"),
+  }[status] || t("openness not established");
+  return element("span", {
+    className: `benchmark-openness benchmark-openness-${status || "unknown"}`,
+    text: label,
+  });
+}
+
+function benchmarkResultRow(record) {
+  const facts = [];
+  // Every one of these renders an explicit "not established" rather than being
+  // hidden. Hiding an empty field reads as "not applicable", and whether these
+  // are known is precisely the reader's question.
+  facts.push(record.publisher || t("publisher not established"));
+  if (record.released) facts.push(String(record.released).slice(0, 4));
+  if (record.has_size) facts.push(t("size recorded"));
+  else facts.push(t("size not established"));
+
+  const button = element("button", {
+    className: "benchmark-result",
+    attrs: {
+      type: "button",
+      "aria-pressed": record.slug === state.lfrontier ? "true" : "false",
+    },
+  }, [
+    element("span", { className: "benchmark-result-name", text: record.name }),
+    element("span", { className: "benchmark-result-facts", text: facts.join(" \u00b7 ") }),
+    element("span", { className: "benchmark-result-meta" }, [
+      opennessChip(record.openness),
+      element("span", {
+        className: "benchmark-result-source",
+        text: record.source === "llm_stats" ? "LLM Stats" : "OpenCompass",
+      }),
+      // A count of collected numbers, never a quality signal: 239 rows means
+      // llm-stats collected 239 numbers, not that the benchmark is better.
+      element("span", {
+        className: "benchmark-result-scores",
+        text: record.score_count
+          ? `${record.score_count} ${
+              record.score_count === 1 ? t("reported score") : t("reported scores")
+            }`
+          : t("no scores collected"),
+      }),
+    ]),
+  ]);
+  button.addEventListener("click", () => {
+    selectFrontier(record.slug);
+    renderBenchmarkSearch();
+    writeUrl();
+  });
+  return button;
+}
+
+function renderBenchmarkSearch() {
+  const container = byId("benchmark-search-results");
+  const status = byId("benchmark-search-status");
+  if (!container || !status) return;
+  const records = state.benchmarkIndex;
+  if (!records) {
+    replaceChildren(container, []);
+    status.textContent = "";
+    return;
+  }
+  if (!state.benchmarkQuery) {
+    replaceChildren(container, []);
+    status.textContent = t("{n} benchmarks searchable").replace(
+      "{n}",
+      String(records.length),
+    );
+    return;
+  }
+  const matches = searchBenchmarkIndex(records, state.benchmarkQuery);
+  const shown = matches.slice(0, BENCHMARK_SEARCH_LIMIT);
+  replaceChildren(container, shown.map(benchmarkResultRow));
+  status.textContent = matches.length
+    ? t("{shown} of {total} matches")
+        .replace("{shown}", String(shown.length))
+        .replace("{total}", String(matches.length))
+    : t("No benchmark matches that name");
+}
+
+function initBenchmarkSearch() {
+  const input = byId("benchmark-search-input");
+  if (!input || input.dataset.bound === "1") return;
+  input.dataset.bound = "1";
+  const onInput = debounce(() => {
+    state.benchmarkQuery = input.value.trim();
+    renderBenchmarkSearch();
+  });
+  input.addEventListener("input", onInput);
+  loadBenchmarkIndex().then((records) => {
+    // A missing or broken index leaves the curated shortlist fully working.
+    // Search is additive, so its failure must not take the navigator with it.
+    state.benchmarkIndex = records;
+    const status = byId("benchmark-search-status");
+    if (!records && status) {
+      status.textContent = t("Benchmark search is unavailable right now");
+      input.disabled = true;
+      return;
+    }
+    renderBenchmarkSearch();
+  });
+}
+
 function renderBenchmarkNavigator(board) {
   const adopted = (board.entries || []).filter((entry) => entry.card_count > 0);
   const stageOrder = [
@@ -3149,6 +3319,8 @@ function renderBenchmarkNavigator(board) {
     })
     .filter(Boolean);
   replaceChildren(byId("benchmark-shortlist"), groups);
+  initBenchmarkSearch();
+  renderBenchmarkSearch();
 }
 
 function daysBetween(start, end) {
