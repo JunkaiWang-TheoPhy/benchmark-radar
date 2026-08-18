@@ -79,9 +79,7 @@ def build_shard(
         "schema_version": CATALOG_SCHEMA_VERSION,
         "record": record,
         "siblings": identity.siblings_for(record["key"]),
-        "scores_by_source": _scores_by_source(
-            record["key"], series_by_key, observations_by_key
-        ),
+        "scores_by_source": _scores_by_source(record["key"], series_by_key, observations_by_key),
     }
 
 

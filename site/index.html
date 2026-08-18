@@ -315,18 +315,18 @@
 
         <div class="evidence-strip" id="leaderboard-insights" aria-label="Registry overview" data-i18n-aria="Registry overview"></div>
 
-        <section class="findings-panel" id="benchmark-findings" aria-labelledby="findings-heading" hidden>
-          <div class="section-title">
-            <div>
-              <p class="eyebrow" data-i18n="What the two layers say">What the two layers say</p>
-              <h2 id="findings-heading" data-i18n="Stated findings">Stated findings</h2>
-            </div>
+        <details class="findings-panel" id="benchmark-findings" aria-labelledby="findings-heading" hidden>
+          <summary class="section-title findings-summary">
+            <span>
+              <span class="eyebrow" data-i18n="What the two layers say">What the two layers say</span>
+              <strong id="findings-heading" data-i18n="Stated findings">Stated findings</strong>
+            </span>
             <span id="findings-count" aria-live="polite"></span>
-          </div>
+          </summary>
           <p class="section-note" id="findings-measures"></p>
           <div class="findings-list" id="findings-list"></div>
           <p class="section-note findings-limits" id="findings-limits"></p>
-        </section>
+        </details>
 
         <div class="benchmark-workbench">
           <aside class="benchmark-navigator" aria-labelledby="benchmark-navigator-heading">
@@ -337,12 +337,23 @@
               standards and saturated conventions.
             </p>
             <div id="benchmark-shortlist"></div>
+
+            <div class="benchmark-search">
+              <label class="benchmark-search-label" for="benchmark-search-input"
+                     data-i18n="Search every benchmark">Search every benchmark</label>
+              <input id="benchmark-search-input" type="search" autocomplete="off"
+                     class="benchmark-search-input"
+                     data-i18n-placeholder="Name or alias"
+                     placeholder="Name or alias" />
+              <p id="benchmark-search-status" class="benchmark-search-status"></p>
+              <div id="benchmark-search-results"></div>
+            </div>
           </aside>
 
           <section class="frontier-panel" id="adoption-frontier" aria-labelledby="frontier-heading">
             <div class="frontier-heading-row">
               <div>
-                <p class="eyebrow" data-i18n="Reporting over time">Reporting over time</p>
+                <p class="eyebrow" id="frontier-eyebrow" data-i18n="Reporting over time">Reporting over time</p>
                 <h2 id="frontier-heading" data-i18n="Benchmark adoption frontier">Benchmark adoption frontier</h2>
               </div>
               <div class="frontier-controls">
@@ -363,18 +374,19 @@
               reporting saturation observed within this curated registry, not a claim about
               benchmark score saturation.
             </p>
-            <p class="section-note frontier-explainer-sub" data-i18n="frontier.explainer.sub">
+            <p class="section-note frontier-explainer-sub" id="frontier-explainer-sub" data-i18n="frontier.explainer.sub">
               The score track below it is a separate reading: every value that could be read
               verbatim from a cited document, connected only where the instrument and protocol
               are identical. A flat score tail usually means no newer number could be read, which
               is why the gap is marked rather than drawn through.
             </p>
             <div class="frontier-summary" id="frontier-summary" aria-live="polite"></div>
+            <div class="frontier-external" id="frontier-external" hidden></div>
             <div class="frontier-legend" id="frontier-legend" aria-label="Chart legend"></div>
             <div class="frontier-chart" id="frontier-chart"></div>
             <div class="frontier-org-key" id="frontier-org-key" aria-label="Reporting organization color key"></div>
             <div class="score-readout" id="frontier-score-readout"></div>
-            <div class="frontier-evidence">
+            <div class="frontier-evidence" id="frontier-evidence">
               <section aria-labelledby="frontier-milestones-heading">
                 <h3 id="frontier-milestones-heading" data-i18n="Frontier milestones">Frontier milestones</h3>
                 <div id="frontier-milestones"></div>
@@ -401,11 +413,13 @@
           </section>
         </div>
 
-        <div class="trend-panel">
-          <div class="section-title">
-            <h2 id="leaderboard-table-heading">Benchmarks by model card adoption</h2>
+        <details class="trend-panel adoption-table" id="adoption-table">
+          <summary class="section-title adoption-table-summary">
+            <span>
+              <strong id="leaderboard-table-heading">Benchmarks by model card adoption</strong>
+            </span>
             <span id="leaderboard-count" aria-live="polite"></span>
-          </div>
+          </summary>
           <form class="filter-panel leaderboard-filters" id="leaderboard-filters">
             <label class="search-field">
               Search
@@ -442,7 +456,7 @@
           <div class="leaderboard-list-actions">
             <button class="secondary-link" id="leaderboard-show-all" type="button"></button>
           </div>
-        </div>
+        </details>
 
         <details class="ledger" aria-labelledby="leaderboard-cards-heading">
           <summary class="ledger-summary">

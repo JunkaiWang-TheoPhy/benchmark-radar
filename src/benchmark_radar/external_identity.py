@@ -248,17 +248,13 @@ def load_identity(
 
         for member in members:
             siblings_by_key[member] = [
-                _sibling(record_by_key[other], "equivalent")
-                for other in members
-                if other != member
+                _sibling(record_by_key[other], "equivalent") for other in members if other != member
             ]
 
     for variant in variants:
         key = variant.get("key")
         if key not in record_by_key:
-            raise IdentityError(
-                f"{path}: variant names {key!r}, which is not a source record"
-            )
+            raise IdentityError(f"{path}: variant names {key!r}, which is not a source record")
         of_key = variant.get("of")
         # `of` may reference a canonical benchmark id that has no crawled record,
         # so it is only cross-linked as a sibling when it resolves to one here.

@@ -44,9 +44,7 @@ from .external_catalog import CATALOG_SCHEMA_VERSION, ExternalCatalogError, slug
 
 OPENCOMPASS_SOURCE = "opencompass_hub"
 OPENCOMPASS_KEY_PREFIX = "opencompass"
-DEFAULT_ROUND2_PATH = Path(
-    "data/leaderboard_snapshots/opencompass_round2/opencompass_round2.jsonl"
-)
+DEFAULT_ROUND2_PATH = Path("data/leaderboard_snapshots/opencompass_round2/opencompass_round2.jsonl")
 
 # GitHub's sentinel for "a LICENSE file is present but unidentifiable". Not a
 # licence, and it must not be stored as one.
