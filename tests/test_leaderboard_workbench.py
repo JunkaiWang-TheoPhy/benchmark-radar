@@ -171,3 +171,161 @@ def test_issue_240_sections_default_collapsed_but_visible():
     )[0]
     assert "panel.hidden = true" in renderer
     assert "panel.hidden = false" in renderer
+
+
+def test_lfrontier_resolves_slug_first_then_canonical_id_then_default():
+    # Display plan step 6's permalink contract, in this order: an exact
+    # external slug (which is what gives the crawled-only benchmarks a URL),
+    # then a canonical registry id so pre-widening shared links keep working,
+    # then the auto-picked default.
+    script = source("site/assets/app.js")
+
+    dispatch = script.split("function renderAdoptionFrontier(board)", 1)[1].split(
+        "const events = frontierEvents(entry)", 1
+    )[0]
+    slug_check = dispatch.index("record.slug === state.lfrontier")
+    canonical_check = dispatch.index("candidate.benchmark_id === state.lfrontier")
+    default_pick = dispatch.index("state.lfrontier = defaultEntry.benchmark_id")
+    assert slug_check < canonical_check < default_pick
+    # Only the default pick clears the reader's explicitness flag: the flag is
+    # cleared exactly once in the dispatch, and only after the default is taken.
+    assert dispatch.count("state.lfrontierExplicit = false") == 1
+    assert dispatch.index("state.lfrontierExplicit = false") > default_pick
+
+
+def test_a_slug_permalink_survives_the_index_fetch():
+    # While the index is on the wire the panel holds a loading state instead of
+    # snapping to the default, which would rewrite the reader's URL before the
+    # slug could be checked. When the fetch settles, the panel re-renders.
+    script = source("site/assets/app.js")
+
+    dispatch = script.split("function renderAdoptionFrontier(board)", 1)[1].split(
+        "const events = frontierEvents(entry)", 1
+    )[0]
+    # The still-loading branch holds the selection in a loading shell and
+    # returns before the default pick can rewrite the reader's URL.
+    loading = dispatch.split("!state.benchmarkIndexLoaded", 1)[1].split("return;", 1)[0]
+    assert "state.lfrontier = defaultEntry.benchmark_id" not in loading
+    assert "Loading benchmark details" in loading
+    # The fetch-failed branch ("!state.benchmarkIndex)" with the closing paren,
+    # to tell it apart from the Loaded flag above) says so explicitly rather
+    # than snapping to the default either.
+    failed = dispatch.split("!state.benchmarkIndex)", 1)[1].split("return;", 1)[0]
+    assert "state.lfrontier = defaultEntry.benchmark_id" not in failed
+    assert "Could not load details for this benchmark." in failed
+
+    init = script.split("function initBenchmarkSearch()", 1)[1].split(
+        "function renderBenchmarkNavigator", 1
+    )[0]
+    assert "state.benchmarkIndexLoaded = true" in init
+    assert "renderAdoptionFrontier(board)" in init
+
+
+def test_detail_panel_renders_for_any_selected_record():
+    script = source("site/assets/app.js")
+
+    for fn in (
+        "function renderExternalBenchmark(board, adopted, record)",
+        "function externalIdentityBlock(detail)",
+        "function externalOpennessBlock(detail)",
+        "function externalSizesBlock(detail)",
+        "function externalScoresBlock(shard)",
+        "function loadBenchmarkShard(slug)",
+    ):
+        assert fn in script
+    # Empty fields say "not established" in the DOM rather than being hidden:
+    # whether these facts are known is precisely the reader's question.
+    for phrase in (
+        "publisher not established",
+        "release date not established",
+        "modality not established",
+        "description not established",
+        "size not established",
+    ):
+        assert phrase in script
+    # The publisher keeps its role: the hub card publisher is not the creator.
+    assert "publisherRoleLabel" in script
+    assert "published the hub card" in script
+
+
+def test_search_selection_updates_the_detail_panel():
+    script = source("site/assets/app.js")
+
+    row = script.split("function benchmarkResultRow(record)", 1)[1].split(
+        "function renderBenchmarkSearch", 1
+    )[0]
+    assert "selectFrontier(record.slug)" in row
+    assert "renderAdoptionFrontier(board)" in row
+
+
+def test_crawled_scores_are_partitioned_by_source_with_no_merge_path():
+    # The honesty rule has teeth: the renderer reads the keyed scores_by_source
+    # object and paints one table per source. No flat array of rows from two
+    # sources exists anywhere in this code path to be sorted into a ranking.
+    script = source("site/assets/app.js")
+
+    section = script.split("function externalScoresBlock(shard)", 1)[1].split(
+        "// Identity siblings", 1
+    )[0]
+    assert "shard.scores_by_source" in section
+    assert "Object.keys(bySource)" in section
+    assert "sources.map((source) => externalSourceTable(source, bySource[source]))" in section
+    assert ".concat(" not in section
+    assert "[...rows" not in section
+    # element() appends children verbatim, so the per-source tables are spread
+    # into the child list; passing the mapped array itself would stringify it
+    # into "[object HTMLDivElement]" in the rendered panel.
+    assert "...(sources.length" in section
+
+
+def test_crawled_scores_never_render_a_percentage_or_scale():
+    # display_scale is null on every crawled series, so no percentage bar and
+    # no "% of max" can be drawn; raw_value prints verbatim. vending-bench-2
+    # declares max 1.0 and carries 8017.59, so a contradicted declared maximum
+    # is printed as a claim about the source, never used as a denominator.
+    script = source("site/assets/app.js")
+
+    section = script.split("function externalSourceTable(source, payload)", 1)[1].split(
+        "// Identity siblings", 1
+    )[0]
+    assert "row.raw_value" in section
+    assert "display_scale" not in section
+    assert "%" not in section
+    assert "max_score_contradicted" in section
+    assert "declared_max" in section
+
+
+def test_crawled_third_party_text_never_enters_the_dom_as_markup():
+    # Descriptions and README excerpts are crawled third-party HTML. The whole
+    # external detail path builds nodes through element({text}), which sets
+    # textContent.
+    script = source("site/assets/app.js")
+
+    section = script.split("// --- External catalog detail", 1)[1].split(
+        "function renderBenchmarkNavigator", 1
+    )[0]
+    assert "innerHTML" not in section
+    assert "insertAdjacentHTML" not in section
+
+
+def test_related_records_are_cross_links_never_merges():
+    # A variant sibling selects its own shard rather than folding into the
+    # current record: two labelled records are a smaller lie than one wrong
+    # merge.
+    script = source("site/assets/app.js")
+
+    section = script.split("function externalSiblingsBlock(shard)", 1)[1].split(
+        "function externalBenchmarkDetail", 1
+    )[0]
+    assert "selectFrontier(sibling.slug)" in section
+
+
+def test_shard_fetch_failure_keeps_the_selection_and_the_row():
+    # Display plan step 7: a failed shard renders an explicit message in the
+    # panel and does not clear the selection or throw into the router.
+    script = source("site/assets/app.js")
+
+    assert "fetch(`data/benchmarks/${slug}.json`)" in script
+    handler = script.split("loadBenchmarkShard(record.slug).then((shard) =>", 1)[1]
+    assert "state.lfrontier !== record.slug" in handler
+    assert "Could not load details for this benchmark." in handler

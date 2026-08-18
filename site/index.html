@@ -353,7 +353,7 @@
           <section class="frontier-panel" id="adoption-frontier" aria-labelledby="frontier-heading">
             <div class="frontier-heading-row">
               <div>
-                <p class="eyebrow" data-i18n="Reporting over time">Reporting over time</p>
+                <p class="eyebrow" id="frontier-eyebrow" data-i18n="Reporting over time">Reporting over time</p>
                 <h2 id="frontier-heading" data-i18n="Benchmark adoption frontier">Benchmark adoption frontier</h2>
               </div>
               <div class="frontier-controls">
@@ -374,18 +374,19 @@
               reporting saturation observed within this curated registry, not a claim about
               benchmark score saturation.
             </p>
-            <p class="section-note frontier-explainer-sub" data-i18n="frontier.explainer.sub">
+            <p class="section-note frontier-explainer-sub" id="frontier-explainer-sub" data-i18n="frontier.explainer.sub">
               The score track below it is a separate reading: every value that could be read
               verbatim from a cited document, connected only where the instrument and protocol
               are identical. A flat score tail usually means no newer number could be read, which
               is why the gap is marked rather than drawn through.
             </p>
             <div class="frontier-summary" id="frontier-summary" aria-live="polite"></div>
+            <div class="frontier-external" id="frontier-external" hidden></div>
             <div class="frontier-legend" id="frontier-legend" aria-label="Chart legend"></div>
             <div class="frontier-chart" id="frontier-chart"></div>
             <div class="frontier-org-key" id="frontier-org-key" aria-label="Reporting organization color key"></div>
             <div class="score-readout" id="frontier-score-readout"></div>
-            <div class="frontier-evidence">
+            <div class="frontier-evidence" id="frontier-evidence">
               <section aria-labelledby="frontier-milestones-heading">
                 <h3 id="frontier-milestones-heading" data-i18n="Frontier milestones">Frontier milestones</h3>
                 <div id="frontier-milestones"></div>

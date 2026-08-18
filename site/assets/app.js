@@ -847,6 +847,10 @@ const state = {
   lfrontier: "",
   lfrontierExplicit: false,
   benchmarkIndex: null,
+  // Null until the first fetch attempt resolves either way. A slug permalink
+  // can only be checked against the index once the index has actually
+  // arrived, so "not yet loaded" and "failed to load" must not look alike.
+  benchmarkIndexLoaded: false,
   benchmarkQuery: "",
   leaderboardShowAll: false,
   todayResultsKey: "",
@@ -3209,6 +3213,8 @@ function benchmarkResultRow(record) {
   button.addEventListener("click", () => {
     selectFrontier(record.slug);
     renderBenchmarkSearch();
+    const board = state.data?.model_card_leaderboard;
+    if (board) renderAdoptionFrontier(board);
     writeUrl();
   });
   return button;
@@ -3255,13 +3261,466 @@ function initBenchmarkSearch() {
     // A missing or broken index leaves the curated shortlist fully working.
     // Search is additive, so its failure must not take the navigator with it.
     state.benchmarkIndex = records;
+    state.benchmarkIndexLoaded = true;
     const status = byId("benchmark-search-status");
     if (!records && status) {
       status.textContent = t("Benchmark search is unavailable right now");
       input.disabled = true;
+    } else {
+      // Skipped on failure: renderBenchmarkSearch() would blank the
+      // unavailability notice just written into the status line.
+      renderBenchmarkSearch();
+    }
+    // A ?lfrontier=<slug> permalink can only resolve once the index fetch has
+    // settled either way: a resolved index confirms the slug, a failed one
+    // turns the panel's loading state into an explicit unavailability note
+    // (see renderAdoptionFrontier).
+    const board = state.data?.model_card_leaderboard;
+    if (board && state.view === "leaderboard") renderAdoptionFrontier(board);
+  });
+}
+
+// --- External catalog detail (display plan steps 4, 6, 7) --------------------
+//
+// `state.lfrontier` holds either a canonical registry benchmark_id or an
+// external slug. A slug selection renders into the same workbench panel: the
+// identity, openness, size and per-source score blocks below, with the curated
+// chart chrome hidden. Nothing here merges the two layers: the adoption chart
+// belongs to the curated registry and is never interleaved with crawled
+// tables, and the crawled tables are never joined into the chart.
+
+// A shard is fetched on selection and cached for the rest of the session,
+// keyed by slug. Payloads are tens of kilobytes and a session opens a handful,
+// so the cache is never evicted (display plan step 7).
+const benchmarkShardCache = new Map();
+
+function loadBenchmarkShard(slug) {
+  if (!benchmarkShardCache.has(slug)) {
+    benchmarkShardCache.set(
+      slug,
+      fetch(`data/benchmarks/${slug}.json`)
+        .then((response) => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.json();
+        })
+        .catch(() => null),
+    );
+  }
+  return benchmarkShardCache.get(slug);
+}
+
+// What each source actually recorded, stated next to its name on the table
+// rather than in a footnote. llm-stats rows are vendor-announced numbers with
+// no protocol and no evaluation date (AUDIT.md section 1); the label says so
+// where the numbers are read.
+const EXTERNAL_SOURCE_META = {
+  llm_stats: {
+    name: "LLM Stats",
+    noteKey:
+      "Self-reported scores collected by LLM Stats. No evaluation protocol or date is recorded, and rows are listed in the source's own order.",
+    emptyKey: "LLM Stats recorded no scores for this benchmark.",
+  },
+  opencompass_hub: {
+    name: "OpenCompass Hub",
+    noteKey:
+      "Scores embedded in the OpenCompass hub card. Column meaning varies from card to card, and rows are listed in the source's own order.",
+    emptyKey: "The OpenCompass hub card records no scores for this benchmark.",
+  },
+};
+
+function externalSourceMeta(source) {
+  return (
+    EXTERNAL_SOURCE_META[source] || {
+      name: source,
+      noteKey: "Scores as recorded by this source, in the source's own order.",
+      emptyKey: "This source recorded no scores for this benchmark.",
+    }
+  );
+}
+
+// The publisher field carries an explicit role because the crawled value is
+// not automatically "who made it": OpenCompass publishOrg names whoever
+// published the hub card, which is frequently not the benchmark's creator
+// (AUDIT.md section 2). The role is printed next to the name so the
+// attribution is never stronger than the evidence.
+function publisherRoleLabel(role) {
+  return (
+    {
+      hub_publisher: t("published the hub card"),
+      paper_org: t("organization behind the paper"),
+      maintainer: t("maintainer"),
+    }[role] || role
+  );
+}
+
+function artifactKindLabel(kind) {
+  return (
+    {
+      paper: t("Paper"),
+      repo: t("Code repository"),
+      dataset: t("Dataset"),
+      site: t("Project site"),
+    }[kind] || kind
+  );
+}
+
+function externalFactList(facts) {
+  return element(
+    "dl",
+    { className: "external-facts" },
+    facts.flatMap(([name, value]) => [
+      element("dt", { text: name }),
+      element("dd", { text: value }),
+    ]),
+  );
+}
+
+// One block per question the reader came with. Every field renders, and an
+// empty one says "not established" instead of disappearing: hiding an empty
+// field reads as "not applicable", and whether these facts are known is
+// precisely the reader's question (display plan step 4).
+function externalIdentityBlock(detail) {
+  const publisher = detail.publisher;
+  const description = l10nProse(detail.description?.en, detail.description?.zh);
+  const artifacts = (detail.artifacts || []).filter((artifact) =>
+    safeHttpUrl(artifact.url),
+  );
+  return element("section", { className: "external-block" }, [
+    element("h3", { text: t("Identity") }),
+    // Crawled descriptions are third-party text. They only ever go through
+    // text(), which sets textContent, so markup in the crawl can never execute.
+    element("p", {
+      className: "external-description",
+      text: description || t("description not established"),
+    }),
+    externalFactList([
+      [
+        t("Publisher"),
+        publisher?.name
+          ? `${publisher.name} (${publisherRoleLabel(publisher.role)})`
+          : t("publisher not established"),
+      ],
+      [
+        t("Released"),
+        detail.released
+          ? formatDate(detail.released, { dateStyle: "medium" })
+          : t("release date not established"),
+      ],
+      [t("Modality"), detail.modality || t("modality not established")],
+    ]),
+    artifacts.length
+      ? element(
+          "ul",
+          { className: "external-artifacts" },
+          artifacts.map((artifact) =>
+            element("li", {}, [
+              element("a", {
+                text: `${artifactKindLabel(artifact.kind)} · ${artifact.id || artifact.url}`,
+                attrs: {
+                  href: safeHttpUrl(artifact.url),
+                  target: "_blank",
+                  rel: "noopener noreferrer",
+                },
+              }),
+            ]),
+          ),
+        )
+      : element("p", {
+          className: "external-empty",
+          text: t("No paper, repository, dataset or site link established."),
+        }),
+  ]);
+}
+
+function externalOpennessBlock(detail) {
+  const openness = detail.openness || {};
+  const evidence = (openness.evidence || []).filter((item) =>
+    safeHttpUrl(item.evidence_url),
+  );
+  return element("section", { className: "external-block" }, [
+    element("h3", { text: t("Openness") }),
+    element("p", { className: "external-openness-chip" }, [
+      opennessChip(openness.status),
+    ]),
+    // The basis is the reviewer's own note on how the status was decided, so
+    // it prints as evidence rather than being paraphrased away.
+    openness.basis
+      ? element("p", { className: "external-basis", text: openness.basis })
+      : null,
+    externalFactList([
+      [t("Code licence"), openness.code_license || t("not established")],
+      [t("Data licence"), openness.data_license || t("not established")],
+    ]),
+    evidence.length
+      ? element(
+          "ul",
+          { className: "external-artifacts" },
+          evidence.map((item) =>
+            element("li", {}, [
+              element("a", {
+                text: item.locator || item.value || item.evidence_url,
+                attrs: {
+                  href: safeHttpUrl(item.evidence_url),
+                  target: "_blank",
+                  rel: "noopener noreferrer",
+                },
+              }),
+            ]),
+          ),
+        )
+      : element("p", {
+          className: "external-empty",
+          text: t("No openness evidence recorded."),
+        }),
+  ]);
+}
+
+function externalSizesBlock(detail) {
+  const sizes = detail.sizes || [];
+  return element("section", { className: "external-block" }, [
+    element("h3", { text: t("Size") }),
+    sizes.length
+      ? element(
+          "ul",
+          { className: "external-sizes" },
+          sizes.map((size) =>
+            element("li", {}, [
+              element("span", {
+                text:
+                  `${Number(size.value).toLocaleString()} ${size.unit}` +
+                  (size.split ? ` · ${size.split} split` : "") +
+                  // A count with no idea what it counts is worse than no
+                  // number, so `unclear` is printed rather than smoothed over.
+                  (size.measures && size.measures !== "unclear"
+                    ? ` · ${t("counts the")} ${String(size.measures).replaceAll("_", " ")}`
+                    : ` · ${t("what it counts is unclear")}`),
+              }),
+              safeHttpUrl(size.evidence_url)
+                ? element("a", {
+                    className: "external-evidence-link",
+                    text: t("evidence ↗"),
+                    attrs: {
+                      href: safeHttpUrl(size.evidence_url),
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                    },
+                  })
+                : null,
+            ]),
+          ),
+        )
+      : element("p", { className: "external-empty", text: t("size not established") }),
+  ]);
+}
+
+// Scores render one table per source, and the partition is read from the
+// shard's keyed `scores_by_source` object rather than reconstructed here:
+// there is deliberately no flat array in this code path for a later sort to
+// rank across sources. Within a table the rows stay in the source's own order
+// (rank_in_source_response), which is the only ordering the source asserted.
+// No percentages and no bars: every crawled series carries display_scale:
+// null, so there is no honest scale to draw one from. vending-bench-2 declares
+// max 1.0 and carries 8017.59, so the declared bound is never a denominator
+// either. comparable_group is null on every crawled row, so no row here ever
+// joins a line, a trend, or a shared ranking.
+function externalScoresBlock(shard) {
+  const bySource = shard.scores_by_source || {};
+  const sources = Object.keys(bySource).sort();
+  return element("section", { className: "external-block" }, [
+    element("h3", { text: t("Scores") }),
+    // Spread, not nesting: element() appends children verbatim, so a mapped
+    // array passed as one child would stringify into "[object HTMLDivElement]".
+    ...(sources.length
+      ? sources.map((source) => externalSourceTable(source, bySource[source]))
+      : [element("p", { className: "external-empty", text: t("no scores collected") })]),
+  ]);
+}
+
+function externalSourceTable(source, payload) {
+  const meta = externalSourceMeta(source);
+  const rows = payload.rows || [];
+  const series = payload.series || {};
+  const notes = [t(meta.noteKey)];
+  // A declared maximum that observed values exceed is a fact about the source,
+  // not a scale. Printed as a claim, used as nothing.
+  if (series.max_score_contradicted) {
+    notes.push(
+      t("The source declares a maximum of {max} but carries values above it, so that bound is not a scale.").replace(
+        "{max}",
+        String(series.declared_max),
+      ),
+    );
+  }
+  return element("div", { className: "external-source" }, [
+    element("h4", {
+      text: `${meta.name} · ${metricLabel(rows.length, "reported score")}`,
+    }),
+    element("p", { className: "external-source-note", text: notes.join(" ") }),
+    rows.length
+      ? element("div", { className: "external-scores-wrap" }, [
+          element("table", { className: "external-scores" }, [
+            element("thead", {}, [
+              element("tr", {}, [
+                element("th", { text: t("Model") }),
+                element("th", { text: t("Organization") }),
+                element("th", { text: t("Score as reported") }),
+                element("th", { text: t("Reported by") }),
+              ]),
+            ]),
+            element(
+              "tbody",
+              {},
+              rows.map((row) =>
+                element("tr", {}, [
+                  element("td", { text: row.model_name || t("not recorded") }),
+                  element("td", { text: row.organization || t("not recorded") }),
+                  // raw_value is printed verbatim. Reparsing it into a
+                  // formatted number would be the first step toward treating
+                  // it as a measurement on a known scale, which it is not.
+                  element("td", { text: row.raw_value ?? t("not recorded") }),
+                  element("td", {
+                    text: row.reported_by
+                      ? String(row.reported_by).replaceAll("_", " ")
+                      : t("not recorded"),
+                  }),
+                ]),
+              ),
+            ),
+          ]),
+        ])
+      : element("p", { className: "external-empty", text: t(meta.emptyKey) }),
+  ]);
+}
+
+// Identity siblings are cross-links, never merges: a variant points at a
+// related record the reader may have been looking for, and each link selects
+// that record's own shard rather than folding it into this one.
+function externalSiblingsBlock(shard) {
+  const siblings = shard.siblings || [];
+  if (!siblings.length) return null;
+  const relationLabel = (relation) =>
+    ({
+      equivalent: t("same benchmark, other source"),
+      "variant:split_sibling": t("related split"),
+      "variant:framework_sibling": t("same framework"),
+      "variant:introduced_in": t("introduced in the same paper"),
+      "variant:of": t("has a related variant"),
+    })[relation] || String(relation).replaceAll("_", " ");
+  const items = siblings.map((sibling) => {
+    const link = element("button", {
+      className: "external-sibling-link",
+      text: sibling.name,
+      attrs: { type: "button" },
+    });
+    link.addEventListener("click", () => {
+      selectFrontier(sibling.slug);
+      const board = state.data?.model_card_leaderboard;
+      if (board) renderAdoptionFrontier(board);
+      writeUrl();
+    });
+    return element("li", {}, [
+      link,
+      element("span", {
+        className: "external-sibling-meta",
+        text: `${externalSourceMeta(sibling.source).name} · ${relationLabel(sibling.relation)}`,
+      }),
+    ]);
+  });
+  return element("section", { className: "external-block" }, [
+    element("h3", { text: t("Related records") }),
+    element("ul", { className: "external-siblings" }, items),
+  ]);
+}
+
+function externalBenchmarkDetail(shard) {
+  const detail = shard.record || {};
+  return [
+    externalIdentityBlock(detail),
+    externalOpennessBlock(detail),
+    externalSizesBlock(detail),
+    externalScoresBlock(shard),
+    externalSiblingsBlock(shard),
+  ];
+}
+
+// The chart chrome only describes the curated adoption layer, so it is hidden
+// while an external record occupies the panel. Hiding is the honest direction
+// here: none of those elements could show anything but an empty state for a
+// record the curated registry does not track, and an empty chart reads as "no
+// adoption" where the truth is "not measured by this layer".
+const CANONICAL_FRONTIER_CHROME = [
+  "frontier-explainer",
+  "frontier-explainer-sub",
+  "frontier-summary",
+  "frontier-legend",
+  "frontier-chart",
+  "frontier-org-key",
+  "frontier-score-readout",
+  "frontier-evidence",
+];
+
+function setCanonicalFrontierChrome(visible) {
+  for (const id of CANONICAL_FRONTIER_CHROME) {
+    const node = byId(id);
+    if (node) node.hidden = !visible;
+  }
+  const external = byId("frontier-external");
+  if (external) external.hidden = visible;
+}
+
+// Shared shell for the three external states (record, loading, unavailable):
+// heading, source badge in place of the reporting stage, the curated picker
+// still offering every canonical benchmark, and the message or detail in the
+// external container.
+function renderExternalShell(board, adopted, { eyebrow, heading, badge, message }) {
+  clearFrontierPointSelection();
+  setCanonicalFrontierChrome(false);
+  byId("frontier-eyebrow").textContent = eyebrow;
+  byId("frontier-heading").textContent = heading;
+  const stage = byId("frontier-stage");
+  stage.className = "frontier-stage";
+  stage.textContent = badge;
+  replaceChildren(byId("frontier-benchmark"), [
+    ...[...adopted]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((entry) => option(entry.benchmark_id, entry.name, false)),
+  ]);
+  replaceChildren(byId("frontier-external"), [
+    element("p", { className: "empty-state", text: message }),
+  ]);
+}
+
+function renderExternalBenchmark(board, adopted, record) {
+  const meta = externalSourceMeta(record.source);
+  renderExternalShell(board, adopted, {
+    eyebrow: t("External catalog record"),
+    heading: record.name,
+    badge: meta.name,
+    message: t("Loading benchmark details…"),
+  });
+  // The picker has no canonical option for a slug, so the selected record is
+  // prepended as its own option: a <select> that displays a different
+  // benchmark than the one rendered would be lying about the state.
+  byId("frontier-benchmark").prepend(
+    option(record.slug, `${record.name} · ${meta.name}`, true),
+  );
+  const container = byId("frontier-external");
+  loadBenchmarkShard(record.slug).then((shard) => {
+    // The reader may have moved on while the shard was on the wire; only paint
+    // if this record is still the selection.
+    if (state.lfrontier !== record.slug) return;
+    if (!shard) {
+      // A failed shard fetch leaves the index row and the selection in place;
+      // only the panel reports the failure (display plan step 7).
+      replaceChildren(container, [
+        element("p", {
+          className: "empty-state",
+          text: t("Could not load details for this benchmark."),
+        }),
+      ]);
       return;
     }
-    renderBenchmarkSearch();
+    replaceChildren(container, externalBenchmarkDetail(shard));
   });
 }
 
@@ -4594,6 +5053,11 @@ function scoreOnlyChart(entry, board) {
 
 function clearAdoptionFrontier(message) {
   clearFrontierPointSelection();
+  // Every caller of this is on the curated path, so the canonical chrome is
+  // restored here rather than at each call site: an external selection that
+  // hid it must not leave the next canonical render missing its chart blocks.
+  setCanonicalFrontierChrome(true);
+  byId("frontier-eyebrow").textContent = t("Reporting over time");
   byId("frontier-stage").textContent = "";
   replaceChildren(byId("frontier-summary"), []);
   replaceChildren(byId("frontier-milestones"), []);
@@ -4616,20 +5080,61 @@ function renderAdoptionFrontier(board) {
     clearAdoptionFrontier(t("No dated model-card mentions yet."));
     return;
   }
-  if (!adopted.some((entry) => entry.benchmark_id === state.lfrontier)) {
+  // Resolution order is the permalink contract (display plan step 6): an exact
+  // external slug first, then a canonical registry id so links shared before
+  // the widening keep working, then nothing. The slug check is what makes the
+  // 594 llm-stats-only benchmarks addressable rather than merely counted.
+  const slugRecord = state.lfrontier
+    ? (state.benchmarkIndex || []).find((record) => record.slug === state.lfrontier)
+    : null;
+  if (slugRecord) {
+    renderBenchmarkNavigator(board);
+    renderExternalBenchmark(board, adopted, slugRecord);
+    return;
+  }
+  let entry = adopted.find((candidate) => candidate.benchmark_id === state.lfrontier);
+  if (!entry && state.lfrontier && !state.benchmarkIndexLoaded) {
+    // A permalink whose index is still on the wire. Hold the selection and say
+    // so: snapping to the default now would rewrite the reader's URL before
+    // the slug could even be checked, and initBenchmarkSearch re-renders this
+    // panel when the fetch settles.
+    renderBenchmarkNavigator(board);
+    renderExternalShell(board, adopted, {
+      eyebrow: t("External catalog record"),
+      heading: state.lfrontier,
+      badge: "",
+      message: t("Loading benchmark details…"),
+    });
+    return;
+  }
+  if (!entry && state.lfrontier && !state.benchmarkIndex) {
+    // The index fetch failed, so a slug can never resolve. The panel says so
+    // outright; the selection and the URL stay as the reader wrote them.
+    renderBenchmarkNavigator(board);
+    renderExternalShell(board, adopted, {
+      eyebrow: t("External catalog record"),
+      heading: state.lfrontier,
+      badge: "",
+      message: t("Could not load details for this benchmark."),
+    });
+    return;
+  }
+  if (!entry) {
     state.lfrontier = defaultEntry.benchmark_id;
     state.lfrontierExplicit = false;
+    entry = defaultEntry;
   }
+  setCanonicalFrontierChrome(true);
+  byId("frontier-eyebrow").textContent = t("Reporting over time");
   replaceChildren(byId("frontier-benchmark"), [
     ...[...adopted]
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map((entry) =>
-        option(entry.benchmark_id, entry.name, entry.benchmark_id === state.lfrontier),
+      .map((candidate) =>
+        option(candidate.benchmark_id, candidate.name, candidate.benchmark_id === state.lfrontier),
       ),
   ]);
   renderBenchmarkNavigator(board);
 
-  const entry = adopted.find((candidate) => candidate.benchmark_id === state.lfrontier);
   byId("frontier-heading").textContent = `${entry.name} ${t("adoption trajectory")}`;
   const events = frontierEvents(entry);
   if (!events.length) {

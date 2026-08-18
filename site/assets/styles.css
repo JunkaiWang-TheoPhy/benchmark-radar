@@ -4055,3 +4055,153 @@ footer {
 .adoption-table > *:not(summary) {
   margin-top: 1rem;
 }
+
+/* External catalog detail (display plan step 4). Lives inside the dark
+   frontier panel, so the palette follows the panel's, not the page's. */
+.frontier-external {
+  margin-top: 0.9rem;
+}
+
+.external-block {
+  margin-top: 1.3rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid #39464c;
+}
+
+.external-block:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.external-block h3 {
+  margin: 0 0 0.7rem;
+  font-family: var(--display);
+  font-size: 1.1rem;
+}
+
+.external-block h4 {
+  margin: 0.9rem 0 0.3rem;
+  font-size: 0.95rem;
+}
+
+.external-description,
+.external-basis {
+  max-width: 75ch;
+  margin: 0 0 0.8rem;
+  color: #d6e0e3;
+  font-size: 0.85rem;
+}
+
+.external-openness-chip {
+  margin: 0 0 0.7rem;
+}
+
+.external-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.25rem 1rem;
+  margin: 0 0 0.8rem;
+  font-size: 0.82rem;
+}
+
+.external-facts dt {
+  color: #aebcc1;
+}
+
+.external-facts dd {
+  margin: 0;
+}
+
+.external-empty {
+  margin: 0;
+  color: #aebcc1;
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+.external-artifacts,
+.external-sizes,
+.external-siblings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  font-size: 0.82rem;
+  list-style: none;
+}
+
+.external-artifacts a {
+  color: white;
+}
+
+.external-artifacts a:hover,
+.external-artifacts a:focus-visible {
+  text-decoration: underline;
+}
+
+.external-sizes li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.external-evidence-link {
+  color: #7fc7bc;
+  font-size: 0.76rem;
+}
+
+.external-source-note {
+  max-width: 75ch;
+  margin: 0 0 0.6rem;
+  color: #aebcc1;
+  font-size: 0.78rem;
+}
+
+.external-scores-wrap {
+  max-height: 26rem;
+  overflow: auto;
+  border: 1px solid #39464c;
+  border-radius: 6px;
+}
+
+.external-scores {
+  min-width: 0;
+  font-size: 0.8rem;
+}
+
+.external-scores th,
+.external-scores td {
+  padding: 0.35rem 0.7rem;
+  text-align: left;
+}
+
+.external-scores thead th {
+  position: sticky;
+  top: 0;
+  background: #0d1519;
+  color: #aebcc1;
+}
+
+.external-scores tbody tr + tr {
+  border-top: 1px solid #223036;
+}
+
+.external-sibling-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: white;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.external-sibling-meta {
+  margin-left: 0.5rem;
+  color: #aebcc1;
+  font-size: 0.76rem;
+}
