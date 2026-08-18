@@ -1,0 +1,57 @@
+# The identity layer. Hand-edited, reviewed, never bulk-populated.
+#
+# STRUCTURE.md Layer 2. Two relations that must not be conflated:
+#   equivalent: same benchmark, same instrument, safe to show under one heading.
+#   variants:   related but NOT the same, cross-linked, never merged or co-ranked.
+#
+# An `equivalent` group requires TWO independent anchors (a shared arXiv id, a
+# shared gh:owner/repo, or a shared hf:owner/name). A shared name is not an
+# anchor. `benchmark-radar normalize-external` regenerates identity_candidates.yml
+# beside this file; a reviewer promotes proven groups here, and the loader in
+# external_identity.py rejects any equivalent group that arrives with fewer than
+# two anchors.
+schema_version: 1
+
+# Empty, and that is the honest state of this crawl, not a stub awaiting a fill.
+# The only pairs that share two or more anchors are the three below, and human
+# review classified all three as variants rather than equivalences. Every
+# obvious cross-source match (MMLU, MMMU, GPQA, ...) shares only a NAME, because
+# llm-stats carries no artifacts and therefore no anchor, so none of them clears
+# the two-anchor bar and none is asserted here. They sit in identity_candidates.yml
+# under name_only until a reviewer confirms each one by hand.
+equivalent: []
+
+# Related, cross-linked, never merged. These are the three anchor-sharing pairs
+# from identity_candidates.yml, each downgraded from "equivalent candidate" to a
+# variant on inspection: sharing a paper or a repo is not sharing an instrument.
+variants:
+  # RACE ships as two difficulty splits from one paper and one repo. Same
+  # source, different question sets: scores from one are not scores from the other.
+  - of: opencompass:516        # RACE(High)
+    key: opencompass:517       # RACE(Middle)
+    relation: split_sibling
+    anchors: [arxiv:1704.04683, gh:qizhex/race_ar_baselines]
+    note: Two difficulty splits of RACE, not one benchmark.
+    reviewed_by: ktwu01
+    reviewed_at: 2026-08-18
+
+  # MIEB is the image counterpart built on the MTEB framework and repo. Related
+  # project, different modality and task set.
+  - of: opencompass:2034       # MTEB
+    key: opencompass:1781      # MIEB
+    relation: framework_sibling
+    anchors: [arxiv:2210.07316, gh:embeddings-benchmark/mteb]
+    note: MIEB is the image embedding benchmark on the MTEB framework, not MTEB.
+    reviewed_by: ktwu01
+    reviewed_at: 2026-08-18
+
+  # MM-AlignBench is the evaluation set introduced in the OmniAlign-V paper.
+  # They share the paper and repo but name different things: the dataset and its
+  # benchmark.
+  - of: opencompass:1553       # OmniAlign-V
+    key: opencompass:1558      # MM-AlignBench
+    relation: introduced_in
+    anchors: [arxiv:2502.18411, gh:phoenixz810/omnialign-v]
+    note: MM-AlignBench is introduced in the OmniAlign-V paper; distinct artifacts.
+    reviewed_by: ktwu01
+    reviewed_at: 2026-08-18
