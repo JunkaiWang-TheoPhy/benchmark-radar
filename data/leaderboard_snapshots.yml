@@ -1,0 +1,89 @@
+# Crawled Leaderboard Snapshot Registry
+#
+# `benchmark_scores.yml` stores one kind of score: a number read verbatim out of
+# a cited document, connected only where instrument and protocol are identical.
+# This file stores a second, deliberately separate kind: point-in-time dumps of
+# what third-party aggregator leaderboards publicly report. The two layers never
+# join, because a leaderboard row carries no protocol. LLM Stats does not say
+# whether a model ran 0-shot or 5-shot, on which harness, with what tool access,
+# or how many attempts; the silence rule in benchmark_scores.yml applies to this
+# layer with at least the same force it applies to documents. "As reported to an
+# aggregator" is a real fact about the world, and it is recorded here with its
+# crawl timestamp and source URL, labeled so no reader mistakes it for a
+# comparable reading.
+#
+# WHY SNAPSHOTS ARE COMMITTED, NOT REFETCHED
+#
+# The CSV files named below are immutable point-in-time copies of what the
+# source endpoint returned on the crawl date. Refetching on every rebuild would
+# make the published numbers move under the reader and would break the one
+# property a snapshot is for: being checkable against the source at collection
+# time. To refresh, re-run the crawler, replace the files, and bump the row
+# counts here; the loader refuses to publish a file whose counts drift from the
+# declaration.
+#
+# `benchmark_count` and `score_row_count` are the loader's coverage reference.
+# A CSV with a different row count is either a truncated copy or a partial
+# rerun, and the loader fails rather than publish a snapshot whose completeness
+# it cannot certify.
+#
+# `columns` maps this project's vocabulary onto the source file's column names,
+# so the loader never guesses which header means what.
+#
+# Adding a snapshot: append an entry, commit the CSV beside it, run
+# `benchmark-radar rebuild`.
+
+schema_version: 1
+
+snapshots:
+  - id: llm_stats_2026-08-17
+    source: LLM Stats
+    source_url: https://llm-stats.com/benchmarks/
+    crawled_at: "2026-08-17T18:49:35.489925+00:00"
+    description: >-
+      Point-in-time crawl of the LLM Stats benchmark index and its public
+      leaderboard endpoint (api.zeroeval.com). 687 catalog benchmarks, 681
+      with complete leaderboard detail (top_n=500), 5544 model-score rows.
+      Six community-prefixed catalog records returned HTTP 404 at collection
+      time and have catalog rows but no scores.
+    benchmark_file: leaderboard_snapshots/llm_stats_benchmarks_2026-08-17.csv
+    benchmark_count: 687
+    # The catalog CSV and the scores CSV are separate exports with different
+    # header vocabulary (`name` vs `benchmark_name`), so each file names its
+    # own columns.
+    benchmark_columns:
+      benchmark_id: benchmark_id
+      benchmark_name: name
+    scores_file: leaderboard_snapshots/llm_stats_benchmark_scores_2026-08-17.csv
+    score_row_count: 5544
+    columns:
+      benchmark_id: benchmark_id
+      benchmark_name: benchmark_name
+      # Distinct dated checkpoints can share a display name (two Claude 3.5
+      # Sonnet releases), so the row identity is the model_id, not the name.
+      model: model_name
+      model_id: model_id
+      organization: organization_name
+      rank: rank
+      score: benchmark_score
+      normalized_score: normalized_score
+
+  - id: opencompass_hub_2026-08-17
+    source: OpenCompass Hub
+    source_url: https://hub.opencompass.org.cn/home
+    crawled_at: "2026-08-17T18:57:37.200294+00:00"
+    description: >-
+      Point-in-time crawl of the public benchmark registry metadata served to
+      the OpenCompass Hub home page. 461 public benchmark cards with full
+      detail records: descriptions, dimensions, tags, and GitHub, paper, and
+      website links. The Hub is a registry, not a leaderboard: the package
+      contains no model scores, so this snapshot contributes catalog rows
+      only.
+    benchmark_file: leaderboard_snapshots/opencompass_hub_catalog_2026-08-17.csv
+    benchmark_count: 461
+    benchmark_columns:
+      benchmark_id: benchmark_id
+      benchmark_name: name
+    columns:
+      benchmark_id: benchmark_id
+      benchmark_name: name

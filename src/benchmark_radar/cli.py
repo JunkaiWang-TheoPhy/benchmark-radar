@@ -95,6 +95,7 @@ def main() -> None:
             "classify",
             "authors",
             "social",
+            "normalize-external",
         ),
         default="run",
         help=(
@@ -104,7 +105,9 @@ def main() -> None:
             "Model Card Adoption Rank as standalone citable files, classify canonical "
             "benchmark tracks against the KW-Bench L0-L5 capability rubric, survey "
             "the public profiles of authors behind popular benchmark repositories, "
-            "or render the daily social post section from the day's evidence and git history."
+            "render the daily social post section from the day's evidence and git history, "
+            "or normalize the committed aggregator crawl snapshots into the external "
+            "benchmark catalog."
         ),
     )
     parser.add_argument(
@@ -285,6 +288,32 @@ def main() -> None:
     feed_output = args.feed_output
     if feed_output is None and args.dashboard_output == DEFAULT_DASHBOARD_OUTPUT:
         feed_output = DEFAULT_FEED_OUTPUT
+
+    if args.command == "normalize-external":
+        # Deliberately separate from `run` and `export`: the crawl snapshots are
+        # immutable committed files, so regenerating the catalog does not need a
+        # collection pass and a collection pass must not silently reshape it.
+        from .external_catalog import (
+            LLM_STATS_SNAPSHOT_ID,
+            normalize_llm_stats,
+            write_llm_stats_catalog,
+        )
+        from .leaderboard_snapshots import DEFAULT_SNAPSHOTS_PATH
+        from .leaderboard_snapshots import load_snapshots as load_crawl_snapshots
+
+        crawled = load_crawl_snapshots(DEFAULT_SNAPSHOTS_PATH)
+        snapshot = next(
+            item for item in crawled["snapshots"] if item["id"] == LLM_STATS_SNAPSHOT_ID
+        )
+        normalized = normalize_llm_stats(snapshot)
+        written = write_llm_stats_catalog(normalized)
+        report = normalized["validation"]
+        print(
+            f"Normalized {report['source_record_count']} benchmarks and "
+            f"{report['score_observation_count']} score observations into "
+            f"{written['source_records'].parent}"
+        )
+        return
 
     if args.command == "authors":
         result = author_survey(

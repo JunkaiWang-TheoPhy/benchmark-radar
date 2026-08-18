@@ -1,0 +1,369 @@
+"""External benchmark catalog: crawled aggregator records, normalized.
+
+The curated layers (`model_cards.yml`, `benchmark_scores.yml`) record what a
+human read out of a cited document. This layer records what a third-party
+aggregator published on a crawl date. The two never join, and this module's job
+is to keep that separation structural rather than advisory.
+
+WHAT AN LLM STATS RECORD HONESTLY CONTAINS
+
+The llm-stats leaderboard API returns eight keys per benchmark: an id, a name,
+a description, a max score, categories, a modality, a model count, and the
+score entries. There is no author, institution, paper, repository, licence,
+dataset size, or release date anywhere in it. So every source record this
+module emits for llm-stats carries `publisher: None`, `artifacts: []`,
+`sizes: []`, `openness.status: "unknown"` and `released: None`.
+
+Those empty fields are the output, not a gap awaiting a later pass. A record
+that admits the source knows nothing about provenance is exactly what lets the
+site answer "who made this?" with "not established" instead of with a guess.
+Filling them in would require inferring identity from a benchmark name, which
+is where confident wrong attributions come from.
+
+WHY SCORES CANNOT BE COMPARED HERE
+
+No llm-stats row records shots, harness, tool access, attempts, or an
+evaluation date. `benchmark_scores.yml` states the rule this layer inherits: an
+unstated condition is never treated as equal to another unstated condition. So
+every observation carries `comparable_group: None`, and null is not a group.
+Two nulls do not join, which makes "no trend lines, no cross-source ranking" a
+property of the data rather than a request to the renderer.
+
+For the same reason `display_scale` is always `None`. The aggregator's declared
+`max_score` is not a ceiling: `vending-bench-2` declares 1.0 and carries a
+score of 8017.59. A renderer given a scale will draw a percentage bar, so it is
+given no scale, and `max_score_contradicted` records the collision as a fact
+rather than as a judgement about which number is wrong.
+"""
+
+from __future__ import annotations
+
+import json
+import math
+import re
+from pathlib import Path
+from typing import Any
+
+CATALOG_SCHEMA_VERSION = 1
+
+DEFAULT_OUTPUT_DIR = Path("data/external")
+
+LLM_STATS_SNAPSHOT_ID = "llm_stats_2026-08-17"
+LLM_STATS_SOURCE = "llm_stats"
+LLM_STATS_KEY_PREFIX = "llm-stats"
+
+_SLUG_STRIP = re.compile(r"[^a-z0-9]+")
+
+
+class ExternalCatalogError(ValueError):
+    """Raised when a snapshot cannot be normalized into catalog records."""
+
+
+def slugify(key: str) -> str:
+    """A filesystem and URL safe form of a record key.
+
+    Source ids are not safe to use as filenames. llm-stats issues ids such as
+    `community:07c9946d-dcf0-4977-a640-a6b1356b4f0b`, and OpenCompass uses
+    `1248__MMMU`; colons, slashes and non-ASCII all appear. The slug is emitted
+    into the record so no consumer has to recompute it and risk disagreeing
+    about the shard filename.
+    """
+    slug = _SLUG_STRIP.sub("-", key.lower()).strip("-")
+    if not slug:
+        raise ExternalCatalogError(f"key {key!r} has no slug-safe characters")
+    return slug
+
+
+def _assign_slugs(keys: list[str]) -> dict[str, str]:
+    """Slugs for every key, with deterministic suffixes when two collide.
+
+    Collisions are resolved in sorted key order rather than input order so the
+    same input always produces the same assignment, whatever order the rows
+    happened to arrive in.
+    """
+    assigned: dict[str, str] = {}
+    used: dict[str, int] = {}
+    for key in sorted(keys):
+        base = slugify(key)
+        count = used.get(base, 0) + 1
+        used[base] = count
+        assigned[key] = base if count == 1 else f"{base}-{count}"
+    return assigned
+
+
+def _finite(value: str) -> float | None:
+    text = (value or "").strip()
+    if not text:
+        return None
+    try:
+        parsed = float(text)
+    except ValueError:
+        return None
+    return parsed if math.isfinite(parsed) else None
+
+
+def _json_list(value: str) -> list[str]:
+    text = (value or "").strip()
+    if not text:
+        return []
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        return []
+    return [str(item) for item in parsed] if isinstance(parsed, list) else []
+
+
+def _value_kind(raw: str, parsed: float | None) -> str:
+    if not (raw or "").strip():
+        return "missing"
+    return "number" if parsed is not None else "text"
+
+
+def _source_record(row: dict[str, str], slug: str, crawled_at: str) -> dict[str, Any]:
+    source_id = row["benchmark_id"].strip()
+    description = (row.get("description") or "").strip()
+    return {
+        "key": f"{LLM_STATS_KEY_PREFIX}:{source_id}",
+        "slug": slug,
+        "schema_version": CATALOG_SCHEMA_VERSION,
+        "source": LLM_STATS_SOURCE,
+        "source_benchmark_id": source_id,
+        "name": (row.get("name") or "").strip() or source_id,
+        "description": {"en": description} if description else {},
+        # Everything below is empty because the source carries no such field.
+        # See the module docstring: these are answers, not gaps.
+        "publisher": None,
+        "artifacts": [],
+        "openness": {
+            "status": "unknown",
+            "code_license": None,
+            "data_license": None,
+            "evidence": [],
+        },
+        "sizes": [],
+        "released": None,
+        "modality": (row.get("modality") or "").strip() or None,
+        "categories": _json_list(row.get("categories", "")),
+        "provenance": {
+            "source_url": (row.get("detail_source_url") or "").strip() or None,
+            "crawled_at": crawled_at,
+            "crawl_bundle": LLM_STATS_SNAPSHOT_ID,
+        },
+    }
+
+
+def _observation(
+    row: dict[str, str],
+    *,
+    key: str,
+    series_id: str,
+    crawled_at: str,
+) -> dict[str, Any]:
+    raw_value = (row.get("benchmark_score") or "").strip()
+    parsed = _finite(raw_value)
+    rank = (row.get("rank") or "").strip()
+    # Identity is (benchmark, model_id): distinct dated checkpoints can share a
+    # display name, so the name is vocabulary and the id is what a row is.
+    model_id = (row.get("model_id") or "").strip() or (row.get("model_name") or "").strip()
+    return {
+        "obs_id": f"{LLM_STATS_SOURCE}:{row['benchmark_id'].strip()}:{model_id}",
+        "key": key,
+        "series_id": series_id,
+        "model_name": (row.get("model_name") or "").strip(),
+        "model_id": model_id,
+        "organization": (row.get("organization_name") or "").strip() or None,
+        "raw_value": raw_value,
+        "value": parsed,
+        "value_kind": _value_kind(raw_value, parsed),
+        # The source flags self-reporting but never records a protocol, so the
+        # only honest comparability class is "none". Null never joins to null.
+        "reported_by": (
+            "self_reported"
+            if (row.get("self_reported") or "").strip().lower() == "true"
+            else "third_party"
+        ),
+        "comparable_group": None,
+        "rank_in_source_response": int(rank) if rank.isdigit() else None,
+        "crawled_at": crawled_at,
+        "reported_date": None,
+        "source_url": (row.get("source_url") or "").strip() or None,
+    }
+
+
+def _series(
+    row: dict[str, str],
+    *,
+    key: str,
+    observations: list[dict[str, Any]],
+) -> dict[str, Any]:
+    declared_max = _finite(row.get("max_score", ""))
+    values = [obs["value"] for obs in observations if obs["value"] is not None]
+    observed_max = max(values) if values else None
+    contradicted = (
+        declared_max is not None and observed_max is not None and observed_max > declared_max
+    )
+    return {
+        "series_id": f"{LLM_STATS_SOURCE}:{row['benchmark_id'].strip()}:default",
+        "key": key,
+        # The API states neither. Reading "accuracy" off a 0-1 range is a guess,
+        # and a guessed metric is indistinguishable downstream from a read one.
+        "metric": None,
+        "direction": None,
+        "bounds": {"min": None, "max": declared_max, "basis": "aggregator_declared"},
+        "declared_max": declared_max,
+        "observed_max": observed_max,
+        "max_score_contradicted": contradicted,
+        # No scale means no percentage bar. See the module docstring.
+        "display_scale": None,
+        "observation_count": len(observations),
+    }
+
+
+def normalize_llm_stats(snapshot: dict[str, Any]) -> dict[str, Any]:
+    """Turn one validated llm-stats snapshot into catalog records.
+
+    Returns source records, score series and observations, plus the validation
+    counts that let a reviewer check the result without rereading the CSVs.
+    """
+    benchmark_rows = snapshot["benchmark_rows"]
+    score_rows = snapshot["score_rows"] or []
+    crawled_at = snapshot["crawled_at"]
+
+    keys = [f"{LLM_STATS_KEY_PREFIX}:{row['benchmark_id'].strip()}" for row in benchmark_rows]
+    slugs = _assign_slugs(keys)
+
+    by_benchmark: dict[str, list[dict[str, str]]] = {}
+    for row in score_rows:
+        by_benchmark.setdefault(row["benchmark_id"].strip(), []).append(row)
+
+    records: list[dict[str, Any]] = []
+    series: list[dict[str, Any]] = []
+    observations: list[dict[str, Any]] = []
+
+    for row in benchmark_rows:
+        source_id = row["benchmark_id"].strip()
+        key = f"{LLM_STATS_KEY_PREFIX}:{source_id}"
+        records.append(_source_record(row, slugs[key], crawled_at))
+        series_id = f"{LLM_STATS_SOURCE}:{source_id}:default"
+        rows = by_benchmark.get(source_id, [])
+        observed = [
+            _observation(score_row, key=key, series_id=series_id, crawled_at=crawled_at)
+            for score_row in rows
+        ]
+        observations.extend(observed)
+        series.append(_series(row, key=key, observations=observed))
+
+    records.sort(key=lambda item: item["key"])
+    series.sort(key=lambda item: item["series_id"])
+    def _order(item: dict[str, Any]) -> tuple[str, int, str]:
+        rank = item["rank_in_source_response"]
+        return (item["key"], rank if rank is not None else 1 << 30, item["model_id"])
+
+    observations.sort(key=_order)
+
+    return {
+        "source_records": records,
+        "score_series": series,
+        "score_observations": observations,
+        "validation": _validation(records, series, observations),
+    }
+
+
+def _validation(
+    records: list[dict[str, Any]],
+    series: list[dict[str, Any]],
+    observations: list[dict[str, Any]],
+) -> dict[str, Any]:
+    seen: dict[str, int] = {}
+    for obs in observations:
+        seen[obs["obs_id"]] = seen.get(obs["obs_id"], 0) + 1
+    collisions = sorted(obs_id for obs_id, count in seen.items() if count > 1)
+
+    kinds: dict[str, int] = {}
+    reported: dict[str, int] = {}
+    for obs in observations:
+        kinds[obs["value_kind"]] = kinds.get(obs["value_kind"], 0) + 1
+        reported[obs["reported_by"]] = reported.get(obs["reported_by"], 0) + 1
+
+    contradicted = [item["key"] for item in series if item["max_score_contradicted"]]
+    return {
+        "schema_version": CATALOG_SCHEMA_VERSION,
+        "source": LLM_STATS_SOURCE,
+        "snapshot": LLM_STATS_SNAPSHOT_ID,
+        "source_record_count": len(records),
+        "score_series_count": len(series),
+        "score_observation_count": len(observations),
+        "obs_id_unique": not collisions,
+        "obs_id_collisions": collisions,
+        "benchmarks_with_zero_observations": sorted(
+            item["key"] for item in series if item["observation_count"] == 0
+        ),
+        "max_score_contradicted_benchmarks": sorted(contradicted),
+        "max_score_contradicted_row_count": sum(
+            1
+            for obs in observations
+            for item in series
+            if item["key"] == obs["key"]
+            and item["max_score_contradicted"]
+            and obs["value"] is not None
+            and item["declared_max"] is not None
+            and obs["value"] > item["declared_max"]
+        ),
+        "value_kind_distribution": dict(sorted(kinds.items())),
+        "reported_by_distribution": dict(sorted(reported.items())),
+        # The three invariants the rest of the system is allowed to rely on.
+        "comparable_group_null_fraction": (
+            sum(1 for obs in observations if obs["comparable_group"] is None) / len(observations)
+            if observations
+            else 1.0
+        ),
+        "display_scale_null_fraction": (
+            sum(1 for item in series if item["display_scale"] is None) / len(series)
+            if series
+            else 1.0
+        ),
+        "empty_provenance_fraction": (
+            sum(
+                1
+                for item in records
+                if item["publisher"] is None and not item["artifacts"] and not item["sizes"]
+            )
+            / len(records)
+            if records
+            else 1.0
+        ),
+    }
+
+
+def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.write_text(
+        "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in rows),
+        encoding="utf-8",
+    )
+
+
+def write_llm_stats_catalog(
+    normalized: dict[str, Any],
+    output_dir: Path = DEFAULT_OUTPUT_DIR,
+) -> dict[str, Path]:
+    """Write the normalized catalog to disk, deterministically.
+
+    Keys are sorted and no build timestamp is embedded, so rerunning against
+    unchanged inputs produces byte-identical files and a rebuild shows an empty
+    diff rather than a whole-file churn.
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    paths = {
+        "source_records": output_dir / "llm_stats_source_records.jsonl",
+        "score_series": output_dir / "llm_stats_score_series.jsonl",
+        "score_observations": output_dir / "llm_stats_score_observations.jsonl",
+        "validation": output_dir / "llm_stats_normalization_validation.json",
+    }
+    _write_jsonl(paths["source_records"], normalized["source_records"])
+    _write_jsonl(paths["score_series"], normalized["score_series"])
+    _write_jsonl(paths["score_observations"], normalized["score_observations"])
+    paths["validation"].write_text(
+        json.dumps(normalized["validation"], ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return paths
