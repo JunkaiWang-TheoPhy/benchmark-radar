@@ -222,3 +222,43 @@ def test_loader_rejects_a_file_whose_row_count_drifted(tmp_path: Path) -> None:
     """A truncated copy would otherwise look identical to a complete snapshot."""
     with pytest.raises(LeaderboardSnapshotError, match="registry declares 3"):
         load_snapshots(write_registry(tmp_path, rows=2))
+
+
+def test_opencompass_normalizes_and_cleans_licences() -> None:
+    """NOASSERTION is the absence of an identification, not a licence."""
+    from benchmark_radar.external_opencompass import normalize_opencompass
+
+    result = normalize_opencompass()
+    assert result["validation"]["source_record_count"] == 461
+    for record in result["source_records"]:
+        assert record["openness"]["status"] in {"open", "restricted", "unknown"}
+        assert record["openness"]["code_license"] != "NOASSERTION"
+        assert record["openness"]["data_license"] != "NOASSERTION"
+        # A stringified list would make '["mit"]' and 'MIT' two licences.
+        for field in ("code_license", "data_license"):
+            value = record["openness"][field]
+            assert value is None or not value.startswith("[")
+    assert result["validation"]["license_file_present_unparsed"] == 32
+
+
+def test_opencompass_publisher_is_labelled_as_the_hub_publisher() -> None:
+    """publishOrg is who posted the card, often not who made the benchmark."""
+    from benchmark_radar.external_opencompass import normalize_opencompass
+
+    for record in normalize_opencompass()["source_records"]:
+        if record["publisher"]:
+            assert record["publisher"]["role"] == "hub_publisher"
+
+
+def test_index_has_one_row_per_source_record(normalized: dict) -> None:
+    """Merging two sources into one row is a claim identity.yml has to make."""
+    from benchmark_radar.external_catalog import build_benchmark_index
+    from benchmark_radar.external_opencompass import normalize_opencompass
+
+    records = normalized["source_records"] + normalize_opencompass()["source_records"]
+    index = build_benchmark_index(
+        records, {row["key"]: row for row in normalized["score_series"]}
+    )
+    assert len(index) == 1148
+    assert len({row["key"] for row in index}) == 1148
+    assert len({row["slug"] for row in index}) == 1148

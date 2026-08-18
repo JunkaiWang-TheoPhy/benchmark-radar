@@ -1,0 +1,124 @@
+{
+  "record_count": 461,
+  "unique_benchmark_ids": 461,
+  "field_fill_counts": {
+    "readme_sizes": {
+      "present": 110,
+      "total": 461
+    },
+    "readme_license_mentions": {
+      "present": 84,
+      "total": 461
+    },
+    "readme_metric_mentions": {
+      "present": 106,
+      "total": 461
+    },
+    "readme_languages": {
+      "present": 94,
+      "total": 461
+    },
+    "readme_splits": {
+      "present": 78,
+      "total": 461
+    },
+    "version_reported": {
+      "present": 11,
+      "total": 461
+    },
+    "repo_id": {
+      "present": 407,
+      "total": 461
+    },
+    "dataset_id": {
+      "present": 264,
+      "total": 461
+    },
+    "paper_id": {
+      "present": 408,
+      "total": 461
+    },
+    "code_license": {
+      "present": 270,
+      "total": 461
+    },
+    "data_license": {
+      "present": 164,
+      "total": 461
+    },
+    "viewer_sizes": {
+      "present": 137,
+      "total": 461
+    }
+  },
+  "openness_status_counts": {
+    "open": 98,
+    "unknown": 272,
+    "restricted": 91
+  },
+  "openness_basis_counts": {
+    "Row 1: code_public=yes; data_located=found; data_license=permissive_or_sharealike": 98,
+    "Row 5: data_located=not_found_at_this_location": 188,
+    "Row 4: data_located=gated": 22,
+    "Row 6: linked target returned 404/410/timeout and no concrete data artifact was found": 71,
+    "No matching truth-table row: public code was not confirmed for a found dataset with a stated licence": 13,
+    "Row 2: code_public=yes; data_located=found; data_license=non-commercial/no-derivs/custom_or_other": 37,
+    "Row 3: data_located=found with no data_license found": 32
+  },
+  "size_conflict_count": 1,
+  "readme_size_entries_with_measures_unclear": 102,
+  "access_gate_counts": {
+    "none": 439,
+    "hf_gated": 22
+  },
+  "worst_link_status_by_benchmark": {
+    "timeout": 152,
+    "ok": 288,
+    "redirect": 17,
+    "404": 4
+  },
+  "link_status_counts_all_fetched_targets": {
+    "ok": 750,
+    "timeout": 191,
+    "redirect": 23,
+    "404": 5
+  },
+  "license_distribution": {
+    "code_license": {
+      "none_found": 137,
+      "MIT": 115,
+      "Apache-2.0": 104,
+      "NOASSERTION": 32,
+      "CC-BY-4.0": 7,
+      "GPL-3.0": 4,
+      "AGPL-3.0": 1,
+      "CC-BY-SA-4.0": 3,
+      "BSD-3-Clause": 4
+    },
+    "data_license": {
+      "cc-by-4.0": 13,
+      "mit": 44,
+      "apache-2.0": 41,
+      "none_found": 297,
+      "cc-by-sa-4.0": 7,
+      "cc": 2,
+      "cc-by-nc-sa-4.0": 12,
+      "cc-by-nc-4.0": 20,
+      "cc-by-nc-nd-4.0": 2,
+      "cc-by-nd-4.0": 3,
+      "cc0-1.0": 1,
+      "[\"cc-by-4.0\"]": 2,
+      "gpl-2.0": 1,
+      "[\"cc-by-sa-4.0\"]": 2,
+      "[\"apache-2.0\"]": 4,
+      "odc-by": 4,
+      "other": 1,
+      "gpl-3.0": 1,
+      "[\"cc-by-3.0\"]": 1,
+      "[\"mit\"]": 2,
+      "[\"unknown\"]": 1
+    }
+  },
+  "identity_possible_variant_count": 9,
+  "leaderboard_row_count": 42421
+}

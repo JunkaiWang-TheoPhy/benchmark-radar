@@ -1,0 +1,3966 @@
+{
+  "%  ≥ 50": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "percent": 10
+    },
+    "benchmarks": 1
+  },
+  "%  ≥ 70": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "percent": 10
+    },
+    "benchmarks": 1
+  },
+  "% info": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "% true": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "% true (gpt-judge)": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "+meta1": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "+meta2": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "+rules": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "0-shot answer-only": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "0-shot cot": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "0-shot icl": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "1-shot icl": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "128k": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "number": 13,
+      "missing": 7
+    },
+    "benchmarks": 2
+  },
+  "12k": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "16k": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "number": 20
+    },
+    "benchmarks": 2
+  },
+  "1k": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "256k": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "2k": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "3-shot icl": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "32k": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "number": 14,
+      "missing": 6
+    },
+    "benchmarks": 2
+  },
+  "4k": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "5-shot answer-only": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "5-shot cot": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "64k": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "number": 14,
+      "missing": 6
+    },
+    "benchmarks": 2
+  },
+  "6k": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "8k": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "ARCc": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "ARCe": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "AXb": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "AXg": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "BoolQ": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "C3": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "COPA": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "GaokaoBench": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "GaokaoBench20102013EnglishMCQs": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "GaokaoBench20102022BiologyMCQs": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "GaokaoBench20102022ChemistryMCQs": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "GaokaoBench20102022ChineseLangandUsageMCQs": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "GaokaoBench20102022ChineseModernLit": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "GaokaoBench20102022EnglishFillinBlanks": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "GaokaoBench20102022EnglishReadingComp": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "GaokaoBench20102022GeographyMCQs": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "GaokaoBench20102022HistoryMCQs": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "GaokaoBench20102022MathIIMCQs": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "GaokaoBench20102022MathIMCQs": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "GaokaoBench20102022PhysicsMCQs": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "GaokaoBench20102022PoliticalScienceMCQs": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "GaokaoBench20122022EnglishClozeTest": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "RTE": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "ReCoRD": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "WSC": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "WiC": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "Xsum": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "acc@5 (loose format)": {
+    "frequency": 26,
+    "value_kind_distribution": {
+      "number": 26
+    },
+    "benchmarks": 1
+  },
+  "acc@5 (strict format)": {
+    "frequency": 26,
+    "value_kind_distribution": {
+      "number": 26
+    },
+    "benchmarks": 1
+  },
+  "adaptability reflection(sa)": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "adaptability reflection(sc)": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "adaptive attack": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "afqmcdev": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "agieval": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "agievalchinese": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "agievalenglish": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "agievalgaokao": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "aj": {
+    "frequency": 38,
+    "value_kind_distribution": {
+      "number": 38
+    },
+    "benchmarks": 1
+  },
+  "all": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "all_acc": {
+    "frequency": 8,
+    "value_kind_distribution": {
+      "number": 8
+    },
+    "benchmarks": 1
+  },
+  "all_auc": {
+    "frequency": 8,
+    "value_kind_distribution": {
+      "number": 8
+    },
+    "benchmarks": 1
+  },
+  "all_ma-f1": {
+    "frequency": 8,
+    "value_kind_distribution": {
+      "number": 8
+    },
+    "benchmarks": 1
+  },
+  "arith": {
+    "frequency": 34,
+    "value_kind_distribution": {
+      "number": 34
+    },
+    "benchmarks": 1
+  },
+  "art (avg tokens)": {
+    "frequency": 26,
+    "value_kind_distribution": {
+      "number": 26
+    },
+    "benchmarks": 1
+  },
+  "attack-enhanced-elo": {
+    "frequency": 36,
+    "value_kind_distribution": {
+      "number": 36
+    },
+    "benchmarks": 1
+  },
+  "attack-enhanced-safe%": {
+    "frequency": 36,
+    "value_kind_distribution": {
+      "number": 36
+    },
+    "benchmarks": 1
+  },
+  "attribution 2-class": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "attribution 3-class": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 5,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "average": {
+    "frequency": 370,
+    "value_kind_distribution": {
+      "number": 359,
+      "text": 11
+    },
+    "benchmarks": 15
+  },
+  "average-a": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "average-c": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "average-p": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "avg": {
+    "frequency": 61,
+    "value_kind_distribution": {
+      "number": 61
+    },
+    "benchmarks": 2
+  },
+  "avg.": {
+    "frequency": 155,
+    "value_kind_distribution": {
+      "number": 155
+    },
+    "benchmarks": 5
+  },
+  "base set-elo": {
+    "frequency": 36,
+    "value_kind_distribution": {
+      "number": 36
+    },
+    "benchmarks": 1
+  },
+  "base set-safe%": {
+    "frequency": 36,
+    "value_kind_distribution": {
+      "number": 36
+    },
+    "benchmarks": 1
+  },
+  "basic": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "bbh": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhbooleanexpressions": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhcausaljudgement": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhdateunderstanding": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhdisambiguationqa": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhdycklanguages": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhformalfallacies": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhgeometricshapes": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhhyperbaton": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhlogicaldeductionfiveobjects": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhlogicaldeductionsevenobjects": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhlogicaldeductionthreeobjects": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhmovierecommendation": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhmultisteparithmetictwo": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhnavigate": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhobjectcounting": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhpenguinsinatable": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhreasoningaboutcoloredobjects": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhruinnames": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhsalienttranslationerrordetection": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhsnarks": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhsportsunderstanding": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhtemporalsequences": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhtrackingshuffledobjectsfiveobjects": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhtrackingshuffledobjectssevenobjects": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhtrackingshuffledobjectsthreeobjects": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhweboflies": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bbhwordsorting": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "bio": {
+    "frequency": 23,
+    "value_kind_distribution": {
+      "number": 23
+    },
+    "benchmarks": 1
+  },
+  "bioasq-y/n": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "text": 12
+    },
+    "benchmarks": 1
+  },
+  "biol.": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "percent": 11
+    },
+    "benchmarks": 1
+  },
+  "bleu": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "bleurt": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "bool": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "call summ": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "cd_doc": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "cd_for": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "ceval": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "cevalhard": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "cevalhumanities": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "cevalother": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "cevalsocialscience": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "cevalstem": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "chain of utterances": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "chain(e-f1)": {
+    "frequency": 30,
+    "value_kind_distribution": {
+      "number": 30
+    },
+    "benchmarks": 1
+  },
+  "chain(n-f1)": {
+    "frequency": 30,
+    "value_kind_distribution": {
+      "number": 30
+    },
+    "benchmarks": 1
+  },
+  "chain(ned)": {
+    "frequency": 30,
+    "value_kind_distribution": {
+      "number": 30
+    },
+    "benchmarks": 1
+  },
+  "chat-rescaled score": {
+    "frequency": 23,
+    "value_kind_distribution": {
+      "number": 23
+    },
+    "benchmarks": 1
+  },
+  "chem": {
+    "frequency": 23,
+    "value_kind_distribution": {
+      "number": 23
+    },
+    "benchmarks": 1
+  },
+  "chem.": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "percent": 11
+    },
+    "benchmarks": 1
+  },
+  "chiddev": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "chinese": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "percent": 11
+    },
+    "benchmarks": 1
+  },
+  "ci_jud": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "ci_law": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "ci_pfs": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "ci_rea": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "cmmlu": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "cmmluchinaspecific": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "cmmluhumanities": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "cmmluother": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "cmmlusocialscience": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "cmmlustem": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "cmnli": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "cmrc-mixup": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "cn": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "coarse perception": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "code injection": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "coding": {
+    "frequency": 23,
+    "value_kind_distribution": {
+      "number": 23
+    },
+    "benchmarks": 1
+  },
+  "college": {
+    "frequency": 68,
+    "value_kind_distribution": {
+      "number": 68
+    },
+    "benchmarks": 1
+  },
+  "commonsenseqa": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "compositional instructions": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "cr_cri": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "cr_law": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "cr_pfs": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "cr_rea": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "cr_ver": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "crimes and illegal activities": {
+    "frequency": 35,
+    "value_kind_distribution": {
+      "number": 35
+    },
+    "benchmarks": 1
+  },
+  "cross-domain_ele. acc": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "cross-domain_op. f1": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "cross-domain_sr": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "cross-domain_step sr": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "cross-task_ele. acc": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "cross-task_op. f1": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "cross-task_sr": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "cross-task_step sr": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "cross-website_ele. acc": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "cross-website_op. f1": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "cross-website_sr": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "cross-website_step sr": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "cs&ee": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "csldev": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "cybersecurity": {
+    "frequency": 35,
+    "value_kind_distribution": {
+      "number": 35
+    },
+    "benchmarks": 1
+  },
+  "dag(e-f1)": {
+    "frequency": 30,
+    "value_kind_distribution": {
+      "number": 30
+    },
+    "benchmarks": 1
+  },
+  "dag(n-f1)": {
+    "frequency": 30,
+    "value_kind_distribution": {
+      "number": 30
+    },
+    "benchmarks": 1
+  },
+  "data privacy": {
+    "frequency": 35,
+    "value_kind_distribution": {
+      "number": 35
+    },
+    "benchmarks": 1
+  },
+  "data protection": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "percent": 17
+    },
+    "benchmarks": 1
+  },
+  "dd_doc": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "dd_for": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "decision making": {
+    "frequency": 47,
+    "value_kind_distribution": {
+      "number": 47
+    },
+    "benchmarks": 1
+  },
+  "deepinception": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "dev execution accuracy": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 3,
+      "text": 3
+    },
+    "benchmarks": 1
+  },
+  "dialogue": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "number": 11
+    },
+    "benchmarks": 1
+  },
+  "disciplines": {
+    "frequency": 15,
+    "value_kind_distribution": {
+      "number": 15
+    },
+    "benchmarks": 1
+  },
+  "disinf.": {
+    "frequency": 47,
+    "value_kind_distribution": {
+      "number": 47
+    },
+    "benchmarks": 1
+  },
+  "doc": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "percent": 11
+    },
+    "benchmarks": 1
+  },
+  "document q&a": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "document summ": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "domestic-a": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "domestic-c": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "domestic-p": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "doubt": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "drop": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "dureader-mixup": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "easy set": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "economic harm": {
+    "frequency": 47,
+    "value_kind_distribution": {
+      "number": 47
+    },
+    "benchmarks": 1
+  },
+  "edu_ori": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "ef": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "em": {
+    "frequency": 41,
+    "value_kind_distribution": {
+      "number": 41
+    },
+    "benchmarks": 2
+  },
+  "en": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "eng_latn": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "entity extraction": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "eprstmtdev": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "ethics and morality": {
+    "frequency": 35,
+    "value_kind_distribution": {
+      "number": 35
+    },
+    "benchmarks": 1
+  },
+  "event extraction": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "event_acc": {
+    "frequency": 8,
+    "value_kind_distribution": {
+      "number": 8
+    },
+    "benchmarks": 1
+  },
+  "event_auc": {
+    "frequency": 8,
+    "value_kind_distribution": {
+      "number": 8
+    },
+    "benchmarks": 1
+  },
+  "event_ma-f1": {
+    "frequency": 8,
+    "value_kind_distribution": {
+      "number": 8
+    },
+    "benchmarks": 1
+  },
+  "exp. max. toxicity_non-toxic": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "exp. max. toxicity_toxic": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "extremism": {
+    "frequency": 35,
+    "value_kind_distribution": {
+      "number": 35
+    },
+    "benchmarks": 1
+  },
+  "f1": {
+    "frequency": 22,
+    "value_kind_distribution": {
+      "number": 22
+    },
+    "benchmarks": 1
+  },
+  "factrecall qa": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "factrecall-en": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "factrecall-zh": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "fairness": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "percent": 17
+    },
+    "benchmarks": 1
+  },
+  "fin_ori": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "finance": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "fine-grained perception": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "first failure": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "first success": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "float": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "flores100": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100AfroAsiaticEnglish": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100AtlanticCongoEnglish": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100AustronesianEnglish": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100DravidianEnglish": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100EnglishAfroAsiatic": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100EnglishAtlanticCongo": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100EnglishAustronesian": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100EnglishDravidian": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100EnglishIndoEuropeanGermanic": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100EnglishIndoEuropeanIndoAryan": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100EnglishIndoEuropeanOther": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100EnglishIndoEuropeanRomance": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100EnglishIndoEuropeanSlavic": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100EnglishOther": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100EnglishSinoTibetan": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100EnglishTurkic": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100IndoEuropeanGermanicEnglish": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100IndoEuropeanIndoAryanEnglish": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100IndoEuropeanOtherEnglish": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100IndoEuropeanRomanceEnglish": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100IndoEuropeanSlavicEnglish": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100OtherEnglish": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100SinoTibetanEnglish": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "flores100TurkicEnglish": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "fraud advice": {
+    "frequency": 47,
+    "value_kind_distribution": {
+      "number": 47
+    },
+    "benchmarks": 1
+  },
+  "g1-6": {
+    "frequency": 51,
+    "value_kind_distribution": {
+      "number": 40,
+      "missing": 11
+    },
+    "benchmarks": 1
+  },
+  "g7-12": {
+    "frequency": 51,
+    "value_kind_distribution": {
+      "number": 40,
+      "missing": 11
+    },
+    "benchmarks": 1
+  },
+  "game-a": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "game-c": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "game-p": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "gen": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "percent": 11
+    },
+    "benchmarks": 1
+  },
+  "general": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "number": 11
+    },
+    "benchmarks": 1
+  },
+  "geog.": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "percent": 11
+    },
+    "benchmarks": 1
+  },
+  "goal hijacking": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "gov. decep.": {
+    "frequency": 47,
+    "value_kind_distribution": {
+      "number": 47
+    },
+    "benchmarks": 1
+  },
+  "graduate entrance exam": {
+    "frequency": 15,
+    "value_kind_distribution": {
+      "number": 15
+    },
+    "benchmarks": 1
+  },
+  "gsm8k": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "har. discr.": {
+    "frequency": 47,
+    "value_kind_distribution": {
+      "number": 47
+    },
+    "benchmarks": 1
+  },
+  "hard set": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "hate speech": {
+    "frequency": 35,
+    "value_kind_distribution": {
+      "number": 35
+    },
+    "benchmarks": 1
+  },
+  "hellaswag": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "heuristic text generation-rescaled score": {
+    "frequency": 23,
+    "value_kind_distribution": {
+      "number": 23
+    },
+    "benchmarks": 1
+  },
+  "high": {
+    "frequency": 68,
+    "value_kind_distribution": {
+      "number": 68
+    },
+    "benchmarks": 1
+  },
+  "hist.": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "percent": 11
+    },
+    "benchmarks": 1
+  },
+  "hotpotwikiqa-mixup": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "huggingface_err": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "number": 20
+    },
+    "benchmarks": 1
+  },
+  "huggingface_hallu": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "number": 20
+    },
+    "benchmarks": 1
+  },
+  "huggingface_overall": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "number": 20
+    },
+    "benchmarks": 1
+  },
+  "humaneval": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "humanevalscore": {
+    "frequency": 39,
+    "value_kind_distribution": {
+      "number": 39
+    },
+    "benchmarks": 1
+  },
+  "i1 category": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "text": 10
+    },
+    "benchmarks": 1
+  },
+  "i1 instruction": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "text": 10
+    },
+    "benchmarks": 1
+  },
+  "i1 tool": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "text": 10
+    },
+    "benchmarks": 1
+  },
+  "i2 category": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "text": 10
+    },
+    "benchmarks": 1
+  },
+  "i2 instruction": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "text": 10
+    },
+    "benchmarks": 1
+  },
+  "i3 instruction": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "text": 10
+    },
+    "benchmarks": 1
+  },
+  "ia": {
+    "frequency": 19,
+    "value_kind_distribution": {
+      "number": 19
+    },
+    "benchmarks": 1
+  },
+  "ignore": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "img": {
+    "frequency": 51,
+    "value_kind_distribution": {
+      "number": 40,
+      "missing": 11
+    },
+    "benchmarks": 1
+  },
+  "immunity score": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "in-context attack": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "inappropriate suggestions": {
+    "frequency": 35,
+    "value_kind_distribution": {
+      "number": 35
+    },
+    "benchmarks": 1
+  },
+  "instance reasoning": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "instant reply": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "instruct_args": {
+    "frequency": 25,
+    "value_kind_distribution": {
+      "number": 25
+    },
+    "benchmarks": 1
+  },
+  "instruct_format": {
+    "frequency": 25,
+    "value_kind_distribution": {
+      "number": 25
+    },
+    "benchmarks": 1
+  },
+  "instruct_json": {
+    "frequency": 25,
+    "value_kind_distribution": {
+      "number": 25
+    },
+    "benchmarks": 1
+  },
+  "instruct_str": {
+    "frequency": 25,
+    "value_kind_distribution": {
+      "number": 25
+    },
+    "benchmarks": 1
+  },
+  "instruction encryption": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "instruction jailbreak": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "integer": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "interactivity questioning(ic)": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "interactivity questioning(pi)": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "interference(cc)": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "interference(ts)": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "jwp-mcqs": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "number": 11
+    },
+    "benchmarks": 1
+  },
+  "jwp-saqs": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "number": 11
+    },
+    "benchmarks": 1
+  },
+  "key": {
+    "frequency": 4704,
+    "value_kind_distribution": {
+      "number": 4704
+    },
+    "benchmarks": 42
+  },
+  "kno": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "percent": 11
+    },
+    "benchmarks": 1
+  },
+  "kq_bin": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "kq_nbin": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "l-corr": {
+    "frequency": 26,
+    "value_kind_distribution": {
+      "number": 22,
+      "missing": 4
+    },
+    "benchmarks": 1
+  },
+  "lambada": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "lan": {
+    "frequency": 51,
+    "value_kind_distribution": {
+      "number": 40,
+      "missing": 11
+    },
+    "benchmarks": 1
+  },
+  "language_avg.": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "language_chi.": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "language_fund.": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "language_open.": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "language_pro.": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "language_role.": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "language_writ.": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "last failure": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "last success": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "lc_bin": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "lc_nbin": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "lcsts": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "legality": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "percent": 17
+    },
+    "benchmarks": 1
+  },
+  "level-1": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "level-2": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "level-3 easy multi-hop": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "level-3 easy single-hop": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "level-3 hard multi-hop": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "level-3 hard single-hop": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "lic-mixup": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "list": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "logic": {
+    "frequency": 29,
+    "value_kind_distribution": {
+      "number": 28,
+      "missing": 1
+    },
+    "benchmarks": 2
+  },
+  "logic_condition error": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "logic_operation error": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "logic_other error": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "logic_variable error": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "logicalreasoning": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "loogle-cr-mixup": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "loogle-mr-mixup": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "loogle-sd-mixup": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "malware/ hacking": {
+    "frequency": 47,
+    "value_kind_distribution": {
+      "number": 47
+    },
+    "benchmarks": 1
+  },
+  "manual cot": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "math": {
+    "frequency": 147,
+    "value_kind_distribution": {
+      "number": 147
+    },
+    "benchmarks": 3
+  },
+  "math.": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "percent": 11
+    },
+    "benchmarks": 1
+  },
+  "mathematics": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "maths_avg.": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "maths_en_comp": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "maths_zh_cee": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "maths_zh_comp": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "mbpp": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "mc1": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "mc2": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "med": {
+    "frequency": 23,
+    "value_kind_distribution": {
+      "number": 23
+    },
+    "benchmarks": 1
+  },
+  "medmcqa": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "text": 12
+    },
+    "benchmarks": 1
+  },
+  "medqa-us": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "text": 12
+    },
+    "benchmarks": 1
+  },
+  "meeting summ": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "memory cm": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "message summ": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "method": {
+    "frequency": 23,
+    "value_kind_distribution": {
+      "text": 23
+    },
+    "benchmarks": 1
+  },
+  "metrics": {
+    "frequency": 47,
+    "value_kind_distribution": {
+      "text": 47
+    },
+    "benchmarks": 1
+  },
+  "mgt_ori": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "mh": {
+    "frequency": 19,
+    "value_kind_distribution": {
+      "number": 19
+    },
+    "benchmarks": 1
+  },
+  "middle": {
+    "frequency": 68,
+    "value_kind_distribution": {
+      "number": 68
+    },
+    "benchmarks": 1
+  },
+  "mixed audio": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "number": 10,
+      "text": 1
+    },
+    "benchmarks": 1
+  },
+  "mmlu": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "mmlu-med": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "text": 12
+    },
+    "benchmarks": 1
+  },
+  "mmluhumanities": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "mmluother": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "mmlusocialscience": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "mmlustem": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "mmr": {
+    "frequency": 38,
+    "value_kind_distribution": {
+      "number": 38
+    },
+    "benchmarks": 1
+  },
+  "morality": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "percent": 17
+    },
+    "benchmarks": 1
+  },
+  "multi-hop confusion qa": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "multi-hop qa": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "multifieldqa-en-mixup": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "multifieldqa-zh-mixup": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "multiple_double bugs": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "multiple_quadraple bugs": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "multiple_triple bugs": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "music": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "number": 10,
+      "text": 1
+    },
+    "benchmarks": 1
+  },
+  "n-acc": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "n-bscore": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "n-detail": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "n-mscore": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "n-rel": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "n-risk": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "nat": {
+    "frequency": 51,
+    "value_kind_distribution": {
+      "number": 40,
+      "missing": 11
+    },
+    "benchmarks": 1
+  },
+  "ncb total score": {
+    "frequency": 39,
+    "value_kind_distribution": {
+      "number": 39
+    },
+    "benchmarks": 1
+  },
+  "ncb(en)-java": {
+    "frequency": 39,
+    "value_kind_distribution": {
+      "number": 39
+    },
+    "benchmarks": 1
+  },
+  "ncb(en)-python": {
+    "frequency": 39,
+    "value_kind_distribution": {
+      "number": 39
+    },
+    "benchmarks": 1
+  },
+  "ncb(en)-total": {
+    "frequency": 39,
+    "value_kind_distribution": {
+      "number": 39
+    },
+    "benchmarks": 1
+  },
+  "ncb(zh)-java": {
+    "frequency": 39,
+    "value_kind_distribution": {
+      "number": 39
+    },
+    "benchmarks": 1
+  },
+  "ncb(zh)-python": {
+    "frequency": 39,
+    "value_kind_distribution": {
+      "number": 39
+    },
+    "benchmarks": 1
+  },
+  "ncb(zh)-total": {
+    "frequency": 39,
+    "value_kind_distribution": {
+      "number": 39
+    },
+    "benchmarks": 1
+  },
+  "nli": {
+    "frequency": 38,
+    "value_kind_distribution": {
+      "number": 38
+    },
+    "benchmarks": 1
+  },
+  "no": {
+    "frequency": 51,
+    "value_kind_distribution": {
+      "number": 40,
+      "missing": 11
+    },
+    "benchmarks": 1
+  },
+  "node(n-f1)": {
+    "frequency": 30,
+    "value_kind_distribution": {
+      "number": 30
+    },
+    "benchmarks": 1
+  },
+  "non-eng avg": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "notification sorting": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "noun_acc": {
+    "frequency": 8,
+    "value_kind_distribution": {
+      "number": 8
+    },
+    "benchmarks": 1
+  },
+  "noun_auc": {
+    "frequency": 8,
+    "value_kind_distribution": {
+      "number": 8
+    },
+    "benchmarks": 1
+  },
+  "noun_ma-f1": {
+    "frequency": 8,
+    "value_kind_distribution": {
+      "number": 8
+    },
+    "benchmarks": 1
+  },
+  "nq": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "num": {
+    "frequency": 4715,
+    "value_kind_distribution": {
+      "text": 4578,
+      "missing": 126,
+      "percent": 11
+    },
+    "benchmarks": 43
+  },
+  "nurse": {
+    "frequency": 15,
+    "value_kind_distribution": {
+      "number": 15
+    },
+    "benchmarks": 1
+  },
+  "ocnli": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "off": {
+    "frequency": 19,
+    "value_kind_distribution": {
+      "number": 19
+    },
+    "benchmarks": 1
+  },
+  "open-ended qa-rescaled score": {
+    "frequency": 23,
+    "value_kind_distribution": {
+      "number": 23
+    },
+    "benchmarks": 1
+  },
+  "openaihumaneval": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 111,
+      "missing": 1
+    },
+    "benchmarks": 1
+  },
+  "openbookqafact": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "option": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "original": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "overall": {
+    "frequency": 51,
+    "value_kind_distribution": {
+      "number": 23,
+      "percent": 28
+    },
+    "benchmarks": 4
+  },
+  "overall(e-f1)": {
+    "frequency": 30,
+    "value_kind_distribution": {
+      "number": 30
+    },
+    "benchmarks": 1
+  },
+  "overall(n-f1)": {
+    "frequency": 30,
+    "value_kind_distribution": {
+      "number": 30
+    },
+    "benchmarks": 1
+  },
+  "p-acc": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "p-bscore": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "p-detail": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "p-mscore": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "p-rel": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "p-risk": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "pass@1 (loose format)": {
+    "frequency": 26,
+    "value_kind_distribution": {
+      "number": 26
+    },
+    "benchmarks": 1
+  },
+  "pass@1 (strict format)": {
+    "frequency": 26,
+    "value_kind_distribution": {
+      "number": 26
+    },
+    "benchmarks": 1
+  },
+  "perceptivity understanding(ar)": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "perceptivity understanding(si)": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "personal q&a": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "ph": {
+    "frequency": 19,
+    "value_kind_distribution": {
+      "number": 19
+    },
+    "benchmarks": 1
+  },
+  "pharmacist": {
+    "frequency": 15,
+    "value_kind_distribution": {
+      "number": 15
+    },
+    "benchmarks": 1
+  },
+  "phy": {
+    "frequency": 23,
+    "value_kind_distribution": {
+      "number": 23
+    },
+    "benchmarks": 1
+  },
+  "phys.": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "percent": 11
+    },
+    "benchmarks": 1
+  },
+  "physical and mental health": {
+    "frequency": 35,
+    "value_kind_distribution": {
+      "number": 35
+    },
+    "benchmarks": 1
+  },
+  "physical harm": {
+    "frequency": 47,
+    "value_kind_distribution": {
+      "number": 47
+    },
+    "benchmarks": 1
+  },
+  "physician": {
+    "frequency": 15,
+    "value_kind_distribution": {
+      "number": 15
+    },
+    "benchmarks": 1
+  },
+  "physics": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "number": 12
+    },
+    "benchmarks": 1
+  },
+  "physics_avg.": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "physics_en_comp": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "physics_zh_cee": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "piqa": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "plan_json": {
+    "frequency": 50,
+    "value_kind_distribution": {
+      "number": 50
+    },
+    "benchmarks": 1
+  },
+  "plan_str": {
+    "frequency": 50,
+    "value_kind_distribution": {
+      "number": 50
+    },
+    "benchmarks": 1
+  },
+  "poli.": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "percent": 11
+    },
+    "benchmarks": 1
+  },
+  "positive induction": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "pp": {
+    "frequency": 19,
+    "value_kind_distribution": {
+      "number": 19
+    },
+    "benchmarks": 1
+  },
+  "prediction_acc (%)": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "text": 20
+    },
+    "benchmarks": 1
+  },
+  "prediction_f1 (%)": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "text": 20
+    },
+    "benchmarks": 1
+  },
+  "primary": {
+    "frequency": 68,
+    "value_kind_distribution": {
+      "number": 68
+    },
+    "benchmarks": 1
+  },
+  "privacy": {
+    "frequency": 47,
+    "value_kind_distribution": {
+      "number": 47
+    },
+    "benchmarks": 1
+  },
+  "pubmedqa*": {
+    "frequency": 12,
+    "value_kind_distribution": {
+      "text": 12
+    },
+    "benchmarks": 1
+  },
+  "qa": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "number": 11
+    },
+    "benchmarks": 1
+  },
+  "racehigh": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "racemiddle": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "rank": {
+    "frequency": 4704,
+    "value_kind_distribution": {
+      "number": 4704
+    },
+    "benchmarks": 42
+  },
+  "reason_json": {
+    "frequency": 50,
+    "value_kind_distribution": {
+      "number": 50
+    },
+    "benchmarks": 1
+  },
+  "reason_str": {
+    "frequency": 50,
+    "value_kind_distribution": {
+      "number": 50
+    },
+    "benchmarks": 1
+  },
+  "reasoning(gr)": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "reasoning(mr)": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "reasoning_avg.": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "reasoning_bleu-1": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "text": 20
+    },
+    "benchmarks": 1
+  },
+  "reasoning_bleu-4": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "text": 20
+    },
+    "benchmarks": 1
+  },
+  "reasoning_logi.": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "reasoning_math.": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "number": 17
+    },
+    "benchmarks": 1
+  },
+  "reasoning_rouge-1": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "text": 20
+    },
+    "benchmarks": 1
+  },
+  "reasoning_rouge-2": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "text": 20
+    },
+    "benchmarks": 1
+  },
+  "reasoning_rouge-l": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "text": 20
+    },
+    "benchmarks": 1
+  },
+  "recording summ": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "reference_faulty indexing": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "referenceillegal keywords": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "referenceundefined methods": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "referenceundefined objects": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "relation extraction": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "rephrasing(cr)": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "rephrasing(fr)": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "retrieval q&a": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "retrieve_json": {
+    "frequency": 50,
+    "value_kind_distribution": {
+      "number": 50
+    },
+    "benchmarks": 1
+  },
+  "retrieve_str": {
+    "frequency": 50,
+    "value_kind_distribution": {
+      "number": 50
+    },
+    "benchmarks": 1
+  },
+  "reverse induction": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "review_str": {
+    "frequency": 50,
+    "value_kind_distribution": {
+      "number": 50
+    },
+    "benchmarks": 1
+  },
+  "robustness": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "rouge": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "s-corr": {
+    "frequency": 26,
+    "value_kind_distribution": {
+      "number": 22,
+      "missing": 4
+    },
+    "benchmarks": 1
+  },
+  "sa-mcqs": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "number": 11
+    },
+    "benchmarks": 1
+  },
+  "sa-saqs": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "number": 11
+    },
+    "benchmarks": 1
+  },
+  "safety": {
+    "frequency": 17,
+    "value_kind_distribution": {
+      "percent": 17
+    },
+    "benchmarks": 1
+  },
+  "science & technology": {
+    "frequency": 18,
+    "value_kind_distribution": {
+      "number": 18
+    },
+    "benchmarks": 1
+  },
+  "score": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "number": 11
+    },
+    "benchmarks": 1
+  },
+  "sexual content": {
+    "frequency": 47,
+    "value_kind_distribution": {
+      "number": 47
+    },
+    "benchmarks": 1
+  },
+  "single-hop confusion qa": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "single-hop qa": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "siqa": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "soc": {
+    "frequency": 51,
+    "value_kind_distribution": {
+      "number": 40,
+      "missing": 11
+    },
+    "benchmarks": 1
+  },
+  "sound": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "number": 10,
+      "text": 1
+    },
+    "benchmarks": 1
+  },
+  "speech": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "number": 11
+    },
+    "benchmarks": 1
+  },
+  "spu": {
+    "frequency": 38,
+    "value_kind_distribution": {
+      "number": 38
+    },
+    "benchmarks": 1
+  },
+  "squ": {
+    "frequency": 38,
+    "value_kind_distribution": {
+      "number": 38
+    },
+    "benchmarks": 1
+  },
+  "std": {
+    "frequency": 28,
+    "value_kind_distribution": {
+      "number": 28
+    },
+    "benchmarks": 1
+  },
+  "strict accuracy-average": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "strict accuracy-competitive": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "strict accuracy-interview": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "strict accuracy-introductory": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "summarization": {
+    "frequency": 11,
+    "value_kind_distribution": {
+      "number": 11
+    },
+    "benchmarks": 1
+  },
+  "summarization-rescaled score": {
+    "frequency": 23,
+    "value_kind_distribution": {
+      "number": 23
+    },
+    "benchmarks": 1
+  },
+  "syntax_illegal comment": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "syntax_illegal indentation": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "syntax_illegal separation": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "syntax_missing colons": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "syntax_misused ==/=": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "syntax_unclosed parentheses": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "syntax_unclosed string": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 6
+    },
+    "benchmarks": 1
+  },
+  "technician": {
+    "frequency": 15,
+    "value_kind_distribution": {
+      "number": 15
+    },
+    "benchmarks": 1
+  },
+  "tensorflow hub_err": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "number": 20
+    },
+    "benchmarks": 1
+  },
+  "tensorflow hub_hallu": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "number": 20
+    },
+    "benchmarks": 1
+  },
+  "tensorflow hub_overall": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "number": 20
+    },
+    "benchmarks": 1
+  },
+  "test case average-average": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "test case average-competitive": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "test case average-interview": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "test case average-introductory": {
+    "frequency": 4,
+    "value_kind_distribution": {
+      "number": 4
+    },
+    "benchmarks": 1
+  },
+  "test execution accuracy": {
+    "frequency": 6,
+    "value_kind_distribution": {
+      "number": 3,
+      "text": 3
+    },
+    "benchmarks": 1
+  },
+  "text abbreviation": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "text completion-rescaled score": {
+    "frequency": 23,
+    "value_kind_distribution": {
+      "number": 23
+    },
+    "benchmarks": 1
+  },
+  "text continuation": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "text correction": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "text creation": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "text expansion": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "text formatting": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "text polishing": {
+    "frequency": 13,
+    "value_kind_distribution": {
+      "number": 13
+    },
+    "benchmarks": 1
+  },
+  "time": {
+    "frequency": 4704,
+    "value_kind_distribution": {
+      "text": 4704
+    },
+    "benchmarks": 42
+  },
+  "torchhub_err": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "number": 20
+    },
+    "benchmarks": 1
+  },
+  "torchhub_hallu": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "number": 20
+    },
+    "benchmarks": 1
+  },
+  "torchhub_overall": {
+    "frequency": 20,
+    "value_kind_distribution": {
+      "number": 20
+    },
+    "benchmarks": 1
+  },
+  "toxicity prob._non-toxic": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "toxicity prob._toxic": {
+    "frequency": 5,
+    "value_kind_distribution": {
+      "number": 5
+    },
+    "benchmarks": 1
+  },
+  "traffic-a": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "traffic-c": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "traffic-p": {
+    "frequency": 10,
+    "value_kind_distribution": {
+      "number": 10
+    },
+    "benchmarks": 1
+  },
+  "triviaqa": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 112
+    },
+    "benchmarks": 1
+  },
+  "tu": {
+    "frequency": 38,
+    "value_kind_distribution": {
+      "number": 38
+    },
+    "benchmarks": 1
+  },
+  "txt": {
+    "frequency": 51,
+    "value_kind_distribution": {
+      "number": 40,
+      "missing": 11
+    },
+    "benchmarks": 1
+  },
+  "tydiqagoldp": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "tydiqagoldparabic": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "tydiqagoldpbengali": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "tydiqagoldpenglish": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "tydiqagoldpfinnish": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "tydiqagoldpindonesian": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "tydiqagoldpjapanese": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "tydiqagoldpkorean": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "tydiqagoldprussian": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "tydiqagoldpswahili": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "tydiqagoldptelugu": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "tydiqagoldpthai": {
+    "frequency": 112,
+    "value_kind_distribution": {
+      "number": 110,
+      "missing": 2
+    },
+    "benchmarks": 1
+  },
+  "ub": {
+    "frequency": 19,
+    "value_kind_distribution": {
+      "number": 19
+    },
+    "benchmarks": 1
+  },
+  "understand_json": {
+    "frequency": 50,
+    "value_kind_distribution": {
+      "number": 50
+    },
+    "benchmarks": 1
+  },
+  "understand_str": {
+    "frequency": 50,
+    "value_kind_distribution": {
+      "number": 50
+    },
+    "benchmarks": 1
+  },
+  "verb_acc": {
+    "frequency": 8,
+    "value_kind_distribution": {
+      "number": 8
+    },
+    "benchmarks": 1
+  },
+  "verb_auc": {
+    "frequency": 8,
+    "value_kind_distribution": {
+      "number": 8
+    },
+    "benchmarks": 1
+  },
+  "verb_ma-f1": {
+    "frequency": 8,
+    "value_kind_distribution": {
+      "number": 8
+    },
+    "benchmarks": 1
+  },
+  "verified": {
+    "frequency": 53,
+    "value_kind_distribution": {
+      "text": 53
+    },
+    "benchmarks": 2
+  },
+  "vision_model": {
+    "frequency": 23,
+    "value_kind_distribution": {
+      "missing": 23
+    },
+    "benchmarks": 1
+  }
+}

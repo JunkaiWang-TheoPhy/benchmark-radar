@@ -308,10 +308,41 @@ def main() -> None:
         normalized = normalize_llm_stats(snapshot)
         written = write_llm_stats_catalog(normalized)
         report = normalized["validation"]
+
+        from .external_catalog import (
+            DEFAULT_OUTPUT_DIR,
+            build_benchmark_index,
+            write_benchmark_index,
+        )
+        from .external_opencompass import normalize_opencompass
+
+        opencompass = normalize_opencompass()
+        (DEFAULT_OUTPUT_DIR / "opencompass_source_records.jsonl").write_text(
+            "".join(
+                json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n"
+                for row in opencompass["source_records"]
+            ),
+            encoding="utf-8",
+        )
+
+        # One index over both sources, one row per source record. Two sources
+        # describing the same benchmark stay two rows until identity.yml says
+        # otherwise under human review.
+        series_by_key = {row["key"]: row for row in normalized["score_series"]}
+        index = build_benchmark_index(
+            normalized["source_records"] + opencompass["source_records"],
+            series_by_key,
+        )
+        index_path = write_benchmark_index(index, DEFAULT_OUTPUT_DIR / "benchmark-index.json")
+
+        oc_report = opencompass["validation"]
         print(
-            f"Normalized {report['source_record_count']} benchmarks and "
-            f"{report['score_observation_count']} score observations into "
-            f"{written['source_records'].parent}"
+            f"llm-stats: {report['source_record_count']} benchmarks, "
+            f"{report['score_observation_count']} score observations\n"
+            f"opencompass: {oc_report['source_record_count']} benchmarks, "
+            f"openness {oc_report['openness_status_counts']}\n"
+            f"index: {len(index)} searchable records -> {index_path}\n"
+            f"catalog written to {written['source_records'].parent}"
         )
         return
 

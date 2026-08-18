@@ -367,3 +367,56 @@ def write_llm_stats_catalog(
         encoding="utf-8",
     )
     return paths
+
+
+def build_benchmark_index(
+    records: list[dict[str, Any]],
+    series_by_key: dict[str, dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """The small search payload: one entry per source record, never per merge.
+
+    Merging two sources into one row is a claim that they describe the same
+    benchmark, and that claim lives in `identity.yml` under human review. Doing
+    it here would bake a wrong join into the artifact the reader searches, where
+    it is invisible. One row per record keeps a bad grouping a display bug.
+    """
+    series_by_key = series_by_key or {}
+    index: list[dict[str, Any]] = []
+    for record in records:
+        openness = record.get("openness") or {}
+        artifacts = record.get("artifacts") or []
+        series = series_by_key.get(record["key"]) or {}
+        publisher = record.get("publisher")
+        index.append(
+            {
+                "slug": record["slug"],
+                "key": record["key"],
+                "name": record["name"],
+                "source": record["source"],
+                "publisher": publisher["name"] if publisher else None,
+                "released": record.get("released"),
+                "openness": openness.get("status", "unknown"),
+                "modality": record.get("modality"),
+                "score_count": series.get("observation_count", 0),
+                "has_paper": any(item["kind"] == "paper" for item in artifacts),
+                "has_repo": any(item["kind"] == "repo" for item in artifacts),
+                "has_dataset": any(item["kind"] == "dataset" for item in artifacts),
+                "has_size": bool(record.get("sizes")),
+            }
+        )
+    index.sort(key=lambda item: (item["name"].lower(), item["key"]))
+    return index
+
+
+def write_benchmark_index(index: list[dict[str, Any]], output: Path) -> Path:
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(
+        json.dumps(
+            {"schema_version": CATALOG_SCHEMA_VERSION, "count": len(index), "benchmarks": index},
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return output
