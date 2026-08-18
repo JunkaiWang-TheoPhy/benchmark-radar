@@ -329,11 +329,31 @@ def main() -> None:
         # describing the same benchmark stay two rows until identity.yml says
         # otherwise under human review.
         series_by_key = {row["key"]: row for row in normalized["score_series"]}
-        index = build_benchmark_index(
-            normalized["source_records"] + opencompass["source_records"],
-            series_by_key,
-        )
+        all_records = normalized["source_records"] + opencompass["source_records"]
+        index = build_benchmark_index(all_records, series_by_key)
         index_path = write_benchmark_index(index, Path("site/data/benchmark-index.json"))
+
+        from .external_identity import (
+            DEFAULT_CANDIDATES_PATH,
+            build_identity_candidates,
+            load_identity,
+            write_identity_candidates,
+        )
+        from .external_shards import write_shards
+
+        # Regenerate the review candidates every run so a recrawl surfaces new
+        # collisions, but never touch identity.yml: that file is promoted by
+        # hand, and the candidates only feed that review.
+        candidates = build_identity_candidates(all_records)
+        write_identity_candidates(candidates, DEFAULT_CANDIDATES_PATH)
+
+        identity = load_identity(all_records)
+        shard_report = write_shards(
+            all_records,
+            identity=identity,
+            series=normalized["score_series"],
+            observations=normalized["score_observations"],
+        )
 
         oc_report = opencompass["validation"]
         print(
@@ -342,6 +362,10 @@ def main() -> None:
             f"opencompass: {oc_report['source_record_count']} benchmarks, "
             f"openness {oc_report['openness_status_counts']}\n"
             f"index: {len(index)} searchable records -> {index_path}\n"
+            f"shards: {shard_report['shard_count']} files, "
+            f"{shard_report['total_bytes'] / 1024:.0f} KiB -> {shard_report['output_dir']}\n"
+            f"identity candidates: {candidates['equivalent_candidate_count']} anchor-backed, "
+            f"{candidates['name_only_count']} name-only -> {DEFAULT_CANDIDATES_PATH}\n"
             f"catalog written to {written['source_records'].parent}"
         )
         return

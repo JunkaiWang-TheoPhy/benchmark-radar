@@ -15,6 +15,13 @@ on:
       # URL during `benchmark-radar export`, so both are deploy inputs too.
       - "data/benchmark_scores.yml"
       - "config.yml"
+      # The external catalog build reads the committed crawl CSVs and the
+      # hand-edited identity.yml, and writes the search index and per-benchmark
+      # shards into site/data/. Its inputs are deploy inputs: a recrawl or an
+      # identity edit must rebuild the published shards, or the site keeps
+      # serving last month's catalog.
+      - "data/leaderboard_snapshots/**"
+      - "data/external/identity.yml"
       - "site/**"
       # The dashboard build imports the package transitively through
       # snapshots.py. Keep the trigger broad so a new scoring, insight, rubric,
@@ -74,6 +81,12 @@ jobs:
           # Regenerated rather than served from the commit, so a share card can
           # never advertise counts the registry has moved past.
           python scripts/generate_og_image.py
+          # Regenerate the external catalog into site/data/ so the search index
+          # and the 1,148 per-benchmark shards deploy with the site. Both are
+          # gitignored derivations of the committed crawl CSVs and identity.yml,
+          # so the published site only carries them if the build writes them
+          # here, exactly as radar.json and the export artifacts are handled.
+          benchmark-radar normalize-external
           pytest -q
       - name: Configure Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
