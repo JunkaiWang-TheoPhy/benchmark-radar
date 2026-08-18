@@ -255,6 +255,7 @@ def normalize_llm_stats(snapshot: dict[str, Any]) -> dict[str, Any]:
 
     records.sort(key=lambda item: item["key"])
     series.sort(key=lambda item: item["series_id"])
+
     def _order(item: dict[str, Any]) -> tuple[str, int, str]:
         rank = item["rank_in_source_response"]
         return (item["key"], rank if rank is not None else 1 << 30, item["model_id"])

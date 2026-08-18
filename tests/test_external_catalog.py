@@ -46,9 +46,7 @@ CONTRADICTED_KEYS = {"llm-stats:frontier-swe-impl", "llm-stats:vending-bench-2"}
 @pytest.fixture(scope="module")
 def normalized() -> dict:
     snapshots = load_snapshots(DEFAULT_SNAPSHOTS_PATH)
-    snapshot = next(
-        item for item in snapshots["snapshots"] if item["id"] == LLM_STATS_SNAPSHOT_ID
-    )
+    snapshot = next(item for item in snapshots["snapshots"] if item["id"] == LLM_STATS_SNAPSHOT_ID)
     return normalize_llm_stats(snapshot)
 
 
@@ -171,9 +169,7 @@ def test_output_is_byte_identical_across_runs(normalized: dict, tmp_path: Path) 
 
 def normalize_llm_stats_again() -> dict:
     snapshots = load_snapshots(DEFAULT_SNAPSHOTS_PATH)
-    snapshot = next(
-        item for item in snapshots["snapshots"] if item["id"] == LLM_STATS_SNAPSHOT_ID
-    )
+    snapshot = next(item for item in snapshots["snapshots"] if item["id"] == LLM_STATS_SNAPSHOT_ID)
     return normalize_llm_stats(snapshot)
 
 
@@ -256,9 +252,7 @@ def test_index_has_one_row_per_source_record(normalized: dict) -> None:
     from benchmark_radar.external_opencompass import normalize_opencompass
 
     records = normalized["source_records"] + normalize_opencompass()["source_records"]
-    index = build_benchmark_index(
-        records, {row["key"]: row for row in normalized["score_series"]}
-    )
+    index = build_benchmark_index(records, {row["key"]: row for row in normalized["score_series"]})
     assert len(index) == 1148
     assert len({row["key"] for row in index}) == 1148
     assert len({row["slug"] for row in index}) == 1148
@@ -343,9 +337,7 @@ def test_loader_rejects_equivalent_group_with_one_anchor(
         tmp_path,
         {
             "schema_version": 1,
-            "equivalent": [
-                {"group_id": "g", "members": [member, other], "anchors": ["arxiv:1"]}
-            ],
+            "equivalent": [{"group_id": "g", "members": [member, other], "anchors": ["arxiv:1"]}],
         },
     )
     with pytest.raises(IdentityError, match="two independent anchors"):
@@ -374,9 +366,7 @@ def test_loader_rejects_member_that_is_not_a_record(
         load_identity(all_records, path)
 
 
-def test_loader_rejects_duplicate_group_id(
-    all_records: list[dict], tmp_path: Path
-) -> None:
+def test_loader_rejects_duplicate_group_id(all_records: list[dict], tmp_path: Path) -> None:
     from benchmark_radar.external_identity import IdentityError, load_identity
 
     a, b, c = (record["key"] for record in all_records[:3])
@@ -415,9 +405,7 @@ def test_loader_rejects_key_in_two_equivalent_groups(
         load_identity(all_records, path)
 
 
-def test_loader_rejects_wrong_schema_version(
-    all_records: list[dict], tmp_path: Path
-) -> None:
+def test_loader_rejects_wrong_schema_version(all_records: list[dict], tmp_path: Path) -> None:
     from benchmark_radar.external_identity import IdentityError, load_identity
 
     path = _write_identity(tmp_path, {"schema_version": 99, "equivalent": []})
@@ -467,9 +455,7 @@ def test_one_shard_per_source_record(shard_inputs: dict, tmp_path: Path) -> None
     assert len(files) == 1148
 
 
-def test_scores_are_a_keyed_object_never_a_flat_array(
-    shard_inputs: dict, tmp_path: Path
-) -> None:
+def test_scores_are_a_keyed_object_never_a_flat_array(shard_inputs: dict, tmp_path: Path) -> None:
     """A keyed object cannot be .sort()ed into a cross-source ranking."""
     import json
 
@@ -509,24 +495,18 @@ def test_opencompass_shard_has_empty_scores(shard_inputs: dict, tmp_path: Path) 
     assert shard["scores_by_source"] == {}
 
 
-def test_zero_score_llm_stats_record_still_gets_a_shard(
-    shard_inputs: dict, tmp_path: Path
-) -> None:
+def test_zero_score_llm_stats_record_still_gets_a_shard(shard_inputs: dict, tmp_path: Path) -> None:
     """Counted, not dropped: a benchmark with no scores is still addressable."""
     _build_all_shards(shard_inputs, tmp_path / "benchmarks")
     assert (tmp_path / "benchmarks" / "llm-stats-cvtg-2k.json").exists()
 
 
-def test_variant_siblings_are_cross_linked_in_the_shard(
-    shard_inputs: dict, tmp_path: Path
-) -> None:
+def test_variant_siblings_are_cross_linked_in_the_shard(shard_inputs: dict, tmp_path: Path) -> None:
     import json
 
     _build_all_shards(shard_inputs, tmp_path / "benchmarks")
     shard = json.loads(
-        (tmp_path / "benchmarks" / "opencompass-517-race-middle.json").read_text(
-            encoding="utf-8"
-        )
+        (tmp_path / "benchmarks" / "opencompass-517-race-middle.json").read_text(encoding="utf-8")
     )
     siblings = {sibling["key"] for sibling in shard["siblings"]}
     assert "opencompass:516" in siblings

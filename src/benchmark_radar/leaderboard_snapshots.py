@@ -54,6 +54,7 @@ _REQUIRED_SNAPSHOT_FIELDS = (
 )
 _REQUIRED_COLUMN_FIELDS = ("benchmark_id", "benchmark_name")
 
+
 class LeaderboardSnapshotError(ValueError):
     """Raised when the snapshot registry or a declared file is inconsistent."""
 
@@ -123,17 +124,13 @@ def _load_snapshot_files(snapshot: dict[str, Any], base: Path) -> dict[str, Any]
     header, rows = _read_csv_rows(path)
     columns = snapshot["columns"]
     benchmark_columns = snapshot.get("benchmark_columns") or columns
-    _require_column(
-        header, str(benchmark_columns["benchmark_id"]), path=path, label="benchmark_id"
-    )
+    _require_column(header, str(benchmark_columns["benchmark_id"]), path=path, label="benchmark_id")
     _require_column(
         header, str(benchmark_columns["benchmark_name"]), path=path, label="benchmark_name"
     )
     expected = int(snapshot["benchmark_count"])
     if len(rows) != expected:
-        raise LeaderboardSnapshotError(
-            f"{path}: {len(rows)} rows, registry declares {expected}"
-        )
+        raise LeaderboardSnapshotError(f"{path}: {len(rows)} rows, registry declares {expected}")
     seen_ids: set[str] = set()
     for index, row in enumerate(rows):
         benchmark_id = row[str(benchmark_columns["benchmark_id"])].strip()
@@ -188,12 +185,8 @@ def _load_snapshot_files(snapshot: dict[str, Any], base: Path) -> dict[str, Any]
             pairs.add(pair)
             score_value = row[str(columns["score"])]
             if not score_value.strip():
-                raise LeaderboardSnapshotError(
-                    f"{scores_path}: row {index} has an empty score"
-                )
-            _finite_float(
-                score_value, path=scores_path, label=f"row {index} score"
-            )
+                raise LeaderboardSnapshotError(f"{scores_path}: row {index} has an empty score")
+            _finite_float(score_value, path=scores_path, label=f"row {index} score")
             normalized = row.get(str(columns.get("normalized_score") or ""))
             if normalized:
                 _finite_float(normalized, path=scores_path, label=f"row {index} normalized_score")
