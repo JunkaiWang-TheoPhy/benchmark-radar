@@ -21,7 +21,7 @@
 #     hard error, so a typo cannot quietly invent a benchmark with one adopter.
 #   * `url` must point at the card, report or release post the mentions were
 #     read from, so any row can be checked against its source.
-#   * `retrieved_at` records when a human last read that document. It is not the
+#   * `retrieved_at` records when that document was last curated. It is not the
 #     model's release date, and it is not automatically refreshed.
 #   * `revised` is optional, and only for a document that gained a benchmark
 #     after first publication: an arXiv report at v2+, or a living model card a

@@ -14,8 +14,8 @@
 # consistent with the benchmark being saturated, with vendors having stopped
 # reporting it, with a protocol change, or with a version bump. Saturation
 # remains an editorial judgement carried by the per-benchmark `caveat` in
-# model_cards.yml ("Saturated and heavily contaminated" for MMLU), written by a
-# human reading the field. Nothing here computes it.
+# model_cards.yml ("Saturated and heavily contaminated" for MMLU), written by
+# curating the field. Nothing here computes it.
 #
 # Not a leaderboard. Vendors publish the benchmarks they do well on, so these
 # rows are missing-not-at-random. A progression built from model cards partly

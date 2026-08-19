@@ -1,7 +1,7 @@
 """External benchmark catalog: crawled aggregator records, normalized.
 
-The curated layers (`model_cards.yml`, `benchmark_scores.yml`) record what a
-human read out of a cited document. This layer records what a third-party
+The curated layers (`model_cards.yml`, `benchmark_scores.yml`) record what was
+curated out of a cited document. This layer records what a third-party
 aggregator published on a crawl date. The two never join, and this module's job
 is to keep that separation structural rather than advisory.
 
