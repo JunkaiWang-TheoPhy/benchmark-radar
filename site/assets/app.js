@@ -4047,7 +4047,7 @@ function renderBenchmarkNavigator(board) {
   if (infoHost && !infoHost.firstChild) {
     const disclosure = infoDisclosure(
         t(
-          "Ranked by how many curated model cards report each benchmark, which measures vendor reporting convention rather than benchmark quality. A crawled score count answers a different question: AIME 2025 carries 115 crawled scores and GPQA Diamond 26 model cards, and those are different measures rather than competing ones.",
+          "Ranked by how many curated model cards report each benchmark, which measures vendor reporting convention rather than benchmark quality. A crawled score count answers a different question: AIME 2025 carries 115 crawled scores and GPQA Diamond 26 model cards, and those are different measures rather than competing ones. The second figure on each card is how many of those mentions carried a number this project could read verbatim, which is what the chart plots: MATH-500 is named by 10 cards and charts 3.",
       ),
     );
     // The panel is fixed (see styles.css: the navigator scrolls and would clip
@@ -4083,9 +4083,17 @@ function renderBenchmarkNavigator(board) {
           },
         }, [
           element("span", { className: "benchmark-example-name", text: entry.name }),
+          // Two counts, because clicking this card opens a chart drawn from the
+          // second one. MATH-500 read "10 model cards" here and plotted three
+          // points, with nothing on the page explaining the drop (issue #261).
+          // A mention is a card naming the benchmark; a readable score is a
+          // published number this project could read verbatim. 56 of 79
+          // benchmarks report fewer scores than mentions, so this is the rule
+          // rather than a MATH-500 quirk, and it belongs on the card that
+          // sets the expectation.
           element("small", {
             className: "benchmark-example-meta",
-            text: metricLabel(entry.card_count, "model card"),
+            text: `${metricLabel(entry.card_count, "model card")} · ${chartedScoreLabel(entry.benchmark_id)}`,
           }),
         ]);
         card.addEventListener("click", () => {
@@ -4161,6 +4169,16 @@ function renderFrontierTaskPreview(entry) {
 
 function scoreRecord(benchmarkId) {
   return state.data?.benchmark_score_progression?.benchmarks?.[benchmarkId] || null;
+}
+
+// How many points a benchmark's chart will actually draw. A card mention is not
+// a score: a model card can name MATH-500 in its prose or publish its table as
+// an image, and neither yields a number this project can read. The chart plots
+// only the numbers, so any row that advertises a benchmark by its mention count
+// prints this alongside, and the reader is never surprised by the drop.
+function chartedScoreLabel(benchmarkId) {
+  const record = scoreRecord(benchmarkId);
+  return metricLabel(record?.observation_count || 0, "readable score");
 }
 
 // The plotted band for a score axis. Percent metrics are NOT drawn 0-100: every
