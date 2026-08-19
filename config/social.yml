@@ -144,3 +144,5 @@ social:
       daily: false
     - name: "Substack Notes"
       daily: false
+    - name: "GitHub Blog https://ktwu01.github.io/"
+      daily: true
