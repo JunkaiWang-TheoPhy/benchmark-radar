@@ -3819,30 +3819,41 @@ function externalScoreChart(source, payload) {
       `${row.model_name || t("not recorded")} · ${row.organization || t("not recorded")} · ${
         row.raw_value ?? row.value
       }` + (row.reported_by === "third_party" ? ` · ${t("cited by")} ${meta.name}` : "");
+    const sourceUrl = safeHttpUrl(row.source_url);
     // No pinned tooltip here: that overlay is keyed to #frontier-tooltip, which
     // lives outside this panel and is hidden for external records (see
-    // CANONICAL_FRONTIER_CHROME). The point still needs a hover and a keyboard
-    // affordance, so it gets one the same way any static SVG mark can: a native
-    // <title> for pointer hover, and tabindex plus aria-label so the identical
-    // information reaches keyboard and screen-reader use without that overlay.
+    // CANONICAL_FRONTIER_CHROME). The point still needs a click and a keyboard
+    // affordance, so an <a> wraps it when a source URL exists -- opening the
+    // exact response this row was read from is the click a reader on this
+    // panel actually wants, same evidentiary standard as the row's own
+    // "Reported by" column. tabindex and a real <title> carry the identical
+    // label to pointer hover and keyboard/screen-reader use either way.
     const group = svgElement("g", {
       class: `score-point${row.reported_by === "third_party" ? " score-point-third-party" : ""}`,
-      tabindex: "0",
-      role: "img",
-      "aria-label": label,
     });
-    group.append(svgElement("circle", { cx: pointX, cy: pointY, r: 9, class: "score-point-face" }));
+    const interactive = sourceUrl
+      ? svgElement("a", { href: sourceUrl, target: "_blank", rel: "noopener noreferrer" })
+      : group;
+    if (sourceUrl) {
+      interactive.setAttribute("aria-label", `${label} · ${t("Open source record ↗")}`);
+      group.append(interactive);
+    } else {
+      group.setAttribute("tabindex", "0");
+      group.setAttribute("role", "img");
+      group.setAttribute("aria-label", label);
+    }
+    interactive.append(
+      svgElement("circle", { cx: pointX, cy: pointY, r: 9, class: "score-point-face" }),
+    );
     if (row.reported_by === "third_party") {
-      group.append(
+      interactive.append(
         svgElement("circle", { cx: pointX, cy: pointY, r: 12, class: "score-point-citation-ring" }),
       );
     }
-    group.append(
+    interactive.append(
       modelGlyph(row.model_name, row.organization, pointX, pointY, 14, "score-point-glyph"),
     );
-    group.append(
-      svgElement("title", {}, label),
-    );
+    interactive.append(svgElement("title", {}, label));
     svg.append(group);
   }
 
