@@ -196,59 +196,80 @@
 
     <main id="main-content" tabindex="-1">
       <section class="view" id="today-view" aria-label="Today">
-        <!-- The day's narrative, above the filters because it describes the
-             whole scan date rather than the filtered subset below it. -->
-        <section class="daily-briefing" id="daily-briefing" aria-labelledby="daily-briefing-heading">
-          <h2 class="daily-briefing-title" id="daily-briefing-heading" data-i18n="Daily briefing">Daily briefing</h2>
-          <div id="daily-briefing-body"></div>
-        </section>
-        <!-- The day's Q&A sits directly under the briefing: the briefing says
-             what changed, this answers what a reader would ask about it. Both
-             describe the whole scan date, so both stay above the filters. -->
-        <section
-          class="daily-questions"
-          id="daily-questions"
-          aria-labelledby="daily-questions-heading"
-        >
-          <h2 class="daily-questions-title" id="daily-questions-heading" data-i18n="Questions for today">Questions for today</h2>
-          <div id="daily-questions-body"></div>
-        </section>
+        <!-- The toolbar stays one compact row so the results below stay
+             above the fold: search, the scan date, a trigger that opens the
+             secondary filters, and a refresh control. The badge on the
+             trigger counts how many secondary filters are active. -->
         <form class="filter-panel today-filters" id="filters">
           <label class="search-field">
-            <span data-i18n="Search">Search</span>
+            <span class="visually-hidden" data-i18n="Search">Search</span>
             <input
               id="search-filter"
               name="q"
               type="search"
-              placeholder="Title, summary, or source"
-              data-i18n-placeholder="Title, summary, or source"
+              placeholder="Search benchmarks…"
+              data-i18n-placeholder="Search benchmarks…"
             >
           </label>
-          <label>
-            <span data-i18n="Scan date">Scan date</span>
+          <label class="date-field">
+            <span data-i18n="Date:">Date:</span>
             <select id="today-date" name="date"></select>
           </label>
-          <label>
-            <span data-i18n="Kind">Kind</span>
-            <select id="kind-filter" name="kind"></select>
-          </label>
-          <label>
-            <span data-i18n="Category">Category</span>
-            <select id="category-filter" name="category"></select>
-          </label>
-          <label>
-            <span data-i18n="Source">Source</span>
-            <select id="source-filter" name="source"></select>
-          </label>
-          <label>
-            <span data-i18n="Organization">Organization</span>
-            <select id="organization-filter" name="organization"></select>
-          </label>
-          <label>
-            <span data-i18n="Event">Event</span>
-            <select id="event-filter" name="event"></select>
-          </label>
-          <button class="clear-button" id="clear-filters" type="button" data-i18n="Clear filters">Clear filters</button>
+          <button
+            type="button"
+            class="filters-toggle"
+            id="filters-toggle"
+            aria-expanded="false"
+            aria-controls="filters-drawer"
+          >
+            <span data-i18n="Filters">Filters</span>
+            <span id="filters-count"></span>
+          </button>
+          <button
+            type="button"
+            class="refresh-button"
+            id="refresh-button"
+            title="Refresh data"
+            aria-label="Refresh data"
+            data-i18n-title="Refresh data"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+              <path d="M21 3v6h-6"></path>
+            </svg>
+          </button>
+          <!-- Kind, category, source, organization, and event filter the
+               same list but are needed less often, so they live in a
+               popover instead of taking a row of the first viewport. -->
+          <div
+            class="filters-drawer"
+            id="filters-drawer"
+            hidden
+            aria-label="More filters"
+            data-i18n-aria="More filters"
+          >
+            <label>
+              <span data-i18n="Kind">Kind</span>
+              <select id="kind-filter" name="kind"></select>
+            </label>
+            <label>
+              <span data-i18n="Category">Category</span>
+              <select id="category-filter" name="category"></select>
+            </label>
+            <label>
+              <span data-i18n="Source">Source</span>
+              <select id="source-filter" name="source"></select>
+            </label>
+            <label>
+              <span data-i18n="Organization">Organization</span>
+              <select id="organization-filter" name="organization"></select>
+            </label>
+            <label>
+              <span data-i18n="Event">Event</span>
+              <select id="event-filter" name="event"></select>
+            </label>
+            <button class="clear-button" id="clear-filters" type="button" data-i18n="Clear filters">Clear filters</button>
+          </div>
         </form>
 
         <div class="content-grid">
@@ -263,6 +284,23 @@
             </button>
           </div>
           <div>
+            <!-- The day's narrative and Q&A describe the whole scan date
+                 rather than the filtered subset, so they sit in the sidebar
+                 above the health and corpus cards (issue #248). The briefing
+                 says what changed, the Q&A answers what a reader would ask
+                 about it. -->
+            <section class="daily-briefing" id="daily-briefing" aria-labelledby="daily-briefing-heading">
+              <h2 class="daily-briefing-title" id="daily-briefing-heading" data-i18n="Daily briefing">Daily briefing</h2>
+              <div id="daily-briefing-body"></div>
+            </section>
+            <section
+              class="daily-questions"
+              id="daily-questions"
+              aria-labelledby="daily-questions-heading"
+            >
+              <h2 class="daily-questions-title" id="daily-questions-heading" data-i18n="Questions for today">Questions for today</h2>
+              <div id="daily-questions-body"></div>
+            </section>
             <aside class="health-panel" id="source-health-panel" aria-labelledby="health-heading">
               <details id="health-panel-details">
                 <summary>
