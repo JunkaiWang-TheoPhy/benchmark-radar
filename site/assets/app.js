@@ -504,6 +504,7 @@ const I18N = {
     "Show on the chart ↑": "在图表中显示 ↑",
     "Model cards": "模型卡",
     "Best on record": "历史最佳",
+    "Only charted score": "唯一入图分数",
     "Headroom left": "剩余空间",
     "Readable values": "可读数值",
     "Supports: ": "支持: ",
@@ -639,6 +640,8 @@ const I18N = {
     Topics: "主题",
     "What this score does not claim": "这个分数的含义之外",
     "reported scores over time": "报告分数随时间的变化",
+    "charted score": "个入图分数",
+    "charted scores": "个入图分数",
     after: "之后",
     "an inclusion cutoff. Records below it were not retained.": "为纳入门槛。低于它的记录未被保留。",
     as: "作为",
@@ -4171,6 +4174,18 @@ function scoreRecord(benchmarkId) {
   return state.data?.benchmark_score_progression?.benchmarks?.[benchmarkId] || null;
 }
 
+// Whether a record's points span any time at all. A chart headed "over time"
+// has to be drawn across at least two distinct dates; one date, or one point,
+// is a reading rather than a trajectory however it is plotted.
+function spansTime(record) {
+  if (!record || record.observation_count < 2) return false;
+  return Boolean(
+    record.first_reported_at &&
+      record.last_reported_at &&
+      record.first_reported_at !== record.last_reported_at,
+  );
+}
+
 // How many points a benchmark's chart will actually draw. A card mention is not
 // a score: a model card can name MATH-500 in its prose or publish its table as
 // an image, and neither yields a number this project can read. The chart plots
@@ -4203,7 +4218,13 @@ function scoreReadout(entry, record) {
   const evidence = record.evidence;
   const rows = [
     element("div", { className: "score-readout-figure" }, [
-      element("span", { text: t("Best on record") }),
+      // "Best" ranks a field, and where the record holds one score there is no
+      // field to top. "Only charted score" says the same number without the
+      // implied competition it won, and is scoped to this chart on purpose:
+      // one score here is not a claim that nobody else ever published one.
+      element("span", {
+        text: record.observation_count === 1 ? t("Only charted score") : t("Best on record"),
+      }),
       element("strong", {
         text: `${saturation.best_value}${record.unit === "percent" ? "%" : ""}`,
       }),
@@ -5126,8 +5147,19 @@ function renderAdoptionFrontier(board) {
   renderFrontierPicker(scored, state.lfrontier);
   renderBenchmarkNavigator(board);
 
-  byId("frontier-heading").textContent = `${entry.name} ${t("reported scores over time")}`;
   const record = scoreRecord(entry.benchmark_id);
+  // "over time" promises a series, and 15 of the 59 charted benchmarks hold a
+  // single score: GSM8K read "GSM8K reported scores over time" above one point
+  // from March 2024. One reading is not a trajectory, and the heading is the
+  // first thing that sets the expectation, so it says which of the two it is.
+  //
+  // The test is two distinct dates rather than two observations. Scores that
+  // all share one date span no time however many there are, so counting rows
+  // would be the wrong question to ask even though no benchmark is in that
+  // state today.
+  byId("frontier-heading").textContent = spansTime(record)
+    ? `${entry.name} ${t("reported scores over time")}`
+    : `${entry.name} ${metricLabel(record?.observation_count || 0, "charted score")}`;
   renderFrontierLegend(entry, record);
   renderFrontierOrgKey(record);
   clearFrontierPointSelection();
