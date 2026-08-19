@@ -4225,10 +4225,14 @@ function scoreReadout(entry, record) {
       // this chart may be read against each other (issue #261). The count is
       // worth showing and the term was not: a reader should not have to learn
       // this project's vocabulary to know whether the values can be compared.
+      // metricLabel's default pluralizer appends "s" to the last word, which
+      // turned this into "0 set measured the same ways". The plural is passed
+      // explicitly so the noun, not the trailing adverb, takes the inflection.
       element("small", {
         text: `${metricLabel(record.dated_observation_count, "date")} · ${metricLabel(
           record.comparable_series_count,
           "set measured the same way",
+          "sets measured the same way",
         )}`,
       }),
     ]),
