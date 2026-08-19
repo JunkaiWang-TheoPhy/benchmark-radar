@@ -2317,7 +2317,13 @@ function allObservations() {
   );
   state.observations = [...evidence, ...attention].sort((a, b) => {
     const dateOrder = String(b.snapshot_date).localeCompare(String(a.snapshot_date));
-    return dateOrder || Number(b.total_score || 0) - Number(a.total_score || 0);
+    if (dateOrder) return dateOrder;
+    const scoreOrder = Number(b.total_score || 0) - Number(a.total_score || 0);
+    if (scoreOrder) return scoreOrder;
+    // Attention rows carry no priority, so within a day they order by the
+    // event timestamp the row displays, keeping the visible order consistent
+    // with the "Sort: Date ↓" caption.
+    return String(eventTimestamp(b)).localeCompare(String(eventTimestamp(a)));
   });
   return state.observations;
 }
