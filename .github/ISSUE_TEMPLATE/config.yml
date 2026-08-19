@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Model Card Adoption Rank
+  - name: See the ranking first
     url: https://ktwu01.github.io/benchmark-radar/?view=leaderboard
-    about: The live ranking, before you report a row as missing or wrong.
+    about: The live ranking. Worth a look before reporting something as missing or wrong.
   - name: How the ranking is built
     url: https://github.com/ktwu01/benchmark-radar/blob/main/CONTRIBUTING.md
-    about: What is counted, what is deliberately out of scope, and how to add a document.
+    about: What gets counted, what is left out on purpose, and how to add a document.

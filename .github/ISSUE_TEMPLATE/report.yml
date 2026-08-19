@@ -1,0 +1,38 @@
+name: Report something
+description: Anything wrong, confusing, or missing on the site.
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem is it
+      options:
+        - Something looks wrong (layout, spacing, colours)
+        - A logo is wrong, missing, or too small to read
+        - A number looks wrong
+        - Wording is confusing or too technical
+        - Something is missing that should be there
+        - A button or link does not work
+        - The page is slow or does not load
+        - Something else
+    validations:
+      required: true
+
+  - type: input
+    id: where
+    attributes:
+      label: Where did you see it
+      description: Paste the address of the page, or just name it.
+      placeholder: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: |
+        What you saw, and what you expected instead. A screenshot says it
+        faster than words: you can paste one straight into this box.
+    validations:
+      required: true
