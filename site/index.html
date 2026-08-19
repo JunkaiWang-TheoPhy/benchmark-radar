@@ -196,23 +196,8 @@
 
     <main id="main-content" tabindex="-1">
       <section class="view" id="today-view" aria-label="Today">
-        <!-- The day's narrative, above the filters because it describes the
-             whole scan date rather than the filtered subset below it. -->
-        <section class="daily-briefing" id="daily-briefing" aria-labelledby="daily-briefing-heading">
-          <h2 class="daily-briefing-title" id="daily-briefing-heading" data-i18n="Daily briefing">Daily briefing</h2>
-          <div id="daily-briefing-body"></div>
-        </section>
-        <!-- The day's Q&A sits directly under the briefing: the briefing says
-             what changed, this answers what a reader would ask about it. Both
-             describe the whole scan date, so both stay above the filters. -->
-        <section
-          class="daily-questions"
-          id="daily-questions"
-          aria-labelledby="daily-questions-heading"
-        >
-          <h2 class="daily-questions-title" id="daily-questions-heading" data-i18n="Questions for today">Questions for today</h2>
-          <div id="daily-questions-body"></div>
-        </section>
+        <!-- The filters lead the view because they shape the matching results
+             that make up the main column beneath them. -->
         <form class="filter-panel today-filters" id="filters">
           <label class="search-field">
             <span data-i18n="Search">Search</span>
@@ -263,6 +248,23 @@
             </button>
           </div>
           <div>
+            <!-- The day's narrative and Q&A describe the whole scan date
+                 rather than the filtered subset, so they sit in the sidebar
+                 above the health and corpus cards (issue #248). The briefing
+                 says what changed, the Q&A answers what a reader would ask
+                 about it. -->
+            <section class="daily-briefing" id="daily-briefing" aria-labelledby="daily-briefing-heading">
+              <h2 class="daily-briefing-title" id="daily-briefing-heading" data-i18n="Daily briefing">Daily briefing</h2>
+              <div id="daily-briefing-body"></div>
+            </section>
+            <section
+              class="daily-questions"
+              id="daily-questions"
+              aria-labelledby="daily-questions-heading"
+            >
+              <h2 class="daily-questions-title" id="daily-questions-heading" data-i18n="Questions for today">Questions for today</h2>
+              <div id="daily-questions-body"></div>
+            </section>
             <aside class="health-panel" id="source-health-panel" aria-labelledby="health-heading">
               <details id="health-panel-details">
                 <summary>

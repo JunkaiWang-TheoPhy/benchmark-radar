@@ -485,15 +485,14 @@ input {
   color: var(--muted);
 }
 
-/* The day's narrative leads the view, so it reads as prose rather than as
-   another panel competing with the listings below it. The heavy bordered box
-   is dropped: whitespace and the section titles carry the separation. The
-   block spans the same width as the results grid beneath it (issue #225), so
-   it no longer floats as a half-width column with empty space to its right;
-   long lines are kept readable by capping the prose body, not the section. */
+/* The day's narrative shares the right sidebar with the health and corpus
+   cards, so it carries the same box treatment and the sidebar column
+   constrains its width instead of an explicit cap (issue #248). */
 .daily-briefing {
-  margin-bottom: 2.25rem;
-  max-width: calc(100% - 22rem);
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.4rem;
+  border: 1px solid var(--ink);
+  background: var(--panel);
 }
 
 .daily-briefing-title {
@@ -632,8 +631,10 @@ input {
 }
 
 .daily-questions {
-  margin-bottom: 2.25rem;
-  max-width: calc(100% - 22rem);
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.4rem;
+  border: 1px solid var(--ink);
+  background: var(--panel);
 }
 
 #daily-questions-body {
@@ -3618,14 +3619,6 @@ footer {
 
   .content-grid {
     grid-template-columns: 1fr;
-  }
-
-  /* Below 1050px the results grid loses its 320px sidebar and goes single
-     column, so the briefing's sidebar-derived width cap no longer applies
-     and it fills the view like the results beneath it (issue #225). */
-  .daily-briefing,
-  .daily-questions {
-    max-width: 100%;
   }
 
   .benchmark-workbench {

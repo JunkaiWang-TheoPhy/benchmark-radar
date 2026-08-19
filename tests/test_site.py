@@ -798,15 +798,17 @@ def test_share_card_attributes_its_source_without_overlapping_the_caveat():
     assert caveat + attribution < WIDTH - 2 * MARGIN
 
 
-def test_today_view_leads_with_the_daily_briefing():
+def test_today_view_places_the_daily_briefing_in_the_sidebar():
+    """Issue #248: matching results lead the view; the briefing rides along."""
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     assert 'id="daily-briefing"' in html
     assert 'id="daily-briefing-body"' in html
-    # The briefing describes the whole scan date, so it sits above the filters
-    # rather than inside the filtered listing beside them.
-    assert html.index('id="daily-briefing"') < html.index('id="filters"')
+    # The matching results form the main column; the briefing describes the
+    # whole scan date, so it sits in the sidebar above the Sources card.
+    assert html.index('id="today-list"') < html.index('id="daily-briefing"')
+    assert html.index('id="daily-briefing"') < html.index('id="source-health-panel"')
     assert "renderDailyBriefing(day)" in script
 
 
@@ -995,26 +997,27 @@ def test_today_view_renders_the_daily_questions_under_the_briefing():
     assert 'id="daily-questions"' in html
     assert 'id="daily-questions-body"' in html
     # The briefing says what changed and the Q&A answers what a reader would ask
-    # about it, so the Q&A follows the briefing and both sit above the filters.
+    # about it, so the Q&A follows the briefing in the sidebar, above the
+    # Sources card and below the matching results (issue #248).
     assert html.index('id="daily-briefing"') < html.index('id="daily-questions"')
-    assert html.index('id="daily-questions"') < html.index('id="filters"')
+    assert html.index('id="daily-questions"') < html.index('id="source-health-panel"')
+    assert html.index('id="today-list"') < html.index('id="daily-questions"')
     assert "renderDailyQuestions(day)" in script
     # Both describe one scan date, so neither is shown over the whole archive.
     assert 'byId("daily-questions").hidden = showingAllDates' in script
 
 
-def test_daily_questions_use_the_results_column_width_without_long_prose_lines():
-    """Issue #223: the section fills the desktop column while prose stays readable."""
+def test_daily_questions_render_in_the_sidebar_column():
+    """Issue #248: the sidebar column constrains the section, not an explicit cap."""
     styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
 
     questions = styles.split(".daily-questions {", 1)[1].split("}", 1)[0]
     body = styles.split("#daily-questions-body {", 1)[1].split("}", 1)[0]
-    responsive = styles.split("@media (max-width: 1050px)", 1)[1].split(
-        "@media (max-width: 760px)", 1
-    )[0]
-    assert "max-width: calc(100% - 22rem)" in questions
+    assert "max-width: calc(100% - 22rem)" not in questions
     assert "max-width: 72ch" in body
-    assert ".daily-briefing,\n  .daily-questions" in responsive
+    # The section carries the same box treatment as the cards beside it.
+    assert "border: 1px solid var(--ink)" in questions
+    assert "background: var(--panel)" in questions
 
 
 def test_daily_questions_withhold_another_days_answers_and_name_an_absent_set():
