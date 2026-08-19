@@ -358,6 +358,11 @@ const I18N = {
     Organization: "机构",
     Event: "事件",
     "Clear filters": "清除筛选",
+    Filters: "筛选",
+    "More filters": "更多筛选",
+    "Date:": "日期:",
+    "Search benchmarks…": "搜索基准…",
+    "Refresh data": "刷新数据",
     "Matching observations": "匹配结果",
     "Show more results": "显示更多结果",
     Sources: "来源",
@@ -1583,6 +1588,9 @@ function renderToday({ resultsOnly = false } = {}) {
     renderDailyQuestions(day);
     syncFilters();
   }
+  // The badge tracks the secondary filters live, including during the
+  // resultsOnly re-renders that follow each drawer interaction.
+  updateFiltersCount();
   const observations = filteredObservations();
   const resultsKey = [
     state.todayDate,
@@ -2298,6 +2306,27 @@ function syncFilters() {
     state.event,
   );
   byId("search-filter").value = state.q;
+}
+
+// The trigger badge counts the secondary filters currently narrowing the
+// list, so the drawer is discoverable without opening it.
+function updateFiltersCount() {
+  const active = [
+    state.kind,
+    state.category,
+    state.source,
+    state.organization,
+    state.event,
+  ].filter(Boolean).length;
+  byId("filters-count").textContent = `(${active})`;
+}
+
+function closeFiltersDrawer() {
+  const drawer = byId("filters-drawer");
+  if (!drawer.hidden) {
+    drawer.hidden = true;
+    byId("filters-toggle").setAttribute("aria-expanded", "false");
+  }
 }
 
 function filteredObservations() {
@@ -6271,6 +6300,23 @@ function bindEvents() {
     state.event = "";
     renderToday();
   });
+  // The drawer trigger, its outside-click and Escape dismissal, and the
+  // refresh control. The drawer sits inside the #filters form, so its
+  // selects already reach the shared input handler above.
+  byId("filters-toggle").addEventListener("click", () => {
+    const drawer = byId("filters-drawer");
+    drawer.hidden = !drawer.hidden;
+    byId("filters-toggle").setAttribute("aria-expanded", String(!drawer.hidden));
+  });
+  document.addEventListener("click", (event) => {
+    if (byId("filters-drawer").hidden) return;
+    if (byId("filters").contains(event.target)) return;
+    closeFiltersDrawer();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeFiltersDrawer();
+  });
+  byId("refresh-button").addEventListener("click", refreshData);
   byId("rubric-close").addEventListener("click", () => byId("rubric-dialog").close());
   byId("rubric-dialog").addEventListener("click", (event) => {
     if (event.target === byId("rubric-dialog")) byId("rubric-dialog").close();
@@ -6384,6 +6430,33 @@ function renderStaleBanner() {
   banner.textContent = parts.join(" ");
   banner.classList.toggle("stale-banner-degraded", degraded);
   banner.hidden = false;
+}
+
+// The refresh control revalidates radar.json against the server (cache:
+// "reload" bypasses the reader's local copy) so a day rebuilt since the
+// page loaded can appear without a full reload. A failed or incompatible
+// refresh keeps the current data rather than blanking the dashboard.
+async function refreshData() {
+  try {
+    const response = await fetch("data/radar.json", { cache: "reload" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (
+      data.schema_version !== 2 ||
+      !Array.isArray(data.days) ||
+      !data.days.length
+    ) {
+      throw new Error("No compatible snapshots");
+    }
+    state.data = data;
+    if (state.todayDate !== "all" && !state.data.facets.dates.includes(state.todayDate)) {
+      state.todayDate = state.data.latest_date;
+    }
+    closeFiltersDrawer();
+    rerenderCurrentView();
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 async function initialize() {

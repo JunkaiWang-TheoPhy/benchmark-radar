@@ -114,6 +114,7 @@ footer {
 .brand small,
 .eyebrow,
 .section-title span,
+#today-view .section-title h2,
 .heading-note,
 .date-control,
 .filter-panel label,
@@ -418,7 +419,7 @@ h1 {
 }
 
 #today-view {
-  padding-top: clamp(1.75rem, 3vw, 2.75rem);
+  padding-top: clamp(0.75rem, 1vw, 1.25rem);
 }
 
 .today-toolbar {
@@ -463,7 +464,9 @@ input {
 
 .content-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  /* The sidebar carries the daily narrative, Q&A, and the two health cards,
+     so it earns 40% against the results column's 60% (issue #248). */
+  grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
   gap: 2rem;
   align-items: start;
 }
@@ -479,6 +482,13 @@ input {
 
 .section-title h2 {
   margin-bottom: 0;
+}
+
+/* The results heading reads as a caption for the list beneath it, so it
+   carries the regular weight rather than the display h2 weight (issue #248). */
+#today-view .section-title h2 {
+  color: var(--muted);
+  font-weight: 400;
 }
 
 .section-title span {
@@ -1653,6 +1663,139 @@ td a {
   align-items: end;
   margin-bottom: 3rem;
   padding: 1.25rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* The Today toolbar is one compact row under the tabs: search, the scan
+   date, the drawer trigger, and a refresh control. Seven permanently
+   visible selects pushed the results below the fold, so the secondary
+   filters moved into a popover (issue #248). */
+.today-filters {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 1rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.today-filters .search-field {
+  display: block;
+  flex: 1 1 260px;
+  margin: 0;
+}
+
+.today-filters .search-field input {
+  width: 100%;
+  min-width: 0;
+}
+
+.today-filters .date-field {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.today-filters .filters-toggle {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: baseline;
+  min-height: 44px;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--ink);
+  background: transparent;
+  font-family: var(--utility);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.today-filters .filters-toggle:hover {
+  background: var(--ink);
+  color: white;
+}
+
+.today-filters .filters-toggle[aria-expanded="true"] {
+  background: var(--ink);
+  color: white;
+}
+
+.today-filters .filters-toggle #filters-count {
+  color: var(--muted);
+}
+
+.today-filters .filters-toggle[aria-expanded="true"] #filters-count,
+.today-filters .filters-toggle:hover #filters-count {
+  color: inherit;
+}
+
+.today-filters .refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.6rem;
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+}
+
+.today-filters .refresh-button:hover {
+  background: var(--ink);
+  color: white;
+}
+
+.today-filters .refresh-button svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The popover floats over the results, so it stays out of the document
+   flow and cannot push the first records below the fold. */
+.filters-drawer {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+  width: clamp(300px, 46vw, 560px);
+  padding: 1.25rem;
+  border: 1px solid var(--ink);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.filters-drawer[hidden] {
+  display: none;
+}
+
+.filters-drawer label {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--muted);
+}
+
+.filters-drawer .clear-button {
+  grid-column: 1 / -1;
+  justify-self: end;
 }
 
 .filter-panel input,
@@ -3826,6 +3969,18 @@ footer {
 
   .search-field {
     grid-column: auto;
+  }
+
+  /* Narrow screens give search its own row; date and the two controls sit
+     beside each other beneath it. The drawer spans the viewport. */
+  .today-filters .search-field {
+    flex-basis: 100%;
+  }
+
+  .filters-drawer {
+    left: 0;
+    right: 0;
+    width: auto;
   }
 
   footer {

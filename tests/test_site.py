@@ -263,6 +263,31 @@ def test_today_view_has_one_filterable_observation_list_and_one_source_status():
     assert "health-summary" not in html
 
 
+def test_today_toolbar_keeps_secondary_filters_in_a_popover():
+    """Issue #248: the first viewport must stay on results, so the five
+    secondary filters live in a drawer behind a trigger whose badge counts
+    the active ones, and the toolbar adds a refresh control."""
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'id="filters-drawer"' in html
+    assert 'id="filters-toggle"' in html
+    assert 'id="filters-count"' in html
+    assert 'id="refresh-button"' in html
+    assert 'id="search-filter"' in html
+    assert 'id="kind-filter"' in html
+    assert 'id="category-filter"' in html
+    assert 'id="source-filter"' in html
+    assert 'id="organization-filter"' in html
+    assert 'id="event-filter"' in html
+    assert 'id="clear-filters"' in html
+    assert "function updateFiltersCount()" in script
+    assert "function closeFiltersDrawer()" in script
+    assert "function refreshData()" in script
+    assert 'fetch("data/radar.json", { cache: "reload" })' in script
+    assert "drawer.hidden = true" in script
+
+
 def test_summaries_truncate_at_a_word_boundary():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
