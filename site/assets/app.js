@@ -418,6 +418,7 @@ const I18N = {
     "Open daily Issues": "打开每日 Issue ↗",
     "Select a node": "选择一个节点",
     "All dates": "所有日期",
+    "How to read this chart": "如何解读这张图",
     "frontier.explainer.sub":
       "每个能从引文文档中逐字读到的数值,按该文档的发布日期放置(而非任何评测日期),只在工具与协议完全一致时才相连。末端趋于平直通常意味着没有更新的数字可读,因此缺口被标出而不是用线穿过。一条曲线是否已经饱和,由你来判读,本面板不会给出饱和分数。",
     "leaderboard.filters.note":
@@ -648,6 +649,10 @@ const I18N = {
       "没有符合条件的基准。清除一个或多个筛选条件以扩大范围。",
     "source documents": "来源文档",
     "Each document counts once per benchmark.": "每份文档对每个基准只计一次。",
+    "Each document counts once per benchmark. Plus {count} crawled benchmark records from {sources}.":
+      "每份文档对每个基准只计一次。另有来自 {sources} 的 {count} 条爬取的基准记录。",
+    "{count} more in the crawled catalog, {withScores} with a reported score.":
+      "爬取目录中还有 {count} 个，其中 {withScores} 个有报告的分数。",
     organizations: "机构",
     "The denominator for reporting breadth.": "衡量报告广度时的分母。",
     "Benchmarks tracked": "追踪的基准数",
@@ -3440,7 +3445,11 @@ function initBenchmarkSearch() {
     // turns the panel's loading state into an explicit unavailability note
     // (see renderAdoptionFrontier).
     const board = state.data?.model_card_leaderboard;
-    if (board && state.view === "leaderboard") renderAdoptionFrontier(board);
+    // renderLeaderboard() calls renderAdoptionFrontier(board) itself, and the
+    // registry-overview tiles cite the crawled totals once the index is in --
+    // they render before this fetch resolves on first load, so they need this
+    // second pass rather than staying curated-only forever.
+    if (board && state.view === "leaderboard") renderLeaderboard();
   });
 }
 
@@ -3922,11 +3931,15 @@ function externalSiblingsBlock(shard) {
 
 function externalBenchmarkDetail(shard) {
   const detail = shard.record || {};
+  // Scores first: it is the one block a reader came for on this panel (the
+  // adjacent curated chart is a saturation-over-time view, and this is its
+  // external-record counterpart), and it is the block most likely to have
+  // content -- identity, openness and size are frequently "not established".
   return [
+    externalScoresBlock(shard),
     externalIdentityBlock(detail),
     externalOpennessBlock(detail),
     externalSizesBlock(detail),
-    externalScoresBlock(shard),
     externalSiblingsBlock(shard),
   ];
 }
@@ -4240,8 +4253,12 @@ function scoreReadout(entry, record) {
 
   return element("div", { className: "score-readout-inner" }, [
     element("div", { className: "score-readout-figures" }, rows),
-    element("div", { className: `score-evidence score-evidence-${evidence.id}` }, [
-      element("strong", { text: evidence.label }),
+    // Scores first, method second: the figures above are the numbers a reader
+    // came for, and the supports/does-not-support prose is the reasoning behind
+    // them. Collapsed by default so it stays one tap away rather than pushing
+    // the next benchmark's figures further down the page.
+    element("details", { className: `score-evidence score-evidence-${evidence.id}` }, [
+      element("summary", {}, [element("strong", { text: evidence.label })]),
       element("p", {}, [
         element("span", { className: "score-evidence-yes", text: t("Supports: ") }),
         document.createTextNode(evidence.supports),
@@ -5411,9 +5428,28 @@ function renderLeaderboard() {
   // entries, matching how the filter options are built, so the tracked tile's
   // breadth claim never collides with the adopted-only figure.
   const domainCount = new Set((board.entries || []).map((entry) => entry.domain)).size;
+  // Crawled totals, shown beside the curated ones rather than folded into them:
+  // a model card and a crawled leaderboard row are different kinds of evidence
+  // (one cites a document with a protocol, the other does not), so the two
+  // counts stay two counts. Absent until the index has loaded (it fetches
+  // async on first search-panel init); the tile falls back to the curated
+  // figure alone rather than showing a stale or invented crawled total.
+  const crawledIndex = state.benchmarkIndex || [];
+  const crawledWithScores = crawledIndex.filter((record) => record.score_count > 0).length;
   replaceChildren(byId("leaderboard-insights"), [
     evidenceDisclosure(
-      { value: board.model_card_count, label: t("source documents"), detail: t("Each document counts once per benchmark.") },
+      {
+        value: board.model_card_count,
+        label: t("source documents"),
+        detail: state.benchmarkIndexLoaded
+          ? t("Each document counts once per benchmark. Plus {count} crawled benchmark records from {sources}.", {
+              count: crawledIndex.length.toLocaleString(),
+              sources: [...new Set(crawledIndex.map((record) => externalSourceMeta(record.source).name))]
+                .sort()
+                .join(", "),
+            })
+          : t("Each document counts once per benchmark."),
+      },
       allCards.map(modelCardLine),
       t("No source documents in the registry yet."),
     ),
@@ -5447,10 +5483,17 @@ function renderLeaderboard() {
       {
         value: board.benchmark_count,
         label: t("Benchmarks tracked"),
-        detail: t("across {domains}{listed}.", {
-          domains: metricLabel(domainCount, "domain"),
-          listed: board.entries.length ? ` · ${metricLabel(board.entries.length, "benchmark")} ${t("listed")}` : "",
-        }),
+        detail:
+          t("across {domains}{listed}.", {
+            domains: metricLabel(domainCount, "domain"),
+            listed: board.entries.length ? ` · ${metricLabel(board.entries.length, "benchmark")} ${t("listed")}` : "",
+          }) +
+          (state.benchmarkIndexLoaded
+            ? ` ${t("{count} more in the crawled catalog, {withScores} with a reported score.", {
+                count: crawledIndex.length.toLocaleString(),
+                withScores: crawledWithScores.toLocaleString(),
+              })}`
+            : ""),
       },
       (board.entries || []).map((entry) =>
         benchmarkLine(

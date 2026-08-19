@@ -2797,9 +2797,13 @@ td a {
   border-left-color: #c98a4b;
 }
 
+.score-evidence summary {
+  cursor: pointer;
+  margin-bottom: 0.4rem;
+}
+
 .score-evidence strong {
   display: block;
-  margin-bottom: 0.4rem;
   font-family: var(--utility);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
@@ -2932,6 +2936,28 @@ td a {
   font-family: var(--utility);
   font-size: 0.65rem;
   text-transform: uppercase;
+}
+
+/* Collapsed by default: the full reading rule runs several sentences, and a
+   reader scanning the chart wants the scores before the method. The rule
+   itself stays one tap away rather than gone. */
+.frontier-explainer-sub {
+  margin: 0.2rem 0 0.7rem;
+}
+
+.frontier-explainer-sub summary {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  color: #9edbd1;
+  cursor: pointer;
+  font-family: var(--utility);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+}
+
+.frontier-explainer-sub p {
+  margin: 0.4rem 0 0;
 }
 
 .benchmark-new {
