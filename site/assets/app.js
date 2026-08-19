@@ -637,6 +637,9 @@ const I18N = {
     "Not yet reported": "尚未报告",
     "not yet reported in these cards": "这些模型卡中尚未报告",
     "Reported by": "报告机构",
+    "Reported score": "报告的分数",
+    "Score as reported": "报告的分数",
+    "self reported": "自行报告",
     "ordered by score, low to high -- no evaluation date is recorded, so this is not a time axis":
       "按分数从低到高排列——没有记录评测日期，因此这不是时间轴",
     "best reported": "报告的最高分",
@@ -3815,47 +3818,48 @@ function externalScoreChart(source, payload) {
   for (const [index, row] of plotted.entries()) {
     const pointX = x(index);
     const pointY = scoreY(row.value);
-    const label =
-      `${row.model_name || t("not recorded")} · ${row.organization || t("not recorded")} · ${
-        row.raw_value ?? row.value
-      }` + (row.reported_by === "third_party" ? ` · ${t("cited by")} ${meta.name}` : "");
-    const sourceUrl = safeHttpUrl(row.source_url);
-    // No pinned tooltip here: that overlay is keyed to #frontier-tooltip, which
-    // lives outside this panel and is hidden for external records (see
-    // CANONICAL_FRONTIER_CHROME). The point still needs a click and a keyboard
-    // affordance, so an <a> wraps it when a source URL exists -- opening the
-    // exact response this row was read from is the click a reader on this
-    // panel actually wants, same evidentiary standard as the row's own
-    // "Reported by" column. tabindex and a real <title> carry the identical
-    // label to pointer hover and keyboard/screen-reader use either way.
+    const thirdParty = row.reported_by === "third_party";
     const group = svgElement("g", {
-      class: `score-point${row.reported_by === "third_party" ? " score-point-third-party" : ""}`,
+      class: `score-point${thirdParty ? " score-point-third-party" : ""}`,
+      tabindex: "0",
+      role: "button",
+      "aria-pressed": "false",
+      "data-frontier-point": "",
+      "aria-label":
+        `${row.model_name || t("not recorded")} ${t("by")} ${row.organization || t("not recorded")}` +
+        (thirdParty ? `, ${t("cited by")} ${meta.name}` : "") +
+        `. ${t("Click to pin record details")}.`,
     });
-    const interactive = sourceUrl
-      ? svgElement("a", { href: sourceUrl, target: "_blank", rel: "noopener noreferrer" })
-      : group;
-    if (sourceUrl) {
-      interactive.setAttribute("aria-label", `${label} · ${t("Open source record ↗")}`);
-      group.append(interactive);
-    } else {
-      group.setAttribute("tabindex", "0");
-      group.setAttribute("role", "img");
-      group.setAttribute("aria-label", label);
-    }
-    interactive.append(
-      svgElement("circle", { cx: pointX, cy: pointY, r: 9, class: "score-point-face" }),
-    );
-    if (row.reported_by === "third_party") {
-      interactive.append(
+    group.append(svgElement("circle", { cx: pointX, cy: pointY, r: 9, class: "score-point-face" }));
+    if (thirdParty) {
+      group.append(
         svgElement("circle", { cx: pointX, cy: pointY, r: 12, class: "score-point-citation-ring" }),
       );
     }
-    interactive.append(
+    group.append(
       modelGlyph(row.model_name, row.organization, pointX, pointY, 14, "score-point-glyph"),
     );
-    interactive.append(svgElement("title", {}, label));
+    // The same pinned-card system the curated chart uses (makeFrontierPointInteractive
+    // + #frontier-tooltip), not a native <title>. Only the rows this source
+    // actually carries are listed -- Instrument, Protocol, Date and Read from
+    // do not exist in a crawled row (see the module comment above), and
+    // showing them as "not recorded" here would manufacture four empty rows
+    // where the curated card shows four real ones.
+    makeFrontierPointInteractive(group, {
+      kind: t("Reported score"),
+      title: `${row.organization || t("not recorded")} · ${row.model_name || t("not recorded")}`,
+      rows: [
+        { label: t("Organization"), value: row.organization || t("not recorded") },
+        { label: t("Model"), value: row.model_name || t("not recorded") },
+        { label: t("Score as reported"), value: String(row.raw_value ?? row.value) },
+        { label: t("Reported by"), value: t("self reported") },
+        ...(thirdParty ? [{ label: t("Cited by"), value: meta.name }] : []),
+      ],
+      url: row.source_url,
+    });
     svg.append(group);
   }
+  enableFrontierTouchTargets(svg);
 
   svg.append(
     svgElement(
@@ -3889,14 +3893,20 @@ function externalSourceTable(source, payload) {
   }
   // The chart replaces the table entirely: it draws the same shape the
   // curated saturation chart draws, from the same rows, and the table added
-  // nothing the chart plus its point titles did not already say.
+  // nothing the chart plus its pinned point cards did not already say.
   const chart = externalScoreChart(source, payload);
   return element("div", { className: "external-source" }, [
     element("h4", {
       text: `${meta.name} · ${metricLabel(rows.length, "reported score")}`,
     }),
     element("p", { className: "external-source-note", text: notes.join(" ") }),
-    chart || element("p", { className: "external-empty", text: t(meta.emptyKey) }),
+    // frontier-chart's own layout class (position: relative, full-width svg)
+    // rather than a bespoke one: the pinned tooltip's positioning math reads
+    // its own parentElement as the clamp box, and reusing this class is what
+    // makes that box behave identically to the curated chart's.
+    chart
+      ? element("div", { className: "frontier-chart" }, [chart, frontierTooltip()])
+      : element("p", { className: "external-empty", text: t(meta.emptyKey) }),
   ]);
 }
 
@@ -4340,7 +4350,10 @@ function frontierTooltip() {
       selectedFrontierPoint?.focus();
       return;
     }
-    const points = [...byId("frontier-chart").querySelectorAll("[data-frontier-point]")];
+    // Same reasoning as positionFrontierTooltip: walk from the tooltip's own
+    // parent rather than the curated chart's id, so Tab-to-next-point also
+    // works inside the crawled chart's copy of this tooltip.
+    const points = [...tooltip.parentElement.querySelectorAll("[data-frontier-point]")];
     const next = points[points.indexOf(selectedFrontierPoint) + 1];
     if (next) {
       selectedFrontierSourceVisited = true;
@@ -4386,7 +4399,12 @@ function frontierTooltipContent(details, pinned) {
 }
 
 function positionFrontierTooltip(tooltip, group) {
-  const host = byId("frontier-chart");
+  // The host is wherever the tooltip actually lives, not a hardcoded id: the
+  // curated chart mounts it inside #frontier-chart, and the crawled chart
+  // mounts an identical instance inside #frontier-external so an external
+  // record's points get the same pinned card. Positioning math only needs a
+  // bounding box to clamp against, and the tooltip's own parent is that box.
+  const host = tooltip.parentElement;
   if (!host) return;
   const hostBox = host.getBoundingClientRect();
   const pointBox = group.getBoundingClientRect();
@@ -4537,7 +4555,9 @@ function makeFrontierPointInteractive(group, details) {
       selectedFrontierPoint &&
       selectedFrontierSourceVisited
     ) {
-      const points = [...byId("frontier-chart").querySelectorAll("[data-frontier-point]")];
+      const points = [
+        ...byId("frontier-tooltip").parentElement.querySelectorAll("[data-frontier-point]"),
+      ];
       const next = points[points.indexOf(selectedFrontierPoint) + 1];
       if (group === next) {
         event.preventDefault();

@@ -399,13 +399,12 @@ def test_dashboard_links_are_validated_escaped_and_non_swallowing():
     assert "function safeHttpUrl(" in script
     # The curated chart's SVG root and the crawled chart's SVG root are both
     # role="group" (image descendants are presentational in ARIA, which would
-    # hide their focusable marker buttons). The adoption bar is role="img" via
-    # the object-literal svgElement form; a crawled-chart point without a
-    # source URL sets role="img" via setAttribute instead, since it has no
-    # wrapping <a> to carry its own accessible name.
+    # hide their focusable marker buttons). role="img" is reserved for the
+    # adoption bar, a non-interactive widget; every chart point -- curated or
+    # crawled -- is role="button" via makeFrontierPointInteractive's pinned
+    # tooltip, not role="img", because it is a focusable, clickable marker.
     assert 'role: "group"' in script
     assert script.count('role: "img"') == 1
-    assert 'setAttribute("role", "img")' in script
     assert "/^[=+\\-@]/" in script
     assert 'document.querySelector("dialog[open]")' in script
     assert "Do not swallow Escape" in script

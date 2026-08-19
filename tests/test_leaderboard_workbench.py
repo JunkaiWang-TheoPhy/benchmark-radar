@@ -409,6 +409,53 @@ def test_the_crawled_chart_is_drawn_per_source_block():
     assert "externalScoreChart" not in block
 
 
+def test_every_crawled_score_has_the_curated_charts_pinned_tooltip():
+    # A crawled point with only a native <title> was a hover with no keyboard
+    # affordance and no click -- a reader landing on a single-point field
+    # (e.g. llm-stats-researchclawbench) saw a dot and nothing else. Every
+    # crawled point now goes through makeFrontierPointInteractive, the exact
+    # system the curated chart's points use: role="button", data-frontier-point,
+    # and a pinned card on click. externalSourceTable mounts its own
+    # frontierTooltip() instance beside the chart so that card has somewhere to
+    # render (external records hide the curated #frontier-chart entirely).
+    script = source("site/assets/app.js")
+
+    chart = script.split("function externalScoreChart(source, payload)", 1)[1].split(
+        "\nfunction externalSourceTable", 1
+    )[0]
+    assert "makeFrontierPointInteractive(group" in chart
+    assert 'role: "button"' in chart
+    assert '"data-frontier-point": ""' in chart
+    assert "enableFrontierTouchTargets(svg)" in chart
+    # Only fields a crawled row actually carries -- no Instrument, Protocol,
+    # Date or Read-from row, which do not exist in this source and would print
+    # as "not recorded" filler beside the curated card's real ones.
+    assert "t(\"Instrument\")" not in chart
+    assert "t(\"Protocol\")" not in chart
+    assert "t(\"Date\")" not in chart
+
+    table_fn = script.split("function externalSourceTable(source, payload)", 1)[1].split(
+        "\n// Identity siblings", 1
+    )[0]
+    assert 'element("div", { className: "frontier-chart" }, [chart, frontierTooltip()])' in table_fn
+
+
+def test_the_pinned_tooltip_positions_against_its_own_parent_not_a_fixed_id():
+    # positionFrontierTooltip and the two keyboard-cycle handlers used to read
+    # byId("frontier-chart") directly, which only exists for the curated path.
+    # Deriving the host from the tooltip's own parentElement is what lets one
+    # tooltip implementation serve both the curated chart (mounted inside
+    # #frontier-chart) and the crawled chart (mounted inside a lookalike
+    # .frontier-chart div under #frontier-external).
+    script = source("site/assets/app.js")
+
+    position_fn = script.split("function positionFrontierTooltip(tooltip, group)", 1)[1].split(
+        "\nfunction repositionFrontierTooltip", 1
+    )[0]
+    assert "tooltip.parentElement" in position_fn
+    assert 'byId("frontier-chart")' not in position_fn
+
+
 def test_crawled_third_party_text_never_enters_the_dom_as_markup():
     # Descriptions and README excerpts are crawled third-party HTML. The whole
     # external detail path builds nodes through element({text}), which sets
