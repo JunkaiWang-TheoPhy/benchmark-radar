@@ -105,8 +105,11 @@ def test_score_points_carry_recognizable_model_family_marks():
         "\nfunction clearAdoptionFrontier", 1
     )[0]
 
+    # The family marks moved to glyphs.js so the logo audit page can import the
+    # same table the chart draws from (issue #261).
+    glyphs = source("site/assets/glyphs.js")
     for family in ("Claude", "Gemini", "Grok"):
-        assert f"{family}: [" in script
+        assert f"{family}: [" in glyphs
     assert "modelGlyph(" in chart
     assert "observation.model" in chart
     assert 'r: 9,\n          class: "score-point-face"' in chart
