@@ -415,6 +415,24 @@ def main() -> None:
             scores_path=args.benchmark_scores,
             kw_bench_store_path=args.kw_bench_store,
         )
+        # One record per model, from both layers, written after radar.json
+        # exists because it reads the curated cards out of it. This is the
+        # structure that answers "which models do we know about" -- consumers
+        # read it instead of walking model_cards and the shards separately and
+        # dropping whichever they forget (issue #268).
+        from .external_shards import DEFAULT_SHARD_DIR
+        from .models_registry import DEFAULT_REGISTRY_OUTPUT, write_model_registry
+
+        registry_report = write_model_registry(
+            args.dashboard_output, DEFAULT_SHARD_DIR, DEFAULT_REGISTRY_OUTPUT
+        )
+        print(
+            f"models: {registry_report['model_count']} "
+            f"({registry_report['curated_only']} curated, "
+            f"{registry_report['crawled_only']} crawled, "
+            f"{registry_report['both_layers']} both) -> {DEFAULT_REGISTRY_OUTPUT}"
+        )
+
         report = dashboard["kw_bench"]["coverage"]
         print(
             f"Derived {summary['tracks_derived']} canonical tracks against KW-Bench "

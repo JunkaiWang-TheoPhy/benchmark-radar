@@ -95,7 +95,7 @@ function chartMark(paths, color) {
   return svg;
 }
 
-function card({ id, paths, color, name, sub, layer }) {
+function card({ id, paths, color, name, sub, layer, layers }) {
   const source = iconSource(paths);
   const suspect = suspectGeometry(paths);
 
@@ -128,10 +128,13 @@ function card({ id, paths, color, name, sub, layer }) {
     chip.textContent = "suspect";
     chips.append(chip);
   }
-  if (layer) {
+  // A model both layers reported gets both chips. That join is the thing the
+  // old two-list shape could not express at all: the same model existed twice
+  // as two unrelated entries, and 18 models are in exactly that position.
+  for (const name of layers || (layer ? [layer] : [])) {
     const chip = document.createElement("span");
-    chip.className = `chip chip-layer chip-layer-${layer}`;
-    chip.textContent = layer;
+    chip.className = `chip chip-layer chip-layer-${name}`;
+    chip.textContent = name;
     chips.append(chip);
   }
   head.append(chips);
@@ -189,23 +192,25 @@ async function main() {
     );
   }
 
-  // Every model that draws a point, from both layers. A crawled model and a
-  // curated one resolve their mark through the same modelIcon call, so both
-  // belong here -- but the layer is printed on the card, because a crawled row
-  // carries no protocol and no evaluation date and must not read as a curated
-  // one's equal (issue #268).
+  // Models come from models.json -- the one structure that answers "which
+  // models exist", built from both layers by models_registry.py. The page used
+  // to assemble its own list from the curated cards, which is how 323 crawled
+  // models ended up with no card at all (issue #268). Reading the shared
+  // registry means the page cannot disagree with the rest of the site about
+  // what a model is.
+  const models = await (await fetch("data/models.json")).json();
   const modelHost = byId("logos-models");
-  const layers = registry.model_layers || {};
-  for (const [key, id] of Object.entries(registry.models)) {
-    const [model, organization] = key.split("␟");
+  for (const record of models.models) {
+    const layer = record.layers.includes("curated") ? "curated" : "crawled";
     modelHost.append(
       card({
-        id,
-        paths: modelIcon(model, organization),
-        color: organizationColor(organization),
-        name: model,
-        sub: organization,
-        layer: layers[key],
+        id: registry.models[`${record.model}\u241f${record.organization}`] || record.key,
+        paths: modelIcon(record.model, record.organization),
+        color: organizationColor(record.organization),
+        name: record.model,
+        sub: record.organization,
+        layer,
+        layers: record.layers,
       }),
     );
   }

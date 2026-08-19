@@ -1,0 +1,3986 @@
+{
+  "schema_version": 1,
+  "model_count": 355,
+  "curated_only": 16,
+  "crawled_only": 321,
+  "both_layers": 18,
+  "organizations": [
+    "AI21 Labs",
+    "Ai2",
+    "Amazon",
+    "Anthropic",
+    "Baidu",
+    "ByteDance",
+    "Cohere",
+    "DeepSeek",
+    "Google",
+    "IBM",
+    "Inception",
+    "LG AI Research",
+    "Liquid AI",
+    "Meituan",
+    "Meta",
+    "Microsoft",
+    "MiniMax",
+    "Mistral",
+    "Moonshot AI",
+    "NVIDIA",
+    "Nous Research",
+    "OpenAI",
+    "OpenBMB",
+    "Poolside",
+    "Qwen",
+    "Sakana AI",
+    "Sarvam AI",
+    "StepFun",
+    "Tencent",
+    "Thinking Machines Lab",
+    "Upstage",
+    "Xiaomi",
+    "Z.ai",
+    "xAI"
+  ],
+  "models": [
+    {
+      "key": "ai2-olmo-3-7b-and-32b",
+      "model": "Olmo 3 (7B and 32B)",
+      "organization": "Ai2",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "ai21-labs-jamba-1-5-large",
+      "model": "Jamba 1.5 Large",
+      "organization": "AI21 Labs",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 8
+      }
+    },
+    {
+      "key": "ai21-labs-jamba-1-5-mini",
+      "model": "Jamba 1.5 Mini",
+      "organization": "AI21 Labs",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 8
+      }
+    },
+    {
+      "key": "amazon-nova-2-lite",
+      "model": "Nova 2 Lite",
+      "organization": "Amazon",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 19
+      }
+    },
+    {
+      "key": "amazon-nova-2-omni",
+      "model": "Nova 2 Omni",
+      "organization": "Amazon",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 18
+      }
+    },
+    {
+      "key": "amazon-nova-2-pro",
+      "model": "Nova 2 Pro",
+      "organization": "Amazon",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 18
+      }
+    },
+    {
+      "key": "amazon-nova-2-sonic",
+      "model": "Nova 2 Sonic",
+      "organization": "Amazon",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "amazon-nova-lite",
+      "model": "Nova Lite",
+      "organization": "Amazon",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 27
+      }
+    },
+    {
+      "key": "amazon-nova-micro",
+      "model": "Nova Micro",
+      "organization": "Amazon",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 17
+      }
+    },
+    {
+      "key": "amazon-nova-pro",
+      "model": "Nova Pro",
+      "organization": "Amazon",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 27
+      }
+    },
+    {
+      "key": "anthropic-claude-3-5-haiku",
+      "model": "Claude 3.5 Haiku",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "anthropic-claude-3-5-sonnet",
+      "model": "Claude 3.5 Sonnet",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 28
+      }
+    },
+    {
+      "key": "anthropic-claude-3-7-sonnet",
+      "model": "Claude 3.7 Sonnet",
+      "organization": "Anthropic",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 11
+      }
+    },
+    {
+      "key": "anthropic-claude-3-haiku",
+      "model": "Claude 3 Haiku",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 10
+      }
+    },
+    {
+      "key": "anthropic-claude-3-opus",
+      "model": "Claude 3 Opus",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "anthropic-claude-3-sonnet",
+      "model": "Claude 3 Sonnet",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "anthropic-claude-fable-5",
+      "model": "Claude Fable 5",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 18
+      }
+    },
+    {
+      "key": "anthropic-claude-fable-5-and-mythos-5",
+      "model": "Claude Fable 5 and Mythos 5",
+      "organization": "Anthropic",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "anthropic-claude-haiku-4-5",
+      "model": "Claude Haiku 4.5",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "anthropic-claude-mythos-preview",
+      "model": "Claude Mythos Preview",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
+      "key": "anthropic-claude-opus-4",
+      "model": "Claude Opus 4",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "anthropic-claude-opus-4-1",
+      "model": "Claude Opus 4.1",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 8
+      }
+    },
+    {
+      "key": "anthropic-claude-opus-4-5",
+      "model": "Claude Opus 4.5",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "anthropic-claude-opus-4-6",
+      "model": "Claude Opus 4.6",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 27
+      }
+    },
+    {
+      "key": "anthropic-claude-opus-4-7",
+      "model": "Claude Opus 4.7",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 17
+      }
+    },
+    {
+      "key": "anthropic-claude-opus-4-8",
+      "model": "Claude Opus 4.8",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 26
+      }
+    },
+    {
+      "key": "anthropic-claude-opus-4-and-sonnet-4",
+      "model": "Claude Opus 4 and Sonnet 4",
+      "organization": "Anthropic",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "anthropic-claude-opus-5",
+      "model": "Claude Opus 5",
+      "organization": "Anthropic",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 12
+      }
+    },
+    {
+      "key": "anthropic-claude-sonnet-4",
+      "model": "Claude Sonnet 4",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 8
+      }
+    },
+    {
+      "key": "anthropic-claude-sonnet-4-5",
+      "model": "Claude Sonnet 4.5",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "anthropic-claude-sonnet-4-6",
+      "model": "Claude Sonnet 4.6",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 17
+      }
+    },
+    {
+      "key": "anthropic-claude-sonnet-5",
+      "model": "Claude Sonnet 5",
+      "organization": "Anthropic",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 22
+      }
+    },
+    {
+      "key": "baidu-ernie-4-5",
+      "model": "ERNIE 4.5",
+      "organization": "Baidu",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 20
+      }
+    },
+    {
+      "key": "baidu-ernie-5-0",
+      "model": "ERNIE 5.0",
+      "organization": "Baidu",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 5
+      }
+    },
+    {
+      "key": "bytedance-seed-2-0-lite",
+      "model": "Seed 2.0 Lite",
+      "organization": "ByteDance",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 5
+      }
+    },
+    {
+      "key": "bytedance-seed-2-0-pro",
+      "model": "Seed 2.0 Pro",
+      "organization": "ByteDance",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "bytedance-seed-2-1-pro",
+      "model": "Seed 2.1 Pro",
+      "organization": "ByteDance",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 94
+      }
+    },
+    {
+      "key": "bytedance-seed-2-1-turbo",
+      "model": "Seed 2.1 Turbo",
+      "organization": "ByteDance",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 90
+      }
+    },
+    {
+      "key": "cohere-command-a",
+      "model": "Command A+",
+      "organization": "Cohere",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "cohere-command-r",
+      "model": "Command R+",
+      "organization": "Cohere",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "cohere-north-micro-vision-instruct",
+      "model": "North Micro Vision Instruct",
+      "organization": "Cohere",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 19
+      }
+    },
+    {
+      "key": "cohere-north-mini-code-1-0",
+      "model": "North Mini Code 1.0",
+      "organization": "Cohere",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "deepseek-deepseek-r1",
+      "model": "DeepSeek-R1",
+      "organization": "DeepSeek",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "deepseek-deepseek-r1-0528",
+      "model": "DeepSeek-R1-0528",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
+      "key": "deepseek-deepseek-r1-distill-llama-70b",
+      "model": "DeepSeek R1 Distill Llama 70B",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "deepseek-deepseek-r1-distill-llama-8b",
+      "model": "DeepSeek R1 Distill Llama 8B",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "deepseek-deepseek-r1-distill-qwen-1-5b",
+      "model": "DeepSeek R1 Distill Qwen 1.5B",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "deepseek-deepseek-r1-distill-qwen-14b",
+      "model": "DeepSeek R1 Distill Qwen 14B",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "deepseek-deepseek-r1-distill-qwen-32b",
+      "model": "DeepSeek R1 Distill Qwen 32B",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "deepseek-deepseek-r1-distill-qwen-7b",
+      "model": "DeepSeek R1 Distill Qwen 7B",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "deepseek-deepseek-r1-zero",
+      "model": "DeepSeek R1 Zero",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "deepseek-deepseek-v2-5",
+      "model": "DeepSeek-V2.5",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "deepseek-deepseek-v3",
+      "model": "DeepSeek-V3",
+      "organization": "DeepSeek",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 20
+      }
+    },
+    {
+      "key": "deepseek-deepseek-v3-0324",
+      "model": "DeepSeek-V3 0324",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 5
+      }
+    },
+    {
+      "key": "deepseek-deepseek-v3-1",
+      "model": "DeepSeek-V3.1",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
+      "key": "deepseek-deepseek-v3-2",
+      "model": "DeepSeek-V3.2",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 17
+      }
+    },
+    {
+      "key": "deepseek-deepseek-v3-2-exp",
+      "model": "DeepSeek-V3.2-Exp",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "deepseek-deepseek-v3-2-speciale",
+      "model": "DeepSeek-V3.2-Speciale",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 8
+      }
+    },
+    {
+      "key": "deepseek-deepseek-v3-2-thinking",
+      "model": "DeepSeek-V3.2 (Thinking)",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "deepseek-deepseek-v4",
+      "model": "DeepSeek-V4",
+      "organization": "DeepSeek",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "deepseek-deepseek-v4-flash-0423",
+      "model": "DeepSeek-V4-Flash-0423",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 19
+      }
+    },
+    {
+      "key": "deepseek-deepseek-v4-flash-0731",
+      "model": "DeepSeek-V4-Flash-0731",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "deepseek-deepseek-v4-flash-max",
+      "model": "DeepSeek-V4-Flash-Max",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 19
+      }
+    },
+    {
+      "key": "deepseek-deepseek-v4-pro",
+      "model": "DeepSeek-V4-Pro",
+      "organization": "DeepSeek",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "deepseek-deepseek-v4-pro-0813",
+      "model": "DeepSeek-V4-Pro-0813",
+      "organization": "DeepSeek",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 12
+      }
+    },
+    {
+      "key": "deepseek-deepseek-v4-pro-max",
+      "model": "DeepSeek-V4-Pro-Max",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 22
+      }
+    },
+    {
+      "key": "deepseek-deepseek-vl2",
+      "model": "DeepSeek VL2",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "deepseek-deepseek-vl2-small",
+      "model": "DeepSeek VL2 Small",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "deepseek-deepseek-vl2-tiny",
+      "model": "DeepSeek VL2 Tiny",
+      "organization": "DeepSeek",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "google-diffusiongemma-26b-a4b",
+      "model": "DiffusionGemma 26B-A4B",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "google-gemini-1-0-pro",
+      "model": "Gemini 1.0 Pro",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "google-gemini-1-5",
+      "model": "Gemini 1.5",
+      "organization": "Google",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "google-gemini-1-5-flash",
+      "model": "Gemini 1.5 Flash",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 22
+      }
+    },
+    {
+      "key": "google-gemini-1-5-flash-8b",
+      "model": "Gemini 1.5 Flash 8B",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
+      "key": "google-gemini-1-5-pro",
+      "model": "Gemini 1.5 Pro",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 23
+      }
+    },
+    {
+      "key": "google-gemini-2-0-flash",
+      "model": "Gemini 2.0 Flash",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
+      "key": "google-gemini-2-0-flash-lite",
+      "model": "Gemini 2.0 Flash-Lite",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
+      "key": "google-gemini-2-0-flash-thinking",
+      "model": "Gemini 2.0 Flash Thinking",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 3
+      }
+    },
+    {
+      "key": "google-gemini-2-5-flash",
+      "model": "Gemini 2.5 Flash",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "google-gemini-2-5-flash-lite",
+      "model": "Gemini 2.5 Flash-Lite",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
+      "key": "google-gemini-2-5-pro",
+      "model": "Gemini 2.5 Pro",
+      "organization": "Google",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 16
+      }
+    },
+    {
+      "key": "google-gemini-2-5-pro-preview-06-05",
+      "model": "Gemini 2.5 Pro Preview 06-05",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
+      "key": "google-gemini-3-1-flash-lite",
+      "model": "Gemini 3.1 Flash-Lite",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "google-gemini-3-1-pro",
+      "model": "Gemini 3.1 Pro",
+      "organization": "Google",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 20
+      }
+    },
+    {
+      "key": "google-gemini-3-5-flash",
+      "model": "Gemini 3.5 Flash",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
+      "key": "google-gemini-3-5-flash-cyber",
+      "model": "Gemini 3.5 Flash Cyber",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 1
+      }
+    },
+    {
+      "key": "google-gemini-3-5-flash-lite",
+      "model": "Gemini 3.5 Flash-Lite",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "google-gemini-3-6-flash",
+      "model": "Gemini 3.6 Flash",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "google-gemini-3-7-flash",
+      "model": "Gemini 3.7 Flash",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 18
+      }
+    },
+    {
+      "key": "google-gemini-3-flash",
+      "model": "Gemini 3 Flash",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 24
+      }
+    },
+    {
+      "key": "google-gemini-3-pro",
+      "model": "Gemini 3 Pro",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 21
+      }
+    },
+    {
+      "key": "google-gemini-diffusion",
+      "model": "Gemini Diffusion",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 10
+      }
+    },
+    {
+      "key": "google-gemma-2-27b",
+      "model": "Gemma 2 27B",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
+      "key": "google-gemma-2-9b",
+      "model": "Gemma 2 9B",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
+      "key": "google-gemma-3-12b",
+      "model": "Gemma 3 12B",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 26
+      }
+    },
+    {
+      "key": "google-gemma-3-1b",
+      "model": "Gemma 3 1B",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 18
+      }
+    },
+    {
+      "key": "google-gemma-3-27b",
+      "model": "Gemma 3 27B",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 27
+      }
+    },
+    {
+      "key": "google-gemma-3-4b",
+      "model": "Gemma 3 4B",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 26
+      }
+    },
+    {
+      "key": "google-gemma-3n-e2b",
+      "model": "Gemma 3n E2B",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "google-gemma-3n-e2b-instructed",
+      "model": "Gemma 3n E2B Instructed",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 18
+      }
+    },
+    {
+      "key": "google-gemma-3n-e2b-instructed-litert-preview",
+      "model": "Gemma 3n E2B Instructed LiteRT (Preview)",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 28
+      }
+    },
+    {
+      "key": "google-gemma-3n-e4b",
+      "model": "Gemma 3n E4B",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "google-gemma-3n-e4b-instructed",
+      "model": "Gemma 3n E4B Instructed",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 18
+      }
+    },
+    {
+      "key": "google-gemma-3n-e4b-instructed-litert-preview",
+      "model": "Gemma 3n E4B Instructed LiteRT Preview",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 28
+      }
+    },
+    {
+      "key": "google-gemma-4-12b",
+      "model": "Gemma 4 12B",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "google-gemma-4-26b-a4b",
+      "model": "Gemma 4 26B-A4B",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "google-gemma-4-31b",
+      "model": "Gemma 4 (31B)",
+      "organization": "Google",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 12
+      }
+    },
+    {
+      "key": "google-gemma-4-e2b",
+      "model": "Gemma 4 E2B",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "google-gemma-4-e4b",
+      "model": "Gemma 4 E4B",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "google-medgemma-4b-it",
+      "model": "MedGemma 4B IT",
+      "organization": "Google",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "ibm-granite-3-3-8b-base",
+      "model": "Granite 3.3 8B Base",
+      "organization": "IBM",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 20
+      }
+    },
+    {
+      "key": "ibm-granite-3-3-8b-instruct",
+      "model": "Granite 3.3 8B Instruct",
+      "organization": "IBM",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "ibm-ibm-granite-4-0-tiny-preview",
+      "model": "IBM Granite 4.0 Tiny Preview",
+      "organization": "IBM",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "inception-mercury-2",
+      "model": "Mercury 2",
+      "organization": "Inception",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "lg-ai-research-k-exaone-236b-a23b",
+      "model": "K-EXAONE-236B-A23B",
+      "organization": "LG AI Research",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "liquid-ai-lfm2-5-2-6b",
+      "model": "LFM2.5-2.6B",
+      "organization": "Liquid AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "liquid-ai-lfm2-5-vl-3b",
+      "model": "LFM2.5-VL-3B",
+      "organization": "Liquid AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 23
+      }
+    },
+    {
+      "key": "meituan-longcat-flash-chat",
+      "model": "LongCat-Flash-Chat",
+      "organization": "Meituan",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
+      "key": "meituan-longcat-flash-lite",
+      "model": "LongCat-Flash-Lite",
+      "organization": "Meituan",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
+      "key": "meituan-longcat-flash-thinking",
+      "model": "LongCat-Flash-Thinking",
+      "organization": "Meituan",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "meituan-longcat-flash-thinking-2601",
+      "model": "LongCat-Flash-Thinking-2601",
+      "organization": "Meituan",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "meta-llama-3-1-405b",
+      "model": "Llama 3.1 405B",
+      "organization": "Meta",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "meta-llama-3-1-405b-instruct",
+      "model": "Llama 3.1 405B Instruct",
+      "organization": "Meta",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 18
+      }
+    },
+    {
+      "key": "meta-llama-3-1-70b-instruct",
+      "model": "Llama 3.1 70B Instruct",
+      "organization": "Meta",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 18
+      }
+    },
+    {
+      "key": "meta-llama-3-1-8b-instruct",
+      "model": "Llama 3.1 8B Instruct",
+      "organization": "Meta",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 18
+      }
+    },
+    {
+      "key": "meta-llama-3-2-11b-instruct",
+      "model": "Llama 3.2 11B Instruct",
+      "organization": "Meta",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "meta-llama-3-2-3b-instruct",
+      "model": "Llama 3.2 3B Instruct",
+      "organization": "Meta",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "meta-llama-3-2-90b-instruct",
+      "model": "Llama 3.2 90B Instruct",
+      "organization": "Meta",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
+      "key": "meta-llama-3-3-70b-instruct",
+      "model": "Llama 3.3 70B Instruct",
+      "organization": "Meta",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "meta-llama-4",
+      "model": "Llama 4",
+      "organization": "Meta",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "meta-llama-4-maverick",
+      "model": "Llama 4 Maverick",
+      "organization": "Meta",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
+      "key": "meta-llama-4-scout",
+      "model": "Llama 4 Scout",
+      "organization": "Meta",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "meta-muse-glimmer-30b",
+      "model": "Muse Glimmer-30B",
+      "organization": "Meta",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 25
+      }
+    },
+    {
+      "key": "meta-muse-spark",
+      "model": "Muse Spark",
+      "organization": "Meta",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 19
+      }
+    },
+    {
+      "key": "meta-muse-spark-1-1",
+      "model": "Muse Spark 1.1",
+      "organization": "Meta",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "meta-muse-spark-1-2",
+      "model": "Muse Spark 1.2",
+      "organization": "Meta",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 3
+      }
+    },
+    {
+      "key": "microsoft-mai-code-1-1-flash",
+      "model": "MAI-Code-1.1-Flash",
+      "organization": "Microsoft",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 2
+      }
+    },
+    {
+      "key": "microsoft-mai-code-1-flash",
+      "model": "MAI-Code-1-Flash",
+      "organization": "Microsoft",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "microsoft-mai-thinking-1",
+      "model": "MAI-Thinking-1",
+      "organization": "Microsoft",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 23
+      }
+    },
+    {
+      "key": "microsoft-phi-3-5-mini-instruct",
+      "model": "Phi-3.5-mini-instruct",
+      "organization": "Microsoft",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 31
+      }
+    },
+    {
+      "key": "microsoft-phi-3-5-moe-instruct",
+      "model": "Phi-3.5-MoE-instruct",
+      "organization": "Microsoft",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 31
+      }
+    },
+    {
+      "key": "microsoft-phi-3-5-vision-instruct",
+      "model": "Phi-3.5-vision-instruct",
+      "organization": "Microsoft",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "microsoft-phi-4",
+      "model": "Phi 4",
+      "organization": "Microsoft",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
+      "key": "microsoft-phi-4-mini",
+      "model": "Phi 4 Mini",
+      "organization": "Microsoft",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 17
+      }
+    },
+    {
+      "key": "microsoft-phi-4-mini-reasoning",
+      "model": "Phi 4 Mini Reasoning",
+      "organization": "Microsoft",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 3
+      }
+    },
+    {
+      "key": "microsoft-phi-4-multimodal-instruct",
+      "model": "Phi-4-multimodal-instruct",
+      "organization": "Microsoft",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "microsoft-phi-4-reasoning",
+      "model": "Phi 4 Reasoning",
+      "organization": "Microsoft",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "microsoft-phi-4-reasoning-plus",
+      "model": "Phi 4 Reasoning Plus",
+      "organization": "Microsoft",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "minimax-minimax-m1-40k",
+      "model": "MiniMax M1 40K",
+      "organization": "MiniMax",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
+      "key": "minimax-minimax-m1-80k",
+      "model": "MiniMax M1 80K",
+      "organization": "MiniMax",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
+      "key": "minimax-minimax-m2",
+      "model": "MiniMax M2",
+      "organization": "MiniMax",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
+      "key": "minimax-minimax-m2-1",
+      "model": "MiniMax M2.1",
+      "organization": "MiniMax",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 25
+      }
+    },
+    {
+      "key": "minimax-minimax-m2-5",
+      "model": "MiniMax M2.5",
+      "organization": "MiniMax",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 8
+      }
+    },
+    {
+      "key": "minimax-minimax-m2-7",
+      "model": "MiniMax M2.7",
+      "organization": "MiniMax",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "minimax-minimax-m3",
+      "model": "MiniMax M3",
+      "organization": "MiniMax",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 35
+      }
+    },
+    {
+      "key": "mistral-codestral-22b",
+      "model": "Codestral-22B",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "mistral-devstral-medium",
+      "model": "Devstral Medium",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 1
+      }
+    },
+    {
+      "key": "mistral-devstral-small-1-1",
+      "model": "Devstral Small 1.1",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 1
+      }
+    },
+    {
+      "key": "mistral-magistral-medium",
+      "model": "Magistral Medium",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "mistral-magistral-small-2506",
+      "model": "Magistral Small 2506",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "mistral-min-istral-3-3b-reasoning-2512",
+      "model": "Min  istral 3 (3B Reasoning 2512)",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "mistral-ministral-3-14b-base-2512",
+      "model": "Ministral 3 (14B Base 2512)",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "mistral-ministral-3-14b-instruct-2512",
+      "model": "MiniStral 3 (14B Instruct 2512)",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "mistral-ministral-3-14b-reasoning-2512",
+      "model": "Ministral 3 (14B Reasoning 2512)",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "mistral-ministral-3-3b-base-2512",
+      "model": "Ministral 3 (3B Base 2512)",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "mistral-ministral-3-3b-instruct-2512",
+      "model": "Ministral 3 (3B Instruct 2512)",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "mistral-ministral-3-8b-base-2512",
+      "model": "Ministral 3 (8B Base 2512)",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "mistral-ministral-3-8b-instruct-2512",
+      "model": "Ministral 3 (8B Instruct 2512)",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "mistral-ministral-3-8b-reasoning-2512",
+      "model": "Ministral 3 (8B Reasoning 2512)",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "mistral-ministral-8b-instruct",
+      "model": "Ministral 8B Instruct",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "mistral-mistral-large-2",
+      "model": "Mistral Large 2",
+      "organization": "Mistral",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 5
+      }
+    },
+    {
+      "key": "mistral-mistral-large-3",
+      "model": "Mistral Large 3",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 8
+      }
+    },
+    {
+      "key": "mistral-mistral-large-3-675b",
+      "model": "Mistral Large 3 (675B)",
+      "organization": "Mistral",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "mistral-mistral-large-3-675b-base",
+      "model": "Mistral Large 3 (675B Base)",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 5
+      }
+    },
+    {
+      "key": "mistral-mistral-large-3-675b-instruct-2512",
+      "model": "Mistral Large 3 (675B Instruct 2512)",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 5
+      }
+    },
+    {
+      "key": "mistral-mistral-large-3-675b-instruct-2512-eagle",
+      "model": "Mistral Large 3 (675B Instruct 2512 Eagle)",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 5
+      }
+    },
+    {
+      "key": "mistral-mistral-large-3-675b-instruct-2512-nvfp4",
+      "model": "Mistral Large 3 (675B Instruct 2512 NVFP4)",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 5
+      }
+    },
+    {
+      "key": "mistral-mistral-medium-3",
+      "model": "Mistral Medium 3",
+      "organization": "Mistral",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "mistral-mistral-medium-3-5",
+      "model": "Mistral Medium 3.5",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "mistral-mistral-nemo-instruct",
+      "model": "Mistral NeMo Instruct",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 8
+      }
+    },
+    {
+      "key": "mistral-mistral-small-3-1-24b-base",
+      "model": "Mistral Small 3.1 24B Base",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 5
+      }
+    },
+    {
+      "key": "mistral-mistral-small-3-1-24b-instruct",
+      "model": "Mistral Small 3.1 24B Instruct",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "mistral-mistral-small-3-2-24b-instruct",
+      "model": "Mistral Small 3.2 24B Instruct",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "mistral-mistral-small-3-24b-base",
+      "model": "Mistral Small 3 24B Base",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "mistral-mistral-small-3-24b-instruct",
+      "model": "Mistral Small 3 24B Instruct",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 8
+      }
+    },
+    {
+      "key": "mistral-mistral-small-4",
+      "model": "Mistral Small 4",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "mistral-pixtral-12b",
+      "model": "Pixtral-12B",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "mistral-pixtral-large",
+      "model": "Pixtral Large",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "mistral-shieldstral-1-0-3b",
+      "model": "Shieldstral 1.0 (3B)",
+      "organization": "Mistral",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 1
+      }
+    },
+    {
+      "key": "moonshot-ai-kimi-k1-5",
+      "model": "Kimi-k1.5",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "moonshot-ai-kimi-k2-0905",
+      "model": "Kimi K2 0905",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "moonshot-ai-kimi-k2-5",
+      "model": "Kimi K2.5",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 40
+      }
+    },
+    {
+      "key": "moonshot-ai-kimi-k2-6",
+      "model": "Kimi K2.6",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 28
+      }
+    },
+    {
+      "key": "moonshot-ai-kimi-k2-7-code",
+      "model": "Kimi K2.7 Code",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "moonshot-ai-kimi-k2-base",
+      "model": "Kimi K2 Base",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
+      "key": "moonshot-ai-kimi-k2-instruct",
+      "model": "Kimi K2 Instruct",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 38
+      }
+    },
+    {
+      "key": "moonshot-ai-kimi-k2-instruct-0905",
+      "model": "Kimi K2-Instruct-0905",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 29
+      }
+    },
+    {
+      "key": "moonshot-ai-kimi-k2-thinking-0905",
+      "model": "Kimi K2-Thinking-0905",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 21
+      }
+    },
+    {
+      "key": "moonshot-ai-kimi-k3",
+      "model": "Kimi K3",
+      "organization": "Moonshot AI",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 31
+      }
+    },
+    {
+      "key": "nous-research-hermes-3-70b",
+      "model": "Hermes 3 70B",
+      "organization": "Nous Research",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 17
+      }
+    },
+    {
+      "key": "nvidia-llama-3-1-nemotron-70b-instruct",
+      "model": "Llama 3.1 Nemotron 70B Instruct",
+      "organization": "NVIDIA",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "nvidia-llama-3-1-nemotron-nano-8b-v1",
+      "model": "Llama 3.1 Nemotron Nano 8B V1",
+      "organization": "NVIDIA",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "nvidia-llama-3-1-nemotron-ultra-253b-v1",
+      "model": "Llama 3.1 Nemotron Ultra 253B v1",
+      "organization": "NVIDIA",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "nvidia-llama-3-3-nemotron-super-49b-v1",
+      "model": "Llama-3.3 Nemotron Super 49B v1",
+      "organization": "NVIDIA",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "nvidia-nemotron-3-5-lightning-30b-a3b",
+      "model": "Nemotron 3.5 Lightning (30B A3B)",
+      "organization": "NVIDIA",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
+      "key": "nvidia-nemotron-3-nano-30b-a3b",
+      "model": "Nemotron 3 Nano (30B A3B)",
+      "organization": "NVIDIA",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "nvidia-nemotron-3-super-120b-a12b",
+      "model": "Nemotron 3 Super (120B A12B)",
+      "organization": "NVIDIA",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 23
+      }
+    },
+    {
+      "key": "nvidia-nemotron-3-ultra-550b-a55b",
+      "model": "Nemotron 3 Ultra (550B A55B)",
+      "organization": "NVIDIA",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 26
+      }
+    },
+    {
+      "key": "nvidia-nemotron-nano-9b-v2",
+      "model": "Nemotron Nano 9B v2",
+      "organization": "NVIDIA",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "openai-chatgpt-4o-latest",
+      "model": "ChatGPT-4o Latest",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 1
+      }
+    },
+    {
+      "key": "openai-gpt-3-5-turbo",
+      "model": "GPT-3.5 Turbo",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 8
+      }
+    },
+    {
+      "key": "openai-gpt-4",
+      "model": "GPT-4",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "openai-gpt-4-1",
+      "model": "GPT-4.1",
+      "organization": "OpenAI",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 29
+      }
+    },
+    {
+      "key": "openai-gpt-4-1-mini",
+      "model": "GPT-4.1 mini",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 28
+      }
+    },
+    {
+      "key": "openai-gpt-4-1-nano",
+      "model": "GPT-4.1 nano",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 24
+      }
+    },
+    {
+      "key": "openai-gpt-4-5",
+      "model": "GPT-4.5",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 26
+      }
+    },
+    {
+      "key": "openai-gpt-4-turbo",
+      "model": "GPT-4 Turbo",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "openai-gpt-4o",
+      "model": "GPT-4o",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 46
+      }
+    },
+    {
+      "key": "openai-gpt-4o-mini",
+      "model": "GPT-4o mini",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "openai-gpt-5",
+      "model": "GPT-5",
+      "organization": "OpenAI",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 34
+      }
+    },
+    {
+      "key": "openai-gpt-5-1",
+      "model": "GPT-5.1",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "openai-gpt-5-1-codex",
+      "model": "GPT-5.1 Codex",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 3
+      }
+    },
+    {
+      "key": "openai-gpt-5-1-codex-high",
+      "model": "GPT-5.1 Codex High",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 1
+      }
+    },
+    {
+      "key": "openai-gpt-5-1-codex-mini",
+      "model": "GPT-5.1 Codex Mini",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 1
+      }
+    },
+    {
+      "key": "openai-gpt-5-1-high",
+      "model": "GPT-5.1 High",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 3
+      }
+    },
+    {
+      "key": "openai-gpt-5-1-instant",
+      "model": "GPT-5.1 Instant",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "openai-gpt-5-1-medium",
+      "model": "GPT-5.1 Medium",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 1
+      }
+    },
+    {
+      "key": "openai-gpt-5-1-thinking",
+      "model": "GPT-5.1 Thinking",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "openai-gpt-5-2",
+      "model": "GPT-5.2",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 24
+      }
+    },
+    {
+      "key": "openai-gpt-5-2-codex",
+      "model": "GPT-5.2 Codex",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 3
+      }
+    },
+    {
+      "key": "openai-gpt-5-2-pro",
+      "model": "GPT-5.2 Pro",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "openai-gpt-5-3-chat",
+      "model": "GPT-5.3 Chat",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 2
+      }
+    },
+    {
+      "key": "openai-gpt-5-3-codex",
+      "model": "GPT-5.3 Codex",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "openai-gpt-5-4",
+      "model": "GPT-5.4",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 23
+      }
+    },
+    {
+      "key": "openai-gpt-5-4-mini",
+      "model": "GPT-5.4 mini",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "openai-gpt-5-4-nano",
+      "model": "GPT-5.4 nano",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "openai-gpt-5-5",
+      "model": "GPT-5.5",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 28
+      }
+    },
+    {
+      "key": "openai-gpt-5-5-instant",
+      "model": "GPT-5.5 Instant",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "openai-gpt-5-5-pro",
+      "model": "GPT-5.5 Pro",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 5
+      }
+    },
+    {
+      "key": "openai-gpt-5-6",
+      "model": "GPT-5.6",
+      "organization": "OpenAI",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "openai-gpt-5-6-luna",
+      "model": "GPT-5.6 Luna",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 44
+      }
+    },
+    {
+      "key": "openai-gpt-5-6-sol",
+      "model": "GPT-5.6 Sol",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 44
+      }
+    },
+    {
+      "key": "openai-gpt-5-6-sol-terra-luna",
+      "model": "GPT-5.6 (Sol, Terra, Luna)",
+      "organization": "OpenAI",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "openai-gpt-5-6-terra",
+      "model": "GPT-5.6 Terra",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 44
+      }
+    },
+    {
+      "key": "openai-gpt-5-codex",
+      "model": "GPT-5 Codex",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 1
+      }
+    },
+    {
+      "key": "openai-gpt-5-high",
+      "model": "GPT-5 High",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 2
+      }
+    },
+    {
+      "key": "openai-gpt-5-medium",
+      "model": "GPT-5 Medium",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 2
+      }
+    },
+    {
+      "key": "openai-gpt-5-mini",
+      "model": "GPT-5 mini",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 5
+      }
+    },
+    {
+      "key": "openai-gpt-5-nano",
+      "model": "GPT-5 nano",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 5
+      }
+    },
+    {
+      "key": "openai-gpt-oss-120b",
+      "model": "GPT OSS 120B",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "openai-gpt-oss-120b-high",
+      "model": "GPT OSS 120B High",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "openai-gpt-oss-20b",
+      "model": "GPT OSS 20B",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "openai-gpt-oss-20b-high",
+      "model": "GPT OSS 20B High",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 2
+      }
+    },
+    {
+      "key": "openai-o1",
+      "model": "o1",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 19
+      }
+    },
+    {
+      "key": "openai-o1-mini",
+      "model": "o1-mini",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "openai-o1-preview",
+      "model": "o1-preview",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 8
+      }
+    },
+    {
+      "key": "openai-o1-pro",
+      "model": "o1-pro",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 2
+      }
+    },
+    {
+      "key": "openai-o3",
+      "model": "o3",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 22
+      }
+    },
+    {
+      "key": "openai-o3-and-o4-mini",
+      "model": "o3 and o4-mini",
+      "organization": "OpenAI",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "openai-o3-mini",
+      "model": "o3-mini",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 25
+      }
+    },
+    {
+      "key": "openai-o4-mini",
+      "model": "o4-mini",
+      "organization": "OpenAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "openbmb-minicpm-sala",
+      "model": "MiniCPM-SALA",
+      "organization": "OpenBMB",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 24
+      }
+    },
+    {
+      "key": "poolside-laguna-s-2-1",
+      "model": "Laguna S 2.1",
+      "organization": "Poolside",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "poolside-laguna-xs-2-1",
+      "model": "Laguna XS 2.1",
+      "organization": "Poolside",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "qwen-qvq-72b-preview",
+      "model": "QvQ-72B-Preview",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-14b-instruct",
+      "model": "Qwen2.5 14B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-32b-instruct",
+      "model": "Qwen2.5 32B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 18
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-72b-instruct",
+      "model": "Qwen2.5 72B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-7b-instruct",
+      "model": "Qwen2.5 7B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-coder",
+      "model": "Qwen2.5-Coder",
+      "organization": "Qwen",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-coder-32b-instruct",
+      "model": "Qwen2.5-Coder 32B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-coder-7b-instruct",
+      "model": "Qwen2.5-Coder 7B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 19
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-omni-7b",
+      "model": "Qwen2.5-Omni-7B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 45
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-vl-32b-instruct",
+      "model": "Qwen2.5 VL 32B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 28
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-vl-72b-instruct",
+      "model": "Qwen2.5 VL 72B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 30
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-vl-7b-instruct",
+      "model": "Qwen2.5 VL 7B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 32
+      }
+    },
+    {
+      "key": "qwen-qwen2-72b-instruct",
+      "model": "Qwen2 72B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 17
+      }
+    },
+    {
+      "key": "qwen-qwen2-7b-instruct",
+      "model": "Qwen2 7B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "qwen-qwen2-vl-72b-instruct",
+      "model": "Qwen2-VL-72B-Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "qwen-qwen3",
+      "model": "Qwen3",
+      "organization": "Qwen",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
+      "key": "qwen-qwen3-235b-a22b",
+      "model": "Qwen3 235B A22B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 23
+      }
+    },
+    {
+      "key": "qwen-qwen3-235b-a22b-instruct-2507",
+      "model": "Qwen3-235B-A22B-Instruct-2507",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 25
+      }
+    },
+    {
+      "key": "qwen-qwen3-235b-a22b-thinking-2507",
+      "model": "Qwen3-235B-A22B-Thinking-2507",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 25
+      }
+    },
+    {
+      "key": "qwen-qwen3-30b-a3b",
+      "model": "Qwen3 30B A3B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 8
+      }
+    },
+    {
+      "key": "qwen-qwen3-32b",
+      "model": "Qwen3 32B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-0-8b",
+      "model": "Qwen3.5-0.8B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 20
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-122b-a10b",
+      "model": "Qwen3.5-122B-A10B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 81
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-27b",
+      "model": "Qwen3.5-27B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 81
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-2b",
+      "model": "Qwen3.5-2B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 20
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-35b-a3b",
+      "model": "Qwen3.5-35B-A3B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 81
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-397b-a17b",
+      "model": "Qwen3.5-397B-A17B",
+      "organization": "Qwen",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 38
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-4b",
+      "model": "Qwen3.5-4B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 25
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-9b",
+      "model": "Qwen3.5-9B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 25
+      }
+    },
+    {
+      "key": "qwen-qwen3-6-27b",
+      "model": "Qwen3.6-27B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 44
+      }
+    },
+    {
+      "key": "qwen-qwen3-6-35b-a3b",
+      "model": "Qwen3.6-35B-A3B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 49
+      }
+    },
+    {
+      "key": "qwen-qwen3-6-plus",
+      "model": "Qwen3.6 Plus",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 65
+      }
+    },
+    {
+      "key": "qwen-qwen3-7-max",
+      "model": "Qwen3.7 Max",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 42
+      }
+    },
+    {
+      "key": "qwen-qwen3-7-plus",
+      "model": "Qwen3.7-Plus",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 70
+      }
+    },
+    {
+      "key": "qwen-qwen3-8-27b",
+      "model": "Qwen3.8-27B",
+      "organization": "Qwen",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 26
+      }
+    },
+    {
+      "key": "qwen-qwen3-8-max",
+      "model": "Qwen3.8 Max",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 42
+      }
+    },
+    {
+      "key": "qwen-qwen3-coder-480b-a35b-instruct",
+      "model": "Qwen3-Coder 480B A35B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 10
+      }
+    },
+    {
+      "key": "qwen-qwen3-max",
+      "model": "Qwen3 Max",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "qwen-qwen3-next-80b-a3b-instruct",
+      "model": "Qwen3-Next-80B-A3B-Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 24
+      }
+    },
+    {
+      "key": "qwen-qwen3-next-80b-a3b-thinking",
+      "model": "Qwen3-Next-80B-A3B-Thinking",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 23
+      }
+    },
+    {
+      "key": "qwen-qwen3-vl-235b-a22b-instruct",
+      "model": "Qwen3 VL 235B A22B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 50
+      }
+    },
+    {
+      "key": "qwen-qwen3-vl-235b-a22b-thinking",
+      "model": "Qwen3 VL 235B A22B Thinking",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 67
+      }
+    },
+    {
+      "key": "qwen-qwen3-vl-30b-a3b-instruct",
+      "model": "Qwen3 VL 30B A3B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 50
+      }
+    },
+    {
+      "key": "qwen-qwen3-vl-30b-a3b-thinking",
+      "model": "Qwen3 VL 30B A3B Thinking",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 50
+      }
+    },
+    {
+      "key": "qwen-qwen3-vl-32b-instruct",
+      "model": "Qwen3 VL 32B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 45
+      }
+    },
+    {
+      "key": "qwen-qwen3-vl-32b-thinking",
+      "model": "Qwen3 VL 32B Thinking",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 47
+      }
+    },
+    {
+      "key": "qwen-qwen3-vl-4b-instruct",
+      "model": "Qwen3 VL 4B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 45
+      }
+    },
+    {
+      "key": "qwen-qwen3-vl-4b-thinking",
+      "model": "Qwen3 VL 4B Thinking",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 48
+      }
+    },
+    {
+      "key": "qwen-qwen3-vl-8b-instruct",
+      "model": "Qwen3 VL 8B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 46
+      }
+    },
+    {
+      "key": "qwen-qwen3-vl-8b-thinking",
+      "model": "Qwen3 VL 8B Thinking",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 50
+      }
+    },
+    {
+      "key": "qwen-qwq-32b",
+      "model": "QwQ-32B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "qwen-qwq-32b-preview",
+      "model": "QwQ-32B-Preview",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "sakana-ai-sakana-namazu",
+      "model": "Sakana Namazu",
+      "organization": "Sakana AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 3
+      }
+    },
+    {
+      "key": "sarvam-ai-sarvam-105b",
+      "model": "Sarvam-105B",
+      "organization": "Sarvam AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "sarvam-ai-sarvam-30b",
+      "model": "Sarvam-30B",
+      "organization": "Sarvam AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "stepfun-step-3-5-flash",
+      "model": "Step-3.5-Flash",
+      "organization": "StepFun",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "stepfun-step3-vl-10b",
+      "model": "Step3-VL-10B",
+      "organization": "StepFun",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "tencent-hy3",
+      "model": "Hy3",
+      "organization": "Tencent",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 31
+      }
+    },
+    {
+      "key": "thinking-machines-lab-inkling-small",
+      "model": "Inkling-Small",
+      "organization": "Thinking Machines Lab",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 24
+      }
+    },
+    {
+      "key": "upstage-solar-pro-4",
+      "model": "Solar Pro 4",
+      "organization": "Upstage",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "xai-grok-1-5",
+      "model": "Grok-1.5",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
+      }
+    },
+    {
+      "key": "xai-grok-1-5v",
+      "model": "Grok-1.5V",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "xai-grok-2",
+      "model": "Grok-2",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 8
+      }
+    },
+    {
+      "key": "xai-grok-2-mini",
+      "model": "Grok-2 mini",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 8
+      }
+    },
+    {
+      "key": "xai-grok-3",
+      "model": "Grok-3",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 5
+      }
+    },
+    {
+      "key": "xai-grok-3-mini",
+      "model": "Grok-3 Mini",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "xai-grok-4",
+      "model": "Grok 4",
+      "organization": "xAI",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 7
+      }
+    },
+    {
+      "key": "xai-grok-4-1",
+      "model": "Grok-4.1",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "xai-grok-4-1-thinking",
+      "model": "Grok-4.1 Thinking",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "xai-grok-4-20-beta-reasoning",
+      "model": "Grok-4.20 Beta Reasoning",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 1
+      }
+    },
+    {
+      "key": "xai-grok-4-3",
+      "model": "Grok 4.3",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 1
+      }
+    },
+    {
+      "key": "xai-grok-4-5",
+      "model": "Grok 4.5",
+      "organization": "xAI",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 14
+      }
+    },
+    {
+      "key": "xai-grok-4-6",
+      "model": "Grok 4.6",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 10
+      }
+    },
+    {
+      "key": "xai-grok-4-fast",
+      "model": "Grok 4 Fast",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "xai-grok-4-heavy",
+      "model": "Grok-4 Heavy",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "xai-grok-code-fast-1",
+      "model": "Grok Code Fast 1",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 1
+      }
+    },
+    {
+      "key": "xiaomi-mimo-v2-5",
+      "model": "MiMo-V2.5",
+      "organization": "Xiaomi",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "xiaomi-mimo-v2-5-pro",
+      "model": "MiMo-V2.5-Pro",
+      "organization": "Xiaomi",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 31
+      }
+    },
+    {
+      "key": "xiaomi-mimo-v2-flash",
+      "model": "MiMo-V2-Flash",
+      "organization": "Xiaomi",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "xiaomi-mimo-v2-omni",
+      "model": "MiMo-V2-Omni",
+      "organization": "Xiaomi",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 5
+      }
+    },
+    {
+      "key": "xiaomi-mimo-v2-pro",
+      "model": "MiMo-V2-Pro",
+      "organization": "Xiaomi",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "z-ai-glm-4-5",
+      "model": "GLM-4.5",
+      "organization": "Z.ai",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "z-ai-glm-4-5-air",
+      "model": "GLM-4.5-Air",
+      "organization": "Z.ai",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "z-ai-glm-4-6",
+      "model": "GLM-4.6",
+      "organization": "Z.ai",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "z-ai-glm-4-7",
+      "model": "GLM-4.7",
+      "organization": "Z.ai",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
+      "key": "z-ai-glm-4-7-flash",
+      "model": "GLM-4.7-Flash",
+      "organization": "Z.ai",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 6
+      }
+    },
+    {
+      "key": "z-ai-glm-5",
+      "model": "GLM-5",
+      "organization": "Z.ai",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 2,
+        "crawled": 5
+      }
+    },
+    {
+      "key": "z-ai-glm-5-1",
+      "model": "GLM-5.1",
+      "organization": "Z.ai",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 18
+      }
+    },
+    {
+      "key": "z-ai-glm-5-2",
+      "model": "GLM-5.2",
+      "organization": "Z.ai",
+      "layers": [
+        "curated",
+        "crawled"
+      ],
+      "source_counts": {
+        "curated": 1,
+        "crawled": 19
+      }
+    },
+    {
+      "key": "z-ai-glm-5-3",
+      "model": "GLM-5.3",
+      "organization": "Z.ai",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
+      "key": "z-ai-glm-5v-turbo",
+      "model": "GLM-5V-Turbo",
+      "organization": "Z.ai",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 19
+      }
+    }
+  ]
+}

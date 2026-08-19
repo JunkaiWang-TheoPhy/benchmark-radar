@@ -221,7 +221,10 @@ def test_the_two_layers_stay_labelled_rather_than_merged():
     logos = Path("site/assets/logos.js").read_text(encoding="utf-8")
     html = Path("site/logos.html").read_text(encoding="utf-8")
 
-    assert "registry.model_layers" in logos
-    assert "chip-layer-${layer}" in logos
+    # Layers come from models.json now -- the shared registry, not a list the
+    # page assembles for itself.
+    assert 'fetch("data/models.json")' in logos
+    assert "record.layers" in logos
+    assert "chip-layer-${name}" in logos
     assert 'data-filter="crawled"' in html
     assert 'data-filter="curated"' in html

@@ -282,7 +282,7 @@ const I18N = {
     "Benchmark reported scores over time": "基准报告分数随时间的变化",
     "All tracked benchmarks": "所有追踪的基准",
     "Search every benchmark": "搜索全部基准",
-    "Most reported": "报告最多",
+    "Most reported in model cards": "模型卡中报告最多",
     "Search benchmarks, tasks, domains…": "搜索基准、任务、领域…",
     "{n} benchmarks": "{n} 个基准",
     "Curated registry": "精选登记册",
@@ -524,8 +524,8 @@ const I18N = {
     "Reported score": "报告的分数",
     "Score as reported": "报告的分数",
     "self reported": "自行报告",
-    "ordered by score, low to high -- dated by model release, not by when this score was measured, so this is not a time axis":
-      "按分数从低到高排列——日期为模型发布日期，非该分数的测量日期，因此这不是时间轴",
+    "ordered by score, low to high. Dates shown are model release dates, not when each score was measured.":
+      "按分数从低到高排列。所示日期为模型发布日期，而非各分数的测量日期。",
     "best reported": "报告的最高分",
     "{count} scores reported to {source}, ordered by score rather than by date: the only date recorded is each model's own announcement date, not when this score was measured. Highest {best} by {model}, lowest {low}.":
       "向 {source} 报告的 {count} 个分数，按分数而非日期排列：唯一记录的日期是每个模型自身的发布日期，而非该分数的测量日期。最高 {best}（{model}），最低 {low}。",
@@ -3678,7 +3678,12 @@ function externalScoreChart(source, payload) {
     ),
   });
 
-  for (const value of [band.high, band.low]) {
+  // The band pads so points are not drawn on the frame, but the ticks label
+  // the real extremes. They used to print the padded bounds, so AIME 2025 --
+  // values 0.067 to 1.0 -- announced an axis from "-0.1" to "1.17": a negative
+  // score and a ceiling above anything observed, neither of which exists in
+  // the data (issue #269).
+  for (const value of [high, low]) {
     const gridY = scoreY(value);
     svg.append(
       svgElement("line", {
@@ -3783,7 +3788,7 @@ function externalScoreChart(source, payload) {
         "text-anchor": "middle",
         class: "frontier-axis-label",
       },
-      t("ordered by score, low to high -- dated by model release, not by when this score was measured, so this is not a time axis"),
+      t("ordered by score, low to high. Dates shown are model release dates, not when each score was measured."),
     ),
   );
   return svg;
@@ -4189,10 +4194,15 @@ function scoreReadout(entry, record) {
     element("div", { className: "score-readout-figure" }, [
       element("span", { text: t("Readable values") }),
       element("strong", { text: String(record.observation_count) }),
+      // "comparable run" was jargon for a group of scores sharing an instrument
+      // AND a protocol, which is the only condition under which two numbers on
+      // this chart may be read against each other (issue #261). The count is
+      // worth showing and the term was not: a reader should not have to learn
+      // this project's vocabulary to know whether the values can be compared.
       element("small", {
         text: `${metricLabel(record.dated_observation_count, "date")} · ${metricLabel(
           record.comparable_series_count,
-          "comparable run",
+          "set measured the same way",
         )}`,
       }),
     ]),
