@@ -387,6 +387,7 @@ const I18N = {
     "Model Card Adoption Rank": "模型卡采用排名",
     "Which benchmarks do model cards report?": "模型卡报告了哪些基准?",
     "How to read this evidence": "如何解读这些证据",
+    "What does this source record?": "这个来源记录了什么？",
     "leaderboard.method.note1":
       "这是报告惯例的排名,不是基准质量排名。一张模型卡无论报告了多少种配置,对同一基准最多计为一次提及。",
     "leaderboard.method.note2":
@@ -857,6 +858,23 @@ function element(tag, options = {}, children = []) {
   }
   children.filter(Boolean).forEach((child) => node.append(child));
   return node;
+}
+
+// A round (i) toggle for one sentence of provenance/method text that a reader
+// needs once, not on every visit to an already-familiar block. Collapsed by
+// default; the marker itself carries the affordance (no plain "How to read
+// this" text link), so it stays visible and consistent wherever it appears --
+// the score-evidence and frontier-explainer disclosures share its "expand"
+// visual treatment even though they use a text summary instead of this icon.
+function infoDisclosure(text) {
+  return element("details", { className: "info-disclosure" }, [
+    element("summary", {
+      className: "info-disclosure-toggle",
+      attrs: { "aria-label": t("What does this source record?") },
+      text: "i",
+    }),
+    element("p", { className: "info-disclosure-body", text }),
+  ]);
 }
 
 // Coalesce bursts of input (typing in a filter box) into a single trailing
@@ -3896,10 +3914,16 @@ function externalSourceTable(source, payload) {
   // nothing the chart plus its pinned point cards did not already say.
   const chart = externalScoreChart(source, payload);
   return element("div", { className: "external-source" }, [
-    element("h4", {
-      text: `${meta.name} · ${metricLabel(rows.length, "reported score")}`,
-    }),
-    element("p", { className: "external-source-note", text: notes.join(" ") }),
+    element("div", { className: "external-source-heading" }, [
+      element("h4", {
+        text: `${meta.name} · ${metricLabel(rows.length, "reported score")}`,
+      }),
+      // The provenance note (what this source did and did not record) behind
+      // an (i) toggle rather than a paragraph that always runs under the
+      // heading: it's one sentence readers need once, not on every visit to
+      // an already-familiar source block.
+      infoDisclosure(notes.join(" ")),
+    ]),
     // frontier-chart's own layout class (position: relative, full-width svg)
     // rather than a bespoke one: the pinned tooltip's positioning math reads
     // its own parentElement as the clamp box, and reusing this class is what
