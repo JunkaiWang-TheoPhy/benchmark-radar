@@ -12,6 +12,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from benchmark_radar.models_registry import (
     CRAWLED,
     CURATED,
@@ -20,12 +22,28 @@ from benchmark_radar.models_registry import (
     summarize,
 )
 
+RADAR = Path("site/data/radar.json")
+SHARDS = Path("site/data/benchmarks")
+
+# radar.json is generated and gitignored, so it exists after a local `export`
+# and never on a fresh clone. These tests assert against the real corpus on
+# purpose (that Gemini AND MiMo both resolve is the regression they exist to
+# catch, and a fixture with two hand-written models could not catch it), so
+# they skip rather than fail where the corpus is absent. Without this they
+# failed on every CI run, which is how CI stayed red long enough for a real
+# ruff regression to hide behind it.
+needs_corpus = pytest.mark.skipif(
+    not RADAR.exists() or not SHARDS.exists(),
+    reason="needs generated site/data; run `benchmark-radar export` first",
+)
+
 
 def _registry():
-    radar = json.loads(Path("site/data/radar.json").read_text(encoding="utf-8"))
-    return build_registry(radar, Path("site/data/benchmarks"))
+    radar = json.loads(RADAR.read_text(encoding="utf-8"))
+    return build_registry(radar, SHARDS)
 
 
+@needs_corpus
 def test_a_model_is_one_record_no_matter_which_layer_reported_it():
     registry = _registry()
 
@@ -41,6 +59,7 @@ def test_a_model_is_one_record_no_matter_which_layer_reported_it():
         assert set(record.layers) <= {CURATED, CRAWLED}
 
 
+@needs_corpus
 def test_a_model_both_layers_reported_is_one_record_carrying_both():
     """The join the old two-list shape could not express at all.
 
@@ -57,6 +76,7 @@ def test_a_model_both_layers_reported_is_one_record_carrying_both():
         assert {s.layer for s in record.sources} == {CURATED, CRAWLED}
 
 
+@needs_corpus
 def test_evidence_stays_labelled_rather_than_flattened():
     """Unified record, per-source evidence.
 
@@ -87,6 +107,7 @@ def test_the_key_is_stable_and_safe():
     assert model_key("Nova", "Amazon") != model_key("Nova", "Meta")
 
 
+@needs_corpus
 def test_the_published_registry_matches_what_the_builder_produces():
     published = json.loads(Path("site/data/models.json").read_text(encoding="utf-8"))
     report = summarize(_registry())
@@ -104,6 +125,7 @@ def test_the_published_registry_matches_what_the_builder_produces():
     }
 
 
+@needs_corpus
 def test_the_logo_registry_and_models_json_cannot_disagree():
     """One answer to "which models exist".
 
@@ -121,6 +143,7 @@ def test_the_logo_registry_and_models_json_cannot_disagree():
     assert set(logos["organizations"]) == set(models["organizations"])
 
 
+@needs_corpus
 def test_a_retired_id_is_never_handed_to_a_different_model():
     """Dropping an entry frees its card, never its number.
 
