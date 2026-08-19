@@ -31,7 +31,17 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          title="Jargon in user-facing text — week of $(date -u +%Y-%m-%d)"
+          # No findings, no issue. The script prints nothing when the copy is
+          # clean, and a weekly "nothing to report" is the kind of non-news
+          # that teaches a reader to skip the notification. Then the week with
+          # real findings gets skipped too. An already-open issue is left
+          # alone rather than edited to say it is empty, so whoever is working
+          # through the list does not lose it mid-week.
+          if [[ ! -s body.md ]]; then
+            echo "No flagged terms. Nothing filed."
+            exit 0
+          fi
+          title="Jargon in user-facing text, week of $(date -u +%Y-%m-%d)"
           # One rolling issue, not one per week: the finding list is a
           # standing state of the copy, so a new issue every Monday would
           # bury the discussion that happened on the last one. The title

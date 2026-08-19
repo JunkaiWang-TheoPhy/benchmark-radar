@@ -90,10 +90,14 @@ def main() -> int:
     hits = findings(args.root)
 
     if args.markdown:
-        print("## Jargon in user-facing text\n")
+        # Nothing to print when nothing is wrong. The workflow keys on empty
+        # output to stay silent rather than filing "no findings" every Monday,
+        # which is the kind of recurring non-news that teaches a reader to
+        # skip the notification, and then the week with real findings is
+        # skipped too.
         if not hits:
-            print("No flagged terms this week. Nothing to do.")
             return 0
+        print("## Jargon in user-facing text\n")
         print(
             f"{len(hits)} place(s) print a word that only makes sense inside this "
             "project. Each line is the text a reader sees.\n"
@@ -104,7 +108,7 @@ def main() -> int:
                 current = term
                 print(f"\n### `{term}`\n\n_{why}_\n")
             snippet = text if len(text) <= 160 else text[:157] + "..."
-            print(f"- `{where}` — {snippet}")
+            print(f"- `{where}`: {snippet}")
         print(
             "\n---\nNot every hit is a bug: a term the surrounding sentence "
             "defines is fine. Rewrite the ones that assume the reader already "
