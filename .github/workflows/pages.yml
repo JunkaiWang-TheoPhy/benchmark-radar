@@ -81,11 +81,10 @@ jobs:
           # Regenerated rather than served from the commit, so a share card can
           # never advertise counts the registry has moved past.
           python scripts/generate_og_image.py
-          # Regenerate the external catalog into site/data/ so the search index
-          # and the 1,148 per-benchmark shards deploy with the site. Both are
-          # gitignored derivations of the committed crawl CSVs and identity.yml,
-          # so the published site only carries them if the build writes them
-          # here, exactly as radar.json and the export artifacts are handled.
+          # Rebuild the search index and the 1,148 per-benchmark shards from the
+          # committed crawl CSVs and identity.yml, so a recrawl or an identity
+          # edit reaches the published site rather than serving what the last
+          # commit happened to carry.
           benchmark-radar normalize-external
           pytest -q
       - name: Configure Pages

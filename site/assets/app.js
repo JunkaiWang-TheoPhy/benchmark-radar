@@ -548,7 +548,7 @@ const I18N = {
     "The subset a ranked row can speak to.": "排名行所能覆盖的子集。",
     "New instruments": "新工具",
     "Benchmarks this document reports": "此文档报告的基准",
-    "Last read by a human on": "人工最后读取于",
+    "Last curated on": "最后整理于",
     "date unknown": "日期未知",
     "shown": "显示",
     "tracked": "追踪",
@@ -5625,7 +5625,7 @@ function modelCardRow(card) {
       card.retrieved_at
         ? element("p", {
             className: "adopter-meta",
-            text: `${t("Last read by a human on")} ${formatDate(card.retrieved_at, {
+            text: `${t("Last curated on")} ${formatDate(card.retrieved_at, {
               dateStyle: "medium",
             })}`,
           })
