@@ -55,12 +55,15 @@ def test_priority_score_is_reachably_explained():
     assert "How is this scored?" in script
 
 
-def test_recommendation_threshold_is_a_badge_not_an_inclusion_gate():
+def test_recommendation_threshold_does_not_gate_inclusion_and_rows_carry_no_badge():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
-    assert 'className: "recommendation-badge"' in script
-    assert 'text: t("Recommended")' in script
-    assert "Recommended to review" in script
+    # Issue #248: the badge was removed because it flagged most top-ranked
+    # rows and so communicated nothing. The rubric still explains that the
+    # threshold does not control inclusion.
+    assert "recommendation-badge" not in script
+    assert 'text: t("Recommended")' not in script
+    assert "Recommended to review" not in script
     assert "not an endorsement" in script
     assert "it does not control inclusion" in script
     assert "Every record matching at least one taxonomy category is retained" in script
@@ -250,7 +253,8 @@ def test_today_view_has_one_filterable_observation_list_and_one_source_status():
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
-    assert html.count("Matching observations") == 1
+    # The heading appears in the data-i18n key and the visible text.
+    assert html.count("Today's radar") == 2
     assert 'id="today-list"' in html
     assert 'id="filters"' in html
     assert 'id="kind-filter"' in html
