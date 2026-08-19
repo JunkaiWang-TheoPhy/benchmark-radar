@@ -305,12 +305,13 @@ def test_crawled_scores_are_partitioned_by_source_with_no_merge_path():
 
 def test_crawled_scores_never_render_a_percentage_or_scale():
     # display_scale is null on every crawled series, so no percentage bar and
-    # no "% of max" can be drawn; raw_value prints verbatim. vending-bench-2
+    # no "% of max" can be drawn; raw_value prints verbatim (in the chart's point
+    # labels, since the table that used to print it is gone). vending-bench-2
     # declares max 1.0 and carries 8017.59, so a contradicted declared maximum
     # is printed as a claim about the source, never used as a denominator.
     script = source("site/assets/app.js")
 
-    section = script.split("function externalSourceTable(source, payload)", 1)[1].split(
+    section = script.split("function externalScoreChart(source, payload)", 1)[1].split(
         "// Identity siblings", 1
     )[0]
     assert "row.raw_value" in section
@@ -318,6 +319,141 @@ def test_crawled_scores_never_render_a_percentage_or_scale():
     assert "%" not in section
     assert "max_score_contradicted" in section
     assert "declared_max" in section
+
+
+def test_every_crawled_score_is_a_plotted_point():
+    # The crawled layer used to render as a table and nothing else: 679
+    # benchmarks carrying 5,544 real numbers got no figure while 59 curated ones
+    # did, because a crawled row has no evaluation date. A withheld protocol is a
+    # reason not to draw a chronology; it is not a reason to make the reader draw
+    # the field in their own head. So every reported value is a point, and the
+    # chart replaces the table outright rather than sitting beside it -- the
+    # table added nothing the chart's point titles did not already say.
+    script = source("site/assets/app.js")
+
+    chart = script.split("function externalScoreChart(source, payload)", 1)[1].split(
+        "\nfunction externalSourceTable", 1
+    )[0]
+    table = script.split("function externalSourceTable(source, payload)", 1)[1].split(
+        "// Identity siblings", 1
+    )[0]
+
+    assert "externalScoreChart(source, payload)" in table
+    assert "<table" not in table.replace('"table"', "").replace("'table'", "")
+    assert "(payload.rows || [])" in chart
+    assert ".slice(" not in chart
+    # A value that did not parse into a number has no position on an axis, so it
+    # is dropped. That is the only row the chart may drop, and it drops it by
+    # testing the value rather than by a cap.
+    assert 'typeof row.value === "number" && Number.isFinite(row.value)' in chart
+
+
+def test_the_crawled_chart_axis_is_score_not_time():
+    # The reason this layer had no figure was that it has no dates, so the one
+    # thing the figure must never do is imply it has them. The x position comes
+    # from each row's own value (sorted ascending), the axis label says in words
+    # that it is not a time axis, and no date field is read anywhere in the
+    # drawing code.
+    script = source("site/assets/app.js")
+
+    chart = script.split("function externalScoreChart(source, payload)", 1)[1].split(
+        "\nfunction externalSourceTable", 1
+    )[0]
+
+    assert "a.value - b.value" in chart
+    assert "no evaluation date is recorded, so this is not a time axis" in chart
+    assert "reported_date" not in chart
+    assert "formatDate" not in chart
+    # And no segment between points, for the same reason the curated chart draws
+    # none: adjacency by score is not a trajectory.
+    assert "polyline" not in chart
+
+
+def test_the_crawled_chart_reuses_the_curated_chart_classes():
+    # The visual language is not allowed to fork: the crawled figure draws with
+    # the exact classes scoreTrackChart draws with (frontier-grid, frontier-tick,
+    # frontier-axis-label, score-point/-face/-glyph, score-best-line/-label), so
+    # one CSS ruleset governs both and a reader never has to learn a second
+    # chart style for a second kind of evidence.
+    script = source("site/assets/app.js")
+
+    chart = script.split("function externalScoreChart(source, payload)", 1)[1].split(
+        "\nfunction externalSourceTable", 1
+    )[0]
+
+    for shared_class in [
+        "frontier-grid",
+        "frontier-tick",
+        "frontier-axis-label",
+        "score-point-face",
+        "score-point-glyph",
+        "score-point-citation-ring",
+        "score-best-line",
+        "score-best-label",
+    ]:
+        assert shared_class in chart, shared_class
+    assert "external-field" not in chart
+
+
+def test_the_crawled_chart_is_drawn_per_source_block():
+    # One chart per source block, built from that block's own rows. The chart is
+    # called from inside externalSourceTable, which the keyed scores_by_source
+    # object already partitions, so there is no path by which two sources' values
+    # land on one axis.
+    script = source("site/assets/app.js")
+
+    block = script.split("function externalScoresBlock(shard)", 1)[1].split(
+        "\n// --- The reported field", 1
+    )[0]
+
+    assert "externalScoreChart" not in block
+
+
+def test_every_crawled_score_has_the_curated_charts_pinned_tooltip():
+    # A crawled point with only a native <title> was a hover with no keyboard
+    # affordance and no click -- a reader landing on a single-point field
+    # (e.g. llm-stats-researchclawbench) saw a dot and nothing else. Every
+    # crawled point now goes through makeFrontierPointInteractive, the exact
+    # system the curated chart's points use: role="button", data-frontier-point,
+    # and a pinned card on click. externalSourceTable mounts its own
+    # frontierTooltip() instance beside the chart so that card has somewhere to
+    # render (external records hide the curated #frontier-chart entirely).
+    script = source("site/assets/app.js")
+
+    chart = script.split("function externalScoreChart(source, payload)", 1)[1].split(
+        "\nfunction externalSourceTable", 1
+    )[0]
+    assert "makeFrontierPointInteractive(group" in chart
+    assert 'role: "button"' in chart
+    assert '"data-frontier-point": ""' in chart
+    assert "enableFrontierTouchTargets(svg)" in chart
+    # Only fields a crawled row actually carries -- no Instrument, Protocol,
+    # Date or Read-from row, which do not exist in this source and would print
+    # as "not recorded" filler beside the curated card's real ones.
+    assert "t(\"Instrument\")" not in chart
+    assert "t(\"Protocol\")" not in chart
+    assert "t(\"Date\")" not in chart
+
+    table_fn = script.split("function externalSourceTable(source, payload)", 1)[1].split(
+        "\n// Identity siblings", 1
+    )[0]
+    assert 'element("div", { className: "frontier-chart" }, [chart, frontierTooltip()])' in table_fn
+
+
+def test_the_pinned_tooltip_positions_against_its_own_parent_not_a_fixed_id():
+    # positionFrontierTooltip and the two keyboard-cycle handlers used to read
+    # byId("frontier-chart") directly, which only exists for the curated path.
+    # Deriving the host from the tooltip's own parentElement is what lets one
+    # tooltip implementation serve both the curated chart (mounted inside
+    # #frontier-chart) and the crawled chart (mounted inside a lookalike
+    # .frontier-chart div under #frontier-external).
+    script = source("site/assets/app.js")
+
+    position_fn = script.split("function positionFrontierTooltip(tooltip, group)", 1)[1].split(
+        "\nfunction repositionFrontierTooltip", 1
+    )[0]
+    assert "tooltip.parentElement" in position_fn
+    assert 'byId("frontier-chart")' not in position_fn
 
 
 def test_crawled_third_party_text_never_enters_the_dom_as_markup():

@@ -2797,9 +2797,35 @@ td a {
   border-left-color: #c98a4b;
 }
 
+.score-evidence summary {
+  display: inline-flex;
+  cursor: pointer;
+  margin-bottom: 0.4rem;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid #6ea8dc;
+  border-radius: 4px;
+  list-style: none;
+}
+
+.score-evidence summary::-webkit-details-marker {
+  display: none;
+}
+
+.score-evidence summary:hover,
+.score-evidence summary:focus-visible,
+.score-evidence[open] summary {
+  background: #6ea8dc;
+  outline: none;
+}
+
+.score-evidence summary:hover strong,
+.score-evidence summary:focus-visible strong,
+.score-evidence[open] summary strong {
+  color: #0d1519;
+}
+
 .score-evidence strong {
   display: block;
-  margin-bottom: 0.4rem;
   font-family: var(--utility);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
@@ -2932,6 +2958,44 @@ td a {
   font-family: var(--utility);
   font-size: 0.65rem;
   text-transform: uppercase;
+}
+
+/* Collapsed by default: the full reading rule runs several sentences, and a
+   reader scanning the chart wants the scores before the method. The rule
+   itself stays one tap away rather than gone. */
+.frontier-explainer-sub {
+  margin: 0.2rem 0 0.7rem;
+}
+
+.frontier-explainer-sub summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 0.5rem;
+  border: 1px solid #6ea8dc;
+  border-radius: 4px;
+  color: #9edbd1;
+  cursor: pointer;
+  font-family: var(--utility);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  list-style: none;
+}
+
+.frontier-explainer-sub summary::-webkit-details-marker {
+  display: none;
+}
+
+.frontier-explainer-sub summary:hover,
+.frontier-explainer-sub summary:focus-visible,
+.frontier-explainer-sub[open] summary {
+  background: #6ea8dc;
+  color: #0d1519;
+  outline: none;
+}
+
+.frontier-explainer-sub p {
+  margin: 0.4rem 0 0;
 }
 
 .benchmark-new {
@@ -4089,12 +4153,75 @@ footer {
   font-size: 0.76rem;
 }
 
-.external-source-note {
-  max-width: 75ch;
-  margin: 0 0 0.6rem;
-  color: #aebcc1;
-  font-size: 0.78rem;
+.external-source-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
 }
+
+.external-source-heading h4 {
+  margin: 0;
+}
+
+/* A round (i) toggle for one line of provenance text. The marker itself is
+   the affordance -- an outlined circle, always visible, brightened on
+   hover/focus -- rather than a plain word link, so "there is more here" reads
+   the same way at every source block on the page. */
+.info-disclosure {
+  position: relative;
+}
+
+.info-disclosure-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #6ea8dc;
+  border-radius: 50%;
+  color: #6ea8dc;
+  cursor: pointer;
+  font-family: var(--utility);
+  font-size: 0.68rem;
+  font-style: italic;
+  line-height: 1;
+  list-style: none;
+}
+
+.info-disclosure-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.info-disclosure-toggle:hover,
+.info-disclosure-toggle:focus-visible,
+.info-disclosure[open] .info-disclosure-toggle {
+  background: #6ea8dc;
+  color: #0d1519;
+  outline: none;
+}
+
+.info-disclosure-body {
+  position: absolute;
+  z-index: 2;
+  top: 24px;
+  left: 0;
+  width: max(20rem, 60vw);
+  max-width: 26rem;
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #6ea8dc;
+  border-radius: 6px;
+  background: #16232a;
+  color: #d6e0e3;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+/* externalScoreChart (the crawled-score figure) draws entirely with the
+   curated chart's own classes -- frontier-grid, frontier-tick,
+   frontier-axis-label, score-point*, score-best-line/label -- so it carries no
+   styling of its own here. */
 
 .external-scores-wrap {
   max-height: 26rem;

@@ -160,6 +160,41 @@ def test_no_max_score_trustworthy_judgement_is_emitted(normalized: dict) -> None
         assert "max_score_trustworthy" not in row
 
 
+def test_the_sources_rank_orders_its_own_values(normalized: dict) -> None:
+    """The premise of the crawled chart's x axis.
+
+    A crawled row has no evaluation date, so its figure plots rank instead of
+    time. That axis only means what its label says if the source's rank really
+    is an ordering of the values the source published. In this snapshot it is,
+    in all 679 scored series, with no exception. A recrawl that breaks it makes
+    the chart rise where the source fell, so it fails here rather than shipping.
+    """
+    by_series: dict[str, list[dict]] = {}
+    for row in normalized["score_observations"]:
+        by_series.setdefault(row["series_id"], []).append(row)
+
+    assert by_series
+    for rows in by_series.values():
+        ranked = sorted(rows, key=lambda row: row["rank_in_source_response"])
+        values = [row["value"] for row in ranked]
+        assert values == sorted(values, reverse=True)
+
+
+def test_every_recorded_score_can_be_drawn_as_a_point(normalized: dict) -> None:
+    """A point needs a position, and a position needs a number.
+
+    The site draws every crawled score rather than tabulating it, so a row whose
+    raw value did not parse would be in the table and absent from the chart. In
+    this snapshot no such row exists: all 5,544 observations parsed. The
+    renderer still filters for a finite number -- an unparsed value has no
+    honest position -- but that filter is a guard here, not a working part.
+    """
+    values = [row["value"] for row in normalized["score_observations"]]
+    assert values
+    assert all(isinstance(value, (int, float)) for value in values)
+    assert all(row["value_kind"] == "number" for row in normalized["score_observations"])
+
+
 def test_output_is_byte_identical_across_runs(normalized: dict, tmp_path: Path) -> None:
     first = write_llm_stats_catalog(normalized, tmp_path / "a")
     second = write_llm_stats_catalog(normalize_llm_stats_again(), tmp_path / "b")

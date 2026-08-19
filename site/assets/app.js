@@ -387,6 +387,7 @@ const I18N = {
     "Model Card Adoption Rank": "模型卡采用排名",
     "Which benchmarks do model cards report?": "模型卡报告了哪些基准?",
     "How to read this evidence": "如何解读这些证据",
+    "What does this source record?": "这个来源记录了什么？",
     "leaderboard.method.note1":
       "这是报告惯例的排名,不是基准质量排名。一张模型卡无论报告了多少种配置,对同一基准最多计为一次提及。",
     "leaderboard.method.note2":
@@ -418,6 +419,7 @@ const I18N = {
     "Open daily Issues": "打开每日 Issue ↗",
     "Select a node": "选择一个节点",
     "All dates": "所有日期",
+    "How to read this chart": "如何解读这张图",
     "frontier.explainer.sub":
       "每个能从引文文档中逐字读到的数值,按该文档的发布日期放置(而非任何评测日期),只在工具与协议完全一致时才相连。末端趋于平直通常意味着没有更新的数字可读,因此缺口被标出而不是用线穿过。一条曲线是否已经饱和,由你来判读,本面板不会给出饱和分数。",
     "leaderboard.filters.note":
@@ -636,6 +638,14 @@ const I18N = {
     "Not yet reported": "尚未报告",
     "not yet reported in these cards": "这些模型卡中尚未报告",
     "Reported by": "报告机构",
+    "Reported score": "报告的分数",
+    "Score as reported": "报告的分数",
+    "self reported": "自行报告",
+    "ordered by score, low to high -- no evaluation date is recorded, so this is not a time axis":
+      "按分数从低到高排列——没有记录评测日期，因此这不是时间轴",
+    "best reported": "报告的最高分",
+    "{count} scores reported to {source}, ordered by score rather than by date: no evaluation date is recorded for any of them. Highest {best} by {model}, lowest {low}.":
+      "向 {source} 报告的 {count} 个分数，按分数而非日期排列：其中没有任何一条记录了评测日期。最高 {best}（{model}），最低 {low}。",
     "Benchmark home ↗": "基准主页 ↗",
     "Top cards": "头部模型卡",
     "Disclosure": "披露",
@@ -643,6 +653,10 @@ const I18N = {
       "没有符合条件的基准。清除一个或多个筛选条件以扩大范围。",
     "source documents": "来源文档",
     "Each document counts once per benchmark.": "每份文档对每个基准只计一次。",
+    "Each document counts once per benchmark. Plus {count} crawled benchmark records from {sources}.":
+      "每份文档对每个基准只计一次。另有来自 {sources} 的 {count} 条爬取的基准记录。",
+    "{count} more in the crawled catalog, {withScores} with a reported score.":
+      "爬取目录中还有 {count} 个，其中 {withScores} 个有报告的分数。",
     organizations: "机构",
     "The denominator for reporting breadth.": "衡量报告广度时的分母。",
     "Benchmarks tracked": "追踪的基准数",
@@ -844,6 +858,23 @@ function element(tag, options = {}, children = []) {
   }
   children.filter(Boolean).forEach((child) => node.append(child));
   return node;
+}
+
+// A round (i) toggle for one sentence of provenance/method text that a reader
+// needs once, not on every visit to an already-familiar block. Collapsed by
+// default; the marker itself carries the affordance (no plain "How to read
+// this" text link), so it stays visible and consistent wherever it appears --
+// the score-evidence and frontier-explainer disclosures share its "expand"
+// visual treatment even though they use a text summary instead of this icon.
+function infoDisclosure(text) {
+  return element("details", { className: "info-disclosure" }, [
+    element("summary", {
+      className: "info-disclosure-toggle",
+      attrs: { "aria-label": t("What does this source record?") },
+      text: "i",
+    }),
+    element("p", { className: "info-disclosure-body", text }),
+  ]);
 }
 
 // Coalesce bursts of input (typing in a filter box) into a single trailing
@@ -3435,7 +3466,11 @@ function initBenchmarkSearch() {
     // turns the panel's loading state into an explicit unavailability note
     // (see renderAdoptionFrontier).
     const board = state.data?.model_card_leaderboard;
-    if (board && state.view === "leaderboard") renderAdoptionFrontier(board);
+    // renderLeaderboard() calls renderAdoptionFrontier(board) itself, and the
+    // registry-overview tiles cite the crawled totals once the index is in --
+    // they render before this fetch resolves on first load, so they need this
+    // second pass rather than staying curated-only forever.
+    if (board && state.view === "leaderboard") renderLeaderboard();
   });
 }
 
@@ -3695,6 +3730,170 @@ function externalScoresBlock(shard) {
   ]);
 }
 
+// --- The reported field (crawled scores) -------------------------------------
+//
+// A crawled row carries no evaluation date and no protocol, so it cannot go on
+// the curated panel's time axis, and it is not joined to the curated layer's
+// `benchmark_scores.yml` records: none of the join-rule machinery in
+// `scoreTrackChart` (instrument/protocol grouping, evidence grading) applies to
+// a row with neither field. What it does share with that chart is everything
+// visual -- same margins, same point size, same pale-face-plus-brand-glyph
+// marker, same grid and tick classes -- because the reader should not have to
+// learn a second chart language to read a second kind of evidence. Only the
+// axis differs in kind: score low-to-high stands in for the time axis, and the
+// label says plainly that it is not one.
+function externalScoreChart(source, payload) {
+  const meta = externalSourceMeta(source);
+  // A row whose value did not parse is in the table verbatim and out of the
+  // chart: a point can only be drawn at a position, and there is no honest
+  // position for a value that is not a number. Sorted ascending so the axis
+  // reads low-to-high left-to-right, same direction as every other quantity
+  // axis on the site.
+  const plotted = (payload.rows || [])
+    .filter((row) => typeof row.value === "number" && Number.isFinite(row.value))
+    .sort((a, b) => a.value - b.value);
+  if (!plotted.length) return null;
+
+  const values = plotted.map((row) => row.value);
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const pad = Math.max((high - low) * 0.18, Math.abs(high) * 0.05, Number.EPSILON);
+  const band = { low: low - pad, high: high + pad };
+
+  // Same viewBox and margins as scoreTrackChart, so the two charts sit at the
+  // same visual scale wherever a reader compares them.
+  const narrow = typeof window !== "undefined" && window.innerWidth <= 760;
+  const width = narrow ? 520 : 920;
+  const scoreHeight = 480;
+  const margin = { top: 32, right: 20, bottom: 62, left: 68 };
+  const plotWidth = width - margin.left - margin.right;
+  const height = margin.top + scoreHeight + margin.bottom;
+  const scoreTop = margin.top;
+  // A single-model field has no interval to spread across, so its one point is
+  // drawn at the left edge of the plot rather than at the midpoint of a range
+  // that does not exist.
+  const step = plotted.length > 1 ? plotWidth / (plotted.length - 1) : 0;
+  const x = (index) => margin.left + index * step;
+  const scoreY = (value) => {
+    if (band.high <= band.low) return scoreTop + scoreHeight / 2;
+    return scoreTop + scoreHeight - ((value - band.low) / (band.high - band.low)) * scoreHeight;
+  };
+
+  const svg = svgElement("svg", {
+    viewBox: `0 0 ${width} ${height}`,
+    role: "group",
+    "aria-label": t(
+      "{count} scores reported to {source}, ordered by score rather than by date: no evaluation date is recorded for any of them. Highest {best} by {model}, lowest {low}.",
+      {
+        count: plotted.length.toLocaleString(),
+        source: meta.name,
+        best: values[values.length - 1],
+        model: plotted[plotted.length - 1].model_name || t("not recorded"),
+        low: values[0],
+      },
+    ),
+  });
+
+  for (const value of [band.high, band.low]) {
+    const gridY = scoreY(value);
+    svg.append(
+      svgElement("line", {
+        x1: margin.left,
+        y1: gridY,
+        x2: width - margin.right,
+        y2: gridY,
+        class: "frontier-grid",
+      }),
+    );
+    svg.append(
+      svgElement(
+        "text",
+        { x: margin.left - 12, y: gridY + 4, "text-anchor": "end", class: "frontier-tick" },
+        Number(value.toFixed(2)),
+      ),
+    );
+  }
+
+  const bestValue = values[values.length - 1];
+  const bestY = scoreY(bestValue);
+  svg.append(
+    svgElement("line", {
+      x1: margin.left,
+      y1: bestY,
+      x2: width - margin.right,
+      y2: bestY,
+      class: "score-best-line",
+    }),
+  );
+  svg.append(
+    svgElement(
+      "text",
+      { x: width - margin.right, y: bestY - 6, "text-anchor": "end", class: "score-best-label" },
+      `${t("best reported")} ${bestValue}`,
+    ),
+  );
+
+  for (const [index, row] of plotted.entries()) {
+    const pointX = x(index);
+    const pointY = scoreY(row.value);
+    const thirdParty = row.reported_by === "third_party";
+    const group = svgElement("g", {
+      class: `score-point${thirdParty ? " score-point-third-party" : ""}`,
+      tabindex: "0",
+      role: "button",
+      "aria-pressed": "false",
+      "data-frontier-point": "",
+      "aria-label":
+        `${row.model_name || t("not recorded")} ${t("by")} ${row.organization || t("not recorded")}` +
+        (thirdParty ? `, ${t("cited by")} ${meta.name}` : "") +
+        `. ${t("Click to pin record details")}.`,
+    });
+    group.append(svgElement("circle", { cx: pointX, cy: pointY, r: 9, class: "score-point-face" }));
+    if (thirdParty) {
+      group.append(
+        svgElement("circle", { cx: pointX, cy: pointY, r: 12, class: "score-point-citation-ring" }),
+      );
+    }
+    group.append(
+      modelGlyph(row.model_name, row.organization, pointX, pointY, 14, "score-point-glyph"),
+    );
+    // The same pinned-card system the curated chart uses (makeFrontierPointInteractive
+    // + #frontier-tooltip), not a native <title>. Only the rows this source
+    // actually carries are listed -- Instrument, Protocol, Date and Read from
+    // do not exist in a crawled row (see the module comment above), and
+    // showing them as "not recorded" here would manufacture four empty rows
+    // where the curated card shows four real ones.
+    makeFrontierPointInteractive(group, {
+      kind: t("Reported score"),
+      title: `${row.organization || t("not recorded")} · ${row.model_name || t("not recorded")}`,
+      rows: [
+        { label: t("Organization"), value: row.organization || t("not recorded") },
+        { label: t("Model"), value: row.model_name || t("not recorded") },
+        { label: t("Score as reported"), value: String(row.raw_value ?? row.value) },
+        { label: t("Reported by"), value: t("self reported") },
+        ...(thirdParty ? [{ label: t("Cited by"), value: meta.name }] : []),
+      ],
+      url: row.source_url,
+    });
+    svg.append(group);
+  }
+  enableFrontierTouchTargets(svg);
+
+  svg.append(
+    svgElement(
+      "text",
+      {
+        x: margin.left + plotWidth / 2,
+        y: height - 7,
+        "text-anchor": "middle",
+        class: "frontier-axis-label",
+      },
+      t("ordered by score, low to high -- no evaluation date is recorded, so this is not a time axis"),
+    ),
+  );
+  return svg;
+}
+
 function externalSourceTable(source, payload) {
   const meta = externalSourceMeta(source);
   const rows = payload.rows || [];
@@ -3710,43 +3909,27 @@ function externalSourceTable(source, payload) {
       ),
     );
   }
+  // The chart replaces the table entirely: it draws the same shape the
+  // curated saturation chart draws, from the same rows, and the table added
+  // nothing the chart plus its pinned point cards did not already say.
+  const chart = externalScoreChart(source, payload);
   return element("div", { className: "external-source" }, [
-    element("h4", {
-      text: `${meta.name} · ${metricLabel(rows.length, "reported score")}`,
-    }),
-    element("p", { className: "external-source-note", text: notes.join(" ") }),
-    rows.length
-      ? element("div", { className: "external-scores-wrap" }, [
-          element("table", { className: "external-scores" }, [
-            element("thead", {}, [
-              element("tr", {}, [
-                element("th", { text: t("Model") }),
-                element("th", { text: t("Organization") }),
-                element("th", { text: t("Score as reported") }),
-                element("th", { text: t("Reported by") }),
-              ]),
-            ]),
-            element(
-              "tbody",
-              {},
-              rows.map((row) =>
-                element("tr", {}, [
-                  element("td", { text: row.model_name || t("not recorded") }),
-                  element("td", { text: row.organization || t("not recorded") }),
-                  // raw_value is printed verbatim. Reparsing it into a
-                  // formatted number would be the first step toward treating
-                  // it as a measurement on a known scale, which it is not.
-                  element("td", { text: row.raw_value ?? t("not recorded") }),
-                  element("td", {
-                    text: row.reported_by
-                      ? String(row.reported_by).replaceAll("_", " ")
-                      : t("not recorded"),
-                  }),
-                ]),
-              ),
-            ),
-          ]),
-        ])
+    element("div", { className: "external-source-heading" }, [
+      element("h4", {
+        text: `${meta.name} · ${metricLabel(rows.length, "reported score")}`,
+      }),
+      // The provenance note (what this source did and did not record) behind
+      // an (i) toggle rather than a paragraph that always runs under the
+      // heading: it's one sentence readers need once, not on every visit to
+      // an already-familiar source block.
+      infoDisclosure(notes.join(" ")),
+    ]),
+    // frontier-chart's own layout class (position: relative, full-width svg)
+    // rather than a bespoke one: the pinned tooltip's positioning math reads
+    // its own parentElement as the clamp box, and reusing this class is what
+    // makes that box behave identically to the curated chart's.
+    chart
+      ? element("div", { className: "frontier-chart" }, [chart, frontierTooltip()])
       : element("p", { className: "external-empty", text: t(meta.emptyKey) }),
   ]);
 }
@@ -3793,11 +3976,15 @@ function externalSiblingsBlock(shard) {
 
 function externalBenchmarkDetail(shard) {
   const detail = shard.record || {};
+  // Scores first: it is the one block a reader came for on this panel (the
+  // adjacent curated chart is a saturation-over-time view, and this is its
+  // external-record counterpart), and it is the block most likely to have
+  // content -- identity, openness and size are frequently "not established".
   return [
+    externalScoresBlock(shard),
     externalIdentityBlock(detail),
     externalOpennessBlock(detail),
     externalSizesBlock(detail),
-    externalScoresBlock(shard),
     externalSiblingsBlock(shard),
   ];
 }
@@ -4111,8 +4298,12 @@ function scoreReadout(entry, record) {
 
   return element("div", { className: "score-readout-inner" }, [
     element("div", { className: "score-readout-figures" }, rows),
-    element("div", { className: `score-evidence score-evidence-${evidence.id}` }, [
-      element("strong", { text: evidence.label }),
+    // Scores first, method second: the figures above are the numbers a reader
+    // came for, and the supports/does-not-support prose is the reasoning behind
+    // them. Collapsed by default so it stays one tap away rather than pushing
+    // the next benchmark's figures further down the page.
+    element("details", { className: `score-evidence score-evidence-${evidence.id}` }, [
+      element("summary", {}, [element("strong", { text: evidence.label })]),
       element("p", {}, [
         element("span", { className: "score-evidence-yes", text: t("Supports: ") }),
         document.createTextNode(evidence.supports),
@@ -4183,7 +4374,10 @@ function frontierTooltip() {
       selectedFrontierPoint?.focus();
       return;
     }
-    const points = [...byId("frontier-chart").querySelectorAll("[data-frontier-point]")];
+    // Same reasoning as positionFrontierTooltip: walk from the tooltip's own
+    // parent rather than the curated chart's id, so Tab-to-next-point also
+    // works inside the crawled chart's copy of this tooltip.
+    const points = [...tooltip.parentElement.querySelectorAll("[data-frontier-point]")];
     const next = points[points.indexOf(selectedFrontierPoint) + 1];
     if (next) {
       selectedFrontierSourceVisited = true;
@@ -4229,7 +4423,12 @@ function frontierTooltipContent(details, pinned) {
 }
 
 function positionFrontierTooltip(tooltip, group) {
-  const host = byId("frontier-chart");
+  // The host is wherever the tooltip actually lives, not a hardcoded id: the
+  // curated chart mounts it inside #frontier-chart, and the crawled chart
+  // mounts an identical instance inside #frontier-external so an external
+  // record's points get the same pinned card. Positioning math only needs a
+  // bounding box to clamp against, and the tooltip's own parent is that box.
+  const host = tooltip.parentElement;
   if (!host) return;
   const hostBox = host.getBoundingClientRect();
   const pointBox = group.getBoundingClientRect();
@@ -4380,7 +4579,9 @@ function makeFrontierPointInteractive(group, details) {
       selectedFrontierPoint &&
       selectedFrontierSourceVisited
     ) {
-      const points = [...byId("frontier-chart").querySelectorAll("[data-frontier-point]")];
+      const points = [
+        ...byId("frontier-tooltip").parentElement.querySelectorAll("[data-frontier-point]"),
+      ];
       const next = points[points.indexOf(selectedFrontierPoint) + 1];
       if (group === next) {
         event.preventDefault();
@@ -5282,9 +5483,28 @@ function renderLeaderboard() {
   // entries, matching how the filter options are built, so the tracked tile's
   // breadth claim never collides with the adopted-only figure.
   const domainCount = new Set((board.entries || []).map((entry) => entry.domain)).size;
+  // Crawled totals, shown beside the curated ones rather than folded into them:
+  // a model card and a crawled leaderboard row are different kinds of evidence
+  // (one cites a document with a protocol, the other does not), so the two
+  // counts stay two counts. Absent until the index has loaded (it fetches
+  // async on first search-panel init); the tile falls back to the curated
+  // figure alone rather than showing a stale or invented crawled total.
+  const crawledIndex = state.benchmarkIndex || [];
+  const crawledWithScores = crawledIndex.filter((record) => record.score_count > 0).length;
   replaceChildren(byId("leaderboard-insights"), [
     evidenceDisclosure(
-      { value: board.model_card_count, label: t("source documents"), detail: t("Each document counts once per benchmark.") },
+      {
+        value: board.model_card_count,
+        label: t("source documents"),
+        detail: state.benchmarkIndexLoaded
+          ? t("Each document counts once per benchmark. Plus {count} crawled benchmark records from {sources}.", {
+              count: crawledIndex.length.toLocaleString(),
+              sources: [...new Set(crawledIndex.map((record) => externalSourceMeta(record.source).name))]
+                .sort()
+                .join(", "),
+            })
+          : t("Each document counts once per benchmark."),
+      },
       allCards.map(modelCardLine),
       t("No source documents in the registry yet."),
     ),
@@ -5318,10 +5538,17 @@ function renderLeaderboard() {
       {
         value: board.benchmark_count,
         label: t("Benchmarks tracked"),
-        detail: t("across {domains}{listed}.", {
-          domains: metricLabel(domainCount, "domain"),
-          listed: board.entries.length ? ` · ${metricLabel(board.entries.length, "benchmark")} ${t("listed")}` : "",
-        }),
+        detail:
+          t("across {domains}{listed}.", {
+            domains: metricLabel(domainCount, "domain"),
+            listed: board.entries.length ? ` · ${metricLabel(board.entries.length, "benchmark")} ${t("listed")}` : "",
+          }) +
+          (state.benchmarkIndexLoaded
+            ? ` ${t("{count} more in the crawled catalog, {withScores} with a reported score.", {
+                count: crawledIndex.length.toLocaleString(),
+                withScores: crawledWithScores.toLocaleString(),
+              })}`
+            : ""),
       },
       (board.entries || []).map((entry) =>
         benchmarkLine(
