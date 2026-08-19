@@ -3398,7 +3398,13 @@ const EXTERNAL_SOURCE_META = {
   llm_stats: {
     name: "LLM Stats",
     noteKey:
-      "Self-reported scores collected by LLM Stats. No evaluation protocol or date is recorded, and rows are listed in the source's own order.",
+      // "No date is recorded" was false and was the complaint in issue #269:
+      // every one of the 5,544 rows carries one. What is missing is a date for
+      // the measurement -- the date recorded is the model's own release -- and
+      // that is the distinction worth stating, since it is why these rows are
+      // ordered by score rather than drawn on a time axis. The axis label was
+      // corrected then; this note was not.
+      "Self-reported scores collected by LLM Stats. No evaluation protocol is recorded, and the only date is each model's own release, not when the score was measured, so rows are listed in the source's own order.",
     emptyKey: "LLM Stats recorded no scores for this benchmark.",
   },
   opencompass_hub: {
