@@ -1073,9 +1073,10 @@ function scoreBlock(item) {
   const raw = Number(item.total_score || 0);
   const max = Number(scoreMax(item));
   // Issue #248: a 100-point score rounds to an integer (68, not 68.46), but
-  // legacy 0-4 records use meaningful halves, so keep one decimal there. The
-  // track always uses the raw value, so it never misrepresents the ratio.
-  const precision = max > 10 ? 0 : 1;
+  // legacy 0-4 records carry meaningful hundredths (3.01, 2.94), so they keep
+  // two decimals. The track always uses the raw value, so it never
+  // misrepresents the ratio.
+  const precision = max > 10 ? 0 : 2;
   const score = raw.toFixed(precision);
   const maxDisplay = precision === 0 ? String(Math.round(max)) : String(max);
   const width = Math.max(0, Math.min(100, (raw / max) * 100));
