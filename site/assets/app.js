@@ -1070,9 +1070,15 @@ function scoreMax(item = null) {
 }
 
 function scoreBlock(item) {
-  const score = Math.round(Number(item.total_score || 0));
-  const max = Math.round(scoreMax(item));
-  const width = Math.max(0, Math.min(100, (score / max) * 100));
+  const raw = Number(item.total_score || 0);
+  const max = Number(scoreMax(item));
+  // Issue #248: a 100-point score rounds to an integer (68, not 68.46), but
+  // legacy 0-4 records use meaningful halves, so keep one decimal there. The
+  // track always uses the raw value, so it never misrepresents the ratio.
+  const precision = max > 10 ? 0 : 1;
+  const score = raw.toFixed(precision);
+  const maxDisplay = precision === 0 ? String(Math.round(max)) : String(max);
+  const width = Math.max(0, Math.min(100, (raw / max) * 100));
   const trackFill = element("span", {});
   const track = element("div", { className: "score-track" }, [trackFill]);
   trackFill.style.width = `${width}%`;
@@ -1083,7 +1089,7 @@ function scoreBlock(item) {
     className: "score-label score-explain",
     attrs: {
       type: "button",
-      "aria-label": `${t("Priority score")} ${score} ${t("of")} ${max}. ${t("How is this scored?")}`,
+      "aria-label": `${t("Priority score")} ${score} ${t("of")} ${maxDisplay}. ${t("How is this scored?")}`,
     },
   }, [
     element("span", { text: t("Priority score") }),
@@ -1098,8 +1104,8 @@ function scoreBlock(item) {
   });
   return element("div", { className: "score" }, [
     element("div", { className: "score-value" }, [
-      element("strong", { text: String(score) }),
-      element("span", { text: `/ ${max}` }),
+      element("strong", { text: score }),
+      element("span", { text: `/ ${maxDisplay}` }),
     ]),
     track,
     explain,
