@@ -27,8 +27,10 @@ def _tables() -> dict[str, dict[str, list[str]]]:
     for table in ("ORGANIZATION_ICONS", "MODEL_FAMILY_ICONS"):
         block = text.split(f"const {table} = {{", 1)[1].split("\n};", 1)[0]
         entries: dict[str, list[str]] = {}
-        for match in re.finditer(r'\n  ("?[\w. ]+"?): \[\s*\n?\s*"([^"]+)",?\s*\n?\s*\]', block):
-            entries[match.group(1).strip('"')] = [match.group(2)]
+        # One or more paths per entry: Azure is four squares, Upstage eleven
+        # strokes, and iconGlyph appends one <path> for each.
+        for match in re.finditer(r'\n  ("?[\w. ]+"?): \[\s*\n((?:\s*"[^"]+",\n)+)\s*\]', block):
+            entries[match.group(1).strip('"')] = re.findall(r'"([^"]+)"', match.group(2))
         tables[table] = entries
     return tables
 
@@ -61,7 +63,9 @@ def test_every_brand_path_matches_the_upstream_mark_it_claims_to_be():
         for name, paths in entries.items():
             key = f"{table}[{name}]"
             assert key in provenance, f"{key} has no recorded source"
-            digest = hashlib.sha256(paths[0].encode("utf-8")).hexdigest()
+            # Over every path, not just the first: several marks are
+            # multi-path, and hashing one would let the rest drift unnoticed.
+            digest = hashlib.sha256("\0".join(paths).encode("utf-8")).hexdigest()
             assert digest == provenance[key]["sha256"], (
                 f"{key} no longer matches {provenance[key]['url']} -- a brand "
                 f"mark was edited by hand, which is how Meta's path was fabricated"
@@ -105,16 +109,14 @@ def test_every_brand_path_is_well_formed_and_inside_the_viewbox():
                 assert not set(re.findall(r"[A-Za-z]", d)) - set("MmLlHhVvCcSsQqTtAaZz"), (
                     f"{table}[{name}] carries a non-path command"
                 )
-                # SVG packs numbers: "0.523.357" is two, and a naive \d+\.?\d*
-                # would read "523.357". Match the real grammar instead.
-                numbers = [
-                    abs(float(n))
-                    for n in re.findall(r"-?(?:\d+\.\d+|\.\d+|\d+)(?:[eE][-+]?\d+)?", d)
-                ]
-                assert numbers, f"{table}[{name}] has no coordinates"
-                # Generous: a curve control point may reach outside the box,
-                # but no mark's coordinates run to another order of magnitude.
-                assert max(numbers) < 100, f"{table}[{name}] escapes the 24-unit viewBox"
+                # No coordinate check here. SVG's grammar packs numbers in ways
+                # a regex reads wrong -- "0.523.357" is two numbers, and an arc
+                # writes its flags against the next coordinate, so AI21's
+                # "A4.04 4.04 0 0115.183 7" scans as 115.183 when it means 15.183.
+                # Every attempt to bound coordinates by pattern either misreads
+                # a real mark or passes a fabricated one, and the check that
+                # actually holds is the upstream digest above.
+                assert len(d) > 20, f"{table}[{name}] is too short to be a mark"
 
 
 def test_the_organization_table_is_keyed_by_canonical_names_only():

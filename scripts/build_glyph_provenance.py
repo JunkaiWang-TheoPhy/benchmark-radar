@@ -52,29 +52,73 @@ SOURCES = {
     # presenting itself as a real brand mark (Meta, issue #261).
     "ORGANIZATION_ICONS[Z.ai]": PLACEHOLDER,
     "ORGANIZATION_ICONS[xAI]": PLACEHOLDER,
+    # Issue #266: the organizations that had been drawing the generic spark.
+    # All from Lobe Icons, which carries AI-company marks simple-icons does
+    # not. Two are the mark that set publishes for the company rather than a
+    # literal company wordmark, and both were kept deliberately: microsoft.svg
+    # is titled "Azure", and Meituan's is `longcat`, its model brand.
+    "ORGANIZATION_ICONS[AI21 Labs]": LOBE.format("ai21"),
+    "ORGANIZATION_ICONS[Ai2]": LOBE.format("ai2"),
+    "ORGANIZATION_ICONS[Amazon]": LOBE.format("aws"),
+    "ORGANIZATION_ICONS[Baidu]": LOBE.format("baidu"),
+    "ORGANIZATION_ICONS[ByteDance]": LOBE.format("bytedance"),
+    "ORGANIZATION_ICONS[Cohere]": LOBE.format("cohere"),
+    "ORGANIZATION_ICONS[IBM]": LOBE.format("ibm"),
+    "ORGANIZATION_ICONS[Inception]": LOBE.format("inception"),
+    "ORGANIZATION_ICONS[LG AI Research]": LOBE.format("lg"),
+    "ORGANIZATION_ICONS[Liquid AI]": LOBE.format("liquid"),
+    "ORGANIZATION_ICONS[Meituan]": LOBE.format("longcat"),
+    "ORGANIZATION_ICONS[Microsoft]": LOBE.format("microsoft"),
+    "ORGANIZATION_ICONS[MiniMax]": LOBE.format("minimax"),
+    "ORGANIZATION_ICONS[NVIDIA]": LOBE.format("nvidia"),
+    "ORGANIZATION_ICONS[Nous Research]": LOBE.format("nousresearch"),
+    "ORGANIZATION_ICONS[StepFun]": LOBE.format("stepfun"),
+    "ORGANIZATION_ICONS[Tencent]": LOBE.format("tencent"),
+    "ORGANIZATION_ICONS[Upstage]": LOBE.format("upstage"),
+    "ORGANIZATION_ICONS[Xiaomi]": LOBE.format("xiaomimimo"),
     "MODEL_FAMILY_ICONS[Claude]": LOBE.format("claude"),
     "MODEL_FAMILY_ICONS[Gemini]": LOBE.format("gemini"),
     "MODEL_FAMILY_ICONS[Grok]": LOBE.format("grok"),
 }
 
 
-def tables() -> dict[str, str]:
+def tables() -> dict[str, list[str]]:
     text = GLYPHS.read_text(encoding="utf-8")
-    found: dict[str, str] = {}
+    found: dict[str, list[str]] = {}
     for table in ("ORGANIZATION_ICONS", "MODEL_FAMILY_ICONS"):
         block = text.split(f"const {table} = {{", 1)[1].split("\n};", 1)[0]
-        for match in re.finditer(r'\n  ("?[\w. ]+"?): \[\s*\n?\s*"([^"]+)",?\s*\n?\s*\]', block):
-            found[f"{table}[{match.group(1).strip(chr(34))}]"] = match.group(2)
+        for match in re.finditer(r'\n  ("?[\w. ]+"?): \[\s*\n((?:\s*"[^"]+",\n)+)\s*\]', block):
+            found[f"{table}[{match.group(1).strip(chr(34))}]"] = re.findall(
+                r'"([^"]+)"', match.group(2)
+            )
     return found
 
 
-def upstream_path(url: str) -> str:
+def upstream_paths(url: str) -> list[str]:
+    """Every path in the upstream mark, in document order.
+
+    Several marks are legitimately multi-path -- Azure's four squares,
+    Upstage's eleven strokes -- and `iconGlyph` already appends one <path> per
+    entry, so nothing needed to change to draw them. What is rejected is a mark
+    that cannot render as a flat monochrome glyph at all: every path is filled
+    with currentColor, so a gradient, mask or clip-path would silently lose its
+    shape rather than fail. Poolside's mark is exactly that, and it stays on
+    the generic spark instead of shipping broken.
+    """
     with urllib.request.urlopen(url) as response:
         svg = response.read().decode("utf-8")
+    for unsupported in ("<mask", "linearGradient", "radialGradient", "clip-path="):
+        if unsupported in svg:
+            raise SystemExit(f"{url}: carries {unsupported}, cannot render as a flat glyph")
     paths = re.findall(r'<path[^>]*\sd="([^"]+)"', svg)
-    if len(paths) != 1:
-        raise SystemExit(f"{url}: expected one path, found {len(paths)}")
-    return paths[0]
+    if not paths:
+        raise SystemExit(f"{url}: no paths found")
+    return paths
+
+
+def digest(paths: list[str]) -> str:
+    """One digest over every path, so a dropped or reordered path is caught."""
+    return hashlib.sha256("\u0000".join(paths).encode("utf-8")).hexdigest()
 
 
 def main() -> None:
@@ -89,18 +133,12 @@ def main() -> None:
                 f"the mark cannot be verified and should not ship."
             )
         if url == PLACEHOLDER:
-            marks[key] = {
-                "url": PLACEHOLDER,
-                "sha256": hashlib.sha256(committed.encode("utf-8")).hexdigest(),
-            }
+            marks[key] = {"url": PLACEHOLDER, "sha256": digest(committed)}
             continue
-        real = upstream_path(url)
+        real = upstream_paths(url)
         if real != committed:
             mismatched.append(f"  {key}\n    committed differs from {url}")
-        marks[key] = {
-            "url": url,
-            "sha256": hashlib.sha256(real.encode("utf-8")).hexdigest(),
-        }
+        marks[key] = {"url": url, "sha256": digest(real)}
 
     if mismatched:
         raise SystemExit(
