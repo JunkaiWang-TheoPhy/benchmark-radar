@@ -134,7 +134,6 @@ def test_the_score_legend_keys_one_mark_and_promises_no_connection():
     assert ".legend-swatch-score-line" not in styles
 
 
-
 def test_task_preview_distinguishes_source_paraphrase_from_domain_fallback():
     html = source("site/index.html")
     script = source("site/assets/app.js")

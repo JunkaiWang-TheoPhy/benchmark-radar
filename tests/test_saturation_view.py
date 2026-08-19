@@ -66,16 +66,17 @@ def test_comparability_is_stated_in_prose_rather_than_drawn():
     # survives where it can carry its own caveat: the readout under the chart.
     script = source("site/assets/app.js")
 
-    assert "single_organization" not in script.split("function scoreTrackChart(", 1)[1].split(
-        "\nfunction clearAdoptionFrontier", 1
-    )[0]
+    assert (
+        "single_organization"
+        not in script.split("function scoreTrackChart(", 1)[1].split(
+            "\nfunction clearAdoptionFrontier", 1
+        )[0]
+    )
     # The evidence box is untouched: it names what a pair supports and what it
     # does not, which is the honesty a line could never carry. Its label and
     # both sentences come from the score record, so the readout renders them
     # rather than restating them here.
-    readout = script.split("function scoreReadout(entry, record)", 1)[1].split(
-        "\nfunction ", 1
-    )[0]
+    readout = script.split("function scoreReadout(entry, record)", 1)[1].split("\nfunction ", 1)[0]
     assert 'text: t("Supports: ")' in readout
     assert 'text: t("Does not support: ")' in readout
     assert "evidence.does_not_support" in readout
@@ -179,25 +180,19 @@ def test_only_a_benchmark_with_a_readable_score_can_be_selected():
     # empty chart, which would read as "scores went to zero here". 20 of the 79
     # adopted registry benchmarks take this path.
     script = source("site/assets/app.js")
-    render = script.split("function renderAdoptionFrontier(board)", 1)[1].split(
-        "\nfunction ", 1
-    )[0]
+    render = script.split("function renderAdoptionFrontier(board)", 1)[1].split("\nfunction ", 1)[0]
 
     assert "const scored = adopted.filter((entry) => scoreRecord(entry.benchmark_id));" in render
     # The <select>, the resolution of a ?lfrontier= permalink, and the empty
     # state all read from `scored`, so none of them can surface an unscored one.
     assert "renderFrontierPicker(scored, state.lfrontier);" in render
     # And the picker itself applies the same rule to the crawled layer.
-    picker = script.split("function frontierPickerGroups(scored)", 1)[1].split(
-        "\n}", 1
-    )[0]
+    picker = script.split("function frontierPickerGroups(scored)", 1)[1].split("\n}", 1)[0]
     assert "record.score_count > 0" in picker
     assert "scored.find((candidate) => candidate.benchmark_id === state.lfrontier)" in render
     assert "if (!scored.length || !defaultEntry)" in render
     # The default selection is drawn from the same set.
-    default_entry = script.split("function frontierDefaultEntry(board)", 1)[1].split(
-        "\n}", 1
-    )[0]
+    default_entry = script.split("function frontierDefaultEntry(board)", 1)[1].split("\n}", 1)[0]
     assert "scoreRecord(entry.benchmark_id)" in default_entry
 
 
@@ -233,9 +228,7 @@ def test_curated_search_matches_aliases_and_ranks_the_exact_one_first():
     # a prefix hit for "HLE" and, ranked on entry-name length, beat the record
     # literally named HLE. The matched alias is what gets ranked.
     script = source("site/assets/app.js")
-    search = script.split("function searchCuratedEntries(board, query)", 1)[1].split(
-        "\n}", 1
-    )[0]
+    search = script.split("function searchCuratedEntries(board, query)", 1)[1].split("\n}", 1)[0]
 
     assert "entry.aliases || []" in search
     assert "name === needle ? 0 : name.startsWith(needle) ? 1 : 2" in search
@@ -369,16 +362,14 @@ def test_search_matches_the_fields_the_placeholder_promises():
     # publisher and modality are the equivalent there.
     script = source("site/assets/app.js")
 
-    curated = script.split("function searchCuratedEntries(board, query)", 1)[1].split(
-        "\n}", 1
-    )[0]
+    curated = script.split("function searchCuratedEntries(board, query)", 1)[1].split("\n}", 1)[0]
     assert "foldName(entry.domain).includes(needle)" in curated
     # A field hit is a weaker answer than a name hit and ranks below every one.
     assert "const best = hits.length ? Math.min(...hits.map(tier)) : 3;" in curated
 
-    external = script.split("function searchBenchmarkIndex(records, query)", 1)[1].split(
-        "\n}", 1
-    )[0]
+    external = script.split("function searchBenchmarkIndex(records, query)", 1)[1].split("\n}", 1)[
+        0
+    ]
     assert "foldName(record.publisher).includes(needle)" in external
     assert "foldName(record.modality).includes(needle)" in external
 
@@ -389,15 +380,14 @@ def test_a_link_to_an_unscored_benchmark_says_so_instead_of_swapping():
     # default entry would show a different benchmark under the reader's own URL
     # with nothing to say so, which is a worse failure than an explicit refusal.
     script = source("site/assets/app.js")
-    render = script.split("function renderAdoptionFrontier(board)", 1)[1].split(
-        "\nfunction ", 1
-    )[0]
+    render = script.split("function renderAdoptionFrontier(board)", 1)[1].split("\nfunction ", 1)[0]
 
     assert "const unscoredEntry = state.lfrontier" in render
     assert "&& !scoreRecord(candidate.benchmark_id)" in render
     assert "so there is no track to draw" in render
     # It resolves before the default-entry fallback, or the fallback wins.
-    assert render.index("const unscoredEntry") < render.index("state.lfrontier = defaultEntry.benchmark_id")
+    fallback = "state.lfrontier = defaultEntry.benchmark_id"
+    assert render.index("const unscoredEntry") < render.index(fallback)
     # And the reader's URL is left alone: the panel names the benchmark they
     # asked for rather than rewriting the address to one they did not.
     assert "heading: unscoredEntry.name" in render
@@ -413,7 +403,8 @@ def test_no_route_into_the_panel_can_land_on_an_unscored_benchmark():
     assert "const frontierButton = scoreRecord(entry.benchmark_id)" in row
 
     finding = script.split("function findingCard(finding, board)", 1)[1]
-    assert "entry.benchmark_id === finding.benchmark_id && scoreRecord(entry.benchmark_id)" in finding
+    guard = "entry.benchmark_id === finding.benchmark_id && scoreRecord(entry.benchmark_id)"
+    assert guard in finding
 
 
 def test_the_time_range_covers_the_score_track_at_both_ends():
@@ -438,10 +429,12 @@ def test_scores_render_whether_or_not_any_mention_carries_a_date():
     script = source("site/assets/app.js")
 
     assert "if (!events.length) {" not in script
-    render = script.split("function renderAdoptionFrontier(board)", 1)[1].split(
-        "\nfunction ", 1
-    )[0]
-    assert 'replaceChildren(byId("frontier-chart"), [scoreTrackChart(entry, board), frontierTooltip()])' in render
+    render = script.split("function renderAdoptionFrontier(board)", 1)[1].split("\nfunction ", 1)[0]
+    paint = (
+        'replaceChildren(byId("frontier-chart"), '
+        "[scoreTrackChart(entry, board), frontierTooltip()])"
+    )
+    assert paint in render
 
     chart = script.split("function scoreTrackChart(", 1)[1].split(
         "\nfunction clearAdoptionFrontier", 1
@@ -644,9 +637,7 @@ def test_a_benchmark_with_no_readable_score_draws_no_chart_at_all():
 
     # The readout keeps the honest sentence for the defensive case, minus the
     # clause promising an adoption chart that no longer exists.
-    readout = script.split("function renderScoreReadout(entry)", 1)[1].split(
-        "\nfunction ", 1
-    )[0]
+    readout = script.split("function renderScoreReadout(entry)", 1)[1].split("\nfunction ", 1)[0]
     assert "not a zero and not a plateau" in readout
     assert "the chart shows adoption only" not in script
 
@@ -718,7 +709,8 @@ def test_the_explainer_leaves_saturation_as_the_readers_judgement():
     assert "connected only where the instrument and protocol" in html
     # And it names the date the x axis carries, rather than leaving "time" to be
     # read as an evaluation date.
-    assert "placed at the date that document was published rather than at any evaluation date" in html
+    dateline = "placed at the date that document was published rather than at any evaluation date"
+    assert dateline in html
 
 
 def test_the_score_layer_is_keyed_by_the_same_benchmark_id_as_adoption():
