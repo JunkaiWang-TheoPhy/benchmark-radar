@@ -2329,63 +2329,6 @@ td a {
   font-size: 0.8rem;
 }
 
-.benchmark-shortlist-group {
-  margin-top: 1rem;
-}
-
-.benchmark-shortlist-group h3 {
-  margin: 0 0 0.35rem;
-  color: var(--muted);
-  font-family: var(--utility);
-  font-size: 0.63rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.benchmark-shortlist-buttons {
-  display: grid;
-  gap: 0.3rem;
-}
-
-.benchmark-shortlist-button {
-  display: grid;
-  gap: 0.1rem;
-  min-height: 48px;
-  padding: 0.55rem 0.65rem;
-  border: 1px solid var(--line);
-  background: transparent;
-  text-align: left;
-}
-
-.benchmark-shortlist-button span {
-  overflow-wrap: anywhere;
-  font-size: 0.82rem;
-  font-weight: 650;
-}
-
-.benchmark-shortlist-button small {
-  color: var(--muted);
-  font-family: var(--utility);
-  font-size: 0.61rem;
-  text-transform: uppercase;
-}
-
-.benchmark-shortlist-button:hover,
-.benchmark-shortlist-button:focus-visible {
-  border-color: var(--blue);
-  background: var(--canvas);
-}
-
-.benchmark-shortlist-button[aria-pressed="true"] {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: white;
-}
-
-.benchmark-shortlist-button[aria-pressed="true"] small {
-  color: #c7d1d5;
-}
-
 .frontier-panel {
   padding: clamp(1.25rem, 3vw, 2rem);
   border: 1px solid var(--ink);
@@ -3555,12 +3498,6 @@ footer {
     order: -1;
   }
 
-  #benchmark-shortlist {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0 1rem;
-  }
-
   .health-panel {
     position: static;
   }
@@ -3796,10 +3733,6 @@ footer {
     white-space: normal;
   }
 
-  #benchmark-shortlist {
-    grid-template-columns: 1fr;
-  }
-
   .frontier-panel {
     padding-inline: 1rem;
   }
@@ -3827,16 +3760,44 @@ footer {
   }
 }
 
-.benchmark-search {
-  margin-top: 0;
+.benchmark-shortlist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: baseline;
+  margin: 0 0 0.6rem;
 }
 
-/* The worked examples sit under the search box and are separated from it, so
-   the rule that used to head the search block heads this one instead. */
-.benchmark-shortlist-section {
-  margin-top: 1.5rem;
-  border-top: 1px solid var(--border);
-  padding-top: 1.1rem;
+.benchmark-example-lead {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.benchmark-example {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.benchmark-example:hover,
+.benchmark-example:focus-visible {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.benchmark-example[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--panel);
+}
+
+.benchmark-search {
+  margin-top: 0;
 }
 
 .benchmark-search-label {

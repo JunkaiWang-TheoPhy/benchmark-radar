@@ -254,27 +254,79 @@ def test_search_still_works_when_the_crawled_index_is_unavailable():
     assert "records\n    ? searchBenchmarkIndex(records, state.benchmarkQuery)\n    : []" in render
 
 
-def test_search_is_the_first_interactive_element_in_the_navigator():
-    # The shortlist used to lead the panel, which made four worked examples read
-    # as the whole offer: a reader wanting anything else had to scroll past them
-    # to reach the box that covers all 1,207 records. Search leads now, and the
-    # examples are framed as examples.
+def test_the_navigator_is_a_tool_region_not_a_content_section():
+    # The examples were a titled block with an eyebrow, a heading, a paragraph
+    # and two computed subheadings over eight cards. That outranked the search
+    # box it existed to support. Search leads, and the examples are one line of
+    # chips inside the same block, with nothing between the field and its
+    # results but the reach line and that line.
     html = source("site/index.html")
     navigator = html.split('class="benchmark-navigator"', 1)[1].split("</aside>", 1)[0]
 
-    assert navigator.index('class="benchmark-search"') < navigator.index(
-        'class="benchmark-shortlist-section"'
-    )
-    # Results sit immediately under the box, with nothing between them but the
-    # line stating what the box reaches.
-    assert navigator.index('id="benchmark-search-status"') < navigator.index(
-        'id="benchmark-search-results"'
-    )
-    assert navigator.index('id="benchmark-search-results"') < navigator.index(
-        'id="benchmark-shortlist"'
-    )
-    assert 'data-i18n="Famous benchmarks"' in navigator
-    assert 'data-i18n-placeholder="Search benchmarks, tasks, domains…"' in navigator
+    for gone in (
+        'data-i18n="Famous benchmarks"',
+        'data-i18n="Worked examples"',
+        'data-i18n="leaderboard.navigator.note"',
+        "benchmark-shortlist-section",
+    ):
+        assert gone not in navigator, f"{gone} still occupies the navigator"
+    # The heading is the only one left, so it is the panel's label.
+    assert navigator.count("<h2") == 1
+    assert 'data-i18n="Search every benchmark"' in navigator
+
+    order = [
+        navigator.index('id="benchmark-search-input"'),
+        navigator.index('id="benchmark-search-status"'),
+        navigator.index('id="benchmark-shortlist"'),
+        navigator.index('id="benchmark-search-results"'),
+    ]
+    assert order == sorted(order), "field, reach line, examples, then results"
+
+
+def test_the_examples_are_one_line_of_verified_chips():
+    # An editorial list, not a computed one: MMLU carries 4 readable scores and
+    # would never place in a "deepest records" ranking, but it is the name a
+    # newcomer arrives with. Each id is still checked against the live registry,
+    # so a chip can never open the no-score refusal panel.
+    script = source("site/assets/app.js")
+    styles = source("site/assets/styles.css")
+
+    assert "const BENCHMARK_EXAMPLES = [" in script
+    for benchmark_id, label in (
+        ("mmlu", "MMLU"),
+        ("gpqa_diamond", "GPQA"),
+        ("swe_bench_verified", "SWE-bench"),
+        ("terminal_bench", "Terminal-Bench"),
+    ):
+        assert f'["{benchmark_id}", "{label}"]' in script
+
+    navigator = script.split("function renderBenchmarkNavigator(board)", 1)[1].split(
+        "\n}", 1
+    )[0]
+    assert "if (!entry || !scoreRecord(benchmarkId)) return null;" in navigator
+    # A short label is a prompt for the search box, not a record title, so the
+    # full registry name rides along rather than being hidden by the shorthand.
+    assert "title: entry.name," in navigator
+    assert '"aria-label": entry.name,' in navigator
+    # Chips, not cards: the old grid of two-line buttons is gone.
+    assert "benchmark-shortlist-button" not in script
+    assert "benchmark-shortlist-button" not in styles
+    assert ".benchmark-example {" in styles
+
+
+def test_the_navigator_still_starts_the_crawled_index_fetch():
+    # Regression guard. `initBenchmarkSearch` binds the input and kicks off the
+    # index fetch, and it lived at the end of the shortlist renderer. Rewriting
+    # that renderer dropped it, so the index was never requested: search fell
+    # back to the curated layer alone and the reach line read "59 benchmarks,
+    # 1 source" instead of "1,207 benchmarks, 3 sources".
+    script = source("site/assets/app.js")
+    navigator = script.split("function renderBenchmarkNavigator(board)", 1)[1].split(
+        "\nfunction ", 1
+    )[0]
+
+    assert "initBenchmarkSearch();" in navigator
+    assert navigator.index("initBenchmarkSearch();") < navigator.index("renderBenchmarkSearch();")
 
 
 def test_the_search_reach_line_counts_only_what_it_can_return():

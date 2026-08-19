@@ -394,19 +394,14 @@ const I18N = {
     "Registry overview": "总览",
     "What the two layers say": "两层信息说了什么",
     "Stated findings": "明确结论",
-    "leaderboard.navigator.note":
-      "如果你还没有想好要看哪个基准,这里有几条可以直接打开。上面的搜索框可以检索登记册与抓取目录中的每一个基准。",
     "The saturation curve": "饱和曲线",
     "Benchmark reported scores over time": "基准报告分数随时间的变化",
     "All tracked benchmarks": "所有追踪的基准",
     "Search every benchmark": "搜索全部基准",
+    "Try:": "试试:",
     "Search benchmarks, tasks, domains…": "搜索基准、任务、领域…",
-    "Worked examples": "示例记录",
-    "Famous benchmarks": "知名基准",
     "{n} benchmarks": "{n} 个基准",
     "Curated registry": "精选登记册",
-    "New instruments with scores": "有分数的新工具",
-    "Deepest score records": "分数记录最全的基准",
     "No benchmark in this registry has a readable score yet.": "此登记册中还没有任何基准具有可读分数。",
     "What would make this a true Pareto frontier?": "怎样才算真正的帕累托前沿?",
     "Benchmarks by model card adoption": "按模型卡采用排名的基准",
@@ -3935,72 +3930,61 @@ function renderExternalBenchmark(board, scored, record) {
   });
 }
 
+// A handful of entry points for a reader who has nothing in mind to type, on
+// one line. This replaced a titled block with two computed subheadings and
+// eight cards: it outranked the search box it existed to support, and a reader
+// who wanted anything else read four suggestions before finding the field.
+//
+// The list is editorial rather than computed, which is the point. MMLU carries
+// only 4 readable scores here and would never place in a "deepest records"
+// ranking, but it is the name a newcomer arrives with. Short labels are used
+// because these are prompts for the search box, not record titles; each chip
+// carries the registry's full name as its accessible name and tooltip, so the
+// abbreviation never hides what will open.
+const BENCHMARK_EXAMPLES = [
+  ["mmlu", "MMLU"],
+  ["gpqa_diamond", "GPQA"],
+  ["swe_bench_verified", "SWE-bench"],
+  ["terminal_bench", "Terminal-Bench"],
+];
+
 function renderBenchmarkNavigator(board) {
-  const scored = (board.entries || []).filter(
-    (entry) => entry.card_count > 0 && scoreRecord(entry.benchmark_id),
-  );
-  const datedCount = (entry) => scoreRecord(entry.benchmark_id)?.dated_observation_count || 0;
-  // The shortlist is anchored to the score record like the panel it opens: the
-  // newest instruments that already have readable scores, then the deepest
-  // score records in the registry. The adoption stages that used to group it
-  // ("saturated reporting" and friends) described a reading the panel no
-  // longer makes.
-  const newest = scored
-    .filter((entry) => isNewBenchmark(entry, board))
-    .sort(
-      (a, b) =>
-        Number(b.benchmark_id === state.lfrontier) - Number(a.benchmark_id === state.lfrontier) ||
-        (b.released || "").localeCompare(a.released || "") ||
-        a.name.localeCompare(b.name),
-    )
-    .slice(0, 4);
-  const newestIds = new Set(newest.map((entry) => entry.benchmark_id));
-  const deepest = scored
-    .filter((entry) => !newestIds.has(entry.benchmark_id))
-    .sort(
-      (a, b) =>
-        Number(b.benchmark_id === state.lfrontier) - Number(a.benchmark_id === state.lfrontier) ||
-        datedCount(b) - datedCount(a) ||
-        (b.released || "").localeCompare(a.released || "") ||
-        a.name.localeCompare(b.name),
-    )
-    .slice(0, 4);
-  const groups = [
-    [t("New instruments with scores"), newest],
-    [t("Deepest score records"), deepest],
-  ]
-    .map(([label, entries]) => {
-      if (!entries.length) return null;
-      return element("section", { className: "benchmark-shortlist-group" }, [
-        element("h3", { text: label }),
-        element(
-          "div",
-          { className: "benchmark-shortlist-buttons" },
-          entries.map((entry) => {
-            const button = element("button", {
-              className: "benchmark-shortlist-button",
-              attrs: {
-                type: "button",
-                "aria-pressed": entry.benchmark_id === state.lfrontier ? "true" : "false",
-              },
-            }, [
-              element("span", { text: entry.name }),
-              element("small", {
-                text: metricLabel(scoreRecord(entry.benchmark_id).observation_count, "readable score"),
-              }),
-            ]);
-            button.addEventListener("click", () => {
-              selectFrontier(entry.benchmark_id);
-              renderAdoptionFrontier(board);
-              writeUrl();
-            });
-            return button;
-          }),
-        ),
-      ]);
-    })
-    .filter(Boolean);
-  replaceChildren(byId("benchmark-shortlist"), groups);
+  const host = byId("benchmark-shortlist");
+  if (host) {
+    const byBenchmarkId = new Map(
+      (board.entries || []).map((entry) => [entry.benchmark_id, entry]),
+    );
+    // Filtered against the live registry rather than trusted: an id that leaves
+    // the registry, or loses its last readable score, drops out of the line
+    // instead of rendering a chip that opens the refusal panel.
+    const chips = BENCHMARK_EXAMPLES.map(([benchmarkId, label]) => {
+      const entry = byBenchmarkId.get(benchmarkId);
+      if (!entry || !scoreRecord(benchmarkId)) return null;
+      const chip = element("button", {
+        className: "benchmark-example",
+        text: label,
+        attrs: {
+          type: "button",
+          title: entry.name,
+          "aria-label": entry.name,
+          "aria-pressed": benchmarkId === state.lfrontier ? "true" : "false",
+        },
+      });
+      chip.addEventListener("click", () => {
+        selectFrontier(benchmarkId);
+        renderAdoptionFrontier(board);
+        writeUrl();
+      });
+      return chip;
+    }).filter(Boolean);
+    replaceChildren(
+      host,
+      chips.length ? [element("span", { className: "benchmark-example-lead", text: t("Try:") }), ...chips] : [],
+    );
+  }
+  // Binds the input and kicks off the crawled-index fetch on first call; a
+  // no-op afterwards. Without it the box searches the curated layer only and
+  // the reach line undercounts, which is how it read "59 benchmarks, 1 source".
   initBenchmarkSearch();
   renderBenchmarkSearch();
 }

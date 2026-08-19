@@ -371,11 +371,11 @@
         </details>
 
         <div class="benchmark-workbench">
+          <!-- A tool region, not a content section. The examples used to be a
+               titled block with two subheadings and eight cards, which outranked
+               the search box it was meant to support; they are now one line of
+               chips for a reader who has nothing in mind to type. -->
           <aside class="benchmark-navigator" aria-labelledby="benchmark-search-heading">
-            <!-- Search leads the panel. The shortlist below it is a set of worked
-                 examples, and an example list placed first reads as the whole
-                 offer: a reader who wanted a benchmark not on it had to scroll
-                 past four suggestions to find the box that reaches all of them. -->
             <div class="benchmark-search">
               <h2 class="benchmark-search-label" id="benchmark-search-heading">
                 <label for="benchmark-search-input"
@@ -386,19 +386,9 @@
                      data-i18n-placeholder="Search benchmarks, tasks, domains…"
                      placeholder="Search benchmarks, tasks, domains…" />
               <p id="benchmark-search-status" class="benchmark-search-status"></p>
+              <p id="benchmark-shortlist" class="benchmark-shortlist"></p>
               <div id="benchmark-search-results"></div>
             </div>
-
-            <section class="benchmark-shortlist-section"
-                     aria-labelledby="benchmark-navigator-heading">
-              <p class="eyebrow" data-i18n="Worked examples">Worked examples</p>
-              <h2 id="benchmark-navigator-heading" data-i18n="Famous benchmarks">Famous benchmarks</h2>
-              <p data-i18n="leaderboard.navigator.note">
-                A few records to open if you do not have one in mind. The search above
-                reaches every benchmark in the registry and the crawled catalog.
-              </p>
-              <div id="benchmark-shortlist"></div>
-            </section>
           </aside>
 
           <section class="frontier-panel" id="adoption-frontier" aria-labelledby="frontier-heading">
