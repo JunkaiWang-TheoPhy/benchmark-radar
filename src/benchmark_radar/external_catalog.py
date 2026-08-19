@@ -60,6 +60,49 @@ LLM_STATS_KEY_PREFIX = "llm-stats"
 
 _SLUG_STRIP = re.compile(r"[^a-z0-9]+")
 
+# One organization, one name, across both layers.
+#
+# The aggregator names an organization however its own catalog spells it, and
+# that spelling is not always the one the curated registry uses for the same
+# company. Left unmapped, `Alibaba Cloud / Qwen Team` and `Qwen` are two
+# organizations to every count, color and brand glyph on the site, and the two
+# largest crawled publishers end up with no mark at all -- not because no mark
+# exists, but because the key did not match.
+#
+# Each entry below was confirmed by reading the model lines on both sides, not
+# by name similarity: the vendor's `Alibaba Cloud / Qwen Team` rows are Qwen
+# models, its `Zhipu AI` rows are GLM models. Organizations that merely sound
+# related are absent -- Microsoft publishes Phi and is not OpenAI, OpenBMB
+# publishes MiniCPM and has no curated twin. A merge here asserts same
+# publisher, so an unverified one would be a wrong attribution, which is the
+# error this module exists to avoid.
+#
+# `Google` is canonical over the curated layer's `Google DeepMind` (issue
+# #261): the releasing entity names the organization. That direction is the
+# reverse of the other three, so the curated YAML was rewritten to match
+# rather than aliased here -- this map only ever sees crawled vendor strings,
+# and the vendor already says `Google`.
+CANONICAL_ORGANIZATIONS = {
+    "Alibaba Cloud / Qwen Team": "Qwen",
+    "Mistral AI": "Mistral",
+    "Zhipu AI": "Z.ai",
+}
+
+
+def canonical_organization(name: str | None) -> str | None:
+    """The one name this project uses for an organization, or None.
+
+    Unknown names pass through unchanged: a name absent from the map is a
+    distinct organization, not an error, and 29 of the 33 crawled publishers
+    are exactly that.
+    """
+    if name is None:
+        return None
+    cleaned = name.strip()
+    if not cleaned:
+        return None
+    return CANONICAL_ORGANIZATIONS.get(cleaned, cleaned)
+
 
 class ExternalCatalogError(ValueError):
     """Raised when a snapshot cannot be normalized into catalog records."""
@@ -177,7 +220,7 @@ def _observation(
         "series_id": series_id,
         "model_name": (row.get("model_name") or "").strip(),
         "model_id": model_id,
-        "organization": (row.get("organization_name") or "").strip() or None,
+        "organization": canonical_organization(row.get("organization_name")),
         "raw_value": raw_value,
         "value": parsed,
         "value_kind": _value_kind(raw_value, parsed),

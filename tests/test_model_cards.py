@@ -72,7 +72,7 @@ def test_shipped_registry_loads_and_ranks():
     assert {
         "OpenAI",
         "Anthropic",
-        "Google DeepMind",
+        "Google",
         "Meta",
         "Qwen",
         "DeepSeek",
