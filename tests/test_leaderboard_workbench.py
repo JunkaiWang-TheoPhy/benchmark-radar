@@ -559,3 +559,32 @@ def test_the_crawled_chart_ticks_label_real_values_not_padded_bounds():
     assert "for (const value of [band.high, band.low])" not in chart
     # The band itself still pads; only the labels changed.
     assert "band = { low: low - pad, high: high + pad }" in chart
+
+
+def test_the_shortlist_says_what_it_ranks_by_behind_an_info_toggle():
+    """Issue #269: "Most reported" invited a comparison it does not make.
+
+    The list ranks by how many curated model cards report a benchmark. A
+    crawled score count answers a different question, so AIME 2025's 115
+    crawled scores losing to GPQA Diamond's 26 model cards is two measures
+    being confused, not a ranking bug. The heading now says so, and the
+    explanation sits behind the same (i) toggle the crawled source blocks use.
+    """
+    html = source("site/index.html")
+    script = source("site/assets/app.js")
+    styles = source("site/assets/styles.css")
+
+    assert 'data-i18n="Most reported in model cards"' in html
+    assert 'id="benchmark-example-info"' in html
+    # Reuses infoDisclosure rather than inventing a second (i) pattern.
+    assert "infoDisclosure(" in script.split("function renderBenchmarkNavigator", 1)[1][:1200]
+    assert "measures vendor reporting convention" in script
+
+    # Hover opens it as well as click. A closed <details> hides its body by not
+    # generating a box, so any `display` on that body pins the panel open --
+    # the reveal runs on visibility/opacity instead.
+    assert ".info-disclosure:hover > .info-disclosure-body" in styles
+    assert "visibility: hidden" in styles.split(".info-disclosure > .info-disclosure-body", 1)[1][:200]
+
+    # And it escapes the navigator's scroll container rather than being clipped.
+    assert "position: fixed" in styles.split(".benchmark-example-heading .info-disclosure-body", 1)[1][:200]

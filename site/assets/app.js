@@ -4038,6 +4038,32 @@ function renderExternalBenchmark(board, scored, record) {
 const BENCHMARK_EXAMPLE_LIMIT = 20;
 
 function renderBenchmarkNavigator(board) {
+  // What this list ranks by, behind the same (i) toggle the crawled source
+  // blocks use. "Most reported" alone invited the reading that AIME 2025 with
+  // 115 crawled scores should outrank GPQA Diamond with 26 model cards (issue
+  // #269); they answer different questions, and a reader cannot know that from
+  // the heading alone.
+  const infoHost = byId("benchmark-example-info");
+  if (infoHost && !infoHost.firstChild) {
+    const disclosure = infoDisclosure(
+        t(
+          "Ranked by how many curated model cards report each benchmark, which measures vendor reporting convention rather than benchmark quality. A crawled score count answers a different question: AIME 2025 carries 115 crawled scores and GPQA Diamond 26 model cards, and those are different measures rather than competing ones.",
+      ),
+    );
+    // The panel is fixed (see styles.css: the navigator scrolls and would clip
+    // it), so it carries no automatic anchor. Placed under the toggle each
+    // time it opens, and clamped to the viewport so it never runs off-screen.
+    const place = () => {
+      const body = disclosure.querySelector(".info-disclosure-body");
+      const box = disclosure.getBoundingClientRect();
+      body.style.top = `${box.bottom + 6}px`;
+      body.style.left = `${Math.max(8, Math.min(box.left, window.innerWidth - body.offsetWidth - 8))}px`;
+    };
+    disclosure.addEventListener("toggle", place);
+    disclosure.addEventListener("pointerenter", place);
+    disclosure.addEventListener("focusin", place);
+    infoHost.append(disclosure);
+  }
   const host = byId("benchmark-shortlist");
   if (host) {
     const examples = (board.entries || [])
