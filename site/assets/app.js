@@ -686,7 +686,6 @@ const I18N = {
     "Click to pin record details": "点击固定记录详情",
     Comments: "评论",
     "Corpus coverage": "语料覆盖",
-    "Dashed score connection": "虚线分数连接",
     "Discovery sources": "发现来源",
     "Doing related-work research, or hunting for a benchmark on a topic? This database aggregates every benchmark, evaluation, and dataset the radar has surfaced, and you can query it by topic, source, or organization before you export. The full corpus below is the same data the dashboard renders.":
       "在做相关工作研究,或想按主题查找基准?这个数据库汇总了雷达发现过的每一个基准、评测与数据集,可以在导出前按主题、来源或机构查询。下方的完整语料与仪表盘渲染的是同一份数据。",
@@ -734,7 +733,6 @@ const I18N = {
     "Scoring rubric v": "评分标准 v",
     "Show the first 18 benchmarks": "显示前 18 个基准",
     "Showing all": "显示全部",
-    "Solid score connection": "实线分数连接",
     Submissions: "提交数",
     "The current rubric is v": "当前评分标准为 v",
     "This historical scan used": "本次历史扫描采用了",
@@ -751,12 +749,12 @@ const I18N = {
     "best on record": "历史最佳",
     by: "由",
     "cited by": "被引用",
-    "connected only at one instrument and protocol": "仅在单一工具与协议连接",
     contributes: "贡献",
     "here are third parties": "有第三方",
     "here is a third party": "有第三方",
     listed: "已列出",
     "no readable score in this window": "此窗口中无可读分数",
+    "one value read verbatim from a cited document": "一个从引文文档中逐字读到的数值",
     "not yet reported": "尚未报告",
     "points to zero, the floor of this metric": "指向零,该指标的底线",
     protocol: "协议",
@@ -766,8 +764,6 @@ const I18N = {
     release: "发布",
     "release date unrecorded": "未记录发布日期",
     released: "发布于",
-    "same instrument and protocol across organizations": "跨机构的相同工具与协议",
-    "same instrument and protocol, one organization only": "单一机构,相同工具与协议",
     "scale. Every number below is read from the same definition the pipeline applies.":
       "的标尺。下面每个数字都按流程应用的同一套定义读取。",
     to: "到",
@@ -4291,22 +4287,8 @@ function renderFrontierLegend(entry, record) {
     items.push([
       "legend-swatch-score",
       t("Readable score"),
-      t("connected only at one instrument and protocol"),
+      t("one value read verbatim from a cited document"),
     ]);
-    if (record.series.some((series) => series.connectable && !series.single_organization)) {
-      items.push([
-        "legend-swatch-score-line",
-        t("Solid score connection"),
-        t("same instrument and protocol across organizations"),
-      ]);
-    }
-    if (record.series.some((series) => series.connectable && series.single_organization)) {
-      items.push([
-        "legend-swatch-score-line-single-org",
-        t("Dashed score connection"),
-        t("same instrument and protocol, one organization only"),
-      ]);
-    }
   }
   replaceChildren(
     host,
@@ -4469,22 +4451,22 @@ function scoreTrackChart(entry, board) {
       );
     }
 
-    // One polyline per comparable series, and only for series the join rule
-    // permits a line through. A series confined to one date draws no line: its
-    // points are a comparison table from one document, and connecting them
-    // would turn a single publication into an apparent trend.
-    for (const series of record.series) {
-      if (!series.connectable) continue;
-      const points = series.points
-        .map((point) => `${x(point.reported_at)},${scoreY(point.value)}`)
-        .join(" ");
-      svg.append(
-        svgElement("polyline", {
-          points,
-          class: `score-line${series.single_organization ? " score-line-single-org" : ""}`,
-        }),
-      );
-    }
+    // No segment joins any two score points, in either layer.
+    //
+    // A shared instrument and protocol makes two numbers *comparable*. It does
+    // not make them a *series*, and a drawn segment asserts the second. On
+    // shipped GPQA Diamond the join rule connected DeepSeek-V4-Pro (90.1) to
+    // DeepSeek-V4-Flash (88.1) and drew a decline, when the later point is a
+    // smaller model rather than a regression over time; the cross-vendor pair
+    // (Gemma 4 31B to GLM-5.1) implied a trajectory between two systems that
+    // share nothing but a protocol string. Both are the same error the reading
+    // gap exists to prevent, and neither is fixable by restricting which pairs
+    // may join, because the defect is in the segment, not in the pairing.
+    //
+    // Comparability is still computed and still stated: it drives the paired
+    // comparison readout below the chart, which says in words what a pair of
+    // dates does and does not support. Words can carry that caveat; a line
+    // cannot.
 
     // The best-on-record marker. Drawn as a horizontal rule rather than a point
     // because it is a fact about the whole corpus to date, not about one date.

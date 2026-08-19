@@ -36,24 +36,52 @@ def test_the_score_track_occupies_the_whole_plot():
     assert "x(observation.reported_at)" in chart
 
 
-def test_the_score_layer_only_draws_lines_the_join_rule_permits():
-    # Two values taken under unstated and possibly different conditions are not
-    # a measurement of change, so an unconnectable series must draw no line.
+def test_the_score_layer_draws_no_connecting_line_at_all():
+    # A shared instrument and protocol makes two numbers comparable; it does not
+    # make them a series, and a segment asserts the second. On shipped GPQA
+    # Diamond the old join rule connected DeepSeek-V4-Pro (90.1) to
+    # DeepSeek-V4-Flash (88.1) and drew a decline out of a smaller model, and
+    # connected two vendors' unrelated models into an apparent trajectory.
+    # Restricting which pairs may join does not fix that: the defect is in the
+    # segment. Comparability is still computed, and still stated in prose by the
+    # paired comparison readout.
     script = source("site/assets/app.js")
+    styles = source("site/assets/styles.css")
     chart = script.split("function scoreTrackChart(", 1)[1].split(
         "\nfunction clearAdoptionFrontier", 1
     )[0]
 
-    assert "if (!series.connectable) continue;" in chart
+    assert "polyline" not in chart
+    assert "if (!series.connectable) continue;" not in chart
+    assert "score-line" not in script
+    assert "score-line" not in styles
+    # The one horizontal rule that remains is the best-on-record reference,
+    # which is a fact about the corpus to date rather than a join between points.
+    assert "const bestY = scoreY(record.saturation.best_value);" in chart
 
 
-def test_a_single_vendor_run_is_drawn_as_weaker_evidence():
+def test_comparability_is_stated_in_prose_rather_than_drawn():
+    # A single-vendor comparable run used to be drawn as a dashed line, weaker
+    # evidence than a solid cross-vendor one. Both are gone. The distinction
+    # survives where it can carry its own caveat: the readout under the chart.
     script = source("site/assets/app.js")
-    styles = source("site/assets/styles.css")
 
-    assert "score-line-single-org" in script
-    assert ".score-line-single-org" in styles
-    assert "stroke-dasharray" in styles.split(".score-line-single-org", 1)[1][:120]
+    assert "single_organization" not in script.split("function scoreTrackChart(", 1)[1].split(
+        "\nfunction clearAdoptionFrontier", 1
+    )[0]
+    # The evidence box is untouched: it names what a pair supports and what it
+    # does not, which is the honesty a line could never carry. Its label and
+    # both sentences come from the score record, so the readout renders them
+    # rather than restating them here.
+    readout = script.split("function scoreReadout(entry, record)", 1)[1].split(
+        "\nfunction ", 1
+    )[0]
+    assert 'text: t("Supports: ")' in readout
+    assert 'text: t("Does not support: ")' in readout
+    assert "evidence.does_not_support" in readout
+    # And the comparable-run count is still surfaced, so comparability is
+    # reported as a number even though it is not drawn as a line.
+    assert '"comparable run"' in readout
 
 
 def test_a_third_party_citation_is_marked_on_the_chart():
@@ -323,9 +351,11 @@ def test_the_legend_keys_only_marks_that_are_on_the_chart():
         "the tick under the jump",
     ):
         assert gone not in script, f"{gone!r} still in the legend copy"
-    # The score entries are what the key is for now.
+    # One entry remains, keyed to the only mark the chart draws.
     assert "legend-swatch-score" in legend
-    assert "connected only at one instrument and protocol" in legend
+    assert "one value read verbatim from a cited document" in legend
+    for gone in ("Solid score connection", "Dashed score connection"):
+        assert gone not in script, f"{gone!r} keys a mark that is no longer drawn"
 
 
 def test_the_axis_and_header_name_the_score_reading():

@@ -113,18 +113,26 @@ def test_trajectory_points_expose_and_pin_record_details():
     assert "`${observation.model} · ${observation.value} · ${observation.protocol}`" not in script
 
 
-def test_score_legend_explains_solid_and_dashed_connections():
+def test_the_score_legend_keys_one_mark_and_promises_no_connection():
+    # The legend used to explain a solid connection (same instrument and
+    # protocol across organizations) and a dashed one (same, within a single
+    # vendor). Neither is drawn any more: comparability is stated by the paired
+    # comparison readout, in words that can carry the caveat a line cannot.
     script = source("site/assets/app.js")
     styles = source("site/assets/styles.css")
 
-    assert '"legend-swatch-score-line",' in script
-    assert '"Solid score connection"' in script
-    assert '"same instrument and protocol across organizations"' in script
-    assert '"legend-swatch-score-line-single-org",' in script
-    assert '"Dashed score connection"' in script
-    assert '"same instrument and protocol, one organization only"' in script
-    assert ".legend-swatch-score-line-single-org" in styles
-    assert "border-top-style: dashed" in styles
+    assert '"legend-swatch-score",' in script
+    assert '"one value read verbatim from a cited document"' in script
+    for gone in (
+        "legend-swatch-score-line",
+        "Solid score connection",
+        "Dashed score connection",
+        "same instrument and protocol across organizations",
+        "same instrument and protocol, one organization only",
+    ):
+        assert gone not in script, f"{gone!r} survives in the legend"
+    assert ".legend-swatch-score-line" not in styles
+
 
 
 def test_task_preview_distinguishes_source_paraphrase_from_domain_fallback():
