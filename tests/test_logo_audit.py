@@ -200,15 +200,18 @@ def test_every_model_that_draws_a_point_has_a_card_whichever_layer_it_came_from(
     """
     registry = json.loads(Path("site/data/logo-registry.json").read_text(encoding="utf-8"))
     models = registry["models"]
-    layers = registry["model_layers"]
+    # Layers live in models.json, the one structure that answers which models
+    # exist; the logo registry only freezes what each is called in review.
+    doc = json.loads(Path("site/data/models.json").read_text(encoding="utf-8"))
+    layers = {f"{m['model']}␟{m['organization']}": m["layers"] for m in doc["models"]}
 
     assert set(models) == set(layers), "every model must declare its layer"
-    assert set(layers.values()) == {"curated", "crawled"}
+    assert {name for value in layers.values() for name in value} == {"curated", "crawled"}
     # The case that was reported: Xiaomi ships MiMo through the crawled layer.
     assert any(k.endswith("␟Xiaomi") for k in models), "Xiaomi has no model card"
     # And the curated side is still there rather than displaced.
     assert any("Gemini" in k for k in models), "Gemini has no model card"
-    assert sum(1 for v in layers.values() if v == "crawled") > 100
+    assert sum(1 for v in layers.values() if "crawled" in v) > 100
 
 
 def test_the_two_layers_stay_labelled_rather_than_merged():

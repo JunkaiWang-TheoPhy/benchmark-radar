@@ -1,14 +1,22 @@
-"""Freeze the organization/model-family IDs the logo audit page cites.
+"""Freeze the organization/model IDs the logo audit page cites.
 
 The audit page exists so a wrong brand mark is caught by eye before it ships
 (issue #261: Google DeepMind rendered the Google "G", GPT rendered a
 hand-drawn rosette, and Meta's path was invented past character 395). Review
 feedback has to survive a rebuild, so "O-07" must mean the same organization
 next month as it does today. That is what this file freezes: IDs are assigned
-once, in sorted order, and an organization that later disappears from the data
-keeps its number rather than letting every later card renumber.
+once, in sorted order, and an entry that later disappears from the data keeps
+its number rather than letting every later card renumber.
 
-Run after `normalize-external` when new organizations appear:
+Freezing IDs is now this script's ONLY job. It used to walk radar.json and the
+shards itself to work out which models exist, which made it a second answer to
+that question -- and the two answers disagreed, 357 here against 355 in
+models.json, because this one keyed on the display name while the registry
+keys on (name, organization). Models now come from models.json, the single
+structure that answers "which models exist" for both layers, and this script
+only decides what each one is called in review.
+
+Run after `classify` has written models.json:
 
     python scripts/build_logo_registry.py
 """
@@ -19,88 +27,55 @@ import json
 from pathlib import Path
 
 REGISTRY = Path("site/data/logo-registry.json")
-SHARDS = Path("site/data/benchmarks")
-RADAR = Path("site/data/radar.json")
-
-
-def _crawled() -> tuple[set[str], list[dict[str, str]]]:
-    """Organizations and models from the crawled layer.
-
-    A model that draws a point is a model whose mark needs reviewing,
-    whichever layer it came from. Reading organizations here while discarding
-    the model names in the same loop is what left 75 crawled models with no
-    card on the audit page: Gemini had one and MiMo did not, though both draw
-    a glyph through the same `modelIcon` call.
-
-    The two layers stay separate in storage -- a curated card is a document
-    with a URL and a publication date, a crawled row is an observation with a
-    value and no protocol, and forcing them into one record would mean
-    inventing the fields the crawled side does not have. They are the same
-    only in the way this page cares about: something that resolves to a mark.
-    """
-    names: set[str] = set()
-    models: dict[tuple[str, str], int] = {}
-    for shard in SHARDS.glob("*.json"):
-        payloads = json.loads(shard.read_text()).get("scores_by_source") or {}
-        for payload in payloads.values():
-            for row in payload.get("rows") or []:
-                organization = row.get("organization")
-                if not organization:
-                    continue
-                names.add(organization)
-                model = row.get("model_name")
-                if model:
-                    models[(model, organization)] = models.get((model, organization), 0) + 1
-    return names, [
-        {"model": model, "organization": organization}
-        for (model, organization) in sorted(models)
-    ]
-
-
-def _curated(radar: dict) -> tuple[set[str], list[dict[str, str]]]:
-    board = radar.get("model_card_leaderboard") or {}
-    names: set[str] = set()
-    models: list[dict[str, str]] = []
-    for card in board.get("model_cards") or []:
-        organization = card.get("organization")
-        if organization:
-            names.add(organization)
-        if card.get("model") and organization:
-            models.append({"model": card["model"], "organization": organization})
-    return names, models
+MODELS = Path("site/data/models.json")
 
 
 def main() -> None:
-    radar = json.loads(RADAR.read_text())
-    curated_orgs, curated_models = _curated(radar)
-    crawled_orgs, crawled_models = _crawled()
-    organizations = sorted(curated_orgs | crawled_orgs)
+    models_doc = json.loads(MODELS.read_text(encoding="utf-8"))
+    records = models_doc["models"]
 
-    # Every model that resolves to a mark, from both layers. One entry per
-    # (model, organization) pair, sorted for a stable ID. Where a name appears
-    # in both layers the curated one wins the label, since it is the record
-    # carrying a document behind it.
-    layers: dict[tuple[str, str], str] = {}
-    for entry in crawled_models:
-        layers[(entry["model"], entry["organization"])] = "crawled"
-    for entry in curated_models:
-        layers[(entry["model"], entry["organization"])] = "curated"
-    models = sorted(layers, key=lambda pair: (pair[1], pair[0]))
+    # Organizations come from the same file, so the two sections of the page
+    # cannot disagree about which organizations exist either.
+    organizations = sorted({record["organization"] for record in records})
+    models = [(record["model"], record["organization"]) for record in records]
 
-    previous = json.loads(REGISTRY.read_text()) if REGISTRY.exists() else {}
+    previous = json.loads(REGISTRY.read_text(encoding="utf-8")) if REGISTRY.exists() else {}
     org_ids: dict[str, str] = dict(previous.get("organizations") or {})
     model_ids: dict[str, str] = dict(previous.get("models") or {})
 
+    high_water = json.loads(REGISTRY.read_text(encoding="utf-8")).get("high_water", {}) if REGISTRY.exists() else {}
+
     def assign(existing: dict[str, str], keys: list[str], prefix: str) -> None:
-        used = {int(v.split("-")[1]) for v in existing.values()} or set()
+        used = {int(value.split("-")[1]) for value in existing.values()}
+        used.add(int(high_water.get(prefix, 0)))
         nxt = max(used) + 1 if used else 1
         for key in keys:
             if key not in existing:
                 existing[key] = f"{prefix}-{nxt:02d}"
                 nxt += 1
 
+    # The highest number ever issued, kept even for entries about to be
+    # dropped, so a retired ID is never handed to a different model later.
+    retired = {
+        "O": max((int(v.split("-")[1]) for v in org_ids.values()), default=0),
+        "M": max((int(v.split("-")[1]) for v in model_ids.values()), default=0),
+    }
+
     assign(org_ids, organizations, "O")
-    assign(model_ids, [f"{m}␟{o}" for m, o in models], "M")
+    model_keys = [f"{model}␟{organization}" for model, organization in models]
+    assign(model_ids, model_keys, "M")
+
+    # An entry the data no longer carries is dropped. Freezing an ID protects a
+    # reviewer's note from renumbering; it does not mean the page should keep
+    # rendering a card for a model that no longer exists. Two survived a rename
+    # this way -- "Gemma 4 31B" became "Gemma 4 (31B)", "Grok-4" became
+    # "Grok 4" -- and kept the registry disagreeing with models.json about how
+    # many models there are. Numbers still are not reused: `assign` counts from
+    # the highest ever issued, so a dropped ID stays retired.
+    live_models = set(model_keys)
+    model_ids = {key: value for key, value in model_ids.items() if key in live_models}
+    live_orgs = set(organizations)
+    org_ids = {key: value for key, value in org_ids.items() if key in live_orgs}
 
     REGISTRY.write_text(
         json.dumps(
@@ -108,20 +83,23 @@ def main() -> None:
                 "note": (
                     "Frozen IDs for the logo audit page (site/logos.html). An ID is "
                     "assigned once and never reused, so review feedback citing it "
-                    "stays valid across rebuilds."
+                    "stays valid across rebuilds. Which models and organizations "
+                    "exist is decided by models.json, not here."
                 ),
+                # The highest number ever issued per prefix. A dropped entry
+                # frees its card, never its number.
+                "high_water": {
+                    "O": max(
+                        retired["O"],
+                        max((int(v.split("-")[1]) for v in org_ids.values()), default=0),
+                    ),
+                    "M": max(
+                        retired["M"],
+                        max((int(v.split("-")[1]) for v in model_ids.values()), default=0),
+                    ),
+                },
                 "organizations": dict(sorted(org_ids.items(), key=lambda kv: kv[1])),
                 "models": dict(sorted(model_ids.items(), key=lambda kv: kv[1])),
-                # Which layer each model came from. The audit page prints it so
-                # a crawled row is never read as a curated one: it carries no
-                # protocol and no evaluation date, and the two must not look
-                # equivalent just because both draw a glyph.
-                "model_layers": {
-                    f"{model}\u241f{organization}": layer
-                    for (model, organization), layer in sorted(
-                        layers.items(), key=lambda kv: (kv[0][1], kv[0][0])
-                    )
-                },
             },
             indent=2,
             ensure_ascii=False,
