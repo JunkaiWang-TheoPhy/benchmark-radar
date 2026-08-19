@@ -3760,40 +3760,75 @@ footer {
   }
 }
 
+/* Ranked entry points, sat below the results so the field and its output own
+   the top of the panel. Scrollable rather than 20 rows tall: the whole point of
+   this aside is that it must not out-weigh the chart beside it. */
 .benchmark-shortlist {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  align-items: baseline;
-  margin: 0 0 0.6rem;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  max-height: 15rem;
+  overflow-y: auto;
 }
 
+/* Deliberately not `.eyebrow`: that class is accent blue, which plants a second
+   strong anchor in a panel whose only anchor should be the search field. This
+   is the same quiet register as the reach line. */
 .benchmark-example-lead {
-  font-size: 0.72rem;
+  margin: 0.9rem 0 0.35rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--muted);
+  opacity: 0.75;
 }
 
 .benchmark-example {
-  padding: 0.1rem 0.4rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid transparent;
+  border-radius: 5px;
   background: transparent;
-  color: var(--muted);
+  color: inherit;
   font: inherit;
-  font-size: 0.72rem;
+  text-align: left;
   cursor: pointer;
+}
+
+.benchmark-example-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* The count is context, not a score, so it stays quieter than the name it
+   qualifies and never competes with it for the first read. */
+.benchmark-example-meta {
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  color: var(--muted);
+  opacity: 0.8;
 }
 
 .benchmark-example:hover,
 .benchmark-example:focus-visible {
-  border-color: var(--ink);
-  color: var(--ink);
+  border-color: var(--line);
+  background: var(--canvas);
 }
 
 .benchmark-example[aria-pressed="true"] {
   border-color: var(--ink);
   background: var(--ink);
   color: var(--panel);
+}
+
+.benchmark-example[aria-pressed="true"] .benchmark-example-meta {
+  color: var(--panel);
+  opacity: 0.7;
 }
 
 .benchmark-search {
@@ -3812,18 +3847,31 @@ footer {
 
 .benchmark-search-input {
   width: 100%;
-  padding: 0.5rem 0.65rem;
-  border: 1px solid var(--border);
+  padding: 0.6rem 0.7rem;
+  border: 2px solid var(--ink);
   border-radius: 6px;
-  background: var(--surface);
+  background: white;
   color: inherit;
   font: inherit;
+  font-size: 0.95rem;
+  box-shadow: inset 0 1px 3px rgb(21 36 42 / 8%);
+}
+
+.benchmark-search-input::placeholder {
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+.benchmark-search-input:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
 }
 
 .benchmark-search-status {
-  margin: 0.45rem 0 0.35rem;
-  font-size: 0.78rem;
+  margin: 0.4rem 0 0.35rem;
+  font-size: 0.7rem;
   color: var(--muted);
+  opacity: 0.75;
   font-variant-numeric: tabular-nums;
 }
 

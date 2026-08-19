@@ -398,7 +398,7 @@ const I18N = {
     "Benchmark reported scores over time": "基准报告分数随时间的变化",
     "All tracked benchmarks": "所有追踪的基准",
     "Search every benchmark": "搜索全部基准",
-    "Try:": "试试:",
+    "Most reported": "报告最多",
     "Search benchmarks, tasks, domains…": "搜索基准、任务、领域…",
     "{n} benchmarks": "{n} 个基准",
     "Curated registry": "精选登记册",
@@ -3930,56 +3930,51 @@ function renderExternalBenchmark(board, scored, record) {
   });
 }
 
-// A handful of entry points for a reader who has nothing in mind to type, on
-// one line. This replaced a titled block with two computed subheadings and
-// eight cards: it outranked the search box it existed to support, and a reader
-// who wanted anything else read four suggestions before finding the field.
+// Entry points for a reader who has nothing in mind to type, ranked by how
+// many curated model cards report the benchmark. That ordering is the one
+// reading this registry is built to make, so the list needs no editorial
+// curation and no computed subheadings: "most reported" is both the rank and
+// the reason a name is worth trying.
 //
-// The list is editorial rather than computed, which is the point. MMLU carries
-// only 4 readable scores here and would never place in a "deepest records"
-// ranking, but it is the name a newcomer arrives with. Short labels are used
-// because these are prompts for the search box, not record titles; each chip
-// carries the registry's full name as its accessible name and tooltip, so the
-// abbreviation never hides what will open.
-const BENCHMARK_EXAMPLES = [
-  ["mmlu", "MMLU"],
-  ["gpqa_diamond", "GPQA"],
-  ["swe_bench_verified", "SWE-bench"],
-  ["terminal_bench", "Terminal-Bench"],
-];
+// Every row is a curated benchmark, because `card_count` is a curated fact:
+// the crawled catalog records scores, not who chose to report them. The
+// crawled layer is not hidden by this, it is reached from the search box and
+// the picker, both of which cover all 679 scored crawled records alongside
+// these.
+const BENCHMARK_EXAMPLE_LIMIT = 20;
 
 function renderBenchmarkNavigator(board) {
   const host = byId("benchmark-shortlist");
   if (host) {
-    const byBenchmarkId = new Map(
-      (board.entries || []).map((entry) => [entry.benchmark_id, entry]),
-    );
-    // Filtered against the live registry rather than trusted: an id that leaves
-    // the registry, or loses its last readable score, drops out of the line
-    // instead of rendering a chip that opens the refusal panel.
-    const chips = BENCHMARK_EXAMPLES.map(([benchmarkId, label]) => {
-      const entry = byBenchmarkId.get(benchmarkId);
-      if (!entry || !scoreRecord(benchmarkId)) return null;
-      const chip = element("button", {
-        className: "benchmark-example",
-        text: label,
-        attrs: {
-          type: "button",
-          title: entry.name,
-          "aria-label": entry.name,
-          "aria-pressed": benchmarkId === state.lfrontier ? "true" : "false",
-        },
-      });
-      chip.addEventListener("click", () => {
-        selectFrontier(benchmarkId);
-        renderAdoptionFrontier(board);
-        writeUrl();
-      });
-      return chip;
-    }).filter(Boolean);
+    const examples = (board.entries || [])
+      // Scored only, same rule as every other route into the panel: an example
+      // that opens the no-score refusal is not an example.
+      .filter((entry) => entry.card_count > 0 && scoreRecord(entry.benchmark_id))
+      .sort((a, b) => b.card_count - a.card_count || a.name.localeCompare(b.name))
+      .slice(0, BENCHMARK_EXAMPLE_LIMIT);
     replaceChildren(
       host,
-      chips.length ? [element("span", { className: "benchmark-example-lead", text: t("Try:") }), ...chips] : [],
+      examples.map((entry) => {
+        const card = element("button", {
+          className: "benchmark-example",
+          attrs: {
+            type: "button",
+            "aria-pressed": entry.benchmark_id === state.lfrontier ? "true" : "false",
+          },
+        }, [
+          element("span", { className: "benchmark-example-name", text: entry.name }),
+          element("small", {
+            className: "benchmark-example-meta",
+            text: metricLabel(entry.card_count, "model card"),
+          }),
+        ]);
+        card.addEventListener("click", () => {
+          selectFrontier(entry.benchmark_id);
+          renderAdoptionFrontier(board);
+          writeUrl();
+        });
+        return card;
+      }),
     );
   }
   // Binds the input and kicks off the crawled-index fetch on first call; a

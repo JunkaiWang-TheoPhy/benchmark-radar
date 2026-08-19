@@ -256,10 +256,9 @@ def test_search_still_works_when_the_crawled_index_is_unavailable():
 
 def test_the_navigator_is_a_tool_region_not_a_content_section():
     # The examples were a titled block with an eyebrow, a heading, a paragraph
-    # and two computed subheadings over eight cards. That outranked the search
-    # box it existed to support. Search leads, and the examples are one line of
-    # chips inside the same block, with nothing between the field and its
-    # results but the reach line and that line.
+    # and two computed subheadings. That outranked the search box it existed to
+    # support, and the paragraph restated the heading. The panel is now a field,
+    # its reach line, its results, and a quiet ranked list.
     html = source("site/index.html")
     navigator = html.split('class="benchmark-navigator"', 1)[1].split("</aside>", 1)[0]
 
@@ -270,48 +269,62 @@ def test_the_navigator_is_a_tool_region_not_a_content_section():
         "benchmark-shortlist-section",
     ):
         assert gone not in navigator, f"{gone} still occupies the navigator"
-    # The heading is the only one left, so it is the panel's label.
+    # The search label is the only heading, so it is the panel's one anchor.
     assert navigator.count("<h2") == 1
     assert 'data-i18n="Search every benchmark"' in navigator
+    # And the examples label is not `.eyebrow`, whose accent blue would plant a
+    # second anchor competing with the field.
+    assert 'class="eyebrow"' not in navigator
+    assert 'class="benchmark-example-lead"' in navigator
 
     order = [
         navigator.index('id="benchmark-search-input"'),
         navigator.index('id="benchmark-search-status"'),
-        navigator.index('id="benchmark-shortlist"'),
         navigator.index('id="benchmark-search-results"'),
+        navigator.index('id="benchmark-shortlist"'),
     ]
-    assert order == sorted(order), "field, reach line, examples, then results"
+    assert order == sorted(order), "field, reach line, results, then examples"
 
 
-def test_the_examples_are_one_line_of_verified_chips():
-    # An editorial list, not a computed one: MMLU carries 4 readable scores and
-    # would never place in a "deepest records" ranking, but it is the name a
-    # newcomer arrives with. Each id is still checked against the live registry,
-    # so a chip can never open the no-score refusal panel.
+def test_the_search_field_carries_the_panel_weight_through_affordance():
+    # The importance of this panel is expressed by the control, not by a large
+    # heading or a paragraph of prose. The label stays small; the field gets the
+    # emphasis, and the reach line drops a size and a step of contrast so it
+    # reads as a footnote to the field rather than as a headline.
+    styles = source("site/assets/styles.css")
+
+    field = styles.split(".benchmark-search-input {", 1)[1].split("}", 1)[0]
+    assert "border: 2px solid var(--ink)" in field
+    assert "background: white" in field
+
+    label = styles.split(".benchmark-search-label {", 1)[1].split("}", 1)[0]
+    assert "font-size: 0.78rem" in label, "the label must not grow"
+
+    status = styles.split(".benchmark-search-status {", 1)[1].split("}", 1)[0]
+    assert "font-size: 0.7rem" in status
+    assert "opacity: 0.75" in status
+
+
+def test_the_examples_are_ranked_by_how_many_cards_report_them():
+    # No editorial list and no computed subheadings: "most reported" is both the
+    # rank and the reason a name is worth trying, which is the one reading this
+    # registry exists to make. Curated only, because `card_count` is a curated
+    # fact; the crawled layer is reached from the field and the picker instead.
     script = source("site/assets/app.js")
     styles = source("site/assets/styles.css")
 
-    assert "const BENCHMARK_EXAMPLES = [" in script
-    for benchmark_id, label in (
-        ("mmlu", "MMLU"),
-        ("gpqa_diamond", "GPQA"),
-        ("swe_bench_verified", "SWE-bench"),
-        ("terminal_bench", "Terminal-Bench"),
-    ):
-        assert f'["{benchmark_id}", "{label}"]' in script
-
     navigator = script.split("function renderBenchmarkNavigator(board)", 1)[1].split(
-        "\n}", 1
+        "\nfunction ", 1
     )[0]
-    assert "if (!entry || !scoreRecord(benchmarkId)) return null;" in navigator
-    # A short label is a prompt for the search box, not a record title, so the
-    # full registry name rides along rather than being hidden by the shorthand.
-    assert "title: entry.name," in navigator
-    assert '"aria-label": entry.name,' in navigator
-    # Chips, not cards: the old grid of two-line buttons is gone.
-    assert "benchmark-shortlist-button" not in script
-    assert "benchmark-shortlist-button" not in styles
-    assert ".benchmark-example {" in styles
+    assert "b.card_count - a.card_count || a.name.localeCompare(b.name)" in navigator
+    assert "entry.card_count > 0 && scoreRecord(entry.benchmark_id)" in navigator
+    assert "BENCHMARK_EXAMPLE_LIMIT" in navigator
+    assert 'metricLabel(entry.card_count, "model card")' in navigator
+    # Bounded height rather than twenty rows tall: this aside must not out-weigh
+    # the chart beside it.
+    shortlist = styles.split(".benchmark-shortlist {", 1)[1].split("}", 1)[0]
+    assert "max-height" in shortlist
+    assert "overflow-y: auto" in shortlist
 
 
 def test_the_navigator_still_starts_the_crawled_index_fetch():
