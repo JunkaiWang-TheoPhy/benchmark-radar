@@ -4268,3 +4268,60 @@ footer {
   color: #aebcc1;
   font-size: 0.76rem;
 }
+
+/* The shortlist heading carries its (i) toggle inline, so the explanation of
+   what the ranking measures sits next to the ranking rather than under it. */
+.benchmark-example-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* The navigator scrolls (overflow-y: auto), and a scroll container clips
+   absolutely-positioned descendants no matter which edge they are pinned to.
+   Positioning inward only made the panel a narrow column; the panel has to
+   leave the container entirely, so it is fixed rather than absolute and
+   anchored under the toggle by script. */
+.benchmark-example-heading .info-disclosure-body {
+  position: fixed;
+  top: auto;
+  left: auto;
+  width: min(24rem, calc(100vw - 2rem));
+  max-width: none;
+}
+
+.benchmark-example-heading .benchmark-example-lead {
+  margin: 0;
+}
+
+/* Hover reveals it too, not only click (issue #269).
+
+   A closed <details> hides its body by not generating a box for it, and any
+   `display` declared on that body overrides the hiding rather than adding to
+   it -- which pins the panel permanently open. So the reveal is driven by
+   visibility and opacity on a box that is always generated: the body is laid
+   out but transparent and non-interactive until hover, focus, or the open
+   state. Click still works and is what keeps it up while the pointer travels
+   onto the text; coarse pointers get the click path alone, which is right. */
+.info-disclosure > .info-disclosure-body {
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 90ms ease-out;
+}
+
+.info-disclosure[open] > .info-disclosure-body,
+.info-disclosure:focus-within > .info-disclosure-body {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: hover) {
+  .info-disclosure:hover > .info-disclosure-body {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
