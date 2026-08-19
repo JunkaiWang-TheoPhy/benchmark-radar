@@ -363,12 +363,26 @@ const I18N = {
     "Date:": "日期:",
     "Search benchmarks…": "搜索基准…",
     "Refresh data": "刷新数据",
-    "Matching observations": "匹配结果",
+    "Today's radar": "今日雷达",
     "Show more results": "显示更多结果",
     Sources: "来源",
     "All-time totals": "全部统计",
     All: "全部",
-    "view.today.matching": "匹配结果",
+    // --- Today view row and metrics -----------------------------------------
+    "Updated": "更新于",
+    "Released": "发布于",
+    "Just now": "刚刚",
+    "{n}m ago": "{n} 分钟前",
+    "{n}h ago": "{n} 小时前",
+    "{n}d ago": "{n} 天前",
+    "yesterday": "昨天",
+    "result": "条结果",
+    "results": "条结果",
+    "normal": "正常",
+    "need attention": "需关注",
+    "Sort: Priority ↓": "排序:优先度 ↓",
+    "Sort: Date, then Priority ↓": "排序:日期,再按优先度 ↓",
+    "Sort: Date ↓": "排序:日期 ↓",
     // --- Leaderboard ---------------------------------------------------------
     "Model Card Adoption Rank": "模型卡采用排名",
     "Which benchmarks do model cards report?": "模型卡报告了哪些基准?",
@@ -550,8 +564,6 @@ const I18N = {
     "Why it matters": "为什么重要",
     // --- Score blocks --------------------------------------------------------
     "Priority score": "优先度评分",
-    Recommended: "推荐",
-    "Recommended to review": "推荐复核",
     "Priority score meets this scan's": "本次扫描的优先度分数达到",
     " triage threshold; not an endorsement.": " 分诊阈值,并非背书。",
     "not an endorsement": "并非背书",
@@ -1058,15 +1070,16 @@ function scoreMax(item = null) {
 }
 
 function scoreBlock(item) {
-  const score = Number(item.total_score || 0);
-  const max = scoreMax(item);
-  const width = Math.max(0, Math.min(100, (score / max) * 100));
-  const recommendationScore = Number(item.recommendation_score);
-  const triagePrefix = t("Priority score meets this scan's");
-  const triageSuffix = t(" triage threshold; not an endorsement.");
-  const recommendationExplanation = Number.isFinite(recommendationScore)
-    ? `${triagePrefix} ${recommendationScore.toFixed(0)}-point${triageSuffix}`
-    : `${triagePrefix}${triageSuffix}`;
+  const raw = Number(item.total_score || 0);
+  const max = Number(scoreMax(item));
+  // Issue #248: a 100-point score rounds to an integer (68, not 68.46), but
+  // legacy 0-4 records carry meaningful hundredths (3.01, 2.94), so they keep
+  // two decimals. The track always uses the raw value, so it never
+  // misrepresents the ratio.
+  const precision = max > 10 ? 0 : 2;
+  const score = raw.toFixed(precision);
+  const maxDisplay = precision === 0 ? String(Math.round(max)) : String(max);
+  const width = Math.max(0, Math.min(100, (raw / max) * 100));
   const trackFill = element("span", {});
   const track = element("div", { className: "score-track" }, [trackFill]);
   trackFill.style.width = `${width}%`;
@@ -1077,7 +1090,7 @@ function scoreBlock(item) {
     className: "score-label score-explain",
     attrs: {
       type: "button",
-      "aria-label": `${t("Priority score")} ${score.toFixed(2)} ${t("of")} ${max.toFixed(2)}. ${t("How is this scored?")}`,
+      "aria-label": `${t("Priority score")} ${score} ${t("of")} ${maxDisplay}. ${t("How is this scored?")}`,
     },
   }, [
     element("span", { text: t("Priority score") }),
@@ -1091,42 +1104,82 @@ function scoreBlock(item) {
     openRubric(item);
   });
   return element("div", { className: "score" }, [
-    ...(item.recommended
-      ? [
-          element("span", {
-            className: "recommendation-badge",
-            text: t("Recommended"),
-            attrs: {
-              title: recommendationExplanation,
-              "aria-label": `${t("Recommended to review")}. ${recommendationExplanation}`,
-            },
-          }),
-        ]
-      : []),
     element("div", { className: "score-value" }, [
-      element("strong", { text: score.toFixed(2) }),
-      element("span", { text: `/ ${max.toFixed(2)}` }),
+      element("strong", { text: score }),
+      element("span", { text: `/ ${maxDisplay}` }),
     ]),
     track,
     explain,
   ]);
 }
 
-function pillBar(item) {
-  const pills = [
-    ...(item.watchlist
-      ? [element("span", { className: "pill pill-watchlist", text: `★ ${item.watchlist}` })]
+function titleCase(value) {
+  return String(value)
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+// The timestamp that best describes when the observed event happened. The
+// updated_at field only exists for update events, so fall back through the
+// publish and discovery times rather than dropping the time entirely.
+function eventTimestamp(item) {
+  if (item.updated_at) return item.updated_at;
+  if (item.published_at) return item.published_at;
+  return item.discovered_at || "";
+}
+
+// Time is one of the highest-signal attributes on a Today page, so rows show
+// how long ago an event happened instead of a bare "UPDATED" (issue #248).
+function relativeTime(iso) {
+  if (!iso) return "";
+  const time = new Date(iso).getTime();
+  if (!Number.isFinite(time)) return "";
+  const minutes = Math.max(0, Math.round((Date.now() - time) / 60000));
+  if (minutes < 1) return t("Just now");
+  if (minutes < 60) return t("{n}m ago", { n: minutes });
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return t("{n}h ago", { n: hours });
+  const days = Math.round(hours / 24);
+  if (days <= 1) return t("yesterday");
+  if (days < 7) return t("{n}d ago", { n: days });
+  return formatDate(iso, { dateStyle: "medium" });
+}
+
+function eventVerb(item) {
+  const kind = String(item.event_kind || "");
+  const verb = kind === "updated" ? t("Updated") : kind === "released" ? t("Released") : titleCase(kind);
+  const time = relativeTime(eventTimestamp(item));
+  return time ? `${verb} ${time}` : verb;
+}
+
+// The collapsed row carries a plain-text provenance line instead of the six
+// uppercase chips: source and event in normal typography, at most two
+// categories, everything else under expansion (issue #248).
+function recordMeta(item) {
+  const categories = item.categories || [];
+  const visible = categories.slice(0, 2).map(titleCase);
+  const extra = categories.length - visible.length;
+  return element("div", { className: "record-meta" }, [
+    element("span", { className: "meta-source", text: item.source }),
+    element("span", {
+      className: "meta-event",
+      text: eventVerb(item),
+      attrs: {
+        title: eventTimestamp(item)
+          ? `${formatDate(eventTimestamp(item), { dateStyle: "medium", timeStyle: "short" })} UTC`
+          : "",
+      },
+    }),
+    ...(visible.length
+      ? visible.map((category) => element("span", { className: "meta-category", text: category }))
+      : [element("span", { className: "meta-category", text: t("uncategorized") })]),
+    ...(extra > 0
+      ? [element("span", { className: "meta-more", text: `+${extra}` })]
       : []),
-    element("span", { className: "pill pill-source", text: item.source }),
-    element("span", { className: "pill pill-event", text: item.event_kind }),
-    ...(item.categories || []).map((category) =>
-      element("span", { className: "pill", text: category.replaceAll("_", " ") }),
-    ),
-  ];
-  if (!(item.categories || []).length) {
-    pills.push(element("span", { className: "pill", text: t("uncategorized") }));
-  }
-  return element("div", { className: "pill-bar" }, pills);
+    ...(item.watchlist
+      ? [element("span", { className: "meta-watchlist", text: `★ ${item.watchlist}` })]
+      : []),
+  ]);
 }
 
 function definition(label, value) {
@@ -1620,8 +1673,22 @@ function renderToday({ resultsOnly = false } = {}) {
   ).length;
   const attentionCount = observations.length - evidenceCount;
   byId("today-count").textContent =
-    `${observations.length} ${observations.length === 1 ? t("result") : t("results")} · ` +
-    `${evidenceCount} ${t("evidence")} · ${attentionCount} ${t("attention")}`;
+    `${observations.length} ${observations.length === 1 ? t("result") : t("results")}`;
+  // The two classes are mutually exclusive, so name them instead of leaving
+  // EVIDENCE and ATTENTION as unexplained jargon (issue #248).
+  byId("today-breakdown").textContent =
+    `${evidenceCount} ${t("normal")} · ${attentionCount} ${t("need attention")}`;
+  // The list is sorted by priority within a day; say so at the point of use
+  // rather than making the reader infer it. Attention rows carry no priority,
+  // so a kind-filtered attention set falls back to date order, and in All
+  // dates mode the archive is ordered by date first and priority second
+  // (issue #248).
+  const priorityScored = visibleObservations.some((item) => Number(item.total_score) > 0);
+  byId("today-sort").textContent = !priorityScored
+    ? t("Sort: Date ↓")
+    : showingAllDates
+      ? t("Sort: Date, then Priority ↓")
+      : t("Sort: Priority ↓");
   replaceChildren(
     byId("today-list"),
     visibleObservations.length
@@ -2257,7 +2324,13 @@ function allObservations() {
   );
   state.observations = [...evidence, ...attention].sort((a, b) => {
     const dateOrder = String(b.snapshot_date).localeCompare(String(a.snapshot_date));
-    return dateOrder || Number(b.total_score || 0) - Number(a.total_score || 0);
+    if (dateOrder) return dateOrder;
+    const scoreOrder = Number(b.total_score || 0) - Number(a.total_score || 0);
+    if (scoreOrder) return scoreOrder;
+    // Attention rows carry no priority, so within a day they order by the
+    // event timestamp the row displays, keeping the visible order consistent
+    // with the "Sort: Date ↓" caption.
+    return String(eventTimestamp(b)).localeCompare(String(eventTimestamp(a)));
   });
   return state.observations;
 }
@@ -2463,7 +2536,8 @@ function openRubric(item = null, versionOverride = null) {
 
   // Selection policy belongs to the record's scan, not its shared scoring
   // rubric version. Older v2 records were genuinely filtered at 40, while new
-  // v2 records retain everything eligible and use 40 only for this badge.
+  // v2 records retain everything eligible and use 40 only as the
+  // recommendation marker.
   const selectedDay = dailySnapshot();
   const recommendationScore = item
     ? item.recommendation_score
@@ -2480,7 +2554,7 @@ function openRubric(item = null, versionOverride = null) {
           text:
             `${t("Every record matching at least one taxonomy category is retained. A score of")} ` +
             `${Number(recommendationScore).toFixed(2)} ${t(
-              "or above adds the Recommended badge; it does not control inclusion. Watchlisted artifacts are also retained.",
+              "or above marks the item as recommended; it does not control inclusion. Watchlisted artifacts are also retained.",
             )}`,
         })
       : historicalMinimum !== undefined && historicalMinimum !== null
@@ -2596,10 +2670,15 @@ function expandedRecord(item, teaser) {
       attrs: { href: safeHttpUrl(item.url), target: "_blank", rel: "noopener noreferrer" },
     }),
   ]);
+  const categoryLine = (item.categories || []).length
+    ? (item.categories || []).map(titleCase).join(" · ")
+    : t("uncategorized");
   return element("div", { className: "record-detail" }, [
     element("p", {
       className: "detail-source",
-      text: `${item.source} · ${item.event_kind} · ${item.snapshot_date}`,
+      text:
+        `${item.source} · ${eventVerb(item)} · ${categoryLine}` +
+        `${item.watchlist ? ` · ★ ${item.watchlist}` : ""} · ${item.snapshot_date}`,
     }),
     element("p", {
       className: item.summary ? "detail-summary" : "detail-summary signal-nodesc",
@@ -5950,9 +6029,18 @@ function observationCard(item, index) {
   const metadata = isAttention
     ? element("div", { className: "signal-meta" }, [
         element("span", { className: "attention-badge", text: t("attention") }),
-        element("span", { text: `${item.source} · ${item.event_kind}` }),
+        element("span", {
+          text: `${item.source} · ${eventVerb(item)}`,
+          // The relative time on the row carries the exact timestamp on
+          // hover, matching the evidence rows (issue #248).
+          attrs: {
+            title: eventTimestamp(item)
+              ? `${formatDate(eventTimestamp(item), { dateStyle: "medium", timeStyle: "short" })} UTC`
+              : "",
+          },
+        }),
       ])
-    : pillBar(item);
+    : recordMeta(item);
   const summary = (item.summary || "").trim()
     ? shorten(item.summary)
     : t("No description published at the source.");
@@ -5962,8 +6050,10 @@ function observationCard(item, index) {
       text: String(index + 1).padStart(2, "0"),
     }),
     element("div", { className: "record-heading" }, [
-      metadata,
+      // The benchmark title leads the row; the provenance line follows it
+      // instead of classifying the item before it is named (issue #248).
       element("h3", { text: item.title }),
+      metadata,
       ...(item.watchlist && item.watchlist_note
         ? [element("p", { className: "signal-tldr", text: item.watchlist_note })]
         : []),

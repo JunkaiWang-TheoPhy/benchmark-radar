@@ -32,9 +32,12 @@ html {
 
 body {
   margin: 0;
+  /* The graph-paper grid keeps the Radar identity without competing with the
+     row separators, card borders, and score tracks drawn over it: cut its
+     contrast in half (issue #248). */
   background:
-    linear-gradient(90deg, rgb(37 94 168 / 3%) 1px, transparent 1px) 0 0 / 32px 32px,
-    linear-gradient(rgb(37 94 168 / 3%) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, rgb(37 94 168 / 1.5%) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(rgb(37 94 168 / 1.5%) 1px, transparent 1px) 0 0 / 32px 32px,
     var(--canvas);
   color: var(--ink);
   font-family: var(--body);
@@ -117,9 +120,6 @@ footer {
 #today-view .section-title h2,
 .heading-note,
 .date-control,
-.filter-panel label,
-.signal-meta,
-.score-label,
 footer,
 th {
   font-family: var(--utility);
@@ -446,6 +446,13 @@ h2 {
   display: grid;
   gap: 0.45rem;
   color: var(--muted);
+  /* Filter names are UI labels, not machine values, so they use the body
+     face at normal case instead of the uppercase mono metadata system
+     (issue #248). */
+  font-family: var(--body);
+  font-size: 0.8rem;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 select,
@@ -493,6 +500,21 @@ input {
 
 .section-title span {
   color: var(--muted);
+}
+
+/* Counts and the sort caption sit right of the heading; the spans inherit
+   the uppercase mono treatment because they are machine values (issue #248). */
+.results-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  align-items: baseline;
+  justify-content: flex-end;
+  text-align: right;
+}
+
+#today-sort {
+  white-space: nowrap;
 }
 
 /* The day's narrative shares the right sidebar with the health and corpus
@@ -755,6 +777,16 @@ input {
   border-left: 3px solid var(--line);
 }
 
+.pill {
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .pill-confidence {
   flex: none;
   align-self: flex-start;
@@ -838,7 +870,7 @@ input {
 
 .record-summary {
   display: grid;
-  grid-template-columns: 26px 38px minmax(0, 1fr) 170px;
+  grid-template-columns: 26px 38px minmax(0, 1fr) 150px;
   gap: 1rem;
   align-items: start;
   padding: 1.5rem 0;
@@ -855,7 +887,7 @@ input {
    selector, which restores exactly the one-character-per-line wrap it exists to
    prevent. A class degrades to "unstyled but readable" instead. */
 .record-summary.record-summary-unranked {
-  grid-template-columns: 26px minmax(0, 1fr) 170px;
+  grid-template-columns: 26px minmax(0, 1fr) 150px;
 }
 
 .record-summary::before {
@@ -883,6 +915,12 @@ input {
 
 .record-summary:hover::before {
   border-color: var(--blue);
+}
+
+/* The whole row is the click target; a subtle wash announces the affordance
+   before the chevron is noticed (issue #248). */
+.record-summary:hover {
+  background: color-mix(in srgb, var(--panel) 55%, transparent);
 }
 
 .record-card[open] {
@@ -961,41 +999,52 @@ input {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem 0.8rem;
+  align-items: baseline;
+  margin-bottom: 0.35rem;
   color: var(--blue-deep);
+  /* Provenance is a UI label, not a machine value: body face, normal case
+     (issue #248). */
+  font-family: var(--body);
+  font-size: 0.82rem;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
-.pill-bar {
+/* The collapsed row's provenance line: source, event time, and at most two
+   categories in plain text, dot-separated, so the title leads and no chip
+   competes with it (issue #248). */
+.record-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-.pill {
-  padding: 0.15rem 0.45rem;
-  border: 1px solid var(--line);
+  align-items: baseline;
+  row-gap: 0.2rem;
+  margin-bottom: 0.35rem;
   color: var(--muted);
-  font-family: var(--utility);
-  font-size: 0.6rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.82rem;
 }
 
-.pill-source {
-  border-color: var(--ink);
+.record-meta span + span::before {
+  content: "·";
+  margin-inline: 0.45rem;
+  color: var(--line);
+}
+
+.record-meta .meta-source {
   color: var(--ink);
   font-weight: 600;
 }
 
-.pill-event {
-  border-color: var(--blue);
+.record-meta .meta-event {
   color: var(--blue-deep);
 }
 
-.pill-watchlist {
-  border-color: var(--gold);
-  background: rgb(201 147 39 / 12%);
+.record-meta .meta-more {
+  color: var(--muted);
+}
+
+.record-meta .meta-watchlist {
   color: #7d5c14;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* The one line saying why a tracked artifact matters, ahead of upstream prose. */
@@ -1024,20 +1073,7 @@ input {
   align-items: stretch;
   align-self: center;
   justify-self: end;
-  width: 170px;
-}
-
-.recommendation-badge {
-  align-self: flex-start;
-  margin-bottom: 0.45rem;
-  padding: 0.2rem 0.45rem;
-  border: 1px solid var(--blue);
-  color: var(--blue-deep);
-  font-family: var(--utility);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  width: 150px;
 }
 
 .score-value {
@@ -1045,11 +1081,14 @@ input {
   grid-template-columns: 1fr auto;
   align-items: baseline;
   width: 100%;
-  font-family: var(--display);
+  /* A score is a machine value, so it reads in the mono system; the display
+     face stays reserved for the benchmark titles, which now dominate the row
+     (issue #248). */
+  font-family: var(--utility);
 }
 
 .score-value strong {
-  font-size: 2.15rem;
+  font-size: 1.15rem;
   line-height: 1;
 }
 
@@ -1078,6 +1117,12 @@ input {
 .score-label {
   margin-top: 0.3rem;
   color: var(--muted);
+  /* The score's caption is a UI label, not a machine value: body face,
+     normal case. */
+  font-family: var(--body);
+  font-size: 0.7rem;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 /* The label is a button, but it keeps the label's typography: the affordance

@@ -275,8 +275,12 @@
         <div class="content-grid">
           <div>
             <div class="section-title">
-              <h2 data-i18n="view.today.matching">Matching observations</h2>
-              <span id="today-count" aria-live="polite"></span>
+              <h2 data-i18n="Today's radar">Today's radar</h2>
+              <div class="results-meta" aria-live="polite">
+                <span id="today-count"></span>
+                <span id="today-breakdown"></span>
+                <span id="today-sort"></span>
+              </div>
             </div>
             <div class="signal-list" id="today-list"></div>
             <button class="secondary-link today-show-more" id="today-show-more" type="button" hidden data-i18n="Show more results">
