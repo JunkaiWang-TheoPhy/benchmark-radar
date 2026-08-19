@@ -247,6 +247,7 @@ const I18N = {
     "Search benchmarks…": "搜索基准…",
     "Refresh data": "刷新数据",
     "Today's radar": "今日雷达",
+    "Matching observations": "匹配结果",
     "Show more results": "显示更多结果",
     Sources: "来源",
     "All-time totals": "全部统计",
