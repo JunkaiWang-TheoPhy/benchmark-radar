@@ -371,25 +371,34 @@
         </details>
 
         <div class="benchmark-workbench">
-          <aside class="benchmark-navigator" aria-labelledby="benchmark-navigator-heading">
-            <p class="eyebrow" data-i18n="Benchmarks to watch">Benchmarks to watch</p>
-            <h2 id="benchmark-navigator-heading" data-i18n="Choose a reporting story">Choose a reporting story</h2>
-            <p data-i18n="leaderboard.navigator.note">
-              Start with signals that distinguish emerging instruments from established
-              standards and saturated conventions.
-            </p>
-            <div id="benchmark-shortlist"></div>
-
+          <aside class="benchmark-navigator" aria-labelledby="benchmark-search-heading">
+            <!-- Search leads the panel. The shortlist below it is a set of worked
+                 examples, and an example list placed first reads as the whole
+                 offer: a reader who wanted a benchmark not on it had to scroll
+                 past four suggestions to find the box that reaches all of them. -->
             <div class="benchmark-search">
-              <label class="benchmark-search-label" for="benchmark-search-input"
-                     data-i18n="Search every benchmark">Search every benchmark</label>
+              <h2 class="benchmark-search-label" id="benchmark-search-heading">
+                <label for="benchmark-search-input"
+                       data-i18n="Search every benchmark">Search every benchmark</label>
+              </h2>
               <input id="benchmark-search-input" type="search" autocomplete="off"
                      class="benchmark-search-input"
-                     data-i18n-placeholder="Name or alias"
-                     placeholder="Name or alias" />
+                     data-i18n-placeholder="Search benchmarks, tasks, domains…"
+                     placeholder="Search benchmarks, tasks, domains…" />
               <p id="benchmark-search-status" class="benchmark-search-status"></p>
               <div id="benchmark-search-results"></div>
             </div>
+
+            <section class="benchmark-shortlist-section"
+                     aria-labelledby="benchmark-navigator-heading">
+              <p class="eyebrow" data-i18n="Worked examples">Worked examples</p>
+              <h2 id="benchmark-navigator-heading" data-i18n="Famous benchmarks">Famous benchmarks</h2>
+              <p data-i18n="leaderboard.navigator.note">
+                A few records to open if you do not have one in mind. The search above
+                reaches every benchmark in the registry and the crawled catalog.
+              </p>
+              <div id="benchmark-shortlist"></div>
+            </section>
           </aside>
 
           <section class="frontier-panel" id="adoption-frontier" aria-labelledby="frontier-heading">

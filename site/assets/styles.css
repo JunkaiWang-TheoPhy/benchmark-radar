@@ -2316,7 +2316,15 @@ td a {
   font-size: 1.45rem;
 }
 
-.benchmark-navigator > p:not(.eyebrow) {
+/* The search label is the panel's leading heading, so it is an <h2> for the
+   document outline while keeping the small uppercase field-label treatment.
+   Its own rule below would otherwise lose the cascade to the h2 sizing. */
+.benchmark-navigator h2.benchmark-search-label {
+  margin-bottom: 0.4rem;
+  font-size: 0.78rem;
+}
+
+.benchmark-navigator p:not(.eyebrow):not(.benchmark-search-status) {
   color: var(--muted);
   font-size: 0.8rem;
 }
@@ -3820,9 +3828,15 @@ footer {
 }
 
 .benchmark-search {
-  margin-top: 1.25rem;
+  margin-top: 0;
+}
+
+/* The worked examples sit under the search box and are separated from it, so
+   the rule that used to head the search block heads this one instead. */
+.benchmark-shortlist-section {
+  margin-top: 1.5rem;
   border-top: 1px solid var(--border);
-  padding-top: 1rem;
+  padding-top: 1.1rem;
 }
 
 .benchmark-search-label {
@@ -3849,6 +3863,7 @@ footer {
   margin: 0.45rem 0 0.35rem;
   font-size: 0.78rem;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 #benchmark-search-results {

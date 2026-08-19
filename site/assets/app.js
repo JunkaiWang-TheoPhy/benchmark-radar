@@ -394,13 +394,16 @@ const I18N = {
     "Registry overview": "总览",
     "What the two layers say": "两层信息说了什么",
     "Stated findings": "明确结论",
-    "Benchmarks to watch": "值得关注的基准",
-    "Choose a reporting story": "选择一个报告故事",
     "leaderboard.navigator.note":
-      "从能把新兴工具与成熟标准、饱和惯例区分开来的信号入手。",
+      "如果你还没有想好要看哪个基准,这里有几条可以直接打开。上面的搜索框可以检索登记册与抓取目录中的每一个基准。",
     "The saturation curve": "饱和曲线",
     "Benchmark reported scores over time": "基准报告分数随时间的变化",
     "All tracked benchmarks": "所有追踪的基准",
+    "Search every benchmark": "搜索全部基准",
+    "Search benchmarks, tasks, domains…": "搜索基准、任务、领域…",
+    "Worked examples": "示例记录",
+    "Famous benchmarks": "知名基准",
+    "{n} benchmarks": "{n} 个基准",
     "Curated registry": "精选登记册",
     "New instruments with scores": "有分数的新工具",
     "Deepest score records": "分数记录最全的基准",
@@ -3177,7 +3180,12 @@ function searchBenchmarkIndex(records, query) {
   const scored = [];
   for (const record of records) {
     const name = foldName(record.name);
-    if (!name.includes(needle)) continue;
+    // The crawled catalog carries no domain, so publisher and modality are the
+    // fields a "tasks, domains" query can land on here.
+    const named = name.includes(needle);
+    if (!named && !foldName(record.publisher).includes(needle) && !foldName(record.modality).includes(needle)) {
+      continue;
+    }
     // Prefix beats substring, then a record that can answer more of the
     // reader's questions beats one that cannot, then shorter names first so
     // "MMLU" outranks "MMLU-Pro-Extended" for the query "mmlu".
@@ -3186,7 +3194,10 @@ function searchBenchmarkIndex(records, query) {
       (record.openness !== "unknown" ? 1 : 0) +
       (record.has_size ? 1 : 0) +
       (record.score_count > 0 ? 1 : 0);
-    scored.push({ record, rank: [name.startsWith(needle) ? 0 : 1, -answers, name.length] });
+    scored.push({
+      record,
+      rank: [named ? (name.startsWith(needle) ? 0 : 1) : 2, -answers, name.length],
+    });
   }
   scored.sort(
     (a, b) =>
@@ -3275,9 +3286,13 @@ function searchCuratedEntries(board, query) {
   const scored = [];
   for (const entry of board?.entries || []) {
     if (!scoreRecord(entry.benchmark_id)) continue;
+    // Name and aliases identify the record; `domain` is what the placeholder
+    // means by tasks and domains, since the task shape shown in the panel is
+    // selected by domain. Matching it lets "agent" or "science" return a set
+    // rather than nothing.
     const names = [entry.name, ...(entry.aliases || [])].map(foldName);
     const hits = names.filter((name) => name.includes(needle));
-    if (!hits.length) continue;
+    if (!hits.length && !foldName(entry.domain).includes(needle)) continue;
     // Exact beats prefix beats substring, then the shortest matched string.
     // Ranking on the entry name alone put AutomationBench above Humanity's Last
     // Exam for the query "HLE": the registry really does record the alias
@@ -3285,8 +3300,12 @@ function searchCuratedEntries(board, query) {
     // won. What a reader means by "HLE" is the record that answers to it
     // exactly, so the matched alias is what gets ranked, not the entry name.
     const tier = (name) => (name === needle ? 0 : name.startsWith(needle) ? 1 : 2);
-    const best = Math.min(...hits.map(tier));
-    const shortest = Math.min(...hits.filter((name) => tier(name) === best).map((n) => n.length));
+    // A domain-only hit is a weaker answer than a name hit: the reader typed a
+    // field value, not an identity, so those rank below every named match.
+    const best = hits.length ? Math.min(...hits.map(tier)) : 3;
+    const shortest = hits.length
+      ? Math.min(...hits.filter((name) => tier(name) === best).map((name) => name.length))
+      : 0;
     scored.push({ entry, rank: [best, shortest, foldName(entry.name).length] });
   }
   scored.sort(
@@ -3357,10 +3376,17 @@ function renderBenchmarkSearch() {
   }
   if (!state.benchmarkQuery) {
     replaceChildren(container, []);
-    status.textContent = t("{n} benchmarks searchable").replace(
+    // Stated as reach, not as a boast: the number is what this box searches
+    // right now, so it drops when the crawled index fails to load rather than
+    // advertising records that cannot be returned. "Sources" counts the layers
+    // behind those records (the curated registry plus each crawl), not the
+    // radar's discovery connectors, which supply no benchmark to this index.
+    const sources = new Set((records || []).map((record) => record.source));
+    if (curatedCount) sources.add("curated");
+    status.textContent = `${t("{n} benchmarks").replace(
       "{n}",
       (curatedCount + (records?.length || 0)).toLocaleString(),
-    );
+    )} \u00b7 ${metricLabel(sources.size, "source")}`;
     return;
   }
   const curatedMatches = searchCuratedEntries(board, state.benchmarkQuery);

@@ -254,6 +254,67 @@ def test_search_still_works_when_the_crawled_index_is_unavailable():
     assert "records\n    ? searchBenchmarkIndex(records, state.benchmarkQuery)\n    : []" in render
 
 
+def test_search_is_the_first_interactive_element_in_the_navigator():
+    # The shortlist used to lead the panel, which made four worked examples read
+    # as the whole offer: a reader wanting anything else had to scroll past them
+    # to reach the box that covers all 1,207 records. Search leads now, and the
+    # examples are framed as examples.
+    html = source("site/index.html")
+    navigator = html.split('class="benchmark-navigator"', 1)[1].split("</aside>", 1)[0]
+
+    assert navigator.index('class="benchmark-search"') < navigator.index(
+        'class="benchmark-shortlist-section"'
+    )
+    # Results sit immediately under the box, with nothing between them but the
+    # line stating what the box reaches.
+    assert navigator.index('id="benchmark-search-status"') < navigator.index(
+        'id="benchmark-search-results"'
+    )
+    assert navigator.index('id="benchmark-search-results"') < navigator.index(
+        'id="benchmark-shortlist"'
+    )
+    assert 'data-i18n="Famous benchmarks"' in navigator
+    assert 'data-i18n-placeholder="Search benchmarks, tasks, domains…"' in navigator
+
+
+def test_the_search_reach_line_counts_only_what_it_can_return():
+    # A count that advertised records the box cannot return would be a boast
+    # rather than a statement of reach, so it is derived from the loaded layers
+    # and drops when the crawled index fails. "Sources" counts those layers, not
+    # the radar's discovery connectors, which contribute no benchmark here.
+    script = source("site/assets/app.js")
+    render = script.split("function renderBenchmarkSearch()", 1)[1].split("\nfunction ", 1)[0]
+
+    assert 't("{n} benchmarks")' in render
+    assert 'metricLabel(sources.size, "source")' in render
+    assert "const sources = new Set((records || []).map((record) => record.source));" in render
+    assert 'if (curatedCount) sources.add("curated");' in render
+    # No literal totals anywhere: the numbers are computed, never written down.
+    assert "4,861" not in script and "4861" not in script
+
+
+def test_search_matches_the_fields_the_placeholder_promises():
+    # The box says "benchmarks, tasks, domains". Name and alias cover the first,
+    # and `domain` covers the rest: the task shape rendered in the panel is
+    # selected by domain, so matching it is what makes "agent" or "science"
+    # return a set instead of nothing. The crawled catalog carries no domain, so
+    # publisher and modality are the equivalent there.
+    script = source("site/assets/app.js")
+
+    curated = script.split("function searchCuratedEntries(board, query)", 1)[1].split(
+        "\n}", 1
+    )[0]
+    assert "foldName(entry.domain).includes(needle)" in curated
+    # A field hit is a weaker answer than a name hit and ranks below every one.
+    assert "const best = hits.length ? Math.min(...hits.map(tier)) : 3;" in curated
+
+    external = script.split("function searchBenchmarkIndex(records, query)", 1)[1].split(
+        "\n}", 1
+    )[0]
+    assert "foldName(record.publisher).includes(needle)" in external
+    assert "foldName(record.modality).includes(needle)" in external
+
+
 def test_a_link_to_an_unscored_benchmark_says_so_instead_of_swapping():
     # These 20 benchmarks resolved and drew an adoption staircase before this
     # change, so links to them are already out there. Falling through to the
