@@ -70,9 +70,19 @@ Audited 2026-08-17 against the two zips in `../dev/` and against `main` at 1de0a
    19 → 19 / 442. OpenCompass is stable; llm-stats moves with the normalizer.
    That instability is the argument for a checked-in identity file rather than a
    number in an acceptance criterion.
-5. **The navigator claim is correct.** `site/assets/app.js:3098` filters to
-   `card_count > 0` then `.slice(0, stageId === "emerging" ? 4 : 3)` over 4 stages,
-   so at most 13 buttons. The registry itself only holds 79 benchmarks.
+5. **The navigator claim is half wrong, and an earlier version of this audit
+   repeated it.** The shortlist buttons are capped at 13, correctly:
+   `site/assets/app.js:3098` filters to `card_count > 0` then
+   `.slice(0, stageId === "emerging" ? 4 : 3)` over 4 stages. But a
+   `<select>` sits beside them in the same panel labelled "ALL TRACKED
+   BENCHMARKS", and it carries **all 79** registry benchmarks. Verified in a
+   browser: `#adoption-frontier select` has 79 options.
+
+   So "at most ~13 benchmarks are ever selectable" is false. Every registry
+   benchmark is already reachable. The real gap is that the registry is 79 of
+   roughly 1,066 distinct benchmarks the crawls cover, and none of the crawled
+   records appear in that select at all. Fixing the shortlist cap alone would
+   change nothing that matters.
 6. **The two sources are not symmetric, and the issue treats them as if they were.**
    llm-stats has scores and no identity fields at all. OpenCompass has identity
    *links* (paper 96%, repo 92%, org 85%, release 86%) and almost no scores.
