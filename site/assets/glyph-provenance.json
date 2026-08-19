@@ -13,9 +13,33 @@
       "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/grok.svg",
       "sha256": "b1c7535771ab4ca56c3678ac60cdbaccbcf7f7e53c6343717332e20bbb0c546b"
     },
+    "ORGANIZATION_ICONS[AI21 Labs]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/ai21.svg",
+      "sha256": "9ccda525bc3d9e033844bf3a354c180c2929bf38af7cb84efd28a30ed414cc24"
+    },
+    "ORGANIZATION_ICONS[Ai2]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/ai2.svg",
+      "sha256": "349cd897d7d333885c9083a8a486ddbfa41a0431a39f852c3c8903df81a63dec"
+    },
+    "ORGANIZATION_ICONS[Amazon]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/aws.svg",
+      "sha256": "8bb0d853751ffc97fd5088df4f8f55c6a4d5eae33cff78a96fe9c13fa4e0f8d2"
+    },
     "ORGANIZATION_ICONS[Anthropic]": {
       "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/anthropic.svg",
       "sha256": "b60ac0305fabf78a3ea4982844bb5306360d284962bee2c6594de87d9062d468"
+    },
+    "ORGANIZATION_ICONS[Baidu]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/baidu.svg",
+      "sha256": "e7f03b4f795eda2bc7e3754bf14de5b8fe4084949911208eeb9ecc1fe06735d7"
+    },
+    "ORGANIZATION_ICONS[ByteDance]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/bytedance.svg",
+      "sha256": "ce816a6bb00c04bcec3786b59cd07ed2eba376a605b613d52f8d84c18e7d0c4e"
+    },
+    "ORGANIZATION_ICONS[Cohere]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/cohere.svg",
+      "sha256": "89038655da83acec63d9cfee4a4b134b95c7824e102d0a05d4dd3f47d330b51d"
     },
     "ORGANIZATION_ICONS[DeepSeek]": {
       "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/deepseek.svg",
@@ -25,9 +49,37 @@
       "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/google.svg",
       "sha256": "1418294b312c065352dded0671ca6e0571d43a78964f3321faa5f11c7450d9c2"
     },
+    "ORGANIZATION_ICONS[IBM]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/ibm.svg",
+      "sha256": "bd4630125d83bdee989f4c5bb0da37fb6922345de3587a149b09262db3af7589"
+    },
+    "ORGANIZATION_ICONS[Inception]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/inception.svg",
+      "sha256": "1e80604453ff54d37276470490d27583da03e567391e4a22d89e0c7adb1d9e68"
+    },
+    "ORGANIZATION_ICONS[LG AI Research]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/lg.svg",
+      "sha256": "36689ea607b170607636850eecedfdb2e082c5c89f38d04fd1f0384db7413b60"
+    },
+    "ORGANIZATION_ICONS[Liquid AI]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/liquid.svg",
+      "sha256": "c5b34686570899eeb8a2c2b3572664300b2a26cb91d4b9602a1c4e21d0ac2c9f"
+    },
+    "ORGANIZATION_ICONS[Meituan]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/longcat.svg",
+      "sha256": "3b247f96d80117e8404f92a5276231ab5fc121f8be676028f19695f55e72d7fa"
+    },
     "ORGANIZATION_ICONS[Meta]": {
       "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/meta.svg",
       "sha256": "f41c434083b43ab12fcdeab3877fa0669e06539f627a20247ead6a0f4a0cd670"
+    },
+    "ORGANIZATION_ICONS[Microsoft]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/microsoft.svg",
+      "sha256": "c3b4b12f65b594e7a26b899491cb6045bbf965ba57b69ed06beee4b901e82b5e"
+    },
+    "ORGANIZATION_ICONS[MiniMax]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/minimax.svg",
+      "sha256": "feb4b3e101899b47720e511179ea5d64cb28c9eb82d6259b688c45288f8a55af"
     },
     "ORGANIZATION_ICONS[Mistral]": {
       "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/mistralai.svg",
@@ -37,6 +89,14 @@
       "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/moonshotai.svg",
       "sha256": "1aa6b19e4ecd9828879b4c01e44bbd8d8a7be978072fc501200d13cb36917012"
     },
+    "ORGANIZATION_ICONS[NVIDIA]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/nvidia.svg",
+      "sha256": "192d704dd82b5ed256e870ccffc828ab38d0dc0f9423b5ccfb006ec72dd813e8"
+    },
+    "ORGANIZATION_ICONS[Nous Research]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/nousresearch.svg",
+      "sha256": "0b32f1e0a36eb81bb1e9d180cd0e946151c5d64ccfdb21c5bc2ae8116f314114"
+    },
     "ORGANIZATION_ICONS[OpenAI]": {
       "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/openai.svg",
       "sha256": "417519aa39cd4e2360a6c20e5ba802c1e3ee6a38eb8220b02ae8523e1897b21f"
@@ -44,6 +104,22 @@
     "ORGANIZATION_ICONS[Qwen]": {
       "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/qwen.svg",
       "sha256": "03ceec197e87856774e5ccbf117d3fa2d761a5b111e378e9718759806ad5d63e"
+    },
+    "ORGANIZATION_ICONS[StepFun]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/stepfun.svg",
+      "sha256": "4a0157e6bfb20b15bd0e8f71101b0dae4e39a61bf80998805185bcdb18a0f5b9"
+    },
+    "ORGANIZATION_ICONS[Tencent]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/tencent.svg",
+      "sha256": "03f9c0a480985c5136d1b994eb5ffe46174cab9b16330e1dfc4979307446a94e"
+    },
+    "ORGANIZATION_ICONS[Upstage]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/upstage.svg",
+      "sha256": "b43499e964c3cf8556d23cd4bb4a2c316469a18d0459b6a6d468395fe01f09c7"
+    },
+    "ORGANIZATION_ICONS[Xiaomi]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/xiaomimimo.svg",
+      "sha256": "3e062db906ae7d937b31d462b6f5cc8185b0ce748efebd6e6d5c3dcee4d9b359"
     },
     "ORGANIZATION_ICONS[Z.ai]": {
       "url": "placeholder:hand-drawn-in-repo",
