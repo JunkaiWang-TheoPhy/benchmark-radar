@@ -3900,6 +3900,18 @@ footer {
   align-items: center;
 }
 
+/* Curated rows are marked in the search list rather than left to be told apart
+   by the absence of a source chip. The curated layer is the one with a protocol
+   and a time axis, so which layer a result came from is the first thing a
+   reader needs before clicking it. */
+.benchmark-result-source-curated {
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.72rem;
+  color: var(--accent);
+}
+
 /* Openness is a statement about what we know, so `unknown` is neutral rather
    than a warning. Only a positive verdict gets emphasis. */
 .benchmark-openness {

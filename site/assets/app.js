@@ -401,6 +401,7 @@ const I18N = {
     "The saturation curve": "饱和曲线",
     "Benchmark reported scores over time": "基准报告分数随时间的变化",
     "All tracked benchmarks": "所有追踪的基准",
+    "Curated registry": "精选登记册",
     "New instruments with scores": "有分数的新工具",
     "Deepest score records": "分数记录最全的基准",
     "No benchmark in this registry has a readable score yet.": "此登记册中还没有任何基准具有可读分数。",
@@ -3259,12 +3260,97 @@ function benchmarkResultRow(record) {
   return button;
 }
 
+// Search covers both layers. It used to read the crawled index only, so a
+// reader typing "GPQA" was shown crawled rows and not the curated GPQA Diamond
+// record that the panel actually charts, while the picker had the opposite
+// blind spot. Curated matches rank above crawled ones for the same reason the
+// picker lists them first: they are the layer with a protocol and a time axis.
+//
+// Matched on aliases as well as the name, because the registry records them
+// ("HLE" for Humanity's Last Exam) precisely so a reader does not have to know
+// the canonical spelling.
+function searchCuratedEntries(board, query) {
+  const needle = foldName(query);
+  if (!needle) return [];
+  const scored = [];
+  for (const entry of board?.entries || []) {
+    if (!scoreRecord(entry.benchmark_id)) continue;
+    const names = [entry.name, ...(entry.aliases || [])].map(foldName);
+    const hits = names.filter((name) => name.includes(needle));
+    if (!hits.length) continue;
+    // Exact beats prefix beats substring, then the shortest matched string.
+    // Ranking on the entry name alone put AutomationBench above Humanity's Last
+    // Exam for the query "HLE": the registry really does record the alias
+    // `HLEAutomationBench`, so both were prefix hits and the shorter entry name
+    // won. What a reader means by "HLE" is the record that answers to it
+    // exactly, so the matched alias is what gets ranked, not the entry name.
+    const tier = (name) => (name === needle ? 0 : name.startsWith(needle) ? 1 : 2);
+    const best = Math.min(...hits.map(tier));
+    const shortest = Math.min(...hits.filter((name) => tier(name) === best).map((n) => n.length));
+    scored.push({ entry, rank: [best, shortest, foldName(entry.name).length] });
+  }
+  scored.sort(
+    (a, b) =>
+      a.rank[0] - b.rank[0] ||
+      a.rank[1] - b.rank[1] ||
+      a.rank[2] - b.rank[2] ||
+      a.entry.name.localeCompare(b.entry.name),
+  );
+  return scored.map((item) => item.entry);
+}
+
+// A curated result states what the crawled rows cannot: how many values were
+// read verbatim, and that this record charts. The layer is named on the row
+// rather than left to the reader to infer from the absence of a source chip.
+function curatedResultRow(entry) {
+  const record = scoreRecord(entry.benchmark_id);
+  const facts = [];
+  if (entry.domain) facts.push(String(entry.domain).replaceAll("_", " "));
+  if (entry.released) facts.push(String(entry.released).slice(0, 4));
+  facts.push(metricLabel(entry.card_count, "model card"));
+  const button = element("button", {
+    className: "benchmark-result benchmark-result-curated",
+    attrs: {
+      type: "button",
+      "aria-pressed": entry.benchmark_id === state.lfrontier ? "true" : "false",
+    },
+  }, [
+    element("span", { className: "benchmark-result-name", text: entry.name }),
+    element("span", { className: "benchmark-result-facts", text: facts.join(" \u00b7 ") }),
+    element("span", { className: "benchmark-result-meta" }, [
+      element("span", {
+        className: "benchmark-result-source benchmark-result-source-curated",
+        text: t("Curated registry"),
+      }),
+      element("span", {
+        className: "benchmark-result-scores",
+        text: metricLabel(record.observation_count, "readable score"),
+      }),
+    ]),
+  ]);
+  button.addEventListener("click", () => {
+    selectFrontier(entry.benchmark_id);
+    renderBenchmarkSearch();
+    const board = state.data?.model_card_leaderboard;
+    if (board) renderAdoptionFrontier(board);
+    writeUrl();
+  });
+  return button;
+}
+
 function renderBenchmarkSearch() {
   const container = byId("benchmark-search-results");
   const status = byId("benchmark-search-status");
   if (!container || !status) return;
   const records = state.benchmarkIndex;
-  if (!records) {
+  const board = state.data?.model_card_leaderboard;
+  // The curated layer is in the dashboard payload, which is already loaded, so
+  // search still works over it while the crawled index is on the wire or after
+  // that fetch has failed. Only the crawled half degrades.
+  const curatedCount = (board?.entries || []).filter((entry) =>
+    scoreRecord(entry.benchmark_id),
+  ).length;
+  if (!records && !curatedCount) {
     replaceChildren(container, []);
     status.textContent = "";
     return;
@@ -3273,17 +3359,30 @@ function renderBenchmarkSearch() {
     replaceChildren(container, []);
     status.textContent = t("{n} benchmarks searchable").replace(
       "{n}",
-      String(records.length),
+      (curatedCount + (records?.length || 0)).toLocaleString(),
     );
     return;
   }
-  const matches = searchBenchmarkIndex(records, state.benchmarkQuery);
-  const shown = matches.slice(0, BENCHMARK_SEARCH_LIMIT);
-  replaceChildren(container, shown.map(benchmarkResultRow));
-  status.textContent = matches.length
+  const curatedMatches = searchCuratedEntries(board, state.benchmarkQuery);
+  const externalMatches = records
+    ? searchBenchmarkIndex(records, state.benchmarkQuery)
+    : [];
+  // Curated first, then crawled, and the cap applies across both so a common
+  // name cannot push every curated hit off the end of the list.
+  const shownCurated = curatedMatches.slice(0, BENCHMARK_SEARCH_LIMIT);
+  const shownExternal = externalMatches.slice(
+    0,
+    Math.max(0, BENCHMARK_SEARCH_LIMIT - shownCurated.length),
+  );
+  const total = curatedMatches.length + externalMatches.length;
+  replaceChildren(container, [
+    ...shownCurated.map(curatedResultRow),
+    ...shownExternal.map(benchmarkResultRow),
+  ]);
+  status.textContent = total
     ? t("{shown} of {total} matches")
-        .replace("{shown}", String(shown.length))
-        .replace("{total}", String(matches.length))
+        .replace("{shown}", String(shownCurated.length + shownExternal.length))
+        .replace("{total}", String(total))
     : t("No benchmark matches that name");
 }
 
@@ -3709,6 +3808,56 @@ function setCanonicalFrontierChrome(visible) {
 // heading, source badge where the curated path hides it, the curated picker
 // still offering every scored canonical benchmark, and the message or detail
 // in the external container.
+// --- The benchmark picker ----------------------------------------------------
+//
+// One <select> over both layers, grouped rather than interleaved. The curated
+// registry and the crawled catalog are separate namespaces (a `benchmark_id`
+// against a source-prefixed `slug`), and they answer to different standards: a
+// curated row carries an instrument, a protocol and a document publication
+// date, so it can be drawn on a time axis; a crawled row carries none of those
+// and renders as a table. A reader has to be able to tell which they are
+// looking at before they click, so the group label says it.
+//
+// A crawled record with no readable score is omitted for the same reason its
+// curated counterpart is: the panel would have nothing to show it.
+function frontierPickerGroups(scored) {
+  const groups = [
+    [
+      t("Curated registry"),
+      [...scored]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((entry) => [entry.benchmark_id, entry.name]),
+    ],
+  ];
+  const external = (state.benchmarkIndex || []).filter((record) => record.score_count > 0);
+  for (const source of [...new Set(external.map((record) => record.source))].sort()) {
+    groups.push([
+      externalSourceMeta(source).name,
+      external
+        .filter((record) => record.source === source)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((record) => [record.slug, record.name]),
+    ]);
+  }
+  return groups.filter(([, rows]) => rows.length);
+}
+
+function renderFrontierPicker(scored, selectedValue) {
+  replaceChildren(
+    byId("frontier-benchmark"),
+    frontierPickerGroups(scored).map(([label, rows]) =>
+      element(
+        "optgroup",
+        // The count is on the label because the groups are wildly uneven (59
+        // curated against several hundred crawled) and a reader scrolling a
+        // long list deserves to know how far the group runs.
+        { attrs: { label: `${label} (${rows.length.toLocaleString()})` } },
+        rows.map(([value, name]) => option(value, name, value === selectedValue)),
+      ),
+    ),
+  );
+}
+
 function renderExternalShell(board, scored, { eyebrow, heading, badge, message }) {
   clearFrontierPointSelection();
   setCanonicalFrontierChrome(false);
@@ -3718,11 +3867,7 @@ function renderExternalShell(board, scored, { eyebrow, heading, badge, message }
   stage.className = "frontier-stage";
   stage.hidden = false;
   stage.textContent = badge;
-  replaceChildren(byId("frontier-benchmark"), [
-    ...[...scored]
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((entry) => option(entry.benchmark_id, entry.name, false)),
-  ]);
+  renderFrontierPicker(scored, state.lfrontier);
   replaceChildren(byId("frontier-external"), [
     element("p", { className: "empty-state", text: message }),
   ]);
@@ -3736,12 +3881,14 @@ function renderExternalBenchmark(board, scored, record) {
     badge: meta.name,
     message: t("Loading benchmark details…"),
   });
-  // The picker has no canonical option for a slug, so the selected record is
-  // prepended as its own option: a <select> that displays a different
-  // benchmark than the one rendered would be lying about the state.
-  byId("frontier-benchmark").prepend(
-    option(record.slug, `${record.name} · ${meta.name}`, true),
-  );
+  // Scored crawled records are in the picker already. An unscored one is not,
+  // and it is still reachable by search, so it is prepended as its own option:
+  // a <select> displaying a different benchmark than the one rendered would be
+  // lying about the state.
+  const picker = byId("frontier-benchmark");
+  const existing = [...picker.options].find((candidate) => candidate.value === record.slug);
+  if (existing) existing.selected = true;
+  else picker.prepend(option(record.slug, `${record.name} · ${meta.name}`, true));
   const container = byId("frontier-external");
   loadBenchmarkShard(record.slug).then((shard) => {
     // The reader may have moved on while the shard was on the wire; only paint
@@ -4792,13 +4939,7 @@ function renderAdoptionFrontier(board) {
   const stageBadge = byId("frontier-stage");
   stageBadge.textContent = "";
   stageBadge.hidden = true;
-  replaceChildren(byId("frontier-benchmark"), [
-    ...[...scored]
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((candidate) =>
-        option(candidate.benchmark_id, candidate.name, candidate.benchmark_id === state.lfrontier),
-      ),
-  ]);
+  renderFrontierPicker(scored, state.lfrontier);
   renderBenchmarkNavigator(board);
 
   byId("frontier-heading").textContent = `${entry.name} ${t("reported scores over time")}`;

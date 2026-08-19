@@ -186,7 +186,12 @@ def test_only_a_benchmark_with_a_readable_score_can_be_selected():
     assert "const scored = adopted.filter((entry) => scoreRecord(entry.benchmark_id));" in render
     # The <select>, the resolution of a ?lfrontier= permalink, and the empty
     # state all read from `scored`, so none of them can surface an unscored one.
-    assert "...[...scored]" in render
+    assert "renderFrontierPicker(scored, state.lfrontier);" in render
+    # And the picker itself applies the same rule to the crawled layer.
+    picker = script.split("function frontierPickerGroups(scored)", 1)[1].split(
+        "\n}", 1
+    )[0]
+    assert "record.score_count > 0" in picker
     assert "scored.find((candidate) => candidate.benchmark_id === state.lfrontier)" in render
     assert "if (!scored.length || !defaultEntry)" in render
     # The default selection is drawn from the same set.
@@ -194,6 +199,59 @@ def test_only_a_benchmark_with_a_readable_score_can_be_selected():
         "\n}", 1
     )[0]
     assert "scoreRecord(entry.benchmark_id)" in default_entry
+
+
+def test_the_picker_and_the_search_both_cover_both_layers():
+    # The two layers used to have opposite blind spots: the <select> held only
+    # the 59 curated benchmarks, while the search box read only the crawled
+    # index, so typing "GPQA" surfaced crawled rows but not the curated GPQA
+    # Diamond record the panel actually charts. Both entry points now reach
+    # both layers.
+    script = source("site/assets/app.js")
+
+    picker = script.split("function frontierPickerGroups(scored)", 1)[1].split("\n}", 1)[0]
+    assert 't("Curated registry")' in picker
+    assert "state.benchmarkIndex || []" in picker
+    # Grouped, never interleaved: only the curated layer carries an instrument,
+    # a protocol and a publication date, so a reader must be able to tell which
+    # layer a row is from before selecting it.
+    assert '"optgroup"' in script
+    assert "externalSourceMeta(source).name" in picker
+
+    render = script.split("function renderBenchmarkSearch()", 1)[1].split("\nfunction ", 1)[0]
+    assert "searchCuratedEntries(board, state.benchmarkQuery)" in render
+    assert "searchBenchmarkIndex(records, state.benchmarkQuery)" in render
+    # Curated results come first, and the cap spans both lists so a common name
+    # cannot push every curated hit off the end.
+    assert render.index("shownCurated") < render.index("shownExternal")
+    assert "BENCHMARK_SEARCH_LIMIT - shownCurated.length" in render
+
+
+def test_curated_search_matches_aliases_and_ranks_the_exact_one_first():
+    # The registry records aliases so a reader need not know the canonical
+    # spelling. It also records `HLEAutomationBench`, which made AutomationBench
+    # a prefix hit for "HLE" and, ranked on entry-name length, beat the record
+    # literally named HLE. The matched alias is what gets ranked.
+    script = source("site/assets/app.js")
+    search = script.split("function searchCuratedEntries(board, query)", 1)[1].split(
+        "\n}", 1
+    )[0]
+
+    assert "entry.aliases || []" in search
+    assert "name === needle ? 0 : name.startsWith(needle) ? 1 : 2" in search
+    # Only scored benchmarks are offered, same rule as the picker.
+    assert "if (!scoreRecord(entry.benchmark_id)) continue;" in search
+
+
+def test_search_still_works_when_the_crawled_index_is_unavailable():
+    # The curated layer lives in the dashboard payload, which is already loaded,
+    # so a failed or pending index fetch must degrade only the crawled half
+    # rather than blanking search entirely.
+    script = source("site/assets/app.js")
+    render = script.split("function renderBenchmarkSearch()", 1)[1].split("\nfunction ", 1)[0]
+
+    assert "if (!records && !curatedCount)" in render
+    assert "records\n    ? searchBenchmarkIndex(records, state.benchmarkQuery)\n    : []" in render
 
 
 def test_a_link_to_an_unscored_benchmark_says_so_instead_of_swapping():
