@@ -1476,14 +1476,39 @@ def test_source_mix_names_the_sources_that_found_nothing():
 
     # The mix cell is built from nodes now, so a zero can carry its own styling.
     assert 'element("td", {}, sourceMixCell(day))' in script
-    assert 'className: "source-gap"' in script
+    assert '"source-gap"' in script
     assert ".source-gap {" in styles
 
-    # And the newest day's gaps are stated in words above the table, separating
-    # a source that ran and found nothing from one that could not be reached.
+    # And the newest day's gaps are stated in words above the table.
     assert 'id="source-gap-note"' in html
-    assert "On {date} these sources ran but found nothing: {sources}." in script
-    assert "On {date} these sources could not be reached: {sources}." in script
+
+
+def test_source_mix_separates_the_three_reasons_a_source_shows_zero():
+    """Issue #260: the source mix counts ranked evidence, fetch health counts
+    raw records, so a zero has three different meanings and only two of them
+    are a reason to go and check something.
+
+    Calling all three "found nothing" would be wrong: GitHub returning 300
+    records that all scored too low is the ranking working as intended, and
+    dressing that as a fault teaches the reader to ignore the real gaps.
+    """
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    # The state is derived from both signals, not from `ok` alone.
+    assert 'state: !entry.ok ? "unreachable" : entry.fetched > 0 ? "unranked" : "empty"' in script
+    # A source reported by two health rows must not take an arbitrary one of
+    # them: a failure anywhere is the answer worth showing.
+    assert "ok: previous ? previous.ok && entry.ok : entry.ok" in script
+
+    # An unranked source is not dressed in the alarm colour, and the summary
+    # warning is withheld when nothing worrying happened.
+    assert '"source-gap is-unranked"' in script
+    assert ".source-gap.is-unranked {" in styles
+    assert 'note.classList.toggle("is-warning", worrying > 0)' in script
+
+    # A row that names its zeros must not also claim "none".
+    assert "if (found.length || !gaps.length) {" in script
 
 
 def test_every_new_source_gap_string_has_a_chinese_rendering():
@@ -1491,10 +1516,13 @@ def test_every_new_source_gap_string_has_a_chinese_rendering():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
     zh = script.split("  zh: {", 1)[1]
     for phrase in (
-        "On {date} these sources ran but found nothing: {sources}.",
+        "On {date} these sources found nothing at all: {sources}.",
         "On {date} these sources could not be reached: {sources}.",
+        "On {date} these sources returned something, but none of it scored "
+        "high enough to be listed: {sources}.",
         "A source that stays at zero for several days is usually broken, not quiet.",
-        "This source ran and found nothing on this day.",
+        "This source was checked and found nothing at all on this day.",
         "This source could not be reached on this day.",
+        "This source returned something, but none of it scored high enough to be listed.",
     ):
         assert f'"{phrase}":' in zh, phrase

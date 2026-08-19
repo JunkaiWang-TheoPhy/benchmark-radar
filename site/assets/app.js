@@ -49,24 +49,46 @@ const SOURCE_DISPLAY_NAMES = {
 const sourceDisplayName = (key) =>
   SOURCE_DISPLAY_NAMES[key] || String(key).replaceAll("_", " ");
 
+// One sentence per kind of zero, so hovering a zero answers the question it
+// raises instead of only restating that the number is zero.
+const SOURCE_GAP_REASONS = {
+  unreachable: "This source could not be reached on this day.",
+  empty: "This source was checked and found nothing at all on this day.",
+  unranked: "This source returned something, but none of it scored high enough to be listed.",
+};
+
 // Sources that ran for this day but put nothing into the ranked evidence, kept
 // in the order fetch health reports them so the ledger reads the same way every
-// day. A failed fetch is already reported by the Fetch health column, so this
-// covers both: a source that errored and one that succeeded with nothing to
-// show are equally invisible in the source mix, and equally worth flagging
-// because a silent zero can mean a broken source (issue #254).
+// day. Why a source is at zero decides what the reader should do about it, and
+// the source mix counts ranked evidence while fetch health counts raw records,
+// so there are three different zeros and only one of them is "nothing arrived":
+//   unreachable  the fetch failed, so nothing could arrive
+//   empty        the fetch worked and returned no records at all
+//   unranked     records arrived but none scored high enough to be listed
+// Calling the third one "found nothing" would be wrong: GitHub returning 300
+// records that all scored too low is a scoring outcome, not a broken source.
 function zeroItemSources(day) {
   const counts = day.source_counts || {};
-  const seen = new Set();
-  return (day.ingest_health || [])
+  const merged = new Map();
+  (day.ingest_health || [])
     .filter((entry) => entry.kind !== "attention")
-    .map((entry) => ({ ...entry, name: sourceDisplayName(entry.source) }))
-    .filter((entry) => {
-      if (Number(counts[entry.name] || 0) > 0) return false;
-      if (seen.has(entry.name)) return false;
-      seen.add(entry.name);
-      return true;
+    .forEach((entry) => {
+      const name = sourceDisplayName(entry.source);
+      if (Number(counts[name] || 0) > 0) return;
+      // One source can be reported by more than one row (a connector retried
+      // under a second method). A failure anywhere is the answer worth showing,
+      // and the raw counts add up across the rows that did return something.
+      const previous = merged.get(name);
+      merged.set(name, {
+        name,
+        ok: previous ? previous.ok && entry.ok : entry.ok,
+        fetched: (previous?.fetched || 0) + Number(entry.item_count || 0),
+      });
     });
+  return [...merged.values()].map((entry) => ({
+    ...entry,
+    state: !entry.ok ? "unreachable" : entry.fetched > 0 ? "unranked" : "empty",
+  }));
 }
 
 const byId = (id) => document.getElementById(id);
@@ -529,16 +551,21 @@ const I18N = {
     Events: "事件",
     Attention: "关注度",
     "Fetch health": "抓取状态",
-    // Sources that found nothing on a day (issue #260). The two sentence
-    // templates carry {sources} and {date} so zh can order them its own way.
-    "On {date} these sources ran but found nothing: {sources}.":
-      "{date},这些来源运行了但没有找到任何内容:{sources}。",
+    // Sources at zero on a day (issue #260). The sentence templates carry
+    // {sources} and {date} so zh can order them its own way.
+    "On {date} these sources found nothing at all: {sources}.":
+      "{date},这些来源什么都没有找到:{sources}。",
     "On {date} these sources could not be reached: {sources}.":
       "{date},这些来源无法访问:{sources}。",
+    "On {date} these sources returned something, but none of it scored high enough to be listed: {sources}.":
+      "{date},这些来源有返回内容,但都没有达到上榜所需的分数:{sources}。",
     "A source that stays at zero for several days is usually broken, not quiet.":
       "一个来源连续几天都是零,通常说明它出了问题,而不是没有新内容。",
-    "This source ran and found nothing on this day.": "这个来源当天运行了,但没有找到任何内容。",
+    "This source was checked and found nothing at all on this day.":
+      "这个来源当天检查过了,但什么都没有找到。",
     "This source could not be reached on this day.": "这个来源当天无法访问。",
+    "This source returned something, but none of it scored high enough to be listed.":
+      "这个来源有返回内容,但都没有达到上榜所需的分数。",
     // --- Map ----------------------------------------------------------------
     "Big picture": "整体概览",
     "What we found": "我们发现了什么",
@@ -2206,9 +2233,9 @@ function metricLabel(value, singular, plural = `${singular}s`) {
 
 // The ledger is long and the newest day sits at the top of it, so the gaps for
 // that day are stated once in plain words above the table. Naming the sources
-// is the point: "2 sources found nothing" tells a reader there is a problem but
-// not where to look, and the two answers (a source that ran and found nothing
-// versus one that could not be reached) call for different follow-up.
+// is the point: "3 sources are at zero" tells a reader there is a problem but
+// not where to look, and each of the three reasons calls for different
+// follow-up (fix the fetch, wait, or look at the scoring).
 function renderSourceGapNote(day) {
   const note = byId("source-gap-note");
   if (!note) return;
@@ -2218,20 +2245,26 @@ function renderSourceGapNote(day) {
     note.textContent = "";
     return;
   }
-  const unreachable = gaps.filter((entry) => !entry.ok).map((entry) => entry.name);
-  const empty = gaps.filter((entry) => entry.ok).map((entry) => entry.name);
+  const named = (state) =>
+    gaps.filter((entry) => entry.state === state).map((entry) => entry.name);
   const sentence = (template, names) =>
-    t(template, { date: formatDate(day.date), sources: names.join(", ") });
-  const sentences = [];
-  if (empty.length) {
-    sentences.push(sentence("On {date} these sources ran but found nothing: {sources}.", empty));
-  }
-  if (unreachable.length) {
-    sentences.push(
-      sentence("On {date} these sources could not be reached: {sources}.", unreachable),
-    );
-  }
-  note.textContent = `${sentences.join(" ")} ${t("A source that stays at zero for several days is usually broken, not quiet.")}`;
+    names.length ? t(template, { date: formatDate(day.date), sources: names.join(", ") }) : "";
+  const sentences = [
+    sentence("On {date} these sources found nothing at all: {sources}.", named("empty")),
+    sentence("On {date} these sources could not be reached: {sources}.", named("unreachable")),
+    sentence(
+      "On {date} these sources returned something, but none of it scored high enough to be listed: {sources}.",
+      named("unranked"),
+    ),
+  ].filter(Boolean);
+  // Only the first two sentences are a reason to go and check something. A
+  // source whose records all scored too low is the ranking doing its job, so
+  // adding the warning there would cry wolf on a normal day.
+  const worrying = named("empty").length + named("unreachable").length;
+  note.textContent = worrying
+    ? `${sentences.join(" ")} ${t("A source that stays at zero for several days is usually broken, not quiet.")}`
+    : sentences.join(" ");
+  note.classList.toggle("is-warning", worrying > 0);
   note.hidden = false;
 }
 
@@ -2244,26 +2277,26 @@ function sourceMixCell(day) {
   const found = Object.entries(day.source_counts || {});
   const gaps = zeroItemSources(day);
   const parts = [];
-  parts.push(
-    element("span", {
-      text: found.length
-        ? found.map(([name, count]) => `${name.replaceAll("_", " ")} ${count}`).join(" · ")
-        : t("none"),
-    }),
-  );
+  // "none" contradicts a row that goes on to name three sources at zero, so it
+  // is only printed when the day has nothing at all to say about its sources.
+  if (found.length || !gaps.length) {
+    parts.push(
+      element("span", {
+        text: found.length
+          ? found.map(([name, count]) => `${name.replaceAll("_", " ")} ${count}`).join(" · ")
+          : t("none"),
+      }),
+    );
+  }
   gaps.forEach((entry) => {
     parts.push(
       element("span", {
-        className: "source-gap",
+        // Why it is zero is the reader's next question, and an unranked source
+        // is the ranking working as intended rather than a fault to chase, so
+        // it is not dressed up in the same alarm colour as the other two.
+        className: entry.state === "unranked" ? "source-gap is-unranked" : "source-gap",
         text: `${entry.name} 0`,
-        attrs: {
-          // Why it is zero is the reader's next question, and the two answers
-          // mean different things: an error is a fault to chase, an empty run
-          // is a source that looked and found nothing worth keeping.
-          title: entry.ok
-            ? t("This source ran and found nothing on this day.")
-            : t("This source could not be reached on this day."),
-        },
+        attrs: { title: t(SOURCE_GAP_REASONS[entry.state]) },
       }),
     );
   });

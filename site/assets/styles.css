@@ -1544,13 +1544,25 @@ input {
   white-space: nowrap;
 }
 
+/* Records arrived but none scored high enough to list. That is the ranking
+   working, not a source to go and check, so it reads as a quiet note rather
+   than sharing the alarm colour with a source that returned nothing. */
+.source-gap.is-unranked {
+  border-color: var(--line);
+  color: var(--muted);
+}
+
 .source-gap-note {
   margin: 0 0 1rem;
   padding: 0.7rem 0.9rem;
-  border-left: 3px solid var(--danger);
+  border-left: 3px solid var(--line);
   background: var(--panel);
   color: var(--ink);
   font-size: 0.85rem;
+}
+
+.source-gap-note.is-warning {
+  border-left-color: var(--danger);
 }
 
 .trend-message {
