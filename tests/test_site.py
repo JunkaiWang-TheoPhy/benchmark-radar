@@ -1526,3 +1526,27 @@ def test_every_new_source_gap_string_has_a_chinese_rendering():
         "This source returned something, but none of it scored high enough to be listed.",
     ):
         assert f'"{phrase}":' in zh, phrase
+
+
+def test_jargon_audit_reads_only_user_facing_text():
+    """The weekly jargon audit (issue #241) must not flag code identifiers.
+
+    Its value depends on every hit being text a reader actually sees. A run
+    that reports `data-frontier-point` teaches the reader to skim past it,
+    and then the real hits go unread too.
+    """
+    import subprocess
+    import sys
+
+    result = subprocess.run(
+        [sys.executable, "scripts/audit_jargon.py"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    for line in result.stdout.splitlines():
+        if not line.strip():
+            continue
+        _term, _where, text = line.split("\t", 2)
+        assert not text.startswith(("data-", "aria-")), text
+        assert " " in text, f"lookup key, not prose: {text}"
