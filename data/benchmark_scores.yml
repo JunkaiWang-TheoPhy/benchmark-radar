@@ -21,14 +21,28 @@
 # rows are missing-not-at-random. A progression built from model cards partly
 # measures reporting choice, not capability.
 #
-# THE JOIN RULE
+# THE COMPARABILITY RULE
 #
-# `protocol` is the comparability class. Two rows may be connected by a line ONLY
-# if `instrument` AND `protocol` are both identical. The string encodes whatever
-# the source said moves the number. Silence is not agreement: two documents that
-# both omit tool access are not evidence that their setups matched, so an
-# unstated condition is never treated as equal to another unstated condition --
-# it just means those rows do not join.
+# `protocol` is the comparability class. Two rows are comparable ONLY if
+# `instrument` AND `protocol` are both identical. The string encodes whatever the
+# source said moves the number. Silence is not agreement: two documents that both
+# omit tool access are not evidence that their setups matched, so an unstated
+# condition is never treated as equal to another unstated condition -- it just
+# means those rows are not comparable.
+#
+# This was formerly the join rule, and it drew a line between comparable rows.
+# It no longer does: the saturation chart connects nothing. A shared instrument
+# and protocol makes two numbers comparable, but a drawn segment asserts more
+# than that -- it asserts a series, with a direction. On GPQA Diamond the rule
+# connected DeepSeek-V4-Pro (90.1) to DeepSeek-V4-Flash (88.1) and rendered a
+# decline, when the later point is a smaller model rather than a regression; a
+# cross-vendor pair implied a trajectory between systems sharing nothing but a
+# protocol string. Restricting which pairs may join does not fix that, because
+# the defect is in the segment rather than in the pairing.
+#
+# Comparability is still computed and still published. It drives the paired
+# comparison readout under the chart, which states in words what a pair of dates
+# does and does not support. Prose can carry that caveat; a line cannot.
 #
 # `instrument` is the version identity, separate from `benchmark_id`. Terminal-
 # Bench 2.0 and 2.1 share a benchmark_id and are different instruments (2.1

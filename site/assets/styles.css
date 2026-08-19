@@ -2305,6 +2305,8 @@ td a {
 .benchmark-navigator {
   position: sticky;
   top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
   padding: 1.25rem;
   border: 1px solid var(--ink);
   background: var(--panel);
@@ -2316,66 +2318,17 @@ td a {
   font-size: 1.45rem;
 }
 
-.benchmark-navigator > p:not(.eyebrow) {
+/* The search label is the panel's leading heading, so it is an <h2> for the
+   document outline while keeping the small uppercase field-label treatment.
+   Its own rule below would otherwise lose the cascade to the h2 sizing. */
+.benchmark-navigator h2.benchmark-search-label {
+  margin-bottom: 0.4rem;
+  font-size: 0.78rem;
+}
+
+.benchmark-navigator p:not(.eyebrow):not(.benchmark-search-status) {
   color: var(--muted);
   font-size: 0.8rem;
-}
-
-.benchmark-shortlist-group {
-  margin-top: 1rem;
-}
-
-.benchmark-shortlist-group h3 {
-  margin: 0 0 0.35rem;
-  color: var(--muted);
-  font-family: var(--utility);
-  font-size: 0.63rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.benchmark-shortlist-buttons {
-  display: grid;
-  gap: 0.3rem;
-}
-
-.benchmark-shortlist-button {
-  display: grid;
-  gap: 0.1rem;
-  min-height: 48px;
-  padding: 0.55rem 0.65rem;
-  border: 1px solid var(--line);
-  background: transparent;
-  text-align: left;
-}
-
-.benchmark-shortlist-button span {
-  overflow-wrap: anywhere;
-  font-size: 0.82rem;
-  font-weight: 650;
-}
-
-.benchmark-shortlist-button small {
-  color: var(--muted);
-  font-family: var(--utility);
-  font-size: 0.61rem;
-  text-transform: uppercase;
-}
-
-.benchmark-shortlist-button:hover,
-.benchmark-shortlist-button:focus-visible {
-  border-color: var(--blue);
-  background: var(--canvas);
-}
-
-.benchmark-shortlist-button[aria-pressed="true"] {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: white;
-}
-
-.benchmark-shortlist-button[aria-pressed="true"] small {
-  color: #c7d1d5;
 }
 
 .frontier-panel {
@@ -2418,16 +2371,6 @@ td a {
   gap: 0.65rem;
 }
 
-.frontier-stage-emerging {
-  border-color: #f4b65e;
-  color: #ffd99e;
-}
-
-.frontier-stage-saturated {
-  border-color: #91a0a7;
-  color: #c1cbd0;
-}
-
 .frontier-panel .eyebrow {
   color: #7fc7bc;
 }
@@ -2457,37 +2400,6 @@ td a {
   color: #f3f6f7;
 }
 
-.frontier-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem 1.2rem;
-  align-items: baseline;
-  padding: 0.75rem 0;
-  border-top: 1px solid #39464c;
-  border-bottom: 1px solid #39464c;
-  font-family: var(--utility);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-}
-
-.frontier-summary strong {
-  color: white;
-  font-size: 0.82rem;
-}
-
-.frontier-summary span {
-  color: #aebcc1;
-}
-
-.frontier-summary .frontier-stage-description {
-  flex-basis: 100%;
-  color: #d6e0e3;
-  font-family: var(--body);
-  font-size: 0.8rem;
-  letter-spacing: normal;
-  text-transform: none;
-}
-
 .frontier-chart {
   position: relative;
   margin-top: 0.5rem;
@@ -2503,34 +2415,6 @@ td a {
   stroke: #344249;
   stroke-dasharray: 3 6;
   stroke-width: 1;
-}
-
-.frontier-line {
-  fill: none;
-  stroke: #7fc7bc;
-  stroke-width: 3;
-}
-
-/* A colored circle carrying the reporting organization's brand glyph. The circle
-   takes the organization's frontier color and the glyph sits dark on it, so the
-   mark reads at a glance which organization stepped the count up (issue #178,
-   HLE/harbor style). */
-.frontier-point-face {
-  stroke: #0d1519;
-  stroke-width: 2;
-  transition: stroke-width 120ms ease;
-}
-
-.frontier-point-glyph {
-  color: #0d1519;
-  pointer-events: none;
-  user-select: none;
-}
-
-.frontier-point:focus .frontier-point-face,
-.frontier-point:hover .frontier-point-face,
-.frontier-point.is-selected .frontier-point-face {
-  stroke-width: 4;
 }
 
 /* Color key under the chart: one circular chip per reporting organization, in
@@ -2573,63 +2457,17 @@ td a {
   letter-spacing: 0.04em;
 }
 
-.frontier-point,
 .score-point {
   cursor: pointer;
 }
 
-/* Card events live on their own band. A tick per card means several cards on one
-   date sit side by side instead of stacking into an unreadable pile on the
-   staircase, which is what made the old chart look like numbered records. */
-.card-rug-baseline {
-  stroke: #2c383e;
-  stroke-width: 1;
-}
-
-.card-rug-tick line {
-  stroke-linecap: butt;
-  transition: stroke-width 120ms ease;
-}
-
-.card-rug-tick-first line {
-  stroke: #f4b65e;
-  stroke-width: 2.5;
-}
-
-.card-rug-tick-repeat line {
-  stroke: #89969e;
-  stroke-width: 2;
-}
-
-.card-rug-tick:focus line,
-.card-rug-tick:hover line,
-.card-rug-tick.is-selected line {
-  stroke-width: 4;
-}
-
-.frontier-release-label,
 .frontier-tick,
 .frontier-axis-label {
   fill: #aebcc1;
   font-family: var(--utility);
-}
-
-.frontier-tick,
-.frontier-axis-label {
   font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-.frontier-release-line {
-  stroke: #dc633f;
-  stroke-dasharray: 5 5;
-  stroke-width: 1.5;
-}
-
-.frontier-release-label {
-  fill: #ee9b82;
-  font-size: 11px;
 }
 
 /* Legend, keyed to the marks on the chart and sitting directly above it rather
@@ -2663,46 +2501,11 @@ td a {
   align-self: center;
 }
 
-.legend-swatch-point {
-  width: 13px;
-  height: 13px;
-  background: #f4b65e;
-  border: 2px solid #0d1519;
-  border-radius: 50%;
-  box-sizing: border-box;
-}
-
-.legend-swatch-tick-first,
-.legend-swatch-tick-repeat {
-  width: 3px;
-  background: #f4b65e;
-}
-
-.legend-swatch-tick-first {
-  height: 15px;
-}
-
-.legend-swatch-tick-repeat {
-  height: 8px;
-  background: #89969e;
-}
-
 .legend-swatch-score {
   width: 11px;
   height: 11px;
   background: #6ea8dc;
   border-radius: 50%;
-}
-
-.legend-swatch-score-line,
-.legend-swatch-score-line-single-org {
-  width: 24px;
-  height: 0;
-  border-top: 3px solid #6ea8dc;
-}
-
-.legend-swatch-score-line-single-org {
-  border-top-style: dashed;
 }
 
 .frontier-tooltip {
@@ -2874,22 +2677,6 @@ td a {
   border-top: 1px solid var(--line);
 }
 
-/* Score progression (issue #91). Sea green throughout, deliberately distinct
-   from the gold of an adoption advance: the two layers share an x axis and must
-   never share a colour, or a reader will connect a score point to a mention. */
-.score-line {
-  fill: none;
-  stroke: #6ea8dc;
-  stroke-width: 2.5;
-}
-
-/* A single-organization run is one vendor's own model line, which is weaker
-   evidence about the field. Dashed rather than a different hue: the dash says
-   "provisional" without implying a third measurement type. */
-.score-line-single-org {
-  stroke-dasharray: 7 4;
-}
-
 .score-point-face {
   fill: #f8f6ef;
   stroke: #6ea8dc;
@@ -3053,7 +2840,6 @@ td a {
 
 .frontier-evidence {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(260px, 0.95fr);
   gap: 1.5rem;
   margin-top: 1.2rem;
   padding-top: 1.5rem;
@@ -3066,76 +2852,8 @@ td a {
   font-size: 1.25rem;
 }
 
-.milestone-release,
-.milestone-repeat-note {
-  color: #aebcc1;
-  font-family: var(--utility);
-  font-size: 0.65rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.frontier-milestone-list {
-  display: grid;
-  gap: 0;
-  margin: 0 0 0.9rem;
-  padding: 0;
-  list-style: none;
-}
-
-.frontier-milestone-list li {
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  gap: 0.65rem;
-  min-height: 58px;
-  padding: 0.55rem 0;
-  border-top: 1px solid #2d3b41;
-}
-
-.milestone-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 27px;
-  height: 27px;
-  border: 1px solid #f4b65e;
-  color: #f4b65e;
-  font-family: var(--utility);
-  font-size: 0.66rem;
-}
-
-.milestone-date {
-  margin: 0;
-  color: #aebcc1;
-  font-family: var(--utility);
-  font-size: 0.61rem;
-  text-transform: uppercase;
-}
-
-.milestone-source {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  color: white;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.milestone-source:hover,
-.milestone-source:focus-visible {
-  text-decoration: underline;
-}
-
-.milestone-model {
-  display: block;
-  color: #aebcc1;
-  font-size: 0.72rem;
-}
-
 .frontier-context {
-  padding-left: 1.5rem;
-  border-left: 1px solid #39464c;
+  padding-left: 0;
 }
 
 .task-shape {
@@ -3214,45 +2932,6 @@ td a {
   font-family: var(--utility);
   font-size: 0.65rem;
   text-transform: uppercase;
-}
-
-.frontier-sparse {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
-  margin: 1.5rem 0;
-  border: 1px solid #39464c;
-  background: #39464c;
-}
-
-.frontier-sparse-step {
-  display: grid;
-  align-content: start;
-  min-height: 150px;
-  padding: 1rem;
-  background: #162228;
-}
-
-.frontier-sparse-step > span {
-  color: #7fc7bc;
-  font-family: var(--utility);
-  font-size: 0.63rem;
-}
-
-.frontier-sparse-step strong {
-  margin-top: 1.4rem;
-  font-size: 0.85rem;
-}
-
-.frontier-sparse-step small {
-  margin-top: 0.45rem;
-  color: #aebcc1;
-  font-size: 0.72rem;
-}
-
-.frontier-sparse-step.is-awaiting {
-  border: 1px dashed #74848b;
-  background: #111c21;
 }
 
 .benchmark-new {
@@ -3821,12 +3500,6 @@ footer {
     order: -1;
   }
 
-  #benchmark-shortlist {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0 1rem;
-  }
-
   .health-panel {
     position: static;
   }
@@ -3912,16 +3585,6 @@ footer {
 
   .evidence-stat:nth-child(2) {
     border-right: 0;
-  }
-
-  .frontier-evidence {
-    grid-template-columns: 1fr;
-  }
-
-  .frontier-context {
-    padding: 1.25rem 0 0;
-    border-top: 1px solid #39464c;
-    border-left: 0;
   }
 
   .heading-note {
@@ -4072,25 +3735,12 @@ footer {
     white-space: normal;
   }
 
-  #benchmark-shortlist {
-    grid-template-columns: 1fr;
-  }
-
   .frontier-panel {
     padding-inline: 1rem;
   }
 
-  .frontier-sparse {
-    grid-template-columns: 1fr;
-  }
-
-  .frontier-sparse-step {
-    min-height: 118px;
-  }
-
   .frontier-tick,
   .frontier-axis-label,
-  .frontier-release-label,
   .score-best-label,
   .score-gap-label {
     font-size: 20px;
@@ -4112,10 +3762,77 @@ footer {
   }
 }
 
+/* Ranked entry points, sat below the results so the field and its output own
+   the top of the panel. Scrollable rather than 20 rows tall: the whole point of
+   this aside is that it must not out-weigh the chart beside it. */
+.benchmark-shortlist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+/* Deliberately not `.eyebrow`: that class is accent blue, which plants a second
+   strong anchor in a panel whose only anchor should be the search field. This
+   is the same quiet register as the reach line. */
+.benchmark-example-lead {
+  margin: 0.9rem 0 0.35rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+.benchmark-example {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.benchmark-example-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* The count is context, not a score, so it stays quieter than the name it
+   qualifies and never competes with it for the first read. */
+.benchmark-example-meta {
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+.benchmark-example:hover,
+.benchmark-example:focus-visible {
+  border-color: var(--line);
+  background: var(--canvas);
+}
+
+.benchmark-example[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--panel);
+}
+
+.benchmark-example[aria-pressed="true"] .benchmark-example-meta {
+  color: var(--panel);
+  opacity: 0.7;
+}
+
 .benchmark-search {
-  margin-top: 1.25rem;
-  border-top: 1px solid var(--border);
-  padding-top: 1rem;
+  margin-top: 0;
 }
 
 .benchmark-search-label {
@@ -4130,18 +3847,32 @@ footer {
 
 .benchmark-search-input {
   width: 100%;
-  padding: 0.5rem 0.65rem;
-  border: 1px solid var(--border);
+  padding: 0.6rem 0.7rem;
+  border: 2px solid var(--ink);
   border-radius: 6px;
-  background: var(--surface);
+  background: white;
   color: inherit;
   font: inherit;
+  font-size: 0.95rem;
+  box-shadow: inset 0 1px 3px rgb(21 36 42 / 8%);
+}
+
+.benchmark-search-input::placeholder {
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+.benchmark-search-input:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
 }
 
 .benchmark-search-status {
-  margin: 0.45rem 0 0.35rem;
-  font-size: 0.78rem;
+  margin: 0.4rem 0 0.35rem;
+  font-size: 0.7rem;
   color: var(--muted);
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
 }
 
 #benchmark-search-results {
@@ -4191,6 +3922,18 @@ footer {
   flex-wrap: wrap;
   gap: 0.4rem;
   align-items: center;
+}
+
+/* Curated rows are marked in the search list rather than left to be told apart
+   by the absence of a source chip. The curated layer is the one with a protocol
+   and a time axis, so which layer a result came from is the first thing a
+   reader needs before clicking it. */
+.benchmark-result-source-curated {
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.72rem;
+  color: var(--accent);
 }
 
 /* Openness is a statement about what we know, so `unknown` is neutral rather

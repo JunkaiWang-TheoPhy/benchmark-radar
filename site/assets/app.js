@@ -394,14 +394,15 @@ const I18N = {
     "Registry overview": "总览",
     "What the two layers say": "两层信息说了什么",
     "Stated findings": "明确结论",
-    "Benchmarks to watch": "值得关注的基准",
-    "Choose a reporting story": "选择一个报告故事",
-    "leaderboard.navigator.note":
-      "从能把新兴工具与成熟标准、饱和惯例区分开来的信号入手。",
-    "Reporting over time": "随时间的变化",
-    "Benchmark adoption frontier": "基准采用前沿",
+    "The saturation curve": "饱和曲线",
+    "Benchmark reported scores over time": "基准报告分数随时间的变化",
     "All tracked benchmarks": "所有追踪的基准",
-    "Frontier milestones": "前沿里程碑",
+    "Search every benchmark": "搜索全部基准",
+    "Most reported": "报告最多",
+    "Search benchmarks, tasks, domains…": "搜索基准、任务、领域…",
+    "{n} benchmarks": "{n} 个基准",
+    "Curated registry": "精选登记册",
+    "No benchmark in this registry has a readable score yet.": "此登记册中还没有任何基准具有可读分数。",
     "What would make this a true Pareto frontier?": "怎样才算真正的帕累托前沿?",
     "Benchmarks by model card adoption": "按模型卡采用排名的基准",
     "Benchmark name or alias": "基准名称或别名",
@@ -417,10 +418,8 @@ const I18N = {
     "Open daily Issues": "打开每日 Issue ↗",
     "Select a node": "选择一个节点",
     "All dates": "所有日期",
-    "frontier.explainer.tl1":
-      "同一时间轴上有三条读数。每个橙色菱形标记一家机构首次报告该基准,这是唯一会抬高累计次数的事件。其下的地毯为每张有日期的模型卡放一个刻度,已被计数的机构之后发布的卡显示为灰色刻度,楼梯保持水平。没有发布日期的卡无法放在时间线上,从两条带中都缺席,但仍计入上面的总数。长而平稳的一段是在这个精选登记册中观察到的报告饱和,并非对基准分数饱和的判断。",
     "frontier.explainer.sub":
-      "下面的分数轨道是另一条独立的读数:每个能从引文文档中逐字读到的数值,只在工具与协议完全一致时才相连。分数末端趋于平直通常意味着没有更新的数字可读,因此缺口被标出而不是用线穿过。",
+      "每个能从引文文档中逐字读到的数值,按该文档的发布日期放置(而非任何评测日期),只在工具与协议完全一致时才相连。末端趋于平直通常意味着没有更新的数字可读,因此缺口被标出而不是用线穿过。一条曲线是否已经饱和,由你来判读,本面板不会给出饱和分数。",
     "leaderboard.filters.note":
       "每张模型卡对同一基准只计一次。一张在四个配置中报告 AIME 的卡,与只报告一次的卡计数相同,因此冗长的附录不能压过不同的供应商。机构可以打破平局:六个供应商报告同一计数是共同标准,只有一个供应商报告则是自家风格。",
     "leaderboard.ledger.note":
@@ -452,11 +451,9 @@ const I18N = {
     "evidence record": "条证据",
     "model card": "张模型卡",
     "model cards": "张模型卡",
-    "dated organization": "家过日期机构",
-    "dated organizations": "家过日期机构",
+    "readable score": "个可读分数",
+    "readable scores": "个可读分数",
     organization: "个机构",
-    "repeat report": "次重复报告",
-    "repeat reports": "次重复报告",
     benchmark: "个基准",
     benchmarks: "个基准",
     value: "个值",
@@ -618,11 +615,7 @@ const I18N = {
     "view.map.detail.note": "主题、来源和机构节点会设置对应的今日筛选。工件节点会设置日期和标题搜索。",
     // --- Frontier / workbench -------------------------------------------------
     "Priority & evidence": "优先度与证据",
-    "Early signal": "早期信号",
-    "New & spreading": "新增且扩散中",
-    "Established": "已确立",
-    "Saturated reporting": "报告饱和",
-    "View adoption frontier ↑": "查看采用前沿 ↑",
+    "View score track ↑": "查看分数轨道 ↑",
     "Show on the chart ↑": "在图表中显示 ↑",
     "Model cards": "模型卡",
     "Best on record": "历史最佳",
@@ -687,15 +680,11 @@ const I18N = {
     "Artifact nodes connected to topics, organizations, and discovery sources":
       "连接到主题、机构与发现来源的工件节点",
     Artifacts: "工件",
-    "At least 80% of organizations in this curated registry report it; that is convention, not quality.":
-      "该精选登记册中至少 80% 的机构报告了它;这是惯例,不是质量。",
     Authors: "作者",
-    "Awaiting an independent second organization": "等待第二个独立机构",
     "Click the marker to pin these details": "点击标记以固定这些详情",
     "Click to pin record details": "点击固定记录详情",
     Comments: "评论",
     "Corpus coverage": "语料覆盖",
-    "Dashed score connection": "虚线分数连接",
     "Discovery sources": "发现来源",
     "Doing related-work research, or hunting for a benchmark on a topic? This database aggregates every benchmark, evaluation, and dataset the radar has surfaced, and you can query it by topic, source, or organization before you export. The full corpus below is the same data the dashboard renders.":
       "在做相关工作研究,或想按主题查找基准?这个数据库汇总了雷达发现过的每一个基准、评测与数据集,可以在导出前按主题、来源或机构查询。下方的完整语料与仪表盘渲染的是同一份数据。",
@@ -703,31 +692,25 @@ const I18N = {
       "此文档呈现给读者的每个基准,各计一次。这是提及次数,不是分数:来源记录了配置,而这个登记册刻意不记录。",
     "Every record matching at least one taxonomy category is retained. A score of":
       "只要匹配至少一个分类类别的记录都会被保留。达到分数",
-    "First card from that organization": "该机构的第一张模型卡",
-    "First reporting organization": "首个报告机构",
     "How priority is scored": "优先度如何评分",
-    "Later card, organization already counted": "之后的模型卡,机构已计入",
     "Leaderboard (CSV)": "排行榜 (CSV)",
     "Most represented organizations": "出现最多的机构",
-    "New organization": "新机构",
     "No benchmark is reported by a curated card yet.": "目前还没有精选模型卡报告任何基准。",
     "No corpus entities yet.": "还没有语料实体。",
-    "No dated model-card mentions yet.": "还没有带日期的模型卡提及。",
-    "No dated report": "没有日期记录",
     "No description published at the source.": "来源没有发布描述。",
     "No discovery sources yet.": "还没有发现来源。",
     "No further description beyond the preview above.": "除了上面的预览,没有更多描述。",
     "No organizations identified yet.": "还没有识别出机构。",
-    "No score for this benchmark could be read verbatim from the cited documents, so the chart shows adoption only. An absent value is not a zero and not a plateau.":
-      "引用的文档中读不到该基准的逐字分数,因此图表只显示采用情况。缺失的数值既不是零,也不是平台期。",
     "No source documents in the registry yet.": "登记册中还没有来源文档。",
     "No topics assigned yet.": "还没有分配主题。",
     "Not a verbatim benchmark item. This description paraphrases the official source; open it for exact tasks and protocol.":
       "不是逐字的基准条目。此描述转述自官方来源;请打开它以查看确切的题目与协议。",
     "Not a verbatim benchmark item. This is an illustrative format based on the recorded domain; use the official source for exact tasks and protocol.":
       "不是逐字的基准条目。这是根据记录领域生成的示例格式;请使用官方来源查看确切的题目与协议。",
-    "Only one dated organization is visible so far. It is too early to infer a plateau.":
-      "目前只看到一个有日期的机构。推断平台期还为时过早。",
+    "No score for this benchmark could be read verbatim from the cited documents, so there is no track to draw. An absent value is not a zero and not a plateau.":
+      "无法从引文文档中逐字读到该基准的分数,因此没有可绘制的轨道。缺失的数值既不是零,也不是平台期。",
+    "No score for this benchmark could be read verbatim from the cited documents. An absent value is not a zero and not a plateau.":
+      "无法从引文文档中逐字读到该基准的分数。缺失的数值既不是零,也不是平台期。",
     "Open public discussion ↗": "打开公开讨论 ↗",
     Organizations: "机构",
     "Pinned · click the marker again or press Escape to close": "已固定 · 再次点击标记或按 Escape 关闭",
@@ -739,14 +722,8 @@ const I18N = {
     "Radar first observed": "雷达首次观察到",
     "Read full card ↗": "阅读完整模型卡 ↗",
     Recency: "新鲜度",
-    "Release date unrecorded": "未记录发布日期",
     Released: "发布于",
-    "Released in the newest 18-month window and already reported by several independent organizations.":
-      "在最近 18 个月的窗口内发布,且已被多个独立机构报告。",
     Relevance: "相关性",
-    "Reported across multiple organizations, but not yet a corpus-wide convention in this registry.":
-      "已被多个机构报告,但尚未成为本登记册中的语料级惯例。",
-    "Reporting stage": "报告阶段",
     "Representative task shape": "代表性任务形态",
     "Rubric v": "评分标准 v",
     Score: "分数",
@@ -755,18 +732,15 @@ const I18N = {
     "Scoring rubric v": "评分标准 v",
     "Show the first 18 benchmarks": "显示前 18 个基准",
     "Showing all": "显示全部",
-    "Solid score connection": "实线分数连接",
     Submissions: "提交数",
     "The current rubric is v": "当前评分标准为 v",
-    "This benchmark has no dated mentions.": "该基准没有带日期的提及。",
     "This historical scan used": "本次历史扫描采用了",
     "This record scores": "该记录得分",
     "This record was scored by rubric v": "该记录由评分标准 v",
-    "Too early to infer a reporting plateau": "推断报告平台期为时尚早",
     "Topic coverage": "主题覆盖",
     Topics: "主题",
     "What this score does not claim": "这个分数的含义之外",
-    "adoption trajectory": "采用轨迹",
+    "reported scores over time": "报告分数随时间的变化",
     after: "之后",
     "an inclusion cutoff. Records below it were not retained.": "为纳入门槛。低于它的记录未被保留。",
     as: "作为",
@@ -774,38 +748,23 @@ const I18N = {
     "best on record": "历史最佳",
     by: "由",
     "cited by": "被引用",
-    "connected only at one instrument and protocol": "仅在单一工具与协议连接",
     contributes: "贡献",
-    "count unchanged": "计数不变",
-    "cumulative count increases": "累计计数增加",
-    "cumulative distinct organizations": "累计独立机构",
-    "did not add a new organization to the frontier": "未向前沿新增机构",
-    "distinct orgs": "独立机构",
-    "first dated mention": "首次带日期的提及",
-    "first readable score": "首个可读分数",
-    "has only one dated reporting organization; it is too early to infer a plateau":
-      "只有一个带日期的报告机构;推断平台期还为时过早",
     "here are third parties": "有第三方",
     "here is a third party": "有第三方",
-    "last new organization": "最近新增机构",
     listed: "已列出",
     "no readable score in this window": "此窗口中无可读分数",
+    "one value read verbatim from a cited document": "一个从引文文档中逐字读到的数值",
     "not yet reported": "尚未报告",
     "points to zero, the floor of this metric": "指向零,该指标的底线",
     protocol: "协议",
-    "publication time": "发布时间",
+    "document publication date": "文档发布日期",
     "quoting another vendor's figure, marked with a ring on the chart":
       "引用另一家供应商的数据,图表中以圆环标出",
     release: "发布",
     "release date unrecorded": "未记录发布日期",
     released: "发布于",
-    "same instrument and protocol across organizations": "跨机构的相同工具与协议",
-    "same instrument and protocol, one organization only": "单一机构,相同工具与协议",
     "scale. Every number below is read from the same definition the pipeline applies.":
       "的标尺。下面每个数字都按流程应用的同一套定义读取。",
-    "still leaves one frontier step": "仍剩一个前沿台阶",
-    "the previous frontier step": "前一个前沿台阶",
-    "the tick under the jump": "跳变下方的刻度",
     to: "到",
     "to the total": "到总分",
     "two versions are not directly comparable, and past records are not rescored.":
@@ -837,7 +796,6 @@ const I18N = {
     datasets: "数据集",
     evaluations: "评测",
     "times found": "次发现",
-    "with a dated card": "有日期的模型卡",
   },
 };
 
@@ -3016,13 +2974,12 @@ function frontierEvents(entry) {
         a.model.localeCompare(b.model),
     )
     .map((adopter) => {
+      // `advances` still feeds the leaderboard's new-instruments disclosure.
+      // The running total that went with it was the staircase's y value and has
+      // no reader now, so it is not carried.
       const advances = !seenOrganizations.has(adopter.organization);
       seenOrganizations.add(adopter.organization);
-      return {
-        ...adopter,
-        advances,
-        organizationCount: seenOrganizations.size,
-      };
+      return { ...adopter, advances };
     });
 }
 
@@ -3044,51 +3001,23 @@ function frontierAdvances(entry) {
 }
 
 function frontierDefaultEntry(board) {
-  const adopted = (board.entries || []).filter((entry) => entry.card_count > 0);
+  const scored = (board.entries || []).filter(
+    (entry) => entry.card_count > 0 && scoreRecord(entry.benchmark_id),
+  );
+  const datedCount = (entry) => scoreRecord(entry.benchmark_id)?.dated_observation_count || 0;
   const byNewestSignal = (a, b) =>
     (b.released || "").localeCompare(a.released || "") ||
-    frontierAdvances(b).length - frontierAdvances(a).length ||
+    datedCount(b) - datedCount(a) ||
     a.name.localeCompare(b.name);
   // A one-point plot is technically recent but visually says nothing. Open on
-  // the newest instrument that has already crossed three dated organizations;
-  // the full select still makes every early signal reachable and shareable.
-  const newSharedSignals = adopted.filter(
-    (entry) => isNewBenchmark(entry, board) && frontierAdvances(entry).length >= 3,
+  // the newest instrument that already carries three or more dated readings;
+  // the full select still makes every scored benchmark reachable and shareable.
+  const newScoredSignals = scored.filter(
+    (entry) => isNewBenchmark(entry, board) && datedCount(entry) >= 3,
   );
-  if (newSharedSignals.length) return [...newSharedSignals].sort(byNewestSignal)[0];
-  const sharedSignals = adopted.filter((entry) => frontierAdvances(entry).length >= 2);
-  return [...(sharedSignals.length ? sharedSignals : adopted)].sort(byNewestSignal)[0];
-}
-
-function reportingStage(entry, board) {
-  const advances = frontierAdvances(entry).length;
-  const total = Number(board.organization_count || 0);
-  if (advances < 2) {
-    return {
-      id: "early",
-      label: t("Early signal"),
-      description: t("Only one dated organization is visible so far. It is too early to infer a plateau."),
-    };
-  }
-  if (total > 0 && advances / total >= 0.8) {
-    return {
-      id: "saturated",
-      label: t("Saturated reporting"),
-      description: t("At least 80% of organizations in this curated registry report it; that is convention, not quality."),
-    };
-  }
-  if (isNewBenchmark(entry, board) && advances <= 4) {
-    return {
-      id: "emerging",
-      label: t("New & spreading"),
-      description: t("Released in the newest 18-month window and already reported by several independent organizations."),
-    };
-  }
-  return {
-    id: "established",
-    label: t("Established"),
-    description: t("Reported across multiple organizations, but not yet a corpus-wide convention in this registry."),
-  };
+  if (newScoredSignals.length) return [...newScoredSignals].sort(byNewestSignal)[0];
+  const sharedSignals = scored.filter((entry) => datedCount(entry) >= 2);
+  return [...(sharedSignals.length ? sharedSignals : scored)].sort(byNewestSignal)[0];
 }
 
 const BENCHMARK_TASK_SHAPES = {
@@ -3246,7 +3175,12 @@ function searchBenchmarkIndex(records, query) {
   const scored = [];
   for (const record of records) {
     const name = foldName(record.name);
-    if (!name.includes(needle)) continue;
+    // The crawled catalog carries no domain, so publisher and modality are the
+    // fields a "tasks, domains" query can land on here.
+    const named = name.includes(needle);
+    if (!named && !foldName(record.publisher).includes(needle) && !foldName(record.modality).includes(needle)) {
+      continue;
+    }
     // Prefix beats substring, then a record that can answer more of the
     // reader's questions beats one that cannot, then shorter names first so
     // "MMLU" outranks "MMLU-Pro-Extended" for the query "mmlu".
@@ -3255,7 +3189,10 @@ function searchBenchmarkIndex(records, query) {
       (record.openness !== "unknown" ? 1 : 0) +
       (record.has_size ? 1 : 0) +
       (record.score_count > 0 ? 1 : 0);
-    scored.push({ record, rank: [name.startsWith(needle) ? 0 : 1, -answers, name.length] });
+    scored.push({
+      record,
+      rank: [named ? (name.startsWith(needle) ? 0 : 1) : 2, -answers, name.length],
+    });
   }
   scored.sort(
     (a, b) =>
@@ -3329,31 +3266,144 @@ function benchmarkResultRow(record) {
   return button;
 }
 
+// Search covers both layers. It used to read the crawled index only, so a
+// reader typing "GPQA" was shown crawled rows and not the curated GPQA Diamond
+// record that the panel actually charts, while the picker had the opposite
+// blind spot. Curated matches rank above crawled ones for the same reason the
+// picker lists them first: they are the layer with a protocol and a time axis.
+//
+// Matched on aliases as well as the name, because the registry records them
+// ("HLE" for Humanity's Last Exam) precisely so a reader does not have to know
+// the canonical spelling.
+function searchCuratedEntries(board, query) {
+  const needle = foldName(query);
+  if (!needle) return [];
+  const scored = [];
+  for (const entry of board?.entries || []) {
+    if (!scoreRecord(entry.benchmark_id)) continue;
+    // Name and aliases identify the record; `domain` is what the placeholder
+    // means by tasks and domains, since the task shape shown in the panel is
+    // selected by domain. Matching it lets "agent" or "science" return a set
+    // rather than nothing.
+    const names = [entry.name, ...(entry.aliases || [])].map(foldName);
+    const hits = names.filter((name) => name.includes(needle));
+    if (!hits.length && !foldName(entry.domain).includes(needle)) continue;
+    // Exact beats prefix beats substring, then the shortest matched string.
+    // Ranking on the entry name alone put AutomationBench above Humanity's Last
+    // Exam for the query "HLE": the registry really does record the alias
+    // `HLEAutomationBench`, so both were prefix hits and the shorter entry name
+    // won. What a reader means by "HLE" is the record that answers to it
+    // exactly, so the matched alias is what gets ranked, not the entry name.
+    const tier = (name) => (name === needle ? 0 : name.startsWith(needle) ? 1 : 2);
+    // A domain-only hit is a weaker answer than a name hit: the reader typed a
+    // field value, not an identity, so those rank below every named match.
+    const best = hits.length ? Math.min(...hits.map(tier)) : 3;
+    const shortest = hits.length
+      ? Math.min(...hits.filter((name) => tier(name) === best).map((name) => name.length))
+      : 0;
+    scored.push({ entry, rank: [best, shortest, foldName(entry.name).length] });
+  }
+  scored.sort(
+    (a, b) =>
+      a.rank[0] - b.rank[0] ||
+      a.rank[1] - b.rank[1] ||
+      a.rank[2] - b.rank[2] ||
+      a.entry.name.localeCompare(b.entry.name),
+  );
+  return scored.map((item) => item.entry);
+}
+
+// A curated result states what the crawled rows cannot: how many values were
+// read verbatim, and that this record charts. The layer is named on the row
+// rather than left to the reader to infer from the absence of a source chip.
+function curatedResultRow(entry) {
+  const record = scoreRecord(entry.benchmark_id);
+  const facts = [];
+  if (entry.domain) facts.push(String(entry.domain).replaceAll("_", " "));
+  if (entry.released) facts.push(String(entry.released).slice(0, 4));
+  facts.push(metricLabel(entry.card_count, "model card"));
+  const button = element("button", {
+    className: "benchmark-result benchmark-result-curated",
+    attrs: {
+      type: "button",
+      "aria-pressed": entry.benchmark_id === state.lfrontier ? "true" : "false",
+    },
+  }, [
+    element("span", { className: "benchmark-result-name", text: entry.name }),
+    element("span", { className: "benchmark-result-facts", text: facts.join(" \u00b7 ") }),
+    element("span", { className: "benchmark-result-meta" }, [
+      element("span", {
+        className: "benchmark-result-source benchmark-result-source-curated",
+        text: t("Curated registry"),
+      }),
+      element("span", {
+        className: "benchmark-result-scores",
+        text: metricLabel(record.observation_count, "readable score"),
+      }),
+    ]),
+  ]);
+  button.addEventListener("click", () => {
+    selectFrontier(entry.benchmark_id);
+    renderBenchmarkSearch();
+    const board = state.data?.model_card_leaderboard;
+    if (board) renderAdoptionFrontier(board);
+    writeUrl();
+  });
+  return button;
+}
+
 function renderBenchmarkSearch() {
   const container = byId("benchmark-search-results");
   const status = byId("benchmark-search-status");
   if (!container || !status) return;
   const records = state.benchmarkIndex;
-  if (!records) {
+  const board = state.data?.model_card_leaderboard;
+  // The curated layer is in the dashboard payload, which is already loaded, so
+  // search still works over it while the crawled index is on the wire or after
+  // that fetch has failed. Only the crawled half degrades.
+  const curatedCount = (board?.entries || []).filter((entry) =>
+    scoreRecord(entry.benchmark_id),
+  ).length;
+  if (!records && !curatedCount) {
     replaceChildren(container, []);
     status.textContent = "";
     return;
   }
   if (!state.benchmarkQuery) {
     replaceChildren(container, []);
-    status.textContent = t("{n} benchmarks searchable").replace(
+    // Stated as reach, not as a boast: the number is what this box searches
+    // right now, so it drops when the crawled index fails to load rather than
+    // advertising records that cannot be returned. "Sources" counts the layers
+    // behind those records (the curated registry plus each crawl), not the
+    // radar's discovery connectors, which supply no benchmark to this index.
+    const sources = new Set((records || []).map((record) => record.source));
+    if (curatedCount) sources.add("curated");
+    status.textContent = `${t("{n} benchmarks").replace(
       "{n}",
-      String(records.length),
-    );
+      (curatedCount + (records?.length || 0)).toLocaleString(),
+    )} \u00b7 ${metricLabel(sources.size, "source")}`;
     return;
   }
-  const matches = searchBenchmarkIndex(records, state.benchmarkQuery);
-  const shown = matches.slice(0, BENCHMARK_SEARCH_LIMIT);
-  replaceChildren(container, shown.map(benchmarkResultRow));
-  status.textContent = matches.length
+  const curatedMatches = searchCuratedEntries(board, state.benchmarkQuery);
+  const externalMatches = records
+    ? searchBenchmarkIndex(records, state.benchmarkQuery)
+    : [];
+  // Curated first, then crawled, and the cap applies across both so a common
+  // name cannot push every curated hit off the end of the list.
+  const shownCurated = curatedMatches.slice(0, BENCHMARK_SEARCH_LIMIT);
+  const shownExternal = externalMatches.slice(
+    0,
+    Math.max(0, BENCHMARK_SEARCH_LIMIT - shownCurated.length),
+  );
+  const total = curatedMatches.length + externalMatches.length;
+  replaceChildren(container, [
+    ...shownCurated.map(curatedResultRow),
+    ...shownExternal.map(benchmarkResultRow),
+  ]);
+  status.textContent = total
     ? t("{shown} of {total} matches")
-        .replace("{shown}", String(shown.length))
-        .replace("{total}", String(matches.length))
+        .replace("{shown}", String(shownCurated.length + shownExternal.length))
+        .replace("{total}", String(total))
     : t("No benchmark matches that name");
 }
 
@@ -3752,15 +3802,13 @@ function externalBenchmarkDetail(shard) {
   ];
 }
 
-// The chart chrome only describes the curated adoption layer, so it is hidden
+// The chart chrome only describes the curated score layer, so it is hidden
 // while an external record occupies the panel. Hiding is the honest direction
 // here: none of those elements could show anything but an empty state for a
 // record the curated registry does not track, and an empty chart reads as "no
-// adoption" where the truth is "not measured by this layer".
+// score" where the truth is "not measured by this layer".
 const CANONICAL_FRONTIER_CHROME = [
-  "frontier-explainer",
   "frontier-explainer-sub",
-  "frontier-summary",
   "frontier-legend",
   "frontier-chart",
   "frontier-org-key",
@@ -3778,41 +3826,90 @@ function setCanonicalFrontierChrome(visible) {
 }
 
 // Shared shell for the three external states (record, loading, unavailable):
-// heading, source badge in place of the reporting stage, the curated picker
-// still offering every canonical benchmark, and the message or detail in the
-// external container.
-function renderExternalShell(board, adopted, { eyebrow, heading, badge, message }) {
+// heading, source badge where the curated path hides it, the curated picker
+// still offering every scored canonical benchmark, and the message or detail
+// in the external container.
+// --- The benchmark picker ----------------------------------------------------
+//
+// One <select> over both layers, grouped rather than interleaved. The curated
+// registry and the crawled catalog are separate namespaces (a `benchmark_id`
+// against a source-prefixed `slug`), and they answer to different standards: a
+// curated row carries an instrument, a protocol and a document publication
+// date, so it can be drawn on a time axis; a crawled row carries none of those
+// and renders as a table. A reader has to be able to tell which they are
+// looking at before they click, so the group label says it.
+//
+// A crawled record with no readable score is omitted for the same reason its
+// curated counterpart is: the panel would have nothing to show it.
+function frontierPickerGroups(scored) {
+  const groups = [
+    [
+      t("Curated registry"),
+      [...scored]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((entry) => [entry.benchmark_id, entry.name]),
+    ],
+  ];
+  const external = (state.benchmarkIndex || []).filter((record) => record.score_count > 0);
+  for (const source of [...new Set(external.map((record) => record.source))].sort()) {
+    groups.push([
+      externalSourceMeta(source).name,
+      external
+        .filter((record) => record.source === source)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((record) => [record.slug, record.name]),
+    ]);
+  }
+  return groups.filter(([, rows]) => rows.length);
+}
+
+function renderFrontierPicker(scored, selectedValue) {
+  replaceChildren(
+    byId("frontier-benchmark"),
+    frontierPickerGroups(scored).map(([label, rows]) =>
+      element(
+        "optgroup",
+        // The count is on the label because the groups are wildly uneven (59
+        // curated against several hundred crawled) and a reader scrolling a
+        // long list deserves to know how far the group runs.
+        { attrs: { label: `${label} (${rows.length.toLocaleString()})` } },
+        rows.map(([value, name]) => option(value, name, value === selectedValue)),
+      ),
+    ),
+  );
+}
+
+function renderExternalShell(board, scored, { eyebrow, heading, badge, message }) {
   clearFrontierPointSelection();
   setCanonicalFrontierChrome(false);
   byId("frontier-eyebrow").textContent = eyebrow;
   byId("frontier-heading").textContent = heading;
   const stage = byId("frontier-stage");
   stage.className = "frontier-stage";
+  stage.hidden = false;
   stage.textContent = badge;
-  replaceChildren(byId("frontier-benchmark"), [
-    ...[...adopted]
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((entry) => option(entry.benchmark_id, entry.name, false)),
-  ]);
+  renderFrontierPicker(scored, state.lfrontier);
   replaceChildren(byId("frontier-external"), [
     element("p", { className: "empty-state", text: message }),
   ]);
 }
 
-function renderExternalBenchmark(board, adopted, record) {
+function renderExternalBenchmark(board, scored, record) {
   const meta = externalSourceMeta(record.source);
-  renderExternalShell(board, adopted, {
+  renderExternalShell(board, scored, {
     eyebrow: t("External catalog record"),
     heading: record.name,
     badge: meta.name,
     message: t("Loading benchmark details…"),
   });
-  // The picker has no canonical option for a slug, so the selected record is
-  // prepended as its own option: a <select> that displays a different
-  // benchmark than the one rendered would be lying about the state.
-  byId("frontier-benchmark").prepend(
-    option(record.slug, `${record.name} · ${meta.name}`, true),
-  );
+  // Scored crawled records are in the picker already. An unscored one is not,
+  // and it is still reachable by search, so it is prepended as its own option:
+  // a <select> displaying a different benchmark than the one rendered would be
+  // lying about the state.
+  const picker = byId("frontier-benchmark");
+  const existing = [...picker.options].find((candidate) => candidate.value === record.slug);
+  if (existing) existing.selected = true;
+  else picker.prepend(option(record.slug, `${record.name} · ${meta.name}`, true));
   const container = byId("frontier-external");
   loadBenchmarkShard(record.slug).then((shard) => {
     // The reader may have moved on while the shard was on the wire; only paint
@@ -3833,125 +3930,58 @@ function renderExternalBenchmark(board, adopted, record) {
   });
 }
 
+// Entry points for a reader who has nothing in mind to type, ranked by how
+// many curated model cards report the benchmark. That ordering is the one
+// reading this registry is built to make, so the list needs no editorial
+// curation and no computed subheadings: "most reported" is both the rank and
+// the reason a name is worth trying.
+//
+// Every row is a curated benchmark, because `card_count` is a curated fact:
+// the crawled catalog records scores, not who chose to report them. The
+// crawled layer is not hidden by this, it is reached from the search box and
+// the picker, both of which cover all 679 scored crawled records alongside
+// these.
+const BENCHMARK_EXAMPLE_LIMIT = 20;
+
 function renderBenchmarkNavigator(board) {
-  const adopted = (board.entries || []).filter((entry) => entry.card_count > 0);
-  const stageOrder = [
-    ["emerging", t("New & spreading")],
-    ["early", t("Early signal")],
-    ["established", t("Established")],
-    ["saturated", t("Saturated reporting")],
-  ];
-  const groups = stageOrder
-    .map(([stageId, label]) => {
-      const entries = adopted
-        .filter((entry) => reportingStage(entry, board).id === stageId)
-        .sort(
-          (a, b) =>
-            Number(b.benchmark_id === state.lfrontier) -
-              Number(a.benchmark_id === state.lfrontier) ||
-            (stageId === "emerging" || stageId === "early"
-              ? (b.released || "").localeCompare(a.released || "")
-              : frontierAdvances(b).length - frontierAdvances(a).length) ||
-            (b.released || "").localeCompare(a.released || "") ||
-            a.name.localeCompare(b.name),
-        )
-        .slice(0, stageId === "emerging" ? 4 : 3);
-      if (!entries.length) return null;
-      return element("section", { className: "benchmark-shortlist-group" }, [
-        element("h3", { text: label }),
-        element(
-          "div",
-          { className: "benchmark-shortlist-buttons" },
-          entries.map((entry) => {
-            const button = element("button", {
-              className: "benchmark-shortlist-button",
-              attrs: {
-                type: "button",
-                "aria-pressed": entry.benchmark_id === state.lfrontier ? "true" : "false",
-              },
-            }, [
-              element("span", { text: entry.name }),
-              element("small", {
-                text: `${metricLabel(frontierAdvances(entry).length, "dated organization")}`,
-              }),
-            ]);
-            button.addEventListener("click", () => {
-              selectFrontier(entry.benchmark_id);
-              renderAdoptionFrontier(board);
-              writeUrl();
-            });
-            return button;
+  const host = byId("benchmark-shortlist");
+  if (host) {
+    const examples = (board.entries || [])
+      // Scored only, same rule as every other route into the panel: an example
+      // that opens the no-score refusal is not an example.
+      .filter((entry) => entry.card_count > 0 && scoreRecord(entry.benchmark_id))
+      .sort((a, b) => b.card_count - a.card_count || a.name.localeCompare(b.name))
+      .slice(0, BENCHMARK_EXAMPLE_LIMIT);
+    replaceChildren(
+      host,
+      examples.map((entry) => {
+        const card = element("button", {
+          className: "benchmark-example",
+          attrs: {
+            type: "button",
+            "aria-pressed": entry.benchmark_id === state.lfrontier ? "true" : "false",
+          },
+        }, [
+          element("span", { className: "benchmark-example-name", text: entry.name }),
+          element("small", {
+            className: "benchmark-example-meta",
+            text: metricLabel(entry.card_count, "model card"),
           }),
-        ),
-      ]);
-    })
-    .filter(Boolean);
-  replaceChildren(byId("benchmark-shortlist"), groups);
+        ]);
+        card.addEventListener("click", () => {
+          selectFrontier(entry.benchmark_id);
+          renderAdoptionFrontier(board);
+          writeUrl();
+        });
+        return card;
+      }),
+    );
+  }
+  // Binds the input and kicks off the crawled-index fetch on first call; a
+  // no-op afterwards. Without it the box searches the curated layer only and
+  // the reach line undercounts, which is how it read "59 benchmarks, 1 source".
   initBenchmarkSearch();
   renderBenchmarkSearch();
-}
-
-function daysBetween(start, end) {
-  if (!start || !end) return null;
-  return Math.max(
-    0,
-    Math.round(
-      (new Date(`${end}T00:00:00Z`) - new Date(`${start}T00:00:00Z`)) / 86_400_000,
-    ),
-  );
-}
-
-function renderFrontierMilestones(entry, events) {
-  const advances = events.filter((event) => event.advances);
-  const repeats = events.length - advances.length;
-  const list = element(
-    "ol",
-    { className: "frontier-milestone-list" },
-    advances.map((event, index) => {
-      const previousDate = index ? advances[index - 1].published : entry.released;
-      const elapsed = daysBetween(previousDate, event.published);
-      return element("li", {}, [
-        element("span", { className: "milestone-number", text: index + 1 }),
-        element("div", {}, [
-          element("p", {
-            className: "milestone-date",
-            text: `${formatDate(event.published, { dateStyle: "medium" })}${
-              elapsed === null
-                ? ""
-                : ` · ${metricLabel(elapsed, "day")} ${t("after")} ${
-                    index ? t("the previous frontier step") : t("release")
-                  }`
-            }`,
-          }),
-          element("a", {
-            className: "milestone-source",
-            text: event.organization,
-            attrs: {
-              href: safeHttpUrl(event.url),
-              target: "_blank",
-              rel: "noopener noreferrer",
-            },
-          }),
-          element("span", { className: "milestone-model", text: event.model }),
-        ]),
-      ]);
-    }),
-  );
-  replaceChildren(byId("frontier-milestones"), [
-    entry.released
-      ? element("p", {
-          className: "milestone-release",
-          text: `${t("Released")} ${formatDate(entry.released, { dateStyle: "medium" })}`,
-        })
-      : null,
-    list,
-    repeats
-      ? element("p", {
-          className: "milestone-repeat-note",
-          text: `${metricLabel(repeats, "repeat report")} ${t("did not add a new organization to the frontier")}.`,
-        })
-      : null,
-  ]);
 }
 
 function renderFrontierTaskPreview(entry) {
@@ -3994,50 +4024,6 @@ function renderFrontierTaskPreview(entry) {
         })
       : null,
   ]);
-}
-
-function sparseFrontier(entry, events) {
-  const first = events.find((event) => event.advances);
-  const repeatCount = Math.max(0, events.length - 1);
-  return element(
-    "div",
-    {
-      className: "frontier-sparse",
-      attrs: {
-        role: "img",
-        "aria-label": `${entry.name} ${t("has only one dated reporting organization; it is too early to infer a plateau")}.`,
-      },
-    },
-    [
-      element("div", { className: "frontier-sparse-step is-complete" }, [
-        element("span", { text: "01" }),
-        element("strong", { text: t("Benchmark released") }),
-        element("small", {
-          text: entry.released
-            ? formatDate(entry.released, { dateStyle: "medium" })
-            : t("Release date unrecorded"),
-        }),
-      ]),
-      element("div", { className: "frontier-sparse-step is-complete" }, [
-        element("span", { text: "02" }),
-        element("strong", { text: t("First reporting organization") }),
-        element("small", {
-          text: first
-            ? `${first.organization} · ${formatDate(first.published, { dateStyle: "medium" })}`
-            : t("No dated report"),
-        }),
-      ]),
-      element("div", { className: "frontier-sparse-step is-awaiting" }, [
-        element("span", { text: "03" }),
-        element("strong", { text: t("Awaiting an independent second organization") }),
-        element("small", {
-          text: repeatCount
-            ? `${metricLabel(repeatCount, "later repeat")} ${t("still leaves one frontier step")}`
-            : t("Too early to infer a reporting plateau"),
-        }),
-      ]),
-    ],
-  );
 }
 
 // --- Score progression (issue #91) ------------------------------------------
@@ -4153,12 +4139,14 @@ function renderScoreReadout(entry) {
   const host = byId("frontier-score-readout");
   if (!host) return;
   const record = scoreRecord(entry.benchmark_id);
+  // Unreachable on the canonical path (the picker only lists scored benchmarks),
+  // but the message stays honest rather than naming a chart that does not draw.
   if (!record) {
     replaceChildren(host, [
       element("p", {
         className: "score-readout-empty",
         text:
-          t("No score for this benchmark could be read verbatim from the cited documents, so the chart shows adoption only. An absent value is not a zero and not a plateau."),
+          t("No score for this benchmark could be read verbatim from the cited documents. An absent value is not a zero and not a plateau."),
       }),
     ]);
     return;
@@ -4439,54 +4427,20 @@ function enableFrontierTouchTargets(svg) {
   }, true);
 }
 
-// A legend keyed to the marks actually on the chart. The panel previously relied
-// on the prose explainer to say what orange versus gray meant, which put the key
-// several lines away from the thing it explains; issue #91 reports readers taking
-// the two for equivalent kinds of point. Each entry names the mark AND what it
-// does to the count, because "new organization" alone does not say that the other
-// kind leaves the staircase flat.
-// `sparse` suppresses the staircase and the rug in favour of the step list, so
-// their legend entries are suppressed with them: a key describing marks that are
-// not on screen is worse than no key, and many shipped benchmarks take that path.
-function renderFrontierLegend(entry, record, { sparse = false } = {}) {
+// A legend keyed to the marks actually on the chart. Only score marks remain:
+// the staircase and rug keys went with their bands, since a key describing
+// marks that are not on screen is worse than no key.
+function renderFrontierLegend(entry, record) {
   const host = byId("frontier-legend");
   if (!host) return;
   const swatch = (className) => element("span", { className: `legend-swatch ${className}` });
-  const items = sparse
-    ? []
-    : [
-        ["legend-swatch-point", t("New organization"), t("cumulative count increases")],
-        [
-          "legend-swatch-tick-first",
-          t("First card from that organization"),
-          t("the tick under the jump"),
-        ],
-        [
-          "legend-swatch-tick-repeat",
-          t("Later card, organization already counted"),
-          t("count unchanged"),
-        ],
-      ];
+  const items = [];
   if (record) {
     items.push([
       "legend-swatch-score",
       t("Readable score"),
-      t("connected only at one instrument and protocol"),
+      t("one value read verbatim from a cited document"),
     ]);
-    if (record.series.some((series) => series.connectable && !series.single_organization)) {
-      items.push([
-        "legend-swatch-score-line",
-        t("Solid score connection"),
-        t("same instrument and protocol across organizations"),
-      ]);
-    }
-    if (record.series.some((series) => series.connectable && series.single_organization)) {
-      items.push([
-        "legend-swatch-score-line-single-org",
-        t("Dashed score connection"),
-        t("same instrument and protocol, one organization only"),
-      ]);
-    }
   }
   replaceChildren(
     host,
@@ -4500,23 +4454,22 @@ function renderFrontierLegend(entry, record, { sparse = false } = {}) {
   );
 }
 
-// The per-organization color key under the chart. Each reporting organization
-// gets a small circular chip in its frontier color carrying its real brand
-// glyph, so the reader can map a colored circle on the staircase back to a name
-// without hovering (issue #178, HLE/harbor style). Built from the organizations
-// that actually have a dated card on this benchmark, in first-report order.
-function renderFrontierOrgKey(entry, events) {
+// The per-organization color key under the chart. Each organization with a
+// plotted score gets a small circular chip in its frontier color carrying its
+// brand glyph, so the reader can map a colored glyph on the chart back to a
+// name without hovering (issue #178, HLE/harbor style). Built from the score
+// record itself, whose observations are in date order: an organization whose
+// card carried no readable number is not keyed to a chart it does not appear
+// on.
+function renderFrontierOrgKey(record) {
   const host = byId("frontier-org-key");
   if (!host) return;
   const ordered = [];
   const seen = new Set();
-  const dated = (entry.adopters || [])
-    .filter((adopter) => adopter.published)
-    .sort((a, b) => a.published.localeCompare(b.published));
-  for (const adopter of dated) {
-    if (seen.has(adopter.organization)) continue;
-    seen.add(adopter.organization);
-    ordered.push(adopter);
+  for (const observation of record?.observations || []) {
+    if (seen.has(observation.organization)) continue;
+    seen.add(observation.organization);
+    ordered.push(observation.organization);
   }
   if (!ordered.length) {
     replaceChildren(host, []);
@@ -4524,8 +4477,7 @@ function renderFrontierOrgKey(entry, events) {
   }
   replaceChildren(
     host,
-    ordered.map((adopter) => {
-      const org = adopter.organization;
+    ordered.map((org) => {
       const glyph = svgElement("svg", {
         viewBox: "0 0 24 24",
         class: "frontier-org-key-glyph",
@@ -4549,86 +4501,65 @@ function renderFrontierOrgKey(entry, events) {
   );
 }
 
-// `sparse` means the adoption stepper is being rendered separately because it has
-// fewer than two frontier advances. The score track still draws, on its own axis,
-// so a thin adoption layer never hides a readable score.
-function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
-  const datedCards = (board.model_cards || []).filter((card) => card.published);
+// The saturation curve: every score read verbatim from a cited document, on a
+// publication-time axis. The adoption staircase that used to lead this chart
+// was retired: a staircase of who reported when answers a different question,
+// and the score track carries strictly more of what a reader came for. So the
+// score band now gets the full height the staircase, the card rug, and the
+// inter-band gaps vacated, and the only marks on the chart are the scores, the
+// connections the join rule permits, and the reading gap.
+function scoreTrackChart(entry, board) {
   const record = scoreRecord(entry.benchmark_id);
-  // `events` may be empty when only the score track is being drawn, so both
-  // bounds are computed from whatever dates exist rather than indexing into it.
-  const startText = [entry.released, events[0]?.published, record?.first_reported_at]
-    .filter(Boolean)
-    .sort()[0];
-  // Symmetric with `startText`: the range has to cover the score track as well
-  // as the adoption track, or a score dated after the newest card -- reachable
-  // when a card carries a later `revised` date -- lands outside the viewBox and
-  // is silently clipped. Both ends therefore consider both layers.
-  const endText = [
-    events.length ? datedCards.map((card) => card.published).sort().at(-1) : null,
-    events.at(-1)?.published,
-    record?.last_reported_at,
-  ]
-    .filter(Boolean)
-    .sort()
-    .at(-1);
+  // Callers only ever select a benchmark that has a score record; this guard is
+  // for the defensive case, since a chart with no points reads as "scores went
+  // to zero here", which is worse than no chart.
+  if (!record) return null;
+  // This benchmark's own dated mentions are not drawn, but the newest one still
+  // bounds the reading-gap marker below: "still mentioned, nothing newer could
+  // be read" is a claim that needs the mention date. The registry-wide newest
+  // card is never consulted: an unrelated vendor's recent document is not
+  // evidence that this benchmark went unread (shipped Arena-Hard and Aider
+  // Polyglot have no adopter newer than their last score).
+  const lastMention = frontierEvents(entry).at(-1)?.published;
+  const startText = record.first_reported_at;
+  const endText = [lastMention, record.last_reported_at].filter(Boolean).sort().at(-1);
   const start = new Date(`${startText}T00:00:00Z`).getTime();
   const rawEnd = new Date(`${endText}T00:00:00Z`).getTime();
   const end = Math.max(rawEnd, start + 86_400_000);
   // A narrower viewBox on a narrow viewport. `width: 100%` scales height with
   // width, so a 920-unit box at 390px CSS pixels rendered the whole chart about
-  // 90px tall and the staircase became unreadable. Halving the coordinate width
+  // 90px tall and the marks became unreadable. Halving the coordinate width
   // lets the same content scale up rather than being squashed; distorting the
   // aspect ratio instead would stretch the axis text illegibly.
   const narrow = typeof window !== "undefined" && window.innerWidth <= 760;
   const width = narrow ? 520 : 920;
-  // The score band is only reserved when there is a score to draw. A benchmark
-  // with no readable value gets the original single-plot height rather than an
-  // empty lower half, which would read as "scores went to zero here".
-  const band = record ? scoreBand(record) : null;
-  const scoreHeight = record ? 132 : 0;
-  const bandGap = record ? 34 : 0;
-  // The left margin widens when a score band is present: its axis label is a
-  // metric name ("resolved", "pass@1") rather than the fixed "organizations
-  // reporting", and a 52px gutter clipped the longer ones at the viewBox edge.
-  const margin = { top: 32, right: 20, bottom: 62, left: record ? 68 : 52 };
+  const band = scoreBand(record);
+  // 480 = the old staircase plot (276) plus the band gap (34), the card rug
+  // (26) and its gap (12), over the old 132-unit strip. The y-axis is zoomed to
+  // the observed range, so the vacated height is vertical resolution for the
+  // one thing about this band a reader must not misjudge.
+  const scoreHeight = 480;
+  // The left margin is wider than the site's other charts because the axis
+  // label is a metric name ("resolved", "pass@1") rather than a fixed word,
+  // and a 52px gutter clipped the longer ones at the viewBox edge.
+  const margin = { top: 32, right: 20, bottom: 62, left: 68 };
   const plotWidth = width - margin.left - margin.right;
-  // The adoption plot collapses to nothing when its stepper is drawn separately,
-  // so the SVG carries no empty region where the step line would have been.
-  const plotHeight = sparse ? 0 : 370 - margin.top - margin.bottom;
-  // The card rug: one tick per model card, on its own band under the staircase.
-  // Repeat cards used to be plotted *on* the count axis at the running total,
-  // which put a marker at a height the card did not cause -- a card that changed
-  // nothing sat at the same y as the advance that did. Worse, several cards
-  // sharing a date stacked into each other and occluded the numbers. Giving card
-  // events their own band separates "how many organizations by this date" from
-  // "when were the cards published", which is the whole confusion in issue #91.
-  const rugHeight = sparse || !events.length ? 0 : 26;
-  const rugGap = rugHeight ? 12 : 0;
-  const height =
-    margin.top + plotHeight + rugGap + rugHeight + bandGap + scoreHeight + margin.bottom;
-  const rugTop = margin.top + plotHeight + rugGap;
-  const maxOrganizations = Math.max(1, Number(board.organization_count || 0));
+  const height = margin.top + scoreHeight + margin.bottom;
   const x = (date) =>
     margin.left +
     ((new Date(`${date}T00:00:00Z`).getTime() - start) / (end - start)) * plotWidth;
-  const y = (count) => margin.top + plotHeight - (count / maxOrganizations) * plotHeight;
-  // The score plot sits below the adoption plot and shares its x scale, which is
-  // the whole point: the two readings are only comparable if a vertical line
-  // through the chart means one date in both.
-  const scoreTop = margin.top + plotHeight + rugGap + rugHeight + bandGap;
+  const scoreTop = margin.top;
   // Better is always up. `direction` exists in the schema precisely so a metric
   // where lower wins (an edit distance, an error rate) does not render its
   // improvements as a downward slope; consulting it here is what makes the axis
   // mean "better" rather than "larger".
-  const scoreDescends = record?.direction === "lower_is_better";
+  const scoreDescends = record.direction === "lower_is_better";
   const scoreY = (value) => {
-    if (!band || band.high <= band.low) return scoreTop + scoreHeight / 2;
+    if (band.high <= band.low) return scoreTop + scoreHeight / 2;
     const fraction = (value - band.low) / (band.high - band.low);
     const fromFloor = scoreDescends ? 1 - fraction : fraction;
     return scoreTop + scoreHeight - fromFloor * scoreHeight;
   };
-  const advances = events.filter((event) => event.advances);
 
   const svg = svgElement("svg", {
     viewBox: `0 0 ${width} ${height}`,
@@ -4636,220 +4567,15 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
     // accessibility tree, which would hide the interactive marker buttons.
     role: "group",
     "aria-label":
-      (events.length
-        ? `${entry.name} reporting adoption over time. ${advances.length} of ` +
-          `${board.organization_count} organizations have a dated report.`
-        : `${entry.name} readable scores over time. No mention of it carries a date, so no ` +
-          "adoption timeline is shown.") +
-      (record
-        ? ` ${events.length ? "Below it, " : ""}${metricLabel(
-            record.observation_count,
-            "readable score",
-          )} from ${formatDate(record.first_reported_at, { dateStyle: "medium" })} to ` +
-          `${formatDate(record.last_reported_at, { dateStyle: "medium" })}, best ` +
-          `${record.saturation.best_value}.`
-        : " No readable score for this benchmark."),
+      `${entry.name} readable scores over time. ${metricLabel(
+        record.observation_count,
+        "readable score",
+      )} from ${formatDate(record.first_reported_at, { dateStyle: "medium" })} to ` +
+      `${formatDate(record.last_reported_at, { dateStyle: "medium" })}, best ` +
+      `${record.saturation.best_value}.`,
   });
-  // The adoption plot. Skipped entirely when its stepper is rendered separately:
-  // a step line with fewer than two advances says nothing a reader can use.
-  if (!sparse) {
-    const tickStep = Math.max(1, Math.ceil(maxOrganizations / 5));
-    const tickValues = new Set([0, maxOrganizations]);
-    for (let count = tickStep; count < maxOrganizations; count += tickStep) {
-      tickValues.add(count);
-    }
-    for (const count of [...tickValues].sort((a, b) => a - b)) {
-      const yPosition = y(count);
-      svg.append(
-        svgElement("line", {
-          x1: margin.left,
-          y1: yPosition,
-          x2: width - margin.right,
-          y2: yPosition,
-          class: "frontier-grid",
-        }),
-      );
-      svg.append(
-        svgElement(
-          "text",
-          { x: margin.left - 12, y: yPosition + 4, "text-anchor": "end", class: "frontier-tick" },
-          count,
-        ),
-      );
-    }
 
-    let path = `M ${x(startText)} ${y(0)}`;
-    for (const event of advances) {
-      path += ` H ${x(event.published)} V ${y(event.organizationCount)}`;
-    }
-    path += ` H ${x(endText)}`;
-    svg.append(svgElement("path", { d: path, class: "frontier-line" }));
-
-    // Diamonds at the jumps, and only at the jumps. The marker number is gone: it
-    // restated the y-axis value the marker already sits at, and a digit inside a
-    // circle reads as a record id, so readers took the staircase for a numbered
-    // list of points rather than a cumulative count.
-    for (const event of advances) {
-      const pointX = x(event.published);
-      const pointY = y(event.organizationCount);
-      const group = svgElement("g", {
-        class: "frontier-point frontier-point-advance",
-        tabindex: "0",
-        role: "button",
-        "aria-pressed": "false",
-        "data-frontier-point": "",
-        "aria-label":
-          `${event.organization} first reported it ${formatDate(event.published, {
-            dateStyle: "medium",
-          })} with ${event.model}, taking the count to ${event.organizationCount}. ` +
-          "Click to pin record details.",
-      });
-      const r = 8;
-      const orgColor = organizationColor(event.organization);
-      group.append(
-        svgElement("circle", {
-          cx: pointX,
-          cy: pointY,
-          r,
-          style: `fill: ${orgColor}`,
-          class: "frontier-point-face",
-        }),
-      );
-      group.append(brandGlyph(event.organization, pointX, pointY, r * 1.6, "frontier-point-glyph"));
-      makeFrontierPointInteractive(group, {
-        kind: "New organization",
-        title: `${event.organization} · ${event.model}`,
-        rows: [
-          { label: "Organization", value: event.organization },
-          { label: "Model", value: event.model },
-          {
-            label: "Date",
-            value: formatDate(event.published, { dateStyle: "medium" }),
-          },
-          {
-            label: "Adoption",
-            value: `First report · cumulative count ${event.organizationCount}`,
-          },
-          {
-            label: "Source",
-            value: String(event.document_type || "model card").replaceAll("_", " "),
-          },
-        ],
-        url: event.url,
-      });
-      svg.append(group);
-    }
-  }
-
-  // The card rug. Every card gets exactly one tick, so a date carrying several
-  // cards shows several ticks side by side instead of a pile of circles on the
-  // staircase. Orange marks a first report, gray a later card from an
-  // organization already counted.
-  if (rugHeight) {
-    svg.append(
-      svgElement("line", {
-        x1: margin.left,
-        y1: rugTop + rugHeight / 2,
-        x2: width - margin.right,
-        y2: rugTop + rugHeight / 2,
-        class: "card-rug-baseline",
-      }),
-    );
-    // Tick positions are allocated across every card at once, not per date. Two
-    // earlier versions were wrong in the same way at different scales: x(date)
-    // alone overpainted cards sharing a date, and fanning each date independently
-    // then pushed those ticks into a *neighbouring* date's -- on shipped GPQA
-    // Diamond at the narrow viewBox a fanned 2026-02-11 tick landed 0.04 units
-    // from the 2026-02-16 tick, inside a 2.5-unit stroke, so one still vanished
-    // and swallowed the other's hover target. One-day-apart pairs collided at
-    // desktop width too.
-    //
-    // So this is a single left-to-right sweep that keeps every tick at least a
-    // stroke-width apart, then shifts the whole run back by half its total drift
-    // to keep the group centred on the dates it represents. Ticks stay in date
-    // order and no two can occupy the same pixel, which is the guarantee the rug
-    // exists to make; a tick may sit a fraction of a unit off its exact date, and
-    // that is the honest trade, since a hidden card is a lost observation while a
-    // 3px nudge is not.
-    const MIN_TICK_GAP = 3.5;
-    const positions = [];
-    let previous = -Infinity;
-    for (const event of events) {
-      const ideal = x(event.published);
-      const placed = Math.max(ideal, previous + MIN_TICK_GAP);
-      positions.push(placed);
-      previous = placed;
-    }
-    const drift = positions.length ? positions[positions.length - 1] - x(events[events.length - 1].published) : 0;
-    const shift = drift / 2;
-    for (const [index, event] of events.entries()) {
-      const tickX = positions[index] - shift;
-      const group = svgElement("g", {
-        class: `card-rug-tick${event.advances ? " card-rug-tick-first" : " card-rug-tick-repeat"}`,
-        tabindex: "0",
-        role: "button",
-        "aria-pressed": "false",
-        "data-frontier-point": "",
-        "aria-label":
-          `${event.organization}, ${event.model}, ${formatDate(event.published, {
-            dateStyle: "medium",
-          })}` +
-          (event.advances
-            ? ", first report from this organization"
-            : ", later card from an organization already counted"),
-      });
-      // A first report gets a full-height tick, a repeat a short one, so the two
-      // are distinguishable without relying on colour alone.
-      const halfHeight = event.advances ? rugHeight / 2 : rugHeight / 4;
-      group.append(
-        svgElement("line", {
-          x1: tickX,
-          y1: rugTop + rugHeight / 2 - halfHeight,
-          x2: tickX,
-          y2: rugTop + rugHeight / 2 + halfHeight,
-        }),
-      );
-      makeFrontierPointInteractive(group, {
-        kind: event.advances ? "First report card" : "Repeat report card",
-        title: `${event.organization} · ${event.model}`,
-        rows: [
-          { label: "Organization", value: event.organization },
-          { label: "Model", value: event.model },
-          {
-            label: "Date",
-            value: formatDate(event.published, { dateStyle: "medium" }),
-          },
-          {
-            label: "Adoption",
-            value: event.advances
-              ? `First report · cumulative count ${event.organizationCount}`
-              : `Later card · cumulative count unchanged at ${event.organizationCount}`,
-          },
-          {
-            label: "Source",
-            value: String(event.document_type || "model card").replaceAll("_", " "),
-          },
-        ],
-        url: event.url,
-      });
-      svg.append(group);
-    }
-    svg.append(
-      svgElement(
-        "text",
-        {
-          x: 17,
-          y: rugTop + rugHeight / 2,
-          transform: `rotate(-90 17 ${rugTop + rugHeight / 2})`,
-          "text-anchor": "middle",
-          class: "frontier-axis-label",
-        },
-        "cards",
-      ),
-    );
-  }
-
-  if (record) {
+  {
     // Band bounds, not 0-100: every value in this corpus sits in the upper part
     // of its scale, so the axis is zoomed and says so on both ticks.
     for (const value of [band.high, band.low]) {
@@ -4877,22 +4603,22 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
       );
     }
 
-    // One polyline per comparable series, and only for series the join rule
-    // permits a line through. A series confined to one date draws no line: its
-    // points are a comparison table from one document, and connecting them
-    // would turn a single publication into an apparent trend.
-    for (const series of record.series) {
-      if (!series.connectable) continue;
-      const points = series.points
-        .map((point) => `${x(point.reported_at)},${scoreY(point.value)}`)
-        .join(" ");
-      svg.append(
-        svgElement("polyline", {
-          points,
-          class: `score-line${series.single_organization ? " score-line-single-org" : ""}`,
-        }),
-      );
-    }
+    // No segment joins any two score points, in either layer.
+    //
+    // A shared instrument and protocol makes two numbers *comparable*. It does
+    // not make them a *series*, and a drawn segment asserts the second. On
+    // shipped GPQA Diamond the join rule connected DeepSeek-V4-Pro (90.1) to
+    // DeepSeek-V4-Flash (88.1) and drew a decline, when the later point is a
+    // smaller model rather than a regression over time; the cross-vendor pair
+    // (Gemma 4 31B to GLM-5.1) implied a trajectory between two systems that
+    // share nothing but a protocol string. Both are the same error the reading
+    // gap exists to prevent, and neither is fixable by restricting which pairs
+    // may join, because the defect is in the segment, not in the pairing.
+    //
+    // Comparability is still computed and still stated: it drives the paired
+    // comparison readout below the chart, which says in words what a pair of
+    // dates does and does not support. Words can carry that caveat; a line
+    // cannot.
 
     // The best-on-record marker. Drawn as a horizontal rule rather than a point
     // because it is a fact about the whole corpus to date, not about one date.
@@ -5010,11 +4736,6 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
     // that this benchmark went unread: shipped Arena-Hard and Aider Polyglot have
     // no adopter newer than their last score, so ending at the global date drew a
     // long gap that nothing about those benchmarks supported.
-    const lastMention = events
-      .map((event) => event.published)
-      .filter(Boolean)
-      .sort()
-      .at(-1);
     const lastScoreX = x(record.last_reported_at);
     const endX = x(
       lastMention && lastMention > record.last_reported_at ? lastMention : record.last_reported_at,
@@ -5043,13 +4764,20 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
           }),
         );
       }
+      // Centred on the span, except when the span runs to the end of the axis:
+      // a centred label there puts half its width past the right gutter and the
+      // viewBox clips it, which on shipped GPQA Diamond left the reader with
+      // "NO READABLE SCORE IN THI". Anchoring to the span's right end instead
+      // keeps the whole string inside without measuring text, which is not
+      // available on a detached SVG and would differ per locale anyway.
+      const gapReachesAxisEnd = endX >= margin.left + plotWidth - 1;
       svg.append(
         svgElement(
           "text",
           {
-            x: (lastScoreX + endX) / 2,
+            x: gapReachesAxisEnd ? endX : (lastScoreX + endX) / 2,
             y: scoreTop + scoreHeight + 18,
-            "text-anchor": "middle",
+            "text-anchor": gapReachesAxisEnd ? "end" : "middle",
             class: "score-gap-label",
           },
           t("no readable score in this window"),
@@ -5078,29 +4806,6 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
     );
   }
 
-  const releaseX = entry.released ? x(entry.released) : x(startText);
-  svg.append(
-    svgElement("line", {
-      x1: releaseX,
-      y1: margin.top,
-      // Spans both plots when a score band exists, so the release date reads as
-      // one moment in the benchmark's life rather than as two unrelated marks.
-      x2: releaseX,
-      y2: record ? scoreTop + scoreHeight : rugTop + rugHeight,
-      class: "frontier-release-line",
-    }),
-  );
-  svg.append(
-    svgElement(
-      "text",
-      { x: releaseX + 8, y: margin.top + 14, class: "frontier-release-label" },
-      entry.released
-        ? t("release")
-        : events.length
-          ? t("first dated mention")
-          : t("first readable score"),
-    ),
-  );
   for (const [date, anchor] of [
     [startText, "start"],
     [endText, "end"],
@@ -5113,51 +4818,15 @@ function adoptionFrontierChart(entry, board, events, { sparse = false } = {}) {
       ),
     );
   }
-  if (!sparse) {
-    svg.append(
-      svgElement(
-        "text",
-        {
-          x: 15,
-          y: margin.top + plotHeight / 2,
-          transform: `rotate(-90 15 ${margin.top + plotHeight / 2})`,
-          "text-anchor": "middle",
-          class: "frontier-axis-label",
-        },
-        // Named for what the axis counts. "Organizations reporting" invited the
-        // reading that a repeat card adds to it; "cumulative distinct" says in the
-        // label itself that a second card from a counted vendor moves nothing.
-        // Shortened on a narrow viewport, where the rotated full text is longer
-        // than the plot is tall and would be clipped at the viewBox edge.
-        narrow ? t("distinct orgs") : t("cumulative distinct organizations"),
-      ),
-    );
-  }
   svg.append(
     svgElement(
       "text",
       { x: margin.left + plotWidth / 2, y: height - 7, "text-anchor": "middle", class: "frontier-axis-label" },
-      t("publication time"),
+      t("document publication date"),
     ),
   );
   enableFrontierTouchTargets(svg);
   return svg;
-}
-
-// The score track alone, for a benchmark whose every mention is undated. Delegates
-// to the same renderer with no adoption events rather than duplicating the score
-// geometry: two implementations of one axis would be free to disagree about the
-// join rule, which is the one thing this chart must not do.
-function scoreOnlyChart(entry, board) {
-  return adoptionFrontierChart(
-    entry,
-    // `organization_count` is only read for the adoption axis, which is suppressed
-    // here. Keep the real card roster so score tooltips can resolve their source
-    // labels and links even when no dated adoption event can be drawn.
-    board,
-    [],
-    { sparse: true },
-  );
 }
 
 function clearAdoptionFrontier(message) {
@@ -5166,10 +4835,12 @@ function clearAdoptionFrontier(message) {
   // restored here rather than at each call site: an external selection that
   // hid it must not leave the next canonical render missing its chart blocks.
   setCanonicalFrontierChrome(true);
-  byId("frontier-eyebrow").textContent = t("Reporting over time");
-  byId("frontier-stage").textContent = "";
-  replaceChildren(byId("frontier-summary"), []);
-  replaceChildren(byId("frontier-milestones"), []);
+  byId("frontier-eyebrow").textContent = t("The saturation curve");
+  const stage = byId("frontier-stage");
+  stage.textContent = "";
+  // The badge only carries the source name on the external path; an empty one
+  // would render as a bare outline beside the picker.
+  stage.hidden = true;
   replaceChildren(byId("frontier-task-preview"), []);
   replaceChildren(byId("frontier-score-readout"), []);
   replaceChildren(byId("frontier-legend"), []);
@@ -5184,9 +4855,15 @@ function clearAdoptionFrontier(message) {
 
 function renderAdoptionFrontier(board) {
   const adopted = (board.entries || []).filter((entry) => entry.card_count > 0);
+  // The panel is the saturation curve now, so a benchmark enters the picker
+  // only when a score could be read verbatim from a cited document. 20 of the
+  // 79 adopted benchmarks carry card mentions without a single readable score;
+  // with the adoption staircase retired they would render an empty panel, so
+  // they are absent here and a permalink to one falls back to the default.
+  const scored = adopted.filter((entry) => scoreRecord(entry.benchmark_id));
   const defaultEntry = frontierDefaultEntry(board);
-  if (!adopted.length || !defaultEntry) {
-    clearAdoptionFrontier(t("No dated model-card mentions yet."));
+  if (!scored.length || !defaultEntry) {
+    clearAdoptionFrontier(t("No benchmark in this registry has a readable score yet."));
     return;
   }
   // Resolution order is the permalink contract (display plan step 6): an exact
@@ -5198,17 +4875,43 @@ function renderAdoptionFrontier(board) {
     : null;
   if (slugRecord) {
     renderBenchmarkNavigator(board);
-    renderExternalBenchmark(board, adopted, slugRecord);
+    renderExternalBenchmark(board, scored, slugRecord);
     return;
   }
-  let entry = adopted.find((candidate) => candidate.benchmark_id === state.lfrontier);
+  // A canonical id that the registry knows but the score layer does not. Before
+  // the panel became the score track this resolved and drew an adoption
+  // staircase, so links to these 20 benchmarks are already out there. Falling
+  // through to the default would show a different benchmark under the reader's
+  // own URL with nothing to say so, which is worse than an explicit refusal.
+  // The index is not consulted: a canonical id and an external slug are separate
+  // namespaces (every slug is source-prefixed), so no pending fetch can change
+  // this answer.
+  const unscoredEntry = state.lfrontier
+    ? adopted.find(
+        (candidate) =>
+          candidate.benchmark_id === state.lfrontier && !scoreRecord(candidate.benchmark_id),
+      )
+    : null;
+  if (unscoredEntry) {
+    renderBenchmarkNavigator(board);
+    renderExternalShell(board, scored, {
+      eyebrow: t("The saturation curve"),
+      heading: unscoredEntry.name,
+      badge: "",
+      message: t(
+        "No score for this benchmark could be read verbatim from the cited documents, so there is no track to draw. An absent value is not a zero and not a plateau.",
+      ),
+    });
+    return;
+  }
+  let entry = scored.find((candidate) => candidate.benchmark_id === state.lfrontier);
   if (!entry && state.lfrontier && !state.benchmarkIndexLoaded) {
     // A permalink whose index is still on the wire. Hold the selection and say
     // so: snapping to the default now would rewrite the reader's URL before
     // the slug could even be checked, and initBenchmarkSearch re-renders this
     // panel when the fetch settles.
     renderBenchmarkNavigator(board);
-    renderExternalShell(board, adopted, {
+    renderExternalShell(board, scored, {
       eyebrow: t("External catalog record"),
       heading: state.lfrontier,
       badge: "",
@@ -5220,7 +4923,7 @@ function renderAdoptionFrontier(board) {
     // The index fetch failed, so a slug can never resolve. The panel says so
     // outright; the selection and the URL stay as the reader wrote them.
     renderBenchmarkNavigator(board);
-    renderExternalShell(board, adopted, {
+    renderExternalShell(board, scored, {
       eyebrow: t("External catalog record"),
       heading: state.lfrontier,
       badge: "",
@@ -5234,80 +4937,23 @@ function renderAdoptionFrontier(board) {
     entry = defaultEntry;
   }
   setCanonicalFrontierChrome(true);
-  byId("frontier-eyebrow").textContent = t("Reporting over time");
-  replaceChildren(byId("frontier-benchmark"), [
-    ...[...adopted]
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((candidate) =>
-        option(candidate.benchmark_id, candidate.name, candidate.benchmark_id === state.lfrontier),
-      ),
-  ]);
+  byId("frontier-eyebrow").textContent = t("The saturation curve");
+  // The stage badge is an adoption reading ("Saturated reporting" is a judgement
+  // about who reports, not about scores), so the canonical path leaves it empty
+  // and hidden. The external path reuses the element for the source name.
+  const stageBadge = byId("frontier-stage");
+  stageBadge.textContent = "";
+  stageBadge.hidden = true;
+  renderFrontierPicker(scored, state.lfrontier);
   renderBenchmarkNavigator(board);
 
-  byId("frontier-heading").textContent = `${entry.name} ${t("adoption trajectory")}`;
-  const events = frontierEvents(entry);
-  if (!events.length) {
-    // No dated mention means no adoption timeline can be drawn. The score
-    // reading is independent of that, though: the registry permits a card
-    // without a `published` date, and clearing the panel outright would hide
-    // every readable score because the *other* layer had no usable date. So the
-    // score track still draws, on its own, with the points and comparable series
-    // intact rather than reduced to the aggregate readout.
-    clearAdoptionFrontier(t("This benchmark has no dated mentions."));
-    const record = scoreRecord(entry.benchmark_id);
-    renderFrontierLegend(entry, record, { sparse: true });
-    if (record) {
-      replaceChildren(byId("frontier-chart"), [scoreOnlyChart(entry, board), frontierTooltip()]);
-    }
-    renderScoreReadout(entry);
-    return;
-  }
-
-  const frontier = events.filter((event) => event.advances);
-  const lastAdvance = frontier.at(-1);
-  const stage = reportingStage(entry, board);
-  const stageElement = byId("frontier-stage");
-  stageElement.className = `frontier-stage frontier-stage-${stage.id}`;
-  stageElement.textContent = `${t("Reporting stage")} · ${stage.label}`;
-  replaceChildren(byId("frontier-summary"), [
-    element("strong", { text: entry.name }),
-    // "23 cards · 10 of 10 dated organizations" read as one ratio about a single
-    // quantity. They are two different counts, so they are now named separately.
-    //
-    // The organization count is qualified as "dated" when some card carries no
-    // publication date: `card_count` includes those cards but `frontier` cannot,
-    // so an unqualified "distinct organizations" beside the card total would imply
-    // the two were counted over the same set of documents.
-    element("span", {
-      text:
-        `${metricLabel(entry.card_count, "model card")} · ` +
-        `${metricLabel(frontier.length, "distinct organization")}` +
-        ((entry.adopters || []).some((adopter) => !adopter.published) ? ` ${t("with a dated card")}` : ""),
-    }),
-    element("span", {
-      text: `${t("last new organization")} ${formatDate(lastAdvance.published, { dateStyle: "medium" })}`,
-    }),
-    element("span", { className: "frontier-stage-description", text: stage.description }),
-  ]);
-  // A single-advance adoption step line says nothing visually, which is why the
-  // sparse stepper replaces it. The score track is a separate reading though, so
-  // when one exists it is still drawn: dropping it would hide real data because a
-  // *different* layer was thin.
-  const sparse = frontier.length < 2;
-  const scored = Boolean(scoreRecord(entry.benchmark_id));
-  renderFrontierLegend(entry, scoreRecord(entry.benchmark_id), { sparse });
-  renderFrontierOrgKey(entry, events);
+  byId("frontier-heading").textContent = `${entry.name} ${t("reported scores over time")}`;
+  const record = scoreRecord(entry.benchmark_id);
+  renderFrontierLegend(entry, record);
+  renderFrontierOrgKey(record);
   clearFrontierPointSelection();
-  replaceChildren(byId("frontier-chart"), [
-    sparse ? sparseFrontier(entry, events) : null,
-    sparse && !scored ? null : adoptionFrontierChart(entry, board, events, { sparse }),
-    sparse && !scored ? null : frontierTooltip(),
-  ]);
-  // Rendered for every benchmark, including those whose adoption is too sparse
-  // to plot: the score reading is a separate question from the adoption reading,
-  // and a benchmark with one adopter can still have a readable score.
+  replaceChildren(byId("frontier-chart"), [scoreTrackChart(entry, board), frontierTooltip()]);
   renderScoreReadout(entry);
-  renderFrontierMilestones(entry, events);
   renderFrontierTaskPreview(entry);
 }
 
@@ -5347,8 +4993,13 @@ function findingCard(finding, board) {
   ];
 
   // Corpus-scope findings carry no benchmark_id, so there is nothing to focus.
+  // A benchmark with no readable score is no longer focusable either: the panel
+  // is the score track now, so the jump would land on the default entry instead
+  // of the benchmark the finding is about.
   const target = finding.benchmark_id
-    ? (board.entries || []).find((entry) => entry.benchmark_id === finding.benchmark_id)
+    ? (board.entries || []).find(
+        (entry) => entry.benchmark_id === finding.benchmark_id && scoreRecord(entry.benchmark_id),
+      )
     : null;
   if (target) {
     const jump = element("button", {
@@ -5487,12 +5138,17 @@ function leaderboardRow(entry) {
     );
   }
 
-  const frontierButton = element("button", {
-    className: "secondary-link frontier-jump",
-    text: t("View adoption frontier ↑"),
-    attrs: { type: "button" },
-  });
-  frontierButton.addEventListener("click", () => {
+  // The jump targets the saturation curve, so it is only offered when a score
+  // could be read: for the 20 adopted benchmarks without one it would snap to
+  // the default entry and lie about what it opened.
+  const frontierButton = scoreRecord(entry.benchmark_id)
+    ? element("button", {
+        className: "secondary-link frontier-jump",
+        text: t("View score track ↑"),
+        attrs: { type: "button" },
+      })
+    : null;
+  frontierButton?.addEventListener("click", () => {
     selectFrontier(entry.benchmark_id);
     renderAdoptionFrontier(board);
     writeUrl();

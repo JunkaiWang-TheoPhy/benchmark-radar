@@ -399,10 +399,11 @@ def test_dashboard_links_are_validated_escaped_and_non_swallowing():
     assert "function safeHttpUrl(" in script
     # Both interactive charts are role="group" (image descendants are
     # presentational in ARIA, which would hide their focusable marker buttons).
-    # role="img" is allowed only on the two decorative non-interactive widgets
-    # (the adoption bar and the sparse-frontier step diagram).
+    # role="img" is allowed only on the decorative non-interactive widget that
+    # is left: the adoption bar. The sparse-frontier step diagram that was the
+    # other one went with the adoption reading.
     assert 'role: "group"' in script
-    assert script.count('role: "img"') == 2
+    assert script.count('role: "img"') == 1
     assert "/^[=+\\-@]/" in script
     assert 'document.querySelector("dialog[open]")' in script
     assert "Do not swallow Escape" in script
@@ -754,7 +755,7 @@ def test_a_zero_adoption_bar_has_no_visible_width():
     assert "maxCount && entry.card_count" in script
 
 
-def test_leaderboard_has_an_honest_time_based_adoption_frontier():
+def test_leaderboard_has_an_honest_time_based_score_track():
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
     # Whitespace-normalized: these are prose guarantees, and HTML collapses the
@@ -764,10 +765,17 @@ def test_leaderboard_has_an_honest_time_based_adoption_frontier():
     assert 'id="adoption-frontier"' in html
     assert 'id="frontier-benchmark"' in html
     assert 'id="frontier-chart"' in html
+    # `frontierEvents` outlives the staircase it was written for: the leaderboard
+    # still counts first reports, and the score chart still reads the newest
+    # mention date to bound its reading gap.
     assert "function frontierEvents(entry)" in script
     assert "const advances = !seenOrganizations.has(adopter.organization)" in script
-    assert "A long flat run is reporting saturation" in prose
-    assert "not a claim about benchmark score saturation" in prose
+    # The disclaimer this replaces separated reporting saturation from score
+    # saturation, which mattered while a staircase led the panel. The panel now
+    # shows only scores, so the guarantee is that it still declines to grade
+    # them: saturation stays an editorial judgement, never a printed number.
+    assert "no newer number could be read" in prose
+    assert "stays a reading you make, not a score this panel prints" in prose
 
 
 def test_new_benchmarks_are_visually_prioritized_without_changing_the_rank():
