@@ -967,7 +967,7 @@ model_cards:
       - ifeval
 
   - id: google_gemini_2_5_report
-    organization: Google DeepMind
+    organization: Google
     model: Gemini 2.5 Pro
     document_type: technical_report
     published: 2025-06-17
@@ -990,7 +990,7 @@ model_cards:
       - aider_polyglot
 
   - id: google_gemini_1_5_report
-    organization: Google DeepMind
+    organization: Google
     model: Gemini 1.5
     document_type: technical_report
     published: 2024-03-08
@@ -1295,7 +1295,7 @@ model_cards:
       - hle
 
   - id: google_gemini_3_1_pro_model_card
-    organization: Google DeepMind
+    organization: Google
     model: Gemini 3.1 Pro
     document_type: model_card
     published: 2026-02-19
@@ -1319,7 +1319,7 @@ model_cards:
       - mrcr
 
   - id: google_gemma_4_model_card
-    organization: Google DeepMind
+    organization: Google
     model: Gemma 4 (31B)
     document_type: model_card
     published: 2026-03-11

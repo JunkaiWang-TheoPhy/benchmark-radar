@@ -341,7 +341,7 @@ results:
     instrument: mmlu
     protocol: 5-shot
     model: Gemini 1.5 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_1_5_report
     reported_at: 2024-03-08
     value: 85.9
@@ -351,7 +351,7 @@ results:
     instrument: gsm8k
     protocol: 11-shot
     model: Gemini 1.5 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_1_5_report
     reported_at: 2024-03-08
     value: 90.8
@@ -365,7 +365,7 @@ results:
     instrument: humaneval
     protocol: 0-shot, chat preamble
     model: Gemini 1.5 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_1_5_report
     reported_at: 2024-03-08
     value: 84.1
@@ -376,7 +376,7 @@ results:
     instrument: drop
     protocol: variable shots, F1
     model: Gemini 1.5 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_1_5_report
     reported_at: 2024-03-08
     value: 74.9
@@ -814,7 +814,7 @@ results:
     instrument: gpqa_diamond
     protocol: single attempt, pass@1
     model: Gemini 2.5 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_2_5_report
     reported_at: 2025-06-17
     value: 86.4
@@ -827,7 +827,7 @@ results:
     instrument: swe_bench_verified
     protocol: single attempt
     model: Gemini 2.5 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_2_5_report
     reported_at: 2025-06-17
     value: 59.6
@@ -837,7 +837,7 @@ results:
     instrument: swe_bench_verified
     protocol: multiple attempts
     model: Gemini 2.5 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_2_5_report
     reported_at: 2025-06-17
     value: 67.2
@@ -847,7 +847,7 @@ results:
     instrument: hle
     protocol: no tools
     model: Gemini 2.5 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_2_5_report
     reported_at: 2025-06-17
     value: 21.6
@@ -857,7 +857,7 @@ results:
     instrument: livecodebench
     protocol: 1/1/2025-5/1/2025 window
     model: Gemini 2.5 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_2_5_report
     reported_at: 2025-06-17
     value: 74.2
@@ -867,7 +867,7 @@ results:
     instrument: simpleqa
     protocol: as reported
     model: Gemini 2.5 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_2_5_report
     reported_at: 2025-06-17
     value: 54.0
@@ -877,7 +877,7 @@ results:
     instrument: aider_polyglot
     protocol: pass rate, average of 3 trials
     model: Gemini 2.5 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_2_5_report
     reported_at: 2025-06-17
     value: 82.2
@@ -887,7 +887,7 @@ results:
     instrument: mmmu
     protocol: single attempt
     model: Gemini 2.5 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_2_5_report
     reported_at: 2025-06-17
     value: 82.0
@@ -901,7 +901,7 @@ results:
     protocol: single attempt, pass@1
     model: o3 high
     organization: OpenAI
-    reported_by: Google DeepMind
+    reported_by: Google
     source_id: google_gemini_2_5_report
     reported_at: 2025-06-17
     value: 83.3
@@ -912,7 +912,7 @@ results:
     protocol: single attempt, pass@1
     model: Claude 4 Opus
     organization: Anthropic
-    reported_by: Google DeepMind
+    reported_by: Google
     source_id: google_gemini_2_5_report
     reported_at: 2025-06-17
     value: 79.6
@@ -923,7 +923,7 @@ results:
     protocol: single attempt, pass@1
     model: Claude 4 Sonnet
     organization: Anthropic
-    reported_by: Google DeepMind
+    reported_by: Google
     source_id: google_gemini_2_5_report
     reported_at: 2025-06-17
     value: 75.4
@@ -934,7 +934,7 @@ results:
     protocol: single attempt, pass@1
     model: Grok 3 Beta Extended Thinking
     organization: xAI
-    reported_by: Google DeepMind
+    reported_by: Google
     source_id: google_gemini_2_5_report
     reported_at: 2025-06-17
     value: 80.2
@@ -948,7 +948,7 @@ results:
     protocol: no tools, Scale leaderboard
     model: o3 high
     organization: OpenAI
-    reported_by: Google DeepMind
+    reported_by: Google
     source_id: google_gemini_2_5_report
     reported_at: 2025-06-17
     value: 20.3
@@ -959,7 +959,7 @@ results:
     protocol: no tools, Scale leaderboard
     model: Claude 4 Opus
     organization: Anthropic
-    reported_by: Google DeepMind
+    reported_by: Google
     source_id: google_gemini_2_5_report
     reported_at: 2025-06-17
     value: 10.7
@@ -970,7 +970,7 @@ results:
     protocol: no tools, Scale leaderboard
     model: Claude 4 Sonnet
     organization: Anthropic
-    reported_by: Google DeepMind
+    reported_by: Google
     source_id: google_gemini_2_5_report
     reported_at: 2025-06-17
     value: 7.8
@@ -2822,7 +2822,7 @@ results:
     instrument: hle
     protocol: Thinking (High), No tools
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 44.4
@@ -2832,7 +2832,7 @@ results:
     instrument: hle
     protocol: Thinking (High), Search (blocklist) + Code
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 51.4
@@ -2842,7 +2842,7 @@ results:
     instrument: arc_agi_2
     protocol: Thinking (High), ARC Prize Verified
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 77.1
@@ -2852,7 +2852,7 @@ results:
     instrument: gpqa_diamond
     protocol: Thinking (High), No tools
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 94.3
@@ -2862,7 +2862,7 @@ results:
     instrument: terminal_bench_2.0
     protocol: Thinking (High), Terminus-2 harness
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 68.5
@@ -2872,7 +2872,7 @@ results:
     instrument: swe_bench_verified
     protocol: Thinking (High), Single attempt
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 80.6
@@ -2882,7 +2882,7 @@ results:
     instrument: swe_bench_pro
     protocol: Thinking (High), Single attempt
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 54.2
@@ -2892,7 +2892,7 @@ results:
     instrument: livecodebench_pro
     protocol: Thinking (High), Elo
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 2887
@@ -2902,7 +2902,7 @@ results:
     instrument: scicode
     protocol: Thinking (High)
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 59
@@ -2912,7 +2912,7 @@ results:
     instrument: apex_agents
     protocol: Thinking (High)
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 33.5
@@ -2922,7 +2922,7 @@ results:
     instrument: tau2_bench
     protocol: Thinking (High), Retail
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 90.8
@@ -2932,7 +2932,7 @@ results:
     instrument: tau2_bench
     protocol: Thinking (High), Telecom
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 99.3
@@ -2942,7 +2942,7 @@ results:
     instrument: mcp_atlas
     protocol: Thinking (High)
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 69.2
@@ -2952,7 +2952,7 @@ results:
     instrument: browsecomp
     protocol: Thinking (High), Search + Python + Browse
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 85.9
@@ -2962,7 +2962,7 @@ results:
     instrument: mmmu_pro
     protocol: Thinking (High), No tools
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 80.5
@@ -2972,7 +2972,7 @@ results:
     instrument: mmmlu
     protocol: Thinking (High)
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 92.6
@@ -2982,7 +2982,7 @@ results:
     instrument: mrcr_v2
     protocol: Thinking (High), 128k (average)
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 84.9
@@ -2992,7 +2992,7 @@ results:
     instrument: mrcr_v2
     protocol: Thinking (High), 1M (pointwise)
     model: Gemini 3.1 Pro
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemini_3_1_pro_model_card
     reported_at: 2026-02-19
     value: 26.3
@@ -3006,7 +3006,7 @@ results:
     instrument: mmlu_pro
     protocol: as reported
     model: Gemma 4 (31B)
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemma_4_model_card
     reported_at: 2026-03-11
     value: 85.2
@@ -3016,7 +3016,7 @@ results:
     instrument: aime_2026
     protocol: no tools
     model: Gemma 4 (31B)
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemma_4_model_card
     reported_at: 2026-03-11
     value: 89.2
@@ -3026,7 +3026,7 @@ results:
     instrument: livecodebench_v6
     protocol: as reported
     model: Gemma 4 (31B)
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemma_4_model_card
     reported_at: 2026-03-11
     value: 80.0
@@ -3036,7 +3036,7 @@ results:
     instrument: codeforces
     protocol: Elo
     model: Gemma 4 (31B)
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemma_4_model_card
     reported_at: 2026-03-11
     value: 2150
@@ -3046,7 +3046,7 @@ results:
     instrument: gpqa_diamond
     protocol: as reported
     model: Gemma 4 (31B)
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemma_4_model_card
     reported_at: 2026-03-11
     value: 84.3
@@ -3056,7 +3056,7 @@ results:
     instrument: tau2_bench
     protocol: average over 3
     model: Gemma 4 (31B)
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemma_4_model_card
     reported_at: 2026-03-11
     value: 76.9
@@ -3066,7 +3066,7 @@ results:
     instrument: hle
     protocol: no tools
     model: Gemma 4 (31B)
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemma_4_model_card
     reported_at: 2026-03-11
     value: 19.5
@@ -3076,7 +3076,7 @@ results:
     instrument: hle
     protocol: with search
     model: Gemma 4 (31B)
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemma_4_model_card
     reported_at: 2026-03-11
     value: 26.5
@@ -3086,7 +3086,7 @@ results:
     instrument: bigbench_extra_hard
     protocol: as reported
     model: Gemma 4 (31B)
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemma_4_model_card
     reported_at: 2026-03-11
     value: 74.4
@@ -3096,7 +3096,7 @@ results:
     instrument: mmmlu
     protocol: as reported
     model: Gemma 4 (31B)
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemma_4_model_card
     reported_at: 2026-03-11
     value: 88.4
@@ -3106,7 +3106,7 @@ results:
     instrument: mmmu_pro
     protocol: as reported
     model: Gemma 4 (31B)
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemma_4_model_card
     reported_at: 2026-03-11
     value: 76.9
@@ -3116,7 +3116,7 @@ results:
     instrument: mathvision
     protocol: as reported
     model: Gemma 4 (31B)
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemma_4_model_card
     reported_at: 2026-03-11
     value: 85.6
@@ -3126,7 +3126,7 @@ results:
     instrument: mrcr_v2
     protocol: 8-needle, 128k (average)
     model: Gemma 4 (31B)
-    organization: Google DeepMind
+    organization: Google
     source_id: google_gemma_4_model_card
     reported_at: 2026-03-11
     value: 66.4

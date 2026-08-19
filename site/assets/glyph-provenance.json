@@ -1,0 +1,57 @@
+{
+  "note": "Digests of the upstream brand paths committed in glyphs.js. Rebuild with scripts/build_glyph_provenance.py; never edit by hand.",
+  "marks": {
+    "MODEL_FAMILY_ICONS[Claude]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/claude.svg",
+      "sha256": "7c9c195500ec3caed3a183d8f8758a2252955ee76af691b3fc5c20b3cd8caa58"
+    },
+    "MODEL_FAMILY_ICONS[Gemini]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/gemini.svg",
+      "sha256": "3cdeb9521c4294cbcba96aa138286847561b2d87231b4d4f3fb836795ecdeed9"
+    },
+    "MODEL_FAMILY_ICONS[Grok]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/grok.svg",
+      "sha256": "b1c7535771ab4ca56c3678ac60cdbaccbcf7f7e53c6343717332e20bbb0c546b"
+    },
+    "ORGANIZATION_ICONS[Anthropic]": {
+      "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/anthropic.svg",
+      "sha256": "b60ac0305fabf78a3ea4982844bb5306360d284962bee2c6594de87d9062d468"
+    },
+    "ORGANIZATION_ICONS[DeepSeek]": {
+      "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/deepseek.svg",
+      "sha256": "daab1943fd8420ab62e84f14cef45a5b25ade97723aa54ff80f87868e4086561"
+    },
+    "ORGANIZATION_ICONS[Google]": {
+      "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/google.svg",
+      "sha256": "1418294b312c065352dded0671ca6e0571d43a78964f3321faa5f11c7450d9c2"
+    },
+    "ORGANIZATION_ICONS[Meta]": {
+      "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/meta.svg",
+      "sha256": "f41c434083b43ab12fcdeab3877fa0669e06539f627a20247ead6a0f4a0cd670"
+    },
+    "ORGANIZATION_ICONS[Mistral]": {
+      "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/mistralai.svg",
+      "sha256": "7bee95ec49553dba33f172acec6876c443a37ef65432cf4957aa68022f965b14"
+    },
+    "ORGANIZATION_ICONS[Moonshot AI]": {
+      "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/moonshotai.svg",
+      "sha256": "1aa6b19e4ecd9828879b4c01e44bbd8d8a7be978072fc501200d13cb36917012"
+    },
+    "ORGANIZATION_ICONS[OpenAI]": {
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/openai.svg",
+      "sha256": "417519aa39cd4e2360a6c20e5ba802c1e3ee6a38eb8220b02ae8523e1897b21f"
+    },
+    "ORGANIZATION_ICONS[Qwen]": {
+      "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/qwen.svg",
+      "sha256": "03ceec197e87856774e5ccbf117d3fa2d761a5b111e378e9718759806ad5d63e"
+    },
+    "ORGANIZATION_ICONS[Z.ai]": {
+      "url": "placeholder:hand-drawn-in-repo",
+      "sha256": "25d3fb34f7223863ee29db2e45d4d2f663a467d945e19f6a867007705f0472b4"
+    },
+    "ORGANIZATION_ICONS[xAI]": {
+      "url": "placeholder:hand-drawn-in-repo",
+      "sha256": "f372eb010d9c2f6e420d38098cc4d6e76534704828bb74516b598264423c68b3"
+    }
+  }
+}

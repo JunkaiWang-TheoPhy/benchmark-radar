@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <meta
+      name="description"
+      content="Every brand mark the Benchmark Radar charts draw, at chart size and enlarged, next to the organization it resolves to."
+    >
+    <title>Logo audit · Benchmark Radar</title>
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="stylesheet" href="assets/logos.css">
+    <script src="assets/logos.js" type="module"></script>
+  </head>
+  <body class="logos-page">
+    <main>
+      <header class="logos-header">
+        <p class="logos-eyebrow">Maintainer QA</p>
+        <h1>Logo audit</h1>
+        <p class="logos-lede">
+          Every brand mark the charts draw, rendered through the same
+          <code>glyphs.js</code> the charts import. If a mark is wrong here it is
+          wrong on the chart, and if it is right here it is right there.
+        </p>
+        <p class="logos-lede">
+          Each card carries a permanent ID. To report a mismatch, cite the ID and
+          the organization it should be, like
+          <code>O-07 &rarr; Anthropic</code>. IDs are frozen in
+          <code>data/logo-registry.json</code> and never reused, so a note written
+          today still points at the same card after a rebuild.
+        </p>
+        <div class="logos-status" id="logos-status" role="status"></div>
+        <div class="logos-filters">
+          <button type="button" data-filter="all" class="is-active">All</button>
+          <button type="button" data-filter="fallback">No brand mark</button>
+          <button type="button" data-filter="suspect">Suspect geometry</button>
+        </div>
+      </header>
+
+      <section class="logos-section">
+        <h2>Organization marks</h2>
+        <p class="logos-note">
+          Keyed by canonical organization name. A card marked
+          <span class="chip chip-fallback">no mark</span> draws the generic spark
+          because no licensed brand mark was found for it, not because the lookup
+          failed.
+        </p>
+        <div class="logos-grid" id="logos-organizations"></div>
+      </section>
+
+      <section class="logos-section">
+        <h2>Model-family resolution</h2>
+        <p class="logos-note">
+          Real model names from the curated registry, run through
+          <code>modelIcon()</code>. This is where a family mark (Claude, Gemini,
+          Grok) overrides the organization mark, and where it does not.
+        </p>
+        <div class="logos-grid" id="logos-models"></div>
+      </section>
+    </main>
+  </body>
+</html>

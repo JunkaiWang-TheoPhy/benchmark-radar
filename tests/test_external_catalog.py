@@ -575,3 +575,43 @@ def test_shards_are_byte_identical_across_runs(shard_inputs: dict, tmp_path: Pat
     _build_all_shards(shard_inputs, tmp_path / "b")
     for path in (tmp_path / "a").glob("*.json"):
         assert path.read_bytes() == (tmp_path / "b" / path.name).read_bytes()
+
+
+def test_vendor_organization_aliases_are_merged_to_one_canonical_name():
+    """Issue #261: one organization, one name, across both layers.
+
+    The aggregator spells organizations its own way, and an unmapped spelling
+    is a second organization to every count, color and brand glyph on the
+    site. `Alibaba Cloud / Qwen Team` and `Qwen` were the two largest crawled
+    publishers between them, and neither drew a mark.
+    """
+    from benchmark_radar.external_catalog import (
+        CANONICAL_ORGANIZATIONS,
+        canonical_organization,
+    )
+
+    assert canonical_organization("Alibaba Cloud / Qwen Team") == "Qwen"
+    assert canonical_organization("Mistral AI") == "Mistral"
+    assert canonical_organization("Zhipu AI") == "Z.ai"
+    # Google is canonical over the curated layer's former "Google DeepMind",
+    # and the vendor already says Google, so it needs no alias at all.
+    assert canonical_organization("Google") == "Google"
+    assert "Google" not in CANONICAL_ORGANIZATIONS
+
+    # An unmapped name is a distinct organization, not an error: 29 of the 33
+    # crawled publishers are exactly that, and a merge asserts same publisher.
+    assert canonical_organization("ByteDance") == "ByteDance"
+    assert canonical_organization("Microsoft") == "Microsoft"
+    assert canonical_organization(None) is None
+    assert canonical_organization("   ") is None
+    # Whitespace is not identity.
+    assert canonical_organization("  Mistral AI  ") == "Mistral"
+
+
+def test_no_curated_layer_still_attributes_a_model_to_google_deepmind():
+    """The rename runs curated-side, so the YAML is the thing to assert on."""
+    from pathlib import Path
+
+    for name in ("data/benchmark_scores.yml", "data/model_cards.yml"):
+        text = Path(name).read_text(encoding="utf-8")
+        assert "Google DeepMind" not in text, name

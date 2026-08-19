@@ -92,7 +92,11 @@ def test_trajectory_points_expose_and_pin_record_details():
     assert 'view !== "leaderboard" && selectedFrontierPoint' in script
     assert 'pinned ? "dialog" : "tooltip"' in script
     assert 'text: t("Open source record ↗")' in script
-    assert 'byId("frontier-tooltip").querySelector("a")?.focus()' in script
+    # Resolved from the point's own chart, not by a document-wide id: the
+    # crawled panel mounts a second tooltip and getElementById returned that
+    # one, which is what killed hover and click on the curated chart (#261).
+    assert 'frontierTooltipFor(group)?.querySelector("a")?.focus()' in script
+    assert 'byId("frontier-tooltip")' not in script
     assert "tooltip?.contains(document.activeElement)" in script
     assert "if (focused) show()" in script
     assert "else if (hovered)" in script
@@ -495,3 +499,39 @@ def test_shard_fetch_failure_keeps_the_selection_and_the_row():
     handler = script.split("loadBenchmarkShard(record.slug).then((shard) =>", 1)[1]
     assert "state.lfrontier !== record.slug" in handler
     assert "Could not load details for this benchmark." in handler
+
+
+def test_each_chart_owns_its_tooltip_rather_than_sharing_one_id():
+    """Issue #261: hover and click looked dead on the curated chart.
+
+    Both charts mounted a tooltip with the same hardcoded id, and
+    #frontier-external sits above #frontier-chart in index.html. Every
+    getElementById therefore resolved to the crawled panel's node, so the
+    curated chart's card was written into a hidden element -- the handlers
+    fired correctly and painted somewhere invisible.
+    """
+    script = source("site/assets/app.js")
+    html = source("site/index.html")
+
+    # The container order that made a shared id unresolvable is still the
+    # order the page ships; the fix must not depend on changing it.
+    assert html.index('id="frontier-external"') < html.index('id="frontier-chart"')
+
+    # No document-wide lookup survives anywhere in the tooltip machinery.
+    assert 'byId("frontier-tooltip")' not in script
+    assert 'id: `frontier-tooltip-${++frontierTooltipSeq}`' in script
+    assert 'node?.closest(".frontier-chart")?.querySelector(".frontier-tooltip")' in script
+
+
+def test_leaving_a_crawled_record_empties_its_panel_rather_than_hiding_it():
+    """The other half of #261: hidden is not gone.
+
+    A crawled record's DOM carries its own tooltip and its own focusable
+    points. `hidden` only stops painting, so left in place they stayed in the
+    tab order and in every document-wide query for the rest of the session.
+    """
+    script = source("site/assets/app.js")
+    chrome = script.split("function setCanonicalFrontierChrome", 1)[1].split("\n}", 1)[0]
+
+    assert "external.hidden = visible;" in chrome
+    assert "if (visible) replaceChildren(external, []);" in chrome

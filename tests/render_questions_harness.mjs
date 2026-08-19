@@ -11,7 +11,19 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const source = readFileSync(join(here, "..", "site", "assets", "app.js"), "utf8");
+// app.js imports its brand-mark resolvers from glyphs.js (issue #261), and
+// `new Function` below cannot take an import statement. Inlining the module
+// and dropping the import keeps the harness evaluating the real source rather
+// than a copy: the same text runs here and in the browser, minus the two lines
+// that only differ in how the file is loaded.
+const glyphs = readFileSync(join(here, "..", "site", "assets", "glyphs.js"), "utf8")
+  .replace(/^export \{[\s\S]*?\};$/m, "");
+const source =
+  glyphs +
+  readFileSync(join(here, "..", "site", "assets", "app.js"), "utf8").replace(
+    /^import \{[\s\S]*?\} from "\.\/glyphs\.js";$/m,
+    "",
+  );
 
 class StubNode {
   constructor(tag) {
