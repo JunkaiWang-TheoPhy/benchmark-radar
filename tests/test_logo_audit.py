@@ -188,3 +188,40 @@ def test_review_ids_are_frozen_so_feedback_survives_a_rebuild():
 
     assert "Google" in organizations
     assert "Google DeepMind" not in organizations
+
+
+def test_every_model_that_draws_a_point_has_a_card_whichever_layer_it_came_from():
+    """Issue #268: Gemini had a card and MiMo did not.
+
+    The registry read crawled shards for organization names and threw away the
+    model names in the same loop, so 75 crawled models across 23 organizations
+    had no card on the page that exists to get marks reviewed. Both layers
+    resolve their mark through the same `modelIcon` call, so both belong here.
+    """
+    registry = json.loads(Path("site/data/logo-registry.json").read_text(encoding="utf-8"))
+    models = registry["models"]
+    layers = registry["model_layers"]
+
+    assert set(models) == set(layers), "every model must declare its layer"
+    assert set(layers.values()) == {"curated", "crawled"}
+    # The case that was reported: Xiaomi ships MiMo through the crawled layer.
+    assert any(k.endswith("␟Xiaomi") for k in models), "Xiaomi has no model card"
+    # And the curated side is still there rather than displaced.
+    assert any("Gemini" in k for k in models), "Gemini has no model card"
+    assert sum(1 for v in layers.values() if v == "crawled") > 100
+
+
+def test_the_two_layers_stay_labelled_rather_than_merged():
+    """Same mark, different evidence.
+
+    A crawled row carries no protocol and no evaluation date. Showing it
+    beside a curated card without saying which is which would make them look
+    equivalent, which is the one thing this project's data model refuses to do.
+    """
+    logos = Path("site/assets/logos.js").read_text(encoding="utf-8")
+    html = Path("site/logos.html").read_text(encoding="utf-8")
+
+    assert "registry.model_layers" in logos
+    assert "chip-layer-${layer}" in logos
+    assert 'data-filter="crawled"' in html
+    assert 'data-filter="curated"' in html

@@ -23,15 +23,38 @@ SHARDS = Path("site/data/benchmarks")
 RADAR = Path("site/data/radar.json")
 
 
-def _crawled_organizations() -> set[str]:
+def _crawled() -> tuple[set[str], list[dict[str, str]]]:
+    """Organizations and models from the crawled layer.
+
+    A model that draws a point is a model whose mark needs reviewing,
+    whichever layer it came from. Reading organizations here while discarding
+    the model names in the same loop is what left 75 crawled models with no
+    card on the audit page: Gemini had one and MiMo did not, though both draw
+    a glyph through the same `modelIcon` call.
+
+    The two layers stay separate in storage -- a curated card is a document
+    with a URL and a publication date, a crawled row is an observation with a
+    value and no protocol, and forcing them into one record would mean
+    inventing the fields the crawled side does not have. They are the same
+    only in the way this page cares about: something that resolves to a mark.
+    """
     names: set[str] = set()
+    models: dict[tuple[str, str], int] = {}
     for shard in SHARDS.glob("*.json"):
         payloads = json.loads(shard.read_text()).get("scores_by_source") or {}
         for payload in payloads.values():
             for row in payload.get("rows") or []:
-                if row.get("organization"):
-                    names.add(row["organization"])
-    return names
+                organization = row.get("organization")
+                if not organization:
+                    continue
+                names.add(organization)
+                model = row.get("model_name")
+                if model:
+                    models[(model, organization)] = models.get((model, organization), 0) + 1
+    return names, [
+        {"model": model, "organization": organization}
+        for (model, organization) in sorted(models)
+    ]
 
 
 def _curated(radar: dict) -> tuple[set[str], list[dict[str, str]]]:
@@ -50,15 +73,19 @@ def _curated(radar: dict) -> tuple[set[str], list[dict[str, str]]]:
 def main() -> None:
     radar = json.loads(RADAR.read_text())
     curated_orgs, curated_models = _curated(radar)
-    organizations = sorted(curated_orgs | _crawled_organizations())
+    crawled_orgs, crawled_models = _crawled()
+    organizations = sorted(curated_orgs | crawled_orgs)
 
-    # Model families are sampled from curated cards: those carry the real
-    # published model names, which is what modelIcon() actually resolves. One
-    # entry per (model, organization) pair, sorted for a stable ID.
-    models = sorted(
-        {(m["model"], m["organization"]) for m in curated_models},
-        key=lambda pair: (pair[1], pair[0]),
-    )
+    # Every model that resolves to a mark, from both layers. One entry per
+    # (model, organization) pair, sorted for a stable ID. Where a name appears
+    # in both layers the curated one wins the label, since it is the record
+    # carrying a document behind it.
+    layers: dict[tuple[str, str], str] = {}
+    for entry in crawled_models:
+        layers[(entry["model"], entry["organization"])] = "crawled"
+    for entry in curated_models:
+        layers[(entry["model"], entry["organization"])] = "curated"
+    models = sorted(layers, key=lambda pair: (pair[1], pair[0]))
 
     previous = json.loads(REGISTRY.read_text()) if REGISTRY.exists() else {}
     org_ids: dict[str, str] = dict(previous.get("organizations") or {})
@@ -85,6 +112,16 @@ def main() -> None:
                 ),
                 "organizations": dict(sorted(org_ids.items(), key=lambda kv: kv[1])),
                 "models": dict(sorted(model_ids.items(), key=lambda kv: kv[1])),
+                # Which layer each model came from. The audit page prints it so
+                # a crawled row is never read as a curated one: it carries no
+                # protocol and no evaluation date, and the two must not look
+                # equivalent just because both draw a glyph.
+                "model_layers": {
+                    f"{model}\u241f{organization}": layer
+                    for (model, organization), layer in sorted(
+                        layers.items(), key=lambda kv: (kv[0][1], kv[0][0])
+                    )
+                },
             },
             indent=2,
             ensure_ascii=False,
