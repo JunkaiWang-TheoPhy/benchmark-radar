@@ -1447,3 +1447,54 @@ def test_connector_failure_marks_the_summary_without_force_opening_the_panel():
     # No code path opens the panel's body.
     assert 'health-panel-details").open' not in script
     assert 'health-panel-details" ].open' not in script
+
+
+def test_source_mix_names_the_sources_that_found_nothing():
+    """Issue #260: a source that found nothing must be printed as a gap.
+
+    The ledger used to list only sources that returned something, so a day on
+    which First-party feed found nothing looked exactly like a day on which
+    First-party feed did not exist (issue #254). The zeros carry the signal: a
+    source stuck at zero for days is usually broken rather than idle.
+    """
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    # Fetch health names a run by its internal key, the source mix by the label
+    # a reader sees. Without the bridge the zeros cannot be matched at all.
+    assert 'first_party_feeds: "First-party feed"' in script
+    assert 'github_releases: "GitHub Release"' in script
+    # Every fetcher in the pipeline needs a reader-facing name, or its zero day
+    # would print a bare internal key.
+    fetchers = Path("src/benchmark_radar/sources.py").read_text(encoding="utf-8")
+    registry = fetchers.split("SOURCE_FETCHERS = {", 1)[1].split("}", 1)[0]
+    for line in registry.splitlines():
+        key = line.strip().split(":", 1)[0].strip('", ')
+        if key:
+            assert f"{key}:" in script.split("SOURCE_DISPLAY_NAMES = {", 1)[1], key
+
+    # The mix cell is built from nodes now, so a zero can carry its own styling.
+    assert 'element("td", {}, sourceMixCell(day))' in script
+    assert 'className: "source-gap"' in script
+    assert ".source-gap {" in styles
+
+    # And the newest day's gaps are stated in words above the table, separating
+    # a source that ran and found nothing from one that could not be reached.
+    assert 'id="source-gap-note"' in html
+    assert "On {date} these sources ran but found nothing: {sources}." in script
+    assert "On {date} these sources could not be reached: {sources}." in script
+
+
+def test_every_new_source_gap_string_has_a_chinese_rendering():
+    """Issue #260 strings are user-facing, so the zh table must carry them."""
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    zh = script.split("  zh: {", 1)[1]
+    for phrase in (
+        "On {date} these sources ran but found nothing: {sources}.",
+        "On {date} these sources could not be reached: {sources}.",
+        "A source that stays at zero for several days is usually broken, not quiet.",
+        "This source ran and found nothing on this day.",
+        "This source could not be reached on this day.",
+    ):
+        assert f'"{phrase}":' in zh, phrase
