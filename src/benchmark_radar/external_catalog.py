@@ -22,12 +22,18 @@ is where confident wrong attributions come from.
 
 WHY SCORES CANNOT BE COMPARED HERE
 
-No llm-stats row records shots, harness, tool access, attempts, or an
-evaluation date. `benchmark_scores.yml` states the rule this layer inherits: an
-unstated condition is never treated as equal to another unstated condition. So
-every observation carries `comparable_group: None`, and null is not a group.
-Two nulls do not join, which makes "no trend lines, no cross-source ranking" a
-property of the data rather than a request to the renderer.
+No llm-stats row records shots, harness, tool access, or attempts, and none
+records *when the score was measured*. `announcement_date` is real and present
+on effectively every row (see `_observation`), but it dates the model's own
+release, not the evaluation run -- a score can be added to a leaderboard long
+after the model it names first shipped. `benchmark_scores.yml` states the rule
+this layer inherits: an unstated condition is never treated as equal to
+another unstated condition. So every observation still carries
+`comparable_group: None`, and null is not a group. Two nulls do not join,
+which makes "no trend lines, no cross-source ranking" a property of the data
+rather than a request to the renderer -- `date_precision` on each observation
+exists precisely so a date this loosely tied to the score is never silently
+promoted into "when this was measured."
 
 For the same reason `display_scale` is always `None`. The aggregator's declared
 `max_score` is not a ceiling: `vending-bench-2` declares 1.0 and carries a
@@ -185,7 +191,15 @@ def _observation(
         "comparable_group": None,
         "rank_in_source_response": int(rank) if rank.isdigit() else None,
         "crawled_at": crawled_at,
-        "reported_date": None,
+        # This is the MODEL's own announcement date, not a measurement date: the
+        # source records when a model shipped, never when this specific score
+        # was run. It still orders and dates the field honestly (100% fill,
+        # vs. release_date's 99.6%), which "no date at all" did not, so it is
+        # kept and labelled for what it is rather than discarded because it
+        # is not a full evaluation date. `date_precision` says which claim the
+        # value supports.
+        "reported_date": (row.get("announcement_date") or "").strip() or None,
+        "date_precision": "model_announcement",
         "source_url": (row.get("source_url") or "").strip() or None,
     }
 

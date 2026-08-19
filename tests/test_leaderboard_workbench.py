@@ -349,11 +349,14 @@ def test_every_crawled_score_is_a_plotted_point():
 
 
 def test_the_crawled_chart_axis_is_score_not_time():
-    # The reason this layer had no figure was that it has no dates, so the one
-    # thing the figure must never do is imply it has them. The x position comes
-    # from each row's own value (sorted ascending), the axis label says in words
-    # that it is not a time axis, and no date field is read anywhere in the
-    # drawing code.
+    # A crawled row's only date is announcement_date, the MODEL's own release
+    # date, not a measurement date -- normalize_llm_stats fills reported_date
+    # from it now (external_catalog.py:_observation), so the field is real,
+    # but it is still not a time this chart's x-axis is entitled to use: the
+    # x position comes from each row's own value (sorted ascending), and the
+    # axis label says in words that the date recorded is model release, not
+    # measurement time, so this is still not a time axis despite the date
+    # existing.
     script = source("site/assets/app.js")
 
     chart = script.split("function externalScoreChart(source, payload)", 1)[1].split(
@@ -361,9 +364,11 @@ def test_the_crawled_chart_axis_is_score_not_time():
     )[0]
 
     assert "a.value - b.value" in chart
-    assert "no evaluation date is recorded, so this is not a time axis" in chart
-    assert "reported_date" not in chart
-    assert "formatDate" not in chart
+    assert "dated by model release, not by when this score was measured, so this is not a time axis" in chart
+    # reported_date is read (for the pinned card's Date row), but never as an
+    # x-coordinate: the axis-building code above the point loop never touches it.
+    assert "row.reported_date" in chart
+    assert "x(row.reported_date)" not in chart
     # And no segment between points, for the same reason the curated chart draws
     # none: adjacency by score is not a trajectory.
     assert "polyline" not in chart

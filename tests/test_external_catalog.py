@@ -88,6 +88,19 @@ def test_llm_stats_records_claim_no_provenance(normalized: dict) -> None:
     assert normalized["validation"]["empty_provenance_fraction"] == 1.0
 
 
+def test_observations_carry_the_models_own_announcement_date(normalized: dict) -> None:
+    """announcement_date is present on effectively every score row (5544/5544 in
+    the checked-in snapshot), and it was previously discarded into
+    reported_date: None across the whole normalizer -- a bug, not the honest
+    absence AUDIT.md documented for shots/harness/tool-access/attempts. It is
+    now read through, tagged with date_precision so nothing downstream can
+    mistake it for the date the score was measured.
+    """
+    dated = [row for row in normalized["score_observations"] if row["reported_date"]]
+    assert len(dated) / len(normalized["score_observations"]) > 0.99
+    assert all(row["date_precision"] == "model_announcement" for row in dated)
+
+
 def test_metric_and_direction_are_never_guessed(normalized: dict) -> None:
     for row in normalized["score_series"]:
         assert row["metric"] is None

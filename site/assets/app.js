@@ -641,11 +641,12 @@ const I18N = {
     "Reported score": "报告的分数",
     "Score as reported": "报告的分数",
     "self reported": "自行报告",
-    "ordered by score, low to high -- no evaluation date is recorded, so this is not a time axis":
-      "按分数从低到高排列——没有记录评测日期，因此这不是时间轴",
+    "ordered by score, low to high -- dated by model release, not by when this score was measured, so this is not a time axis":
+      "按分数从低到高排列——日期为模型发布日期，非该分数的测量日期，因此这不是时间轴",
     "best reported": "报告的最高分",
-    "{count} scores reported to {source}, ordered by score rather than by date: no evaluation date is recorded for any of them. Highest {best} by {model}, lowest {low}.":
-      "向 {source} 报告的 {count} 个分数，按分数而非日期排列：其中没有任何一条记录了评测日期。最高 {best}（{model}），最低 {low}。",
+    "{count} scores reported to {source}, ordered by score rather than by date: the only date recorded is each model's own announcement date, not when this score was measured. Highest {best} by {model}, lowest {low}.":
+      "向 {source} 报告的 {count} 个分数，按分数而非日期排列：唯一记录的日期是每个模型自身的发布日期，而非该分数的测量日期。最高 {best}（{model}），最低 {low}。",
+    "Date (model release)": "日期（模型发布）",
     "Benchmark home ↗": "基准主页 ↗",
     "Top cards": "头部模型卡",
     "Disclosure": "披露",
@@ -3783,7 +3784,7 @@ function externalScoreChart(source, payload) {
     viewBox: `0 0 ${width} ${height}`,
     role: "group",
     "aria-label": t(
-      "{count} scores reported to {source}, ordered by score rather than by date: no evaluation date is recorded for any of them. Highest {best} by {model}, lowest {low}.",
+      "{count} scores reported to {source}, ordered by score rather than by date: the only date recorded is each model's own announcement date, not when this score was measured. Highest {best} by {model}, lowest {low}.",
       {
         count: plotted.length.toLocaleString(),
         source: meta.name,
@@ -3859,10 +3860,13 @@ function externalScoreChart(source, payload) {
     );
     // The same pinned-card system the curated chart uses (makeFrontierPointInteractive
     // + #frontier-tooltip), not a native <title>. Only the rows this source
-    // actually carries are listed -- Instrument, Protocol, Date and Read from
-    // do not exist in a crawled row (see the module comment above), and
-    // showing them as "not recorded" here would manufacture four empty rows
-    // where the curated card shows four real ones.
+    // actually carries are listed -- Instrument, Protocol and Read-from do not
+    // exist in a crawled row (see the module comment above), and showing them
+    // as "not recorded" here would manufacture filler where the curated card
+    // shows real values. Date is real (see external_catalog.py's
+    // date_precision), but it is the model's own announcement date, not a
+    // measurement date, so the row label says so rather than reading as
+    // equivalent to the curated chart's "Date".
     makeFrontierPointInteractive(group, {
       kind: t("Reported score"),
       title: `${row.organization || t("not recorded")} · ${row.model_name || t("not recorded")}`,
@@ -3870,6 +3874,14 @@ function externalScoreChart(source, payload) {
         { label: t("Organization"), value: row.organization || t("not recorded") },
         { label: t("Model"), value: row.model_name || t("not recorded") },
         { label: t("Score as reported"), value: String(row.raw_value ?? row.value) },
+        ...(row.reported_date
+          ? [
+              {
+                label: t("Date (model release)"),
+                value: formatDate(row.reported_date, { dateStyle: "medium" }),
+              },
+            ]
+          : []),
         { label: t("Reported by"), value: t("self reported") },
         ...(thirdParty ? [{ label: t("Cited by"), value: meta.name }] : []),
       ],
@@ -3888,7 +3900,7 @@ function externalScoreChart(source, payload) {
         "text-anchor": "middle",
         class: "frontier-axis-label",
       },
-      t("ordered by score, low to high -- no evaluation date is recorded, so this is not a time axis"),
+      t("ordered by score, low to high -- dated by model release, not by when this score was measured, so this is not a time axis"),
     ),
   );
   return svg;
