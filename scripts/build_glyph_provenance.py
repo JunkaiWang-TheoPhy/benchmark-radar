@@ -61,18 +61,19 @@ SOURCES = {
     # not. Two are the mark that set publishes for the company rather than a
     # literal company wordmark, and both were kept deliberately: microsoft.svg
     # is titled "Azure", and Meituan's is `longcat`, its model brand.
-    # AI21 Labs and IBM are absent on purpose (issue #267). Both marks are the
-    # brand set as lettering -- "AI21", and IBM's striped capitals -- with no
-    # symbol variant in lobe-icons or simple-icons. At 14px they read as an
-    # indistinct block, which is worse than no mark: the point is then told
-    # apart by its organization color, which is what the generic spark is for.
-    # Removed as entries rather than edited into legibility; a brand path is
-    # upstream bytes or it is not shipped.
+    # AI21 and IBM were briefly dropped for #267 and are back. Judged again in
+    # the real chart context -- a 14px glyph inside its circle, in the
+    # organization's color, rather than as black type on white -- AI21's four
+    # bold glyphs read cleanly and IBM's striped block stays recognizable.
+    # IBM ships no symbol at any size because the striped lettering IS its
+    # mark, so dropping it traded a legible wordmark for no mark at all.
+    "ORGANIZATION_ICONS[AI21 Labs]": LOBE.format("ai21"),
     "ORGANIZATION_ICONS[Ai2]": LOBE.format("ai2"),
     "ORGANIZATION_ICONS[Amazon]": LOBE.format("aws"),
     "ORGANIZATION_ICONS[Baidu]": LOBE.format("baidu"),
     "ORGANIZATION_ICONS[ByteDance]": LOBE.format("bytedance"),
     "ORGANIZATION_ICONS[Cohere]": LOBE.format("cohere"),
+    "ORGANIZATION_ICONS[IBM]": LOBE.format("ibm"),
     "ORGANIZATION_ICONS[Inception]": LOBE.format("inception"),
     "ORGANIZATION_ICONS[LG AI Research]": LOBE.format("lg"),
     "ORGANIZATION_ICONS[Liquid AI]": LOBE.format("liquid"),
