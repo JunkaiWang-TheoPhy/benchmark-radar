@@ -4096,6 +4096,11 @@ footer {
   font-size: 0.78rem;
 }
 
+/* externalScoreChart (the crawled-score figure) draws entirely with the
+   curated chart's own classes -- frontier-grid, frontier-tick,
+   frontier-axis-label, score-point*, score-best-line/label -- so it carries no
+   styling of its own here. */
+
 .external-scores-wrap {
   max-height: 26rem;
   overflow: auto;

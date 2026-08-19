@@ -447,14 +447,21 @@ def test_scores_render_whether_or_not_any_mention_carries_a_date():
     assert "organizationCount" not in chart
 
 
-def test_there_is_exactly_one_score_renderer():
+def test_there_is_exactly_one_renderer_per_score_layer():
     # Two implementations of one axis would be free to disagree about the join
     # rule, which is the single thing this chart must not do. The second entry
     # point (`scoreOnlyChart`, for a benchmark with no dated mention) existed only
     # to suppress the adoption bands and went with them.
+    #
+    # The crawled layer has its own single renderer rather than a variant of this
+    # one, and that separation is the point: `scoreTrackChart` owns the time axis
+    # and the join rule, `externalScoreChart` owns a rank axis and joins nothing.
+    # One function serving both would have to carry a mode flag deciding whether
+    # a date exists, which is exactly how a crawled row ends up on a chronology.
     script = source("site/assets/app.js")
 
     assert script.count("function scoreTrackChart(") == 1
+    assert script.count("function externalScoreChart(") == 1
     assert "function scoreOnlyChart(" not in script
     assert "function adoptionFrontierChart(" not in script
     # And no permanently-false flag left behind in its place: a switch nobody can

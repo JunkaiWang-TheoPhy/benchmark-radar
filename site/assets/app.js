@@ -636,6 +636,11 @@ const I18N = {
     "Not yet reported": "尚未报告",
     "not yet reported in these cards": "这些模型卡中尚未报告",
     "Reported by": "报告机构",
+    "ordered by score, low to high -- no evaluation date is recorded, so this is not a time axis":
+      "按分数从低到高排列——没有记录评测日期，因此这不是时间轴",
+    "best reported": "报告的最高分",
+    "{count} scores reported to {source}, ordered by score rather than by date: no evaluation date is recorded for any of them. Highest {best} by {model}, lowest {low}.":
+      "向 {source} 报告的 {count} 个分数，按分数而非日期排列：其中没有任何一条记录了评测日期。最高 {best}（{model}），最低 {low}。",
     "Benchmark home ↗": "基准主页 ↗",
     "Top cards": "头部模型卡",
     "Disclosure": "披露",
@@ -3695,6 +3700,158 @@ function externalScoresBlock(shard) {
   ]);
 }
 
+// --- The reported field (crawled scores) -------------------------------------
+//
+// A crawled row carries no evaluation date and no protocol, so it cannot go on
+// the curated panel's time axis, and it is not joined to the curated layer's
+// `benchmark_scores.yml` records: none of the join-rule machinery in
+// `scoreTrackChart` (instrument/protocol grouping, evidence grading) applies to
+// a row with neither field. What it does share with that chart is everything
+// visual -- same margins, same point size, same pale-face-plus-brand-glyph
+// marker, same grid and tick classes -- because the reader should not have to
+// learn a second chart language to read a second kind of evidence. Only the
+// axis differs in kind: score low-to-high stands in for the time axis, and the
+// label says plainly that it is not one.
+function externalScoreChart(source, payload) {
+  const meta = externalSourceMeta(source);
+  // A row whose value did not parse is in the table verbatim and out of the
+  // chart: a point can only be drawn at a position, and there is no honest
+  // position for a value that is not a number. Sorted ascending so the axis
+  // reads low-to-high left-to-right, same direction as every other quantity
+  // axis on the site.
+  const plotted = (payload.rows || [])
+    .filter((row) => typeof row.value === "number" && Number.isFinite(row.value))
+    .sort((a, b) => a.value - b.value);
+  if (!plotted.length) return null;
+
+  const values = plotted.map((row) => row.value);
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const pad = Math.max((high - low) * 0.18, Math.abs(high) * 0.05, Number.EPSILON);
+  const band = { low: low - pad, high: high + pad };
+
+  // Same viewBox and margins as scoreTrackChart, so the two charts sit at the
+  // same visual scale wherever a reader compares them.
+  const narrow = typeof window !== "undefined" && window.innerWidth <= 760;
+  const width = narrow ? 520 : 920;
+  const scoreHeight = 480;
+  const margin = { top: 32, right: 20, bottom: 62, left: 68 };
+  const plotWidth = width - margin.left - margin.right;
+  const height = margin.top + scoreHeight + margin.bottom;
+  const scoreTop = margin.top;
+  // A single-model field has no interval to spread across, so its one point is
+  // drawn at the left edge of the plot rather than at the midpoint of a range
+  // that does not exist.
+  const step = plotted.length > 1 ? plotWidth / (plotted.length - 1) : 0;
+  const x = (index) => margin.left + index * step;
+  const scoreY = (value) => {
+    if (band.high <= band.low) return scoreTop + scoreHeight / 2;
+    return scoreTop + scoreHeight - ((value - band.low) / (band.high - band.low)) * scoreHeight;
+  };
+
+  const svg = svgElement("svg", {
+    viewBox: `0 0 ${width} ${height}`,
+    role: "group",
+    "aria-label": t(
+      "{count} scores reported to {source}, ordered by score rather than by date: no evaluation date is recorded for any of them. Highest {best} by {model}, lowest {low}.",
+      {
+        count: plotted.length.toLocaleString(),
+        source: meta.name,
+        best: values[values.length - 1],
+        model: plotted[plotted.length - 1].model_name || t("not recorded"),
+        low: values[0],
+      },
+    ),
+  });
+
+  for (const value of [band.high, band.low]) {
+    const gridY = scoreY(value);
+    svg.append(
+      svgElement("line", {
+        x1: margin.left,
+        y1: gridY,
+        x2: width - margin.right,
+        y2: gridY,
+        class: "frontier-grid",
+      }),
+    );
+    svg.append(
+      svgElement(
+        "text",
+        { x: margin.left - 12, y: gridY + 4, "text-anchor": "end", class: "frontier-tick" },
+        Number(value.toFixed(2)),
+      ),
+    );
+  }
+
+  const bestValue = values[values.length - 1];
+  const bestY = scoreY(bestValue);
+  svg.append(
+    svgElement("line", {
+      x1: margin.left,
+      y1: bestY,
+      x2: width - margin.right,
+      y2: bestY,
+      class: "score-best-line",
+    }),
+  );
+  svg.append(
+    svgElement(
+      "text",
+      { x: width - margin.right, y: bestY - 6, "text-anchor": "end", class: "score-best-label" },
+      `${t("best reported")} ${bestValue}`,
+    ),
+  );
+
+  for (const [index, row] of plotted.entries()) {
+    const pointX = x(index);
+    const pointY = scoreY(row.value);
+    const label =
+      `${row.model_name || t("not recorded")} · ${row.organization || t("not recorded")} · ${
+        row.raw_value ?? row.value
+      }` + (row.reported_by === "third_party" ? ` · ${t("cited by")} ${meta.name}` : "");
+    // No pinned tooltip here: that overlay is keyed to #frontier-tooltip, which
+    // lives outside this panel and is hidden for external records (see
+    // CANONICAL_FRONTIER_CHROME). The point still needs a hover and a keyboard
+    // affordance, so it gets one the same way any static SVG mark can: a native
+    // <title> for pointer hover, and tabindex plus aria-label so the identical
+    // information reaches keyboard and screen-reader use without that overlay.
+    const group = svgElement("g", {
+      class: `score-point${row.reported_by === "third_party" ? " score-point-third-party" : ""}`,
+      tabindex: "0",
+      role: "img",
+      "aria-label": label,
+    });
+    group.append(svgElement("circle", { cx: pointX, cy: pointY, r: 9, class: "score-point-face" }));
+    if (row.reported_by === "third_party") {
+      group.append(
+        svgElement("circle", { cx: pointX, cy: pointY, r: 12, class: "score-point-citation-ring" }),
+      );
+    }
+    group.append(
+      modelGlyph(row.model_name, row.organization, pointX, pointY, 14, "score-point-glyph"),
+    );
+    group.append(
+      svgElement("title", {}, label),
+    );
+    svg.append(group);
+  }
+
+  svg.append(
+    svgElement(
+      "text",
+      {
+        x: margin.left + plotWidth / 2,
+        y: height - 7,
+        "text-anchor": "middle",
+        class: "frontier-axis-label",
+      },
+      t("ordered by score, low to high -- no evaluation date is recorded, so this is not a time axis"),
+    ),
+  );
+  return svg;
+}
+
 function externalSourceTable(source, payload) {
   const meta = externalSourceMeta(source);
   const rows = payload.rows || [];
@@ -3710,44 +3867,16 @@ function externalSourceTable(source, payload) {
       ),
     );
   }
+  // The chart replaces the table entirely: it draws the same shape the
+  // curated saturation chart draws, from the same rows, and the table added
+  // nothing the chart plus its point titles did not already say.
+  const chart = externalScoreChart(source, payload);
   return element("div", { className: "external-source" }, [
     element("h4", {
       text: `${meta.name} · ${metricLabel(rows.length, "reported score")}`,
     }),
     element("p", { className: "external-source-note", text: notes.join(" ") }),
-    rows.length
-      ? element("div", { className: "external-scores-wrap" }, [
-          element("table", { className: "external-scores" }, [
-            element("thead", {}, [
-              element("tr", {}, [
-                element("th", { text: t("Model") }),
-                element("th", { text: t("Organization") }),
-                element("th", { text: t("Score as reported") }),
-                element("th", { text: t("Reported by") }),
-              ]),
-            ]),
-            element(
-              "tbody",
-              {},
-              rows.map((row) =>
-                element("tr", {}, [
-                  element("td", { text: row.model_name || t("not recorded") }),
-                  element("td", { text: row.organization || t("not recorded") }),
-                  // raw_value is printed verbatim. Reparsing it into a
-                  // formatted number would be the first step toward treating
-                  // it as a measurement on a known scale, which it is not.
-                  element("td", { text: row.raw_value ?? t("not recorded") }),
-                  element("td", {
-                    text: row.reported_by
-                      ? String(row.reported_by).replaceAll("_", " ")
-                      : t("not recorded"),
-                  }),
-                ]),
-              ),
-            ),
-          ]),
-        ])
-      : element("p", { className: "external-empty", text: t(meta.emptyKey) }),
+    chart || element("p", { className: "external-empty", text: t(meta.emptyKey) }),
   ]);
 }
 

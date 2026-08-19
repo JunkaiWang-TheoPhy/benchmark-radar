@@ -397,13 +397,14 @@ def test_dashboard_links_are_validated_escaped_and_non_swallowing():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     assert "function safeHttpUrl(" in script
-    # Both interactive charts are role="group" (image descendants are
-    # presentational in ARIA, which would hide their focusable marker buttons).
-    # role="img" is allowed only on the decorative non-interactive widget that
-    # is left: the adoption bar. The sparse-frontier step diagram that was the
-    # other one went with the adoption reading.
+    # The curated chart's SVG root and the crawled chart's SVG root are both
+    # role="group" (image descendants are presentational in ARIA, which would
+    # hide their focusable marker buttons). role="img" is used on the adoption
+    # bar (a non-interactive widget) and, once per source line, on each
+    # crawled-chart point group -- those points are individually focusable and
+    # need their own label, since they carry no pinned tooltip to describe them.
     assert 'role: "group"' in script
-    assert script.count('role: "img"') == 1
+    assert script.count('role: "img"') == 2
     assert "/^[=+\\-@]/" in script
     assert 'document.querySelector("dialog[open]")' in script
     assert "Do not swallow Escape" in script
