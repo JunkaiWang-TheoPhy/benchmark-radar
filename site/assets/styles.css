@@ -2305,6 +2305,8 @@ td a {
 .benchmark-navigator {
   position: sticky;
   top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
   padding: 1.25rem;
   border: 1px solid var(--ink);
   background: var(--panel);
@@ -3768,8 +3770,6 @@ footer {
   flex-direction: column;
   gap: 0.25rem;
   margin: 0;
-  max-height: 15rem;
-  overflow-y: auto;
 }
 
 /* Deliberately not `.eyebrow`: that class is accent blue, which plants a second

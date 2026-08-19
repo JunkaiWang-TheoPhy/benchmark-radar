@@ -320,11 +320,14 @@ def test_the_examples_are_ranked_by_how_many_cards_report_them():
     assert "entry.card_count > 0 && scoreRecord(entry.benchmark_id)" in navigator
     assert "BENCHMARK_EXAMPLE_LIMIT" in navigator
     assert 'metricLabel(entry.card_count, "model card")' in navigator
-    # Bounded height rather than twenty rows tall: this aside must not out-weigh
-    # the chart beside it.
+    # Every example is on the page: an inner scroller hid ranks 8-20 behind a
+    # scrollbar that read as the end of the list. The sticky aside is what gets
+    # bounded to the viewport instead.
     shortlist = styles.split(".benchmark-shortlist {", 1)[1].split("}", 1)[0]
-    assert "max-height" in shortlist
-    assert "overflow-y: auto" in shortlist
+    assert "max-height" not in shortlist
+    aside = styles.split(".benchmark-navigator {", 1)[1].split("}", 1)[0]
+    assert "max-height: calc(100vh - 2rem)" in aside
+    assert "overflow-y: auto" in aside
 
 
 def test_the_navigator_still_starts_the_crawled_index_fetch():
