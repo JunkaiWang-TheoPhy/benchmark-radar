@@ -13,10 +13,6 @@
       "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/grok.svg",
       "sha256": "b1c7535771ab4ca56c3678ac60cdbaccbcf7f7e53c6343717332e20bbb0c546b"
     },
-    "ORGANIZATION_ICONS[AI21 Labs]": {
-      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/ai21.svg",
-      "sha256": "9ccda525bc3d9e033844bf3a354c180c2929bf38af7cb84efd28a30ed414cc24"
-    },
     "ORGANIZATION_ICONS[Ai2]": {
       "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/ai2.svg",
       "sha256": "349cd897d7d333885c9083a8a486ddbfa41a0431a39f852c3c8903df81a63dec"
@@ -48,10 +44,6 @@
     "ORGANIZATION_ICONS[Google]": {
       "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/google.svg",
       "sha256": "1418294b312c065352dded0671ca6e0571d43a78964f3321faa5f11c7450d9c2"
-    },
-    "ORGANIZATION_ICONS[IBM]": {
-      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/ibm.svg",
-      "sha256": "bd4630125d83bdee989f4c5bb0da37fb6922345de3587a149b09262db3af7589"
     },
     "ORGANIZATION_ICONS[Inception]": {
       "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/inception.svg",
@@ -118,8 +110,8 @@
       "sha256": "b43499e964c3cf8556d23cd4bb4a2c316469a18d0459b6a6d468395fe01f09c7"
     },
     "ORGANIZATION_ICONS[Xiaomi]": {
-      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/xiaomimimo.svg",
-      "sha256": "3e062db906ae7d937b31d462b6f5cc8185b0ce748efebd6e6d5c3dcee4d9b359"
+      "url": "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/xiaomi.svg",
+      "sha256": "06dae9f76ef091cee16695e9874b71b6380307d5a6c851f2366f6e26ca54e1b7"
     },
     "ORGANIZATION_ICONS[Z.ai]": {
       "url": "placeholder:hand-drawn-in-repo",

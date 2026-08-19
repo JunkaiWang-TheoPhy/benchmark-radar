@@ -504,6 +504,7 @@ const I18N = {
     "Show on the chart ↑": "在图表中显示 ↑",
     "Model cards": "模型卡",
     "Best on record": "历史最佳",
+    "Only charted score": "唯一入图分数",
     "Headroom left": "剩余空间",
     "Readable values": "可读数值",
     "Supports: ": "支持: ",
@@ -639,6 +640,8 @@ const I18N = {
     Topics: "主题",
     "What this score does not claim": "这个分数的含义之外",
     "reported scores over time": "报告分数随时间的变化",
+    "charted score": "个入图分数",
+    "charted scores": "个入图分数",
     after: "之后",
     "an inclusion cutoff. Records below it were not retained.": "为纳入门槛。低于它的记录未被保留。",
     as: "作为",
@@ -3395,7 +3398,13 @@ const EXTERNAL_SOURCE_META = {
   llm_stats: {
     name: "LLM Stats",
     noteKey:
-      "Self-reported scores collected by LLM Stats. No evaluation protocol or date is recorded, and rows are listed in the source's own order.",
+      // "No date is recorded" was false and was the complaint in issue #269:
+      // every one of the 5,544 rows carries one. What is missing is a date for
+      // the measurement -- the date recorded is the model's own release -- and
+      // that is the distinction worth stating, since it is why these rows are
+      // ordered by score rather than drawn on a time axis. The axis label was
+      // corrected then; this note was not.
+      "Self-reported scores collected by LLM Stats. No evaluation protocol is recorded, and the only date is each model's own release, not when the score was measured, so rows are listed in the source's own order.",
     emptyKey: "LLM Stats recorded no scores for this benchmark.",
   },
   opencompass_hub: {
@@ -4047,7 +4056,7 @@ function renderBenchmarkNavigator(board) {
   if (infoHost && !infoHost.firstChild) {
     const disclosure = infoDisclosure(
         t(
-          "Ranked by how many curated model cards report each benchmark, which measures vendor reporting convention rather than benchmark quality. A crawled score count answers a different question: AIME 2025 carries 115 crawled scores and GPQA Diamond 26 model cards, and those are different measures rather than competing ones.",
+          "Ranked by how many curated model cards report each benchmark, which measures vendor reporting convention rather than benchmark quality. A crawled score count answers a different question: AIME 2025 carries 115 crawled scores and GPQA Diamond 26 model cards, and those are different measures rather than competing ones. The second figure on each card is how many of those mentions carried a number this project could read verbatim, which is what the chart plots: MATH-500 is named by 10 cards and charts 3.",
       ),
     );
     // The panel is fixed (see styles.css: the navigator scrolls and would clip
@@ -4083,9 +4092,17 @@ function renderBenchmarkNavigator(board) {
           },
         }, [
           element("span", { className: "benchmark-example-name", text: entry.name }),
+          // Two counts, because clicking this card opens a chart drawn from the
+          // second one. MATH-500 read "10 model cards" here and plotted three
+          // points, with nothing on the page explaining the drop (issue #261).
+          // A mention is a card naming the benchmark; a readable score is a
+          // published number this project could read verbatim. 56 of 79
+          // benchmarks report fewer scores than mentions, so this is the rule
+          // rather than a MATH-500 quirk, and it belongs on the card that
+          // sets the expectation.
           element("small", {
             className: "benchmark-example-meta",
-            text: metricLabel(entry.card_count, "model card"),
+            text: `${metricLabel(entry.card_count, "model card")} · ${chartedScoreLabel(entry.benchmark_id)}`,
           }),
         ]);
         card.addEventListener("click", () => {
@@ -4163,6 +4180,28 @@ function scoreRecord(benchmarkId) {
   return state.data?.benchmark_score_progression?.benchmarks?.[benchmarkId] || null;
 }
 
+// Whether a record's points span any time at all. A chart headed "over time"
+// has to be drawn across at least two distinct dates; one date, or one point,
+// is a reading rather than a trajectory however it is plotted.
+function spansTime(record) {
+  if (!record || record.observation_count < 2) return false;
+  return Boolean(
+    record.first_reported_at &&
+      record.last_reported_at &&
+      record.first_reported_at !== record.last_reported_at,
+  );
+}
+
+// How many points a benchmark's chart will actually draw. A card mention is not
+// a score: a model card can name MATH-500 in its prose or publish its table as
+// an image, and neither yields a number this project can read. The chart plots
+// only the numbers, so any row that advertises a benchmark by its mention count
+// prints this alongside, and the reader is never surprised by the drop.
+function chartedScoreLabel(benchmarkId) {
+  const record = scoreRecord(benchmarkId);
+  return metricLabel(record?.observation_count || 0, "readable score");
+}
+
 // The plotted band for a score axis. Percent metrics are NOT drawn 0-100: every
 // value in this corpus sits in the upper half, so a full-height axis compresses
 // the interesting movement into a sliver. The band is padded around the observed
@@ -4185,7 +4224,13 @@ function scoreReadout(entry, record) {
   const evidence = record.evidence;
   const rows = [
     element("div", { className: "score-readout-figure" }, [
-      element("span", { text: t("Best on record") }),
+      // "Best" ranks a field, and where the record holds one score there is no
+      // field to top. "Only charted score" says the same number without the
+      // implied competition it won, and is scoped to this chart on purpose:
+      // one score here is not a claim that nobody else ever published one.
+      element("span", {
+        text: record.observation_count === 1 ? t("Only charted score") : t("Best on record"),
+      }),
       element("strong", {
         text: `${saturation.best_value}${record.unit === "percent" ? "%" : ""}`,
       }),
@@ -4225,10 +4270,14 @@ function scoreReadout(entry, record) {
       // this chart may be read against each other (issue #261). The count is
       // worth showing and the term was not: a reader should not have to learn
       // this project's vocabulary to know whether the values can be compared.
+      // metricLabel's default pluralizer appends "s" to the last word, which
+      // turned this into "0 set measured the same ways". The plural is passed
+      // explicitly so the noun, not the trailing adverb, takes the inflection.
       element("small", {
         text: `${metricLabel(record.dated_observation_count, "date")} · ${metricLabel(
           record.comparable_series_count,
           "set measured the same way",
+          "sets measured the same way",
         )}`,
       }),
     ]),
@@ -5104,8 +5153,19 @@ function renderAdoptionFrontier(board) {
   renderFrontierPicker(scored, state.lfrontier);
   renderBenchmarkNavigator(board);
 
-  byId("frontier-heading").textContent = `${entry.name} ${t("reported scores over time")}`;
   const record = scoreRecord(entry.benchmark_id);
+  // "over time" promises a series, and 15 of the 59 charted benchmarks hold a
+  // single score: GSM8K read "GSM8K reported scores over time" above one point
+  // from March 2024. One reading is not a trajectory, and the heading is the
+  // first thing that sets the expectation, so it says which of the two it is.
+  //
+  // The test is two distinct dates rather than two observations. Scores that
+  // all share one date span no time however many there are, so counting rows
+  // would be the wrong question to ask even though no benchmark is in that
+  // state today.
+  byId("frontier-heading").textContent = spansTime(record)
+    ? `${entry.name} ${t("reported scores over time")}`
+    : `${entry.name} ${metricLabel(record?.observation_count || 0, "charted score")}`;
   renderFrontierLegend(entry, record);
   renderFrontierOrgKey(record);
   clearFrontierPointSelection();
