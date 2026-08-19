@@ -387,7 +387,13 @@
                      placeholder="Search benchmarks, tasks, domains…" />
               <p id="benchmark-search-status" class="benchmark-search-status"></p>
               <div id="benchmark-search-results"></div>
-              <p class="benchmark-example-lead" data-i18n="Most reported">Most reported</p>
+              <!-- "Most reported" alone invited the reading that AIME 2025 with 115
+                   crawled scores should outrank GPQA Diamond with 26 model cards
+                   (issue #269). They are different measures: this list ranks by
+                   how many curated model cards report a benchmark, which is the
+                   reading this registry is built to make, and a crawled score
+                   count answers a different question entirely. -->
+              <p class="benchmark-example-lead" data-i18n="Most reported in model cards">Most reported in model cards</p>
               <div id="benchmark-shortlist" class="benchmark-shortlist"></div>
             </div>
           </aside>

@@ -368,7 +368,12 @@ def test_the_crawled_chart_axis_is_score_not_time():
     )[0]
 
     assert "a.value - b.value" in chart
-    assert "dated by model release, not by when this score was measured, so this is not a time axis" in chart
+    # The label was shortened (issue #269): it had grown into a defensive
+    # sentence that read as an excuse for the dates rather than a description
+    # of the axis. The claim it has to make is unchanged -- ordered by score,
+    # and the dates are release dates rather than measurement times.
+    assert "ordered by score, low to high." in chart
+    assert "model release dates, not when each score was measured" in chart
     # reported_date is read (for the pinned card's Date row), but never as an
     # x-coordinate: the axis-building code above the point loop never touches it.
     assert "row.reported_date" in chart
@@ -535,3 +540,22 @@ def test_leaving_a_crawled_record_empties_its_panel_rather_than_hiding_it():
 
     assert "external.hidden = visible;" in chrome
     assert "if (visible) replaceChildren(external, []);" in chrome
+
+
+def test_the_crawled_chart_ticks_label_real_values_not_padded_bounds():
+    """Issue #269: AIME 2025 announced an axis from "-0.1" to "1.17".
+
+    The band pads by 18% so points are not drawn on the frame, and the ticks
+    printed that padded bound. On a 0.067-to-1.0 field that advertised a
+    negative score and a ceiling above every observed value -- two numbers that
+    are not in the data and cannot be.
+    """
+    script = source("site/assets/app.js")
+    chart = script.split("function externalScoreChart(source, payload)", 1)[1].split(
+        "\nfunction externalSourceTable", 1
+    )[0]
+
+    assert "for (const value of [high, low])" in chart
+    assert "for (const value of [band.high, band.low])" not in chart
+    # The band itself still pads; only the labels changed.
+    assert "band = { low: low - pad, high: high + pad }" in chart
