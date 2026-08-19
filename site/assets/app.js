@@ -381,6 +381,7 @@ const I18N = {
     "normal": "正常",
     "need attention": "需关注",
     "Sort: Priority ↓": "排序:优先度 ↓",
+    "Sort: Date, then Priority ↓": "排序:日期,再按优先度 ↓",
     // --- Leaderboard ---------------------------------------------------------
     "Model Card Adoption Rank": "模型卡采用排名",
     "Which benchmarks do model cards report?": "模型卡报告了哪些基准?",
@@ -1670,8 +1671,12 @@ function renderToday({ resultsOnly = false } = {}) {
   byId("today-breakdown").textContent =
     `${evidenceCount} ${t("normal")} · ${attentionCount} ${t("need attention")}`;
   // The list is sorted by priority within a day; say so at the point of use
-  // rather than making the reader infer it (issue #248).
-  byId("today-sort").textContent = t("Sort: Priority ↓");
+  // rather than making the reader infer it. In All dates mode the archive is
+  // ordered by date first and priority second, so the caption says so
+  // (issue #248).
+  byId("today-sort").textContent = showingAllDates
+    ? t("Sort: Date, then Priority ↓")
+    : t("Sort: Priority ↓");
   replaceChildren(
     byId("today-list"),
     visibleObservations.length
@@ -2513,7 +2518,8 @@ function openRubric(item = null, versionOverride = null) {
 
   // Selection policy belongs to the record's scan, not its shared scoring
   // rubric version. Older v2 records were genuinely filtered at 40, while new
-  // v2 records retain everything eligible and use 40 only for this badge.
+  // v2 records retain everything eligible and use 40 only as the
+  // recommendation marker.
   const selectedDay = dailySnapshot();
   const recommendationScore = item
     ? item.recommendation_score
@@ -2530,7 +2536,7 @@ function openRubric(item = null, versionOverride = null) {
           text:
             `${t("Every record matching at least one taxonomy category is retained. A score of")} ` +
             `${Number(recommendationScore).toFixed(2)} ${t(
-              "or above adds the Recommended badge; it does not control inclusion. Watchlisted artifacts are also retained.",
+              "or above marks the item as recommended; it does not control inclusion. Watchlisted artifacts are also retained.",
             )}`,
         })
       : historicalMinimum !== undefined && historicalMinimum !== null
