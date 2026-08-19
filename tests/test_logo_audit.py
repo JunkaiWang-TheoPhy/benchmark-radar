@@ -174,7 +174,7 @@ def test_the_audit_page_renders_through_the_charts_own_resolvers():
 
 
 def test_review_ids_are_frozen_so_feedback_survives_a_rebuild():
-    """"O-07" has to mean the same organization next month as it does today."""
+    """ "O-07" has to mean the same organization next month as it does today."""
     registry = json.loads(Path("site/data/logo-registry.json").read_text(encoding="utf-8"))
 
     organizations = registry["organizations"]

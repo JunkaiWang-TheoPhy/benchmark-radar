@@ -38,9 +38,10 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 SCHEMA_VERSION = 1
 
@@ -165,9 +166,7 @@ def summarize(registry: dict[str, ModelRecord]) -> dict[str, Any]:
     }
 
 
-def write_model_registry(
-    radar_path: Path, shard_dir: Path, output: Path
-) -> dict[str, Any]:
+def write_model_registry(radar_path: Path, shard_dir: Path, output: Path) -> dict[str, Any]:
     """Build the registry and write it beside the rest of the site's data."""
     radar = json.loads(Path(radar_path).read_text(encoding="utf-8"))
     registry = build_registry(radar, Path(shard_dir))

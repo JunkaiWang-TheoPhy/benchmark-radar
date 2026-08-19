@@ -27,7 +27,9 @@ GLYPHS = Path("site/assets/glyphs.js")
 OUTPUT = Path("site/assets/glyph-provenance.json")
 
 SIMPLE_ICONS = "https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/{}.svg"
-LOBE = "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/{}.svg"
+LOBE = (
+    "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/{}.svg"
+)
 
 # A mark drawn in this repo because no licensed upstream one exists.
 PLACEHOLDER = "placeholder:hand-drawn-in-repo"

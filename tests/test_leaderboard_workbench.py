@@ -444,9 +444,9 @@ def test_every_crawled_score_has_the_curated_charts_pinned_tooltip():
     # Only fields a crawled row actually carries -- no Instrument, Protocol,
     # Date or Read-from row, which do not exist in this source and would print
     # as "not recorded" filler beside the curated card's real ones.
-    assert "t(\"Instrument\")" not in chart
-    assert "t(\"Protocol\")" not in chart
-    assert "t(\"Date\")" not in chart
+    assert 't("Instrument")' not in chart
+    assert 't("Protocol")' not in chart
+    assert 't("Date")' not in chart
 
     table_fn = script.split("function externalSourceTable(source, payload)", 1)[1].split(
         "\n// Identity siblings", 1
@@ -524,7 +524,7 @@ def test_each_chart_owns_its_tooltip_rather_than_sharing_one_id():
 
     # No document-wide lookup survives anywhere in the tooltip machinery.
     assert 'byId("frontier-tooltip")' not in script
-    assert 'id: `frontier-tooltip-${++frontierTooltipSeq}`' in script
+    assert "id: `frontier-tooltip-${++frontierTooltipSeq}`" in script
     assert 'node?.closest(".frontier-chart")?.querySelector(".frontier-tooltip")' in script
 
 
@@ -584,7 +584,9 @@ def test_the_shortlist_says_what_it_ranks_by_behind_an_info_toggle():
     # generating a box, so any `display` on that body pins the panel open --
     # the reveal runs on visibility/opacity instead.
     assert ".info-disclosure:hover > .info-disclosure-body" in styles
-    assert "visibility: hidden" in styles.split(".info-disclosure > .info-disclosure-body", 1)[1][:200]
+    body = styles.split(".info-disclosure > .info-disclosure-body", 1)[1][:200]
+    assert "visibility: hidden" in body
 
     # And it escapes the navigator's scroll container rather than being clipped.
-    assert "position: fixed" in styles.split(".benchmark-example-heading .info-disclosure-body", 1)[1][:200]
+    pinned = styles.split(".benchmark-example-heading .info-disclosure-body", 1)[1][:200]
+    assert "position: fixed" in pinned

@@ -43,7 +43,11 @@ def main() -> None:
     org_ids: dict[str, str] = dict(previous.get("organizations") or {})
     model_ids: dict[str, str] = dict(previous.get("models") or {})
 
-    high_water = json.loads(REGISTRY.read_text(encoding="utf-8")).get("high_water", {}) if REGISTRY.exists() else {}
+    high_water = (
+        json.loads(REGISTRY.read_text(encoding="utf-8")).get("high_water", {})
+        if REGISTRY.exists()
+        else {}
+    )
 
     def assign(existing: dict[str, str], keys: list[str], prefix: str) -> None:
         used = {int(value.split("-")[1]) for value in existing.values()}
