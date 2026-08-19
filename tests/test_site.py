@@ -1550,3 +1550,38 @@ def test_jargon_audit_reads_only_user_facing_text():
         _term, _where, text = line.split("\t", 2)
         assert not text.startswith(("data-", "aria-")), text
         assert " " in text, f"lookup key, not prose: {text}"
+
+
+def test_an_empty_source_filter_says_why_instead_of_blaming_the_filter():
+    """Issue #254: filtering to a source that had a quiet day is not a filter bug.
+
+    "Clear one or more filters to widen the view" is right when the filters are
+    too narrow and wrong when the source simply collected nothing: clearing
+    filters cannot conjure evidence that was never there, so the advice sends
+    the reader hunting for a mistake they did not make. First-party feed on
+    Aug 18 2026 is exactly that case, and it read as a broken filter.
+    """
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # The empty list asks the helper rather than hardcoding one sentence.
+    assert "text: emptyTodayMessage(day)," in script
+    assert "function emptyTodayMessage(day)" in script
+
+    # It reuses issue #260's three states rather than inventing a fourth
+    # answer that could disagree with the ledger on the same day.
+    helper = script.split("function emptyTodayMessage(day)", 1)[1][:1400]
+    assert "zeroItemSources(day)" in helper
+    for state in ("unreachable", "empty", "unranked"):
+        assert state in helper, state
+
+    # And it only speaks when the source filter alone emptied the list: with a
+    # second filter on, which one did it is a guess.
+    assert "others.length" in helper
+
+    # Every sentence it can print is translated, including the general one,
+    # which shipped untranslated before this change.
+    for phrase in (
+        "No observations match these filters. Clear one or more filters to widen the view.",
+        "Try another date, or clear the filter.",
+    ):
+        assert script.count(f'"{phrase}"') >= 2, phrase

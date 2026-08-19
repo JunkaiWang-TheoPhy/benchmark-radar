@@ -91,6 +91,40 @@ function zeroItemSources(day) {
   }));
 }
 
+// Why the Today list is empty, when a source filter is what emptied it.
+//
+// "No observations match these filters. Clear one or more filters" is right
+// when the filters are too narrow and wrong when the source simply had a
+// quiet day: clearing filters cannot conjure evidence that was never
+// collected, so the advice sends the reader looking for a mistake they did
+// not make. Filtering to First-party feed on Aug 18 2026 is exactly that
+// case, and it read as a broken filter (issue #254).
+//
+// Only speaks when the source filter alone is active. With a second filter
+// on, the source's own zero is no longer the whole story, and guessing which
+// of the two emptied the list would be a worse answer than the general one.
+function emptyTodayMessage(day) {
+  const others = [state.q.trim(), state.kind, state.category, state.event].filter(Boolean);
+  if (!state.source || others.length) {
+    return t("No observations match these filters. Clear one or more filters to widen the view.");
+  }
+  const wanted = state.source.trim().toLowerCase();
+  const gap = zeroItemSources(day).find((entry) => entry.name.toLowerCase() === wanted);
+  if (!gap) {
+    return t("No observations match these filters. Clear one or more filters to widen the view.");
+  }
+  // The three states from issue #260, said in the second person because the
+  // reader is standing in front of the empty list asking about this source.
+  const reason = {
+    unreachable: t("{source} could not be reached on this day, so nothing was collected from it."),
+    empty: t("{source} was checked on this day and had nothing new. The filter is working."),
+    unranked: t(
+      "{source} returned something on this day, but none of it scored high enough to be listed.",
+    ),
+  }[gap.state];
+  return `${reason.replace("{source}", state.source)} ${t("Try another date, or clear the filter.")}`;
+}
+
 const byId = (id) => document.getElementById(id);
 
 // Interface language. English is the truth inside this file: every UI string
@@ -732,6 +766,16 @@ const I18N = {
     "here is a third party": "有第三方",
     listed: "已列出",
     "no readable score in this window": "此窗口中无可读分数",
+    // Issue #254: why the Today list is empty, when a source filter emptied it.
+    "No observations match these filters. Clear one or more filters to widen the view.":
+      "没有符合这些筛选条件的结果。请清除一个或多个筛选条件以扩大范围。",
+    "{source} could not be reached on this day, so nothing was collected from it.":
+      "{source} 在这一天无法访问，因此未从中收集到任何内容。",
+    "{source} was checked on this day and had nothing new. The filter is working.":
+      "{source} 在这一天已检查过，没有新内容。筛选功能正常。",
+    "{source} returned something on this day, but none of it scored high enough to be listed.":
+      "{source} 在这一天有返回内容，但都未达到列入所需的分数。",
+    "Try another date, or clear the filter.": "请尝试其他日期，或清除筛选条件。",
     "one value read verbatim from a cited document": "一个从引文文档中逐字读到的数值",
     "not yet reported": "尚未报告",
     "points to zero, the floor of this metric": "指向零,该指标的底线",
@@ -1650,7 +1694,7 @@ function renderToday({ resultsOnly = false } = {}) {
       : [
           element("p", {
             className: "empty-state",
-            text: "No observations match these filters. Clear one or more filters to widen the view.",
+            text: emptyTodayMessage(day),
           }),
         ],
   );
