@@ -5,39 +5,56 @@ def source(path: str) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 
-def test_frontier_opens_on_a_new_signal_with_three_dated_organizations():
+def test_frontier_opens_on_a_new_signal_with_three_readable_scores():
+    # The panel is the score track, so the benchmark it opens on is chosen by the
+    # same reading: the newest instrument that already carries three or more
+    # dated values. A one-point plot is technically recent but says nothing.
     script = source("site/assets/app.js")
 
     default_entry = script.split("function frontierDefaultEntry(board)", 1)[1].split(
-        "function reportingStage", 1
+        "\nconst BENCHMARK_TASK_SHAPES", 1
     )[0]
     assert "isNewBenchmark(entry, board)" in default_entry
-    assert "frontierAdvances(entry).length >= 3" in default_entry
-    assert "sharedSignals.length ? sharedSignals : adopted" in default_entry
+    assert "datedCount(entry) >= 3" in default_entry
+    assert "sharedSignals.length ? sharedSignals : scored" in default_entry
+    # And every candidate has a score record, so the default can never be a
+    # benchmark the panel cannot draw.
+    assert "entry.card_count > 0 && scoreRecord(entry.benchmark_id)" in default_entry
 
 
-def test_one_organization_history_uses_milestones_instead_of_an_empty_plot():
+def test_a_thin_history_no_longer_falls_back_to_an_adoption_stepper():
+    # A benchmark with one dated reporting organization used to swap the chart
+    # for a three-step "released / first report / awaiting a second" list. That
+    # is an adoption reading, and the score track answers a different question:
+    # a benchmark with one adopter can still carry several readable scores, and
+    # one with none is not offered at all.
     html = source("site/index.html")
     script = source("site/assets/app.js")
 
-    assert 'id="frontier-milestones"' in html
-    assert "frontier.length < 2" in script
-    assert 'className: "frontier-sparse"' in script
-    assert 'text: t("Awaiting an independent second organization")' in script
-    assert "Too early to infer" in script
+    assert 'id="frontier-milestones"' not in html
+    assert "function sparseFrontier(" not in script
+    assert "frontier.length < 2" not in script
+    assert "frontier-sparse" not in script
+    assert "Awaiting an independent second organization" not in script
 
 
-def test_reporting_stages_are_explicitly_about_the_curated_registry():
+def test_the_panel_prints_no_reporting_stage_verdict():
+    # The stage badge graded a benchmark "Saturated reporting" from the share of
+    # registry organizations reporting it. Saturation stays an editorial
+    # judgement (see the header of data/benchmark_scores.yml), and the panel now
+    # shows reported values over time rather than scoring them.
+    html = source("site/index.html")
     script = source("site/assets/app.js")
 
-    stage = script.split("function reportingStage(entry, board)", 1)[1].split(
-        "const BENCHMARK_TASK_SHAPES", 1
-    )[0]
-    assert "advances / total >= 0.8" in stage
-    assert "isNewBenchmark(entry, board) && advances <= 4" in stage
-    assert 'label: t("Saturated reporting")' in stage
-    assert "curated registry" in stage
-    assert "convention, not quality" in stage
+    assert "function reportingStage(" not in script
+    assert "advances / total >= 0.8" not in script
+    assert 't("Saturated reporting")' not in script
+    assert '"Saturated reporting":' not in script, "no zh entry for a badge nothing renders"
+    assert "convention, not quality" not in script
+    # The element survives for the external path, which puts a source name in it,
+    # and the curated path hides it rather than leaving a bare outline.
+    assert 'id="frontier-stage"' in html
+    assert "stage.hidden = true;" in script or "stageBadge.hidden = true;" in script
 
 
 def test_frontier_svg_fits_the_viewport_without_horizontal_scrolling():
@@ -47,10 +64,11 @@ def test_frontier_svg_fits_the_viewport_without_horizontal_scrolling():
     assert "width: 100%" in rule
     assert "height: auto" in rule
     assert "min-width" not in rule
-    # The marker styling this used to check (`.frontier-point-number`) is gone with
-    # the numbers themselves; the advance marker is now a brand-colored circle
-    # carrying the reporting organization's glyph (issue #178).
-    assert ".frontier-point-face" in styles
+    # The marker styling this used to check belonged to the adoption advance
+    # diamond, which is gone with its band. The score point is the only marker
+    # the chart draws now, and it keeps the brand-glyph treatment (issue #178).
+    assert ".score-point-face" in styles
+    assert ".score-point-glyph" in styles
 
 
 def test_trajectory_points_expose_and_pin_record_details():
@@ -66,7 +84,6 @@ def test_trajectory_points_expose_and_pin_record_details():
     assert '"aria-pressed": "false"' in script
     assert 'label: t("Protocol")' in script
     assert 'label: t("Source")' in script
-    assert ".frontier-point.is-selected .frontier-point-face" in styles
     assert ".score-point.is-selected .score-point-face" in styles
     assert "pinned: selectedFrontierPoint === group" in script
     assert 'record.unit === "percent" ? "%" : ` ${record.unit}`' in script
@@ -85,12 +102,13 @@ def test_trajectory_points_expose_and_pin_record_details():
     assert "nearestDistance <= 22" in script
     assert 'window.addEventListener("resize", repositionFrontierTooltip)' in script
     assert 'window.addEventListener("scroll", repositionFrontierTooltip' in script
-    assert 'kind: event.advances ? "First report card" : "Repeat report card"' in script
-    assert ".card-rug-tick.is-selected line" in styles
     assert "pointer-events: none" in styles
     assert ".frontier-tooltip.is-pinned" in styles
-    assert "function scoreOnlyChart(entry, board)" in script
-    assert "scoreOnlyChart(entry, board)" in script
+    # Score points are now the only pinnable marks, so they carry the whole
+    # tooltip contract that the advance diamond and the rug ticks used to share.
+    assert 'kind: t("Readable score")' in script
+    assert "title: `${observation.organization} · ${observation.model}`" in script
+    assert "function scoreOnlyChart(" not in script
     assert "`${event.organization} · ${event.model} · first report · count" not in script
     assert "`${observation.model} · ${observation.value} · ${observation.protocol}`" not in script
 
@@ -225,7 +243,7 @@ def test_detail_panel_renders_for_any_selected_record():
     script = source("site/assets/app.js")
 
     for fn in (
-        "function renderExternalBenchmark(board, adopted, record)",
+        "function renderExternalBenchmark(board, scored, record)",
         "function externalIdentityBlock(detail)",
         "function externalOpennessBlock(detail)",
         "function externalSizesBlock(detail)",

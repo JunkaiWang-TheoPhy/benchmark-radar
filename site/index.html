@@ -395,8 +395,8 @@
           <section class="frontier-panel" id="adoption-frontier" aria-labelledby="frontier-heading">
             <div class="frontier-heading-row">
               <div>
-                <p class="eyebrow" id="frontier-eyebrow" data-i18n="Reporting over time">Reporting over time</p>
-                <h2 id="frontier-heading" data-i18n="Benchmark adoption frontier">Benchmark adoption frontier</h2>
+                <p class="eyebrow" id="frontier-eyebrow" data-i18n="The saturation curve">The saturation curve</p>
+                <h2 id="frontier-heading" data-i18n="Benchmark reported scores over time">Benchmark reported scores over time</h2>
               </div>
               <div class="frontier-controls">
                 <span class="frontier-stage" id="frontier-stage"></span>
@@ -406,33 +406,20 @@
                 </label>
               </div>
             </div>
-            <p class="section-note" id="frontier-explainer" data-i18n="frontier.explainer.tl1">
-              Three readings on one time axis. Each orange diamond marks an organization's first
-              report of this benchmark, which is the only event that raises the cumulative count.
-              The rug beneath it puts one tick per dated model card, so later cards from an
-              organization already counted appear as gray ticks and leave the staircase flat. A card
-              with no publication date cannot be placed on the timeline and is absent from both
-              bands, though it is still counted in the totals above. A long flat run is
-              reporting saturation observed within this curated registry, not a claim about
-              benchmark score saturation.
-            </p>
             <p class="section-note frontier-explainer-sub" id="frontier-explainer-sub" data-i18n="frontier.explainer.sub">
-              The score track below it is a separate reading: every value that could be read
-              verbatim from a cited document, connected only where the instrument and protocol
-              are identical. A flat score tail usually means no newer number could be read, which
-              is why the gap is marked rather than drawn through.
+              Every value that could be read verbatim from a cited document, placed at the date
+              that document was published rather than at any evaluation date, and connected only
+              where the instrument and protocol are identical. A flat tail usually means no newer
+              number could be read, which is why the gap is marked rather than drawn through.
+              Whether a curve has saturated stays a reading you make, not a score this panel
+              prints.
             </p>
-            <div class="frontier-summary" id="frontier-summary" aria-live="polite"></div>
             <div class="frontier-external" id="frontier-external" hidden></div>
             <div class="frontier-legend" id="frontier-legend" aria-label="Chart legend"></div>
             <div class="frontier-chart" id="frontier-chart"></div>
             <div class="frontier-org-key" id="frontier-org-key" aria-label="Reporting organization color key"></div>
             <div class="score-readout" id="frontier-score-readout"></div>
             <div class="frontier-evidence" id="frontier-evidence">
-              <section aria-labelledby="frontier-milestones-heading">
-                <h3 id="frontier-milestones-heading" data-i18n="Frontier milestones">Frontier milestones</h3>
-                <div id="frontier-milestones"></div>
-              </section>
               <aside class="frontier-context" aria-labelledby="frontier-task-heading">
                 <div id="frontier-task-preview"></div>
                 <details class="pareto-readiness">

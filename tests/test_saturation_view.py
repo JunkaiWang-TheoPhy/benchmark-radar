@@ -17,18 +17,21 @@ def source(path: str) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 
-def test_both_readings_share_one_time_axis():
-    # The point of the panel. Two charts with independent x scales would not let
-    # a reader compare adoption against score at a given date, which is the
-    # comparison the issue asked for.
+def test_the_score_track_occupies_the_whole_plot():
+    # The panel used to lead with an adoption staircase and give the scores a
+    # short strip underneath. The staircase answered a different question, so the
+    # score band now starts at the top margin and takes the height the staircase,
+    # the card rug and the inter-band gaps vacated. The y-axis is zoomed to the
+    # observed range, so that height is vertical resolution on the one reading a
+    # reader must not misjudge.
     script = source("site/assets/app.js")
-    chart = script.split("function adoptionFrontierChart(", 1)[1].split(
+    chart = script.split("function scoreTrackChart(", 1)[1].split(
         "\nfunction clearAdoptionFrontier", 1
     )[0]
 
-    # One x() for both plots, and a score y that offsets below the adoption plot
-    # and the card rug that now sits between them (issue #91 legibility pass).
-    assert "const scoreTop = margin.top + plotHeight + rugGap + rugHeight + bandGap" in chart
+    assert "const scoreTop = margin.top;" in chart
+    assert "const scoreHeight = 480;" in chart
+    assert "const height = margin.top + scoreHeight + margin.bottom;" in chart
     assert "scoreY(observation.value)" in chart
     assert "x(observation.reported_at)" in chart
 
@@ -37,7 +40,7 @@ def test_the_score_layer_only_draws_lines_the_join_rule_permits():
     # Two values taken under unstated and possibly different conditions are not
     # a measurement of change, so an unconnectable series must draw no line.
     script = source("site/assets/app.js")
-    chart = script.split("function adoptionFrontierChart(", 1)[1].split(
+    chart = script.split("function scoreTrackChart(", 1)[1].split(
         "\nfunction clearAdoptionFrontier", 1
     )[0]
 
@@ -69,7 +72,7 @@ def test_score_points_carry_recognizable_model_family_marks():
     """Issue #195: saturation points identify models before interaction."""
     script = source("site/assets/app.js")
     styles = source("site/assets/styles.css")
-    chart = script.split("function adoptionFrontierChart(", 1)[1].split(
+    chart = script.split("function scoreTrackChart(", 1)[1].split(
         "\nfunction clearAdoptionFrontier", 1
     )[0]
 
@@ -125,11 +128,11 @@ def test_better_is_up_even_when_lower_is_the_better_score():
     # Codex P2. `direction` exists in the schema so an error-rate metric does not
     # render its improvements as a downward slope. The renderer has to consult it.
     script = source("site/assets/app.js")
-    chart = script.split("function adoptionFrontierChart(", 1)[1].split(
+    chart = script.split("function scoreTrackChart(", 1)[1].split(
         "\nfunction clearAdoptionFrontier", 1
     )[0]
 
-    assert 'record?.direction === "lower_is_better"' in chart
+    assert 'record.direction === "lower_is_better"' in chart
     assert "scoreDescends ? 1 - fraction : fraction" in chart
 
 
@@ -142,20 +145,60 @@ def test_lower_is_better_headroom_is_described_against_zero():
     assert "points to zero, the floor of this metric" in script
 
 
-def test_a_sparse_adoption_layer_does_not_hide_a_readable_score():
-    # Codex P2. The sparse stepper replaces a one-advance step line because that
-    # line says nothing visually. The score track is a separate reading, so
-    # dropping it would hide real data because a different layer was thin.
+def test_only_a_benchmark_with_a_readable_score_can_be_selected():
+    # The panel is the score track now, so a benchmark with no readable value has
+    # nothing to draw. It is filtered out of the picker rather than opening an
+    # empty chart, which would read as "scores went to zero here". 20 of the 79
+    # adopted registry benchmarks take this path.
     script = source("site/assets/app.js")
-    render = script.split("const sparse = frontier.length < 2;", 1)[1].split(
-        "renderScoreReadout(entry)", 1
+    render = script.split("function renderAdoptionFrontier(board)", 1)[1].split(
+        "\nfunction ", 1
     )[0]
 
-    assert "scoreRecord(entry.benchmark_id)" in render
-    assert "sparse && !scored ? null : adoptionFrontierChart" in render
-    # And the chart collapses the empty adoption band rather than padding with it.
-    chart = script.split("function adoptionFrontierChart(", 1)[1]
-    assert "const plotHeight = sparse ? 0 : 370 - margin.top - margin.bottom;" in chart
+    assert "const scored = adopted.filter((entry) => scoreRecord(entry.benchmark_id));" in render
+    # The <select>, the resolution of a ?lfrontier= permalink, and the empty
+    # state all read from `scored`, so none of them can surface an unscored one.
+    assert "...[...scored]" in render
+    assert "scored.find((candidate) => candidate.benchmark_id === state.lfrontier)" in render
+    assert "if (!scored.length || !defaultEntry)" in render
+    # The default selection is drawn from the same set.
+    default_entry = script.split("function frontierDefaultEntry(board)", 1)[1].split(
+        "\n}", 1
+    )[0]
+    assert "scoreRecord(entry.benchmark_id)" in default_entry
+
+
+def test_a_link_to_an_unscored_benchmark_says_so_instead_of_swapping():
+    # These 20 benchmarks resolved and drew an adoption staircase before this
+    # change, so links to them are already out there. Falling through to the
+    # default entry would show a different benchmark under the reader's own URL
+    # with nothing to say so, which is a worse failure than an explicit refusal.
+    script = source("site/assets/app.js")
+    render = script.split("function renderAdoptionFrontier(board)", 1)[1].split(
+        "\nfunction ", 1
+    )[0]
+
+    assert "const unscoredEntry = state.lfrontier" in render
+    assert "&& !scoreRecord(candidate.benchmark_id)" in render
+    assert "so there is no track to draw" in render
+    # It resolves before the default-entry fallback, or the fallback wins.
+    assert render.index("const unscoredEntry") < render.index("state.lfrontier = defaultEntry.benchmark_id")
+    # And the reader's URL is left alone: the panel names the benchmark they
+    # asked for rather than rewriting the address to one they did not.
+    assert "heading: unscoredEntry.name" in render
+
+
+def test_no_route_into_the_panel_can_land_on_an_unscored_benchmark():
+    # The picker is not the only way in: a leaderboard row and a finding card
+    # both jump here. Either would snap to the default entry for an unscored
+    # benchmark and lie about what it opened, so neither offers the jump.
+    script = source("site/assets/app.js")
+
+    row = script.split("function leaderboardRow(entry)", 1)[1]
+    assert "const frontierButton = scoreRecord(entry.benchmark_id)" in row
+
+    finding = script.split("function findingCard(finding, board)", 1)[1]
+    assert "entry.benchmark_id === finding.benchmark_id && scoreRecord(entry.benchmark_id)" in finding
 
 
 def test_the_time_range_covers_the_score_track_at_both_ends():
@@ -164,38 +207,51 @@ def test_the_time_range_covers_the_score_track_at_both_ends():
     # every card -- reachable when a card carries a later `revised` date -- landed
     # outside the viewBox and was silently clipped.
     script = source("site/assets/app.js")
-    chart = script.split("function adoptionFrontierChart(", 1)[1]
+    chart = script.split("function scoreTrackChart(", 1)[1]
     range_block = chart.split("const start = new Date(", 1)[0]
 
-    assert "record?.first_reported_at" in range_block
-    assert "record?.last_reported_at" in range_block
+    assert "const startText = record.first_reported_at;" in range_block
+    assert "record.last_reported_at" in range_block
 
 
-def test_scores_still_render_when_no_mention_carries_a_date():
-    # Codex P2, second and third pass. The registry permits a card without
-    # `published`, so a scored benchmark can have zero dated adoption events.
-    # Clearing the panel hid every readable score because the *other* layer had no
-    # date -- and restoring only the aggregate readout still hid the individual
-    # points and comparable series, so a real chart is drawn.
+def test_scores_render_whether_or_not_any_mention_carries_a_date():
+    # The registry permits a card without `published`. When the adoption band led
+    # the panel, a benchmark with no dated mention was routed through a separate
+    # early return and a second entry point into the chart. The score track needs
+    # no dated mention at all: its own axis is bounded by the score record, and
+    # `lastMention` is consulted only to bound the reading-gap marker.
     script = source("site/assets/app.js")
-    guard = script.split("if (!events.length) {", 1)[1].split("\n  }", 1)[0]
 
-    # Ordering matters: clearAdoptionFrontier empties the readout, so the score
-    # render has to come after it.
-    assert guard.index("clearAdoptionFrontier") < guard.index("renderScoreReadout(entry)")
-    assert "renderFrontierLegend(entry, record, { sparse: true })" in guard
-    assert "scoreOnlyChart(entry, board)" in guard
+    assert "if (!events.length) {" not in script
+    render = script.split("function renderAdoptionFrontier(board)", 1)[1].split(
+        "\nfunction ", 1
+    )[0]
+    assert 'replaceChildren(byId("frontier-chart"), [scoreTrackChart(entry, board), frontierTooltip()])' in render
+
+    chart = script.split("function scoreTrackChart(", 1)[1].split(
+        "\nfunction clearAdoptionFrontier", 1
+    )[0]
+    assert "const startText = record.first_reported_at;" in chart
+    # The only adoption field the renderer touches is the mention date, and only
+    # to bound the reading gap. It reads no advance flag and no running count.
+    assert "const lastMention = frontierEvents(entry).at(-1)?.published;" in chart
+    assert ".advances" not in chart
+    assert "organizationCount" not in chart
 
 
-def test_the_score_only_chart_reuses_the_one_score_renderer():
+def test_there_is_exactly_one_score_renderer():
     # Two implementations of one axis would be free to disagree about the join
-    # rule, which is the single thing this chart must not do.
+    # rule, which is the single thing this chart must not do. The second entry
+    # point (`scoreOnlyChart`, for a benchmark with no dated mention) existed only
+    # to suppress the adoption bands and went with them.
     script = source("site/assets/app.js")
-    helper = script.split("function scoreOnlyChart(entry, board)", 1)[1].split("\n}", 1)[0]
 
-    assert "adoptionFrontierChart(" in helper
-    assert "board," in helper
-    assert "sparse: true" in helper
+    assert script.count("function scoreTrackChart(") == 1
+    assert "function scoreOnlyChart(" not in script
+    assert "function adoptionFrontierChart(" not in script
+    # And no permanently-false flag left behind in its place: a switch nobody can
+    # turn on is worse than no switch.
+    assert "sparse" not in script
 
 
 def test_the_reading_gap_ends_at_this_benchmarks_own_latest_mention():
@@ -203,7 +259,7 @@ def test_the_reading_gap_ends_at_this_benchmarks_own_latest_mention():
     # registry, so shipped Arena-Hard and Aider Polyglot -- which have no adopter
     # newer than their last score -- drew a long gap nothing supported.
     script = source("site/assets/app.js")
-    gap = script.split("const lastMention = events", 1)[1].split(
+    gap = script.split("const lastMention = frontierEvents(entry)", 1)[1].split(
         "no readable score in this window", 1
     )[0]
 
@@ -211,68 +267,90 @@ def test_the_reading_gap_ends_at_this_benchmarks_own_latest_mention():
     assert "x(endText)" not in gap, "the gap must not extend to the registry-wide end date"
 
 
-def test_card_events_live_on_their_own_band_not_the_count_axis():
-    # Issue #91 legibility pass. Repeat cards were plotted at `y(organizationCount)`,
-    # putting a marker at a height the card did not cause: a card that changed
-    # nothing sat at the same y as the advance that did, and several cards sharing
-    # a date stacked into each other. Card events now get their own rug band.
-    script = source("site/assets/app.js")
-    chart = script.split("function adoptionFrontierChart(", 1)[1].split(
-        "\nfunction clearAdoptionFrontier", 1
-    )[0]
-
-    assert "const rugTop = margin.top + plotHeight + rugGap" in chart
-    assert "card-rug-tick" in chart
-    # The staircase loop iterates advances only; nothing else may touch y().
-    staircase = chart.split("for (const event of advances) {", 1)[1].split("\n  }", 1)[0]
-    assert "for (const event of events)" not in staircase
-
-
-def test_the_advance_marker_carries_no_number():
-    # The digit inside the circle restated the y-axis value the marker already sat
-    # at, and a number in a circle reads as a record id, so readers took the
-    # staircase for a numbered list rather than a cumulative count.
+def test_the_adoption_marks_are_gone_from_the_chart():
+    # The staircase, its orange advance diamonds, the release marker and the card
+    # rug all answered "who reported this, and when" rather than "what did it
+    # score". They are removed rather than hidden behind a flag: the geometry
+    # that kept them legible (the count axis, the rug's collision sweep, the
+    # release line spanning both plots) is dead weight the moment nothing draws
+    # them, and it would drift out of agreement with the score band it no longer
+    # shares a viewBox with.
     script = source("site/assets/app.js")
     styles = source("site/assets/styles.css")
 
-    assert "frontier-point-number" not in script
-    assert "frontier-point-number" not in styles
-    assert "advanceIndex" not in script
-    # A brand-colored circle carrying the reporting organization's glyph: the
-    # glyph names the organization that stepped the count up (issue #178).
-    assert "frontier-point-advance" in script
-    assert ".frontier-point-face" in styles
+    for mark in (
+        "frontier-point-advance",
+        "frontier-point-face",
+        "frontier-point-number",
+        "card-rug-tick",
+        "card-rug-baseline",
+        "frontier-release-line",
+        "frontier-line",
+        "MIN_TICK_GAP",
+        "organizationCount",
+        "maxOrganizations",
+        "frontier-sparse",
+    ):
+        assert mark not in script, f"{mark} still drawn"
+        assert mark not in styles, f"{mark} still styled"
+
+    # The score marks are untouched. They carry their own classes, so a check
+    # that the adoption ones are absent cannot pass by emptying the chart.
+    chart = script.split("function scoreTrackChart(", 1)[1].split(
+        "\nfunction clearAdoptionFrontier", 1
+    )[0]
+    assert "score-point-face" in chart
+    assert ".score-point-face" in styles
 
 
-def test_a_legend_names_each_mark_and_its_effect_on_the_count():
-    # "New organization" alone does not say that the other kind leaves the
-    # staircase flat, so each entry states the mark AND what it does to the count.
+def test_the_legend_keys_only_marks_that_are_on_the_chart():
+    # A key describing marks that are not on screen is worse than no key. The
+    # four adoption entries (the advance diamond, the two rug ticks and their
+    # effect on the count) named marks the chart no longer draws, so they went
+    # with the bands; what remains is keyed to the score marks.
+    html = source("site/index.html")
+    script = source("site/assets/app.js")
+    legend = script.split("function renderFrontierLegend(", 1)[1].split("\n}", 1)[0]
+
+    assert 'id="frontier-legend"' in html
+    assert "const items = [];" in legend
+    for gone in (
+        "New organization",
+        "First card from that organization",
+        "Later card, organization already counted",
+        "cumulative count increases",
+        "count unchanged",
+        "the tick under the jump",
+    ):
+        assert gone not in script, f"{gone!r} still in the legend copy"
+    # The score entries are what the key is for now.
+    assert "legend-swatch-score" in legend
+    assert "connected only at one instrument and protocol" in legend
+
+
+def test_the_axis_and_header_name_the_score_reading():
+    # The header said "ADOPTION TRAJECTORY" over a chart that no longer plots
+    # adoption, and the counts line under it ("26 model cards, 10 distinct
+    # organizations, last new organization ...") was an adoption reading in
+    # prose. Both are replaced by what the panel actually shows.
     html = source("site/index.html")
     script = source("site/assets/app.js")
 
-    assert 'id="frontier-legend"' in html
-    assert "function renderFrontierLegend(" in script
-    assert "cumulative count increases" in script
-    assert "count unchanged" in script
+    assert 't("reported scores over time")' in script
+    assert "adoption trajectory" not in script
+    # The counts line and the reporting-stage sentence are gone from the markup,
+    # so nothing can repopulate them.
+    assert 'id="frontier-summary"' not in html
+    assert "frontier-summary" not in script
+    assert "function reportingStage(" not in script
 
-
-def test_the_axis_and_header_name_distinct_organizations():
-    # "Organizations reporting" invited the reading that a repeat card adds to it,
-    # and "23 cards · 10 of 10 dated organizations" read as one ratio about a
-    # single quantity rather than two different counts.
-    script = source("site/assets/app.js")
-
-    assert "cumulative distinct organizations" in script
-    assert '"distinct organization"' in script
-    # Asserted on the strings that actually render, not on a source slice: "dated
-    # organizations" legitimately survives in comments (including the one
-    # documenting this very change) and in the navigator copy, so a
-    # substring-absence check over source text tests the wrong thing.
-    assert 'metricLabel(entry.card_count, "model card")' in script
-    assert 'metricLabel(frontier.length, "distinct organization")' in script
-    # And the organization count is qualified when some card carries no date, since
-    # card_count includes those while the plotted count cannot.
-    assert 't("with a dated card")' in script
+    # The x axis names the date each point actually carries. 5,522 of the 5,544
+    # crawled rows carry a model release date and none carries an evaluation
+    # date, so an unqualified "time" invites the wrong reading; the curated
+    # points here sit at the date their citing document was published, and the
+    # label says which.
+    assert 't("document publication date")' in script
+    assert '"document publication date": ' in script
 
 
 def test_the_chart_does_not_collapse_on_a_narrow_viewport():
@@ -295,22 +373,22 @@ def test_the_chart_does_not_collapse_on_a_narrow_viewport():
     assert "if (isNarrow === wasNarrow) return;" in script
 
 
-def test_rug_ticks_never_overpaint_each_other():
-    # Codex P1, twice. Two earlier versions were wrong the same way at different
-    # scales: x(date) alone overpainted cards sharing a date, and fanning each date
-    # independently then pushed those ticks into a *neighbouring* date's -- 0.04
-    # units apart on shipped GPQA Diamond at the narrow viewBox, inside a 2.5-unit
-    # stroke. Positions are therefore allocated across every card at once.
+def test_the_rug_collision_sweep_went_with_the_rug():
+    # The rug's one-pass tick allocation existed because several cards sharing a
+    # date overpainted each other. With the rug removed there is nothing left to
+    # allocate, and a nudging sweep that still ran would move score points off
+    # the dates they were reported on -- the opposite of what it was for.
     script = source("site/assets/app.js")
-    rug = script.split("const MIN_TICK_GAP", 1)[1].split("\n  }", 1)[0]
 
-    # A single sweep enforcing a minimum gap, not a per-date fan.
-    assert "Math.max(ideal, previous + MIN_TICK_GAP)" in rug
-    # Recentred afterwards so the run still sits on the dates it represents.
-    assert "const shift = drift / 2;" in rug
-    # The gap has to exceed the widest tick stroke (2.5) or ticks still touch.
-    gap = float(script.split("const MIN_TICK_GAP = ", 1)[1].split(";", 1)[0])
-    assert gap > 2.5, "the minimum gap must exceed the tick stroke width"
+    assert "MIN_TICK_GAP" not in script
+    # Score points sit at x(reported_at) and nowhere else. Several scores may
+    # share a date; they are separated by their y value, which is the reading,
+    # rather than nudged along the axis, which would falsify it.
+    chart = script.split("function scoreTrackChart(", 1)[1].split(
+        "\nfunction clearAdoptionFrontier", 1
+    )[0]
+    assert "x(observation.reported_at)" in chart
+    assert "previous + " not in chart
 
 
 def test_the_zoom_marker_survives_a_narrow_viewport():
@@ -323,17 +401,6 @@ def test_the_zoom_marker_survives_a_narrow_viewport():
     assert "(zoomed)" in script
 
 
-def test_the_legend_omits_marks_that_sparse_mode_suppresses():
-    # Codex P2. `sparse` replaces the staircase and rug with the step list, so a
-    # key describing diamonds and ticks that are not on screen is worse than none.
-    script = source("site/assets/app.js")
-    legend = script.split("function renderFrontierLegend(", 1)[1].split("\n}", 1)[0]
-
-    assert "sparse" in legend
-    assert "const items = sparse" in legend
-    assert "renderFrontierLegend(entry, scoreRecord(entry.benchmark_id), { sparse })" in script
-
-
 def test_the_score_axis_says_it_is_zoomed():
     # Every value in this corpus sits in the upper part of its scale, so the
     # band is padded around the observed range instead of running 0-100. A
@@ -344,16 +411,27 @@ def test_the_score_axis_says_it_is_zoomed():
     assert "(zoomed)" in script
 
 
-def test_a_benchmark_with_no_readable_score_says_so_instead_of_plotting_zero():
+def test_a_benchmark_with_no_readable_score_draws_no_chart_at_all():
+    # Previously the panel opened on the adoption staircase and said in the
+    # readout that no score could be read. With the staircase retired there is
+    # nothing left to draw, so the renderer refuses rather than emitting an empty
+    # band, which a reader would take for a drop to zero.
     script = source("site/assets/app.js")
 
+    chart = script.split("function scoreTrackChart(", 1)[1].split(
+        "\nfunction clearAdoptionFrontier", 1
+    )[0]
+    assert "if (!record) return null;" in chart
+    # No conditional band height survives: the band is unconditionally full.
+    assert "record ? 132 : 0" not in chart
+
+    # The readout keeps the honest sentence for the defensive case, minus the
+    # clause promising an adoption chart that no longer exists.
     readout = script.split("function renderScoreReadout(entry)", 1)[1].split(
-        "\nfunction adoptionFrontierChart", 1
+        "\nfunction ", 1
     )[0]
     assert "not a zero and not a plateau" in readout
-    # And the chart reserves no empty band for it, which would read as a drop.
-    chart = script.split("function adoptionFrontierChart(", 1)[1]
-    assert "const scoreHeight = record ? 132 : 0;" in chart
+    assert "the chart shows adoption only" not in script
 
 
 def test_the_evidence_grade_is_printed_not_hidden():
@@ -409,15 +487,21 @@ def test_a_finding_can_move_the_chart_to_the_benchmark_it_is_about():
     assert "finding.benchmark_id" in card
 
 
-def test_the_explainer_still_separates_reporting_from_score_saturation():
-    # The guarantee that predates this change and must survive it: a flat
-    # adoption run is reporting saturation within a curated registry, and is not
-    # a claim about the benchmark's scores.
+def test_the_explainer_leaves_saturation_as_the_readers_judgement():
+    # The predecessor of this guarantee said a flat adoption run was reporting
+    # saturation and not a claim about scores. The adoption run is gone, so the
+    # confusion it guarded against is now the inverse one: a flat score tail read
+    # as a saturated benchmark. The preamble has to name the gap for what it is
+    # and must not print a saturation verdict of its own.
     html = " ".join(source("site/index.html").split())
 
-    assert "A long flat run is reporting saturation" in html
-    assert "not a claim about benchmark score saturation" in html
+    assert "no newer number could be read" in html
+    assert "the gap is marked rather than drawn through" in html
+    assert "stays a reading you make, not a score this panel prints" in html
     assert "connected only where the instrument and protocol" in html
+    # And it names the date the x axis carries, rather than leaving "time" to be
+    # read as an evaluation date.
+    assert "placed at the date that document was published rather than at any evaluation date" in html
 
 
 def test_the_score_layer_is_keyed_by_the_same_benchmark_id_as_adoption():

@@ -2418,16 +2418,6 @@ td a {
   gap: 0.65rem;
 }
 
-.frontier-stage-emerging {
-  border-color: #f4b65e;
-  color: #ffd99e;
-}
-
-.frontier-stage-saturated {
-  border-color: #91a0a7;
-  color: #c1cbd0;
-}
-
 .frontier-panel .eyebrow {
   color: #7fc7bc;
 }
@@ -2457,37 +2447,6 @@ td a {
   color: #f3f6f7;
 }
 
-.frontier-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem 1.2rem;
-  align-items: baseline;
-  padding: 0.75rem 0;
-  border-top: 1px solid #39464c;
-  border-bottom: 1px solid #39464c;
-  font-family: var(--utility);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-}
-
-.frontier-summary strong {
-  color: white;
-  font-size: 0.82rem;
-}
-
-.frontier-summary span {
-  color: #aebcc1;
-}
-
-.frontier-summary .frontier-stage-description {
-  flex-basis: 100%;
-  color: #d6e0e3;
-  font-family: var(--body);
-  font-size: 0.8rem;
-  letter-spacing: normal;
-  text-transform: none;
-}
-
 .frontier-chart {
   position: relative;
   margin-top: 0.5rem;
@@ -2503,34 +2462,6 @@ td a {
   stroke: #344249;
   stroke-dasharray: 3 6;
   stroke-width: 1;
-}
-
-.frontier-line {
-  fill: none;
-  stroke: #7fc7bc;
-  stroke-width: 3;
-}
-
-/* A colored circle carrying the reporting organization's brand glyph. The circle
-   takes the organization's frontier color and the glyph sits dark on it, so the
-   mark reads at a glance which organization stepped the count up (issue #178,
-   HLE/harbor style). */
-.frontier-point-face {
-  stroke: #0d1519;
-  stroke-width: 2;
-  transition: stroke-width 120ms ease;
-}
-
-.frontier-point-glyph {
-  color: #0d1519;
-  pointer-events: none;
-  user-select: none;
-}
-
-.frontier-point:focus .frontier-point-face,
-.frontier-point:hover .frontier-point-face,
-.frontier-point.is-selected .frontier-point-face {
-  stroke-width: 4;
 }
 
 /* Color key under the chart: one circular chip per reporting organization, in
@@ -2573,63 +2504,17 @@ td a {
   letter-spacing: 0.04em;
 }
 
-.frontier-point,
 .score-point {
   cursor: pointer;
 }
 
-/* Card events live on their own band. A tick per card means several cards on one
-   date sit side by side instead of stacking into an unreadable pile on the
-   staircase, which is what made the old chart look like numbered records. */
-.card-rug-baseline {
-  stroke: #2c383e;
-  stroke-width: 1;
-}
-
-.card-rug-tick line {
-  stroke-linecap: butt;
-  transition: stroke-width 120ms ease;
-}
-
-.card-rug-tick-first line {
-  stroke: #f4b65e;
-  stroke-width: 2.5;
-}
-
-.card-rug-tick-repeat line {
-  stroke: #89969e;
-  stroke-width: 2;
-}
-
-.card-rug-tick:focus line,
-.card-rug-tick:hover line,
-.card-rug-tick.is-selected line {
-  stroke-width: 4;
-}
-
-.frontier-release-label,
 .frontier-tick,
 .frontier-axis-label {
   fill: #aebcc1;
   font-family: var(--utility);
-}
-
-.frontier-tick,
-.frontier-axis-label {
   font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-.frontier-release-line {
-  stroke: #dc633f;
-  stroke-dasharray: 5 5;
-  stroke-width: 1.5;
-}
-
-.frontier-release-label {
-  fill: #ee9b82;
-  font-size: 11px;
 }
 
 /* Legend, keyed to the marks on the chart and sitting directly above it rather
@@ -2661,30 +2546,6 @@ td a {
 .legend-swatch {
   flex: 0 0 auto;
   align-self: center;
-}
-
-.legend-swatch-point {
-  width: 13px;
-  height: 13px;
-  background: #f4b65e;
-  border: 2px solid #0d1519;
-  border-radius: 50%;
-  box-sizing: border-box;
-}
-
-.legend-swatch-tick-first,
-.legend-swatch-tick-repeat {
-  width: 3px;
-  background: #f4b65e;
-}
-
-.legend-swatch-tick-first {
-  height: 15px;
-}
-
-.legend-swatch-tick-repeat {
-  height: 8px;
-  background: #89969e;
 }
 
 .legend-swatch-score {
@@ -3053,7 +2914,6 @@ td a {
 
 .frontier-evidence {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(260px, 0.95fr);
   gap: 1.5rem;
   margin-top: 1.2rem;
   padding-top: 1.5rem;
@@ -3066,76 +2926,8 @@ td a {
   font-size: 1.25rem;
 }
 
-.milestone-release,
-.milestone-repeat-note {
-  color: #aebcc1;
-  font-family: var(--utility);
-  font-size: 0.65rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.frontier-milestone-list {
-  display: grid;
-  gap: 0;
-  margin: 0 0 0.9rem;
-  padding: 0;
-  list-style: none;
-}
-
-.frontier-milestone-list li {
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  gap: 0.65rem;
-  min-height: 58px;
-  padding: 0.55rem 0;
-  border-top: 1px solid #2d3b41;
-}
-
-.milestone-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 27px;
-  height: 27px;
-  border: 1px solid #f4b65e;
-  color: #f4b65e;
-  font-family: var(--utility);
-  font-size: 0.66rem;
-}
-
-.milestone-date {
-  margin: 0;
-  color: #aebcc1;
-  font-family: var(--utility);
-  font-size: 0.61rem;
-  text-transform: uppercase;
-}
-
-.milestone-source {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  color: white;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.milestone-source:hover,
-.milestone-source:focus-visible {
-  text-decoration: underline;
-}
-
-.milestone-model {
-  display: block;
-  color: #aebcc1;
-  font-size: 0.72rem;
-}
-
 .frontier-context {
-  padding-left: 1.5rem;
-  border-left: 1px solid #39464c;
+  padding-left: 0;
 }
 
 .task-shape {
@@ -3214,45 +3006,6 @@ td a {
   font-family: var(--utility);
   font-size: 0.65rem;
   text-transform: uppercase;
-}
-
-.frontier-sparse {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
-  margin: 1.5rem 0;
-  border: 1px solid #39464c;
-  background: #39464c;
-}
-
-.frontier-sparse-step {
-  display: grid;
-  align-content: start;
-  min-height: 150px;
-  padding: 1rem;
-  background: #162228;
-}
-
-.frontier-sparse-step > span {
-  color: #7fc7bc;
-  font-family: var(--utility);
-  font-size: 0.63rem;
-}
-
-.frontier-sparse-step strong {
-  margin-top: 1.4rem;
-  font-size: 0.85rem;
-}
-
-.frontier-sparse-step small {
-  margin-top: 0.45rem;
-  color: #aebcc1;
-  font-size: 0.72rem;
-}
-
-.frontier-sparse-step.is-awaiting {
-  border: 1px dashed #74848b;
-  background: #111c21;
 }
 
 .benchmark-new {
@@ -3914,16 +3667,6 @@ footer {
     border-right: 0;
   }
 
-  .frontier-evidence {
-    grid-template-columns: 1fr;
-  }
-
-  .frontier-context {
-    padding: 1.25rem 0 0;
-    border-top: 1px solid #39464c;
-    border-left: 0;
-  }
-
   .heading-note {
     text-align: left;
   }
@@ -4080,17 +3823,8 @@ footer {
     padding-inline: 1rem;
   }
 
-  .frontier-sparse {
-    grid-template-columns: 1fr;
-  }
-
-  .frontier-sparse-step {
-    min-height: 118px;
-  }
-
   .frontier-tick,
   .frontier-axis-label,
-  .frontier-release-label,
   .score-best-label,
   .score-gap-label {
     font-size: 20px;
