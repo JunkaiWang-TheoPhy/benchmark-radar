@@ -382,6 +382,7 @@ const I18N = {
     "need attention": "需关注",
     "Sort: Priority ↓": "排序:优先度 ↓",
     "Sort: Date, then Priority ↓": "排序:日期,再按优先度 ↓",
+    "Sort: Date ↓": "排序:日期 ↓",
     // --- Leaderboard ---------------------------------------------------------
     "Model Card Adoption Rank": "模型卡采用排名",
     "Which benchmarks do model cards report?": "模型卡报告了哪些基准?",
@@ -1671,12 +1672,16 @@ function renderToday({ resultsOnly = false } = {}) {
   byId("today-breakdown").textContent =
     `${evidenceCount} ${t("normal")} · ${attentionCount} ${t("need attention")}`;
   // The list is sorted by priority within a day; say so at the point of use
-  // rather than making the reader infer it. In All dates mode the archive is
-  // ordered by date first and priority second, so the caption says so
+  // rather than making the reader infer it. Attention rows carry no priority,
+  // so a kind-filtered attention set falls back to date order, and in All
+  // dates mode the archive is ordered by date first and priority second
   // (issue #248).
-  byId("today-sort").textContent = showingAllDates
-    ? t("Sort: Date, then Priority ↓")
-    : t("Sort: Priority ↓");
+  const priorityScored = visibleObservations.some((item) => Number(item.total_score) > 0);
+  byId("today-sort").textContent = !priorityScored
+    ? t("Sort: Date ↓")
+    : showingAllDates
+      ? t("Sort: Date, then Priority ↓")
+      : t("Sort: Priority ↓");
   replaceChildren(
     byId("today-list"),
     visibleObservations.length
@@ -6011,7 +6016,16 @@ function observationCard(item, index) {
   const metadata = isAttention
     ? element("div", { className: "signal-meta" }, [
         element("span", { className: "attention-badge", text: t("attention") }),
-        element("span", { text: `${item.source} · ${eventVerb(item)}` }),
+        element("span", {
+          text: `${item.source} · ${eventVerb(item)}`,
+          // The relative time on the row carries the exact timestamp on
+          // hover, matching the evidence rows (issue #248).
+          attrs: {
+            title: eventTimestamp(item)
+              ? `${formatDate(eventTimestamp(item), { dateStyle: "medium", timeStyle: "short" })} UTC`
+              : "",
+          },
+        }),
       ])
     : recordMeta(item);
   const summary = (item.summary || "").trim()
