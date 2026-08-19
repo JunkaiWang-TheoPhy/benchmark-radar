@@ -35,6 +35,8 @@
         <div class="logos-filters">
           <button type="button" data-filter="all" class="is-active">All</button>
           <button type="button" data-filter="fallback">No brand mark</button>
+          <button type="button" data-filter="curated">Curated</button>
+          <button type="button" data-filter="crawled">Crawled</button>
           <button type="button" data-filter="suspect">Suspect geometry</button>
         </div>
       </header>
@@ -53,9 +55,14 @@
       <section class="logos-section">
         <h2>Model-family resolution</h2>
         <p class="logos-note">
-          Real model names from the curated registry, run through
+          Every model that draws a point, from both layers, run through
           <code>modelIcon()</code>. This is where a family mark (Claude, Gemini,
-          Grok) overrides the organization mark, and where it does not.
+          Grok) overrides the organization mark, and where it does not. The
+          layer chip says which record a model came from: a
+          <span class="chip chip-layer-crawled">crawled</span> row carries no
+          protocol and no evaluation date, so it is not a
+          <span class="chip chip-layer-curated">curated</span> card's equal
+          even though both resolve their mark the same way.
         </p>
         <div class="logos-grid" id="logos-models"></div>
       </section>

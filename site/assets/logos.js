@@ -95,7 +95,7 @@ function chartMark(paths, color) {
   return svg;
 }
 
-function card({ id, paths, color, name, sub }) {
+function card({ id, paths, color, name, sub, layer }) {
   const source = iconSource(paths);
   const suspect = suspectGeometry(paths);
 
@@ -104,6 +104,7 @@ function card({ id, paths, color, name, sub }) {
   node.id = id;
   node.dataset.fallback = String(source.fallback);
   node.dataset.suspect = String(suspect);
+  if (layer) node.dataset.layer = layer;
 
   const head = document.createElement("div");
   head.className = "logos-card-head";
@@ -125,6 +126,12 @@ function card({ id, paths, color, name, sub }) {
     const chip = document.createElement("span");
     chip.className = "chip chip-suspect";
     chip.textContent = "suspect";
+    chips.append(chip);
+  }
+  if (layer) {
+    const chip = document.createElement("span");
+    chip.className = `chip chip-layer chip-layer-${layer}`;
+    chip.textContent = layer;
     chips.append(chip);
   }
   head.append(chips);
@@ -182,7 +189,13 @@ async function main() {
     );
   }
 
+  // Every model that draws a point, from both layers. A crawled model and a
+  // curated one resolve their mark through the same modelIcon call, so both
+  // belong here -- but the layer is printed on the card, because a crawled row
+  // carries no protocol and no evaluation date and must not read as a curated
+  // one's equal (issue #268).
   const modelHost = byId("logos-models");
+  const layers = registry.model_layers || {};
   for (const [key, id] of Object.entries(registry.models)) {
     const [model, organization] = key.split("␟");
     modelHost.append(
@@ -192,6 +205,7 @@ async function main() {
         color: organizationColor(organization),
         name: model,
         sub: organization,
+        layer: layers[key],
       }),
     );
   }
@@ -213,7 +227,9 @@ async function main() {
             ? node.dataset.fallback !== "true"
             : mode === "suspect"
               ? node.dataset.suspect !== "true"
-              : false;
+              : mode === "curated" || mode === "crawled"
+                ? node.dataset.layer !== mode
+                : false;
       }
     });
   });
