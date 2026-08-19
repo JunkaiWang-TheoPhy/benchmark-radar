@@ -1530,6 +1530,29 @@ input {
   cursor: default;
 }
 
+/* A source that found nothing is printed in the mix rather than left out, so
+   it needs to read as a gap and not as another count (issue #260). */
+.source-gap {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--danger);
+  border-radius: 999px;
+  color: var(--danger);
+  font-family: var(--utility);
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+.source-gap-note {
+  margin: 0 0 1rem;
+  padding: 0.7rem 0.9rem;
+  border-left: 3px solid var(--danger);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 0.85rem;
+}
+
 .trend-message {
   margin: 1.25rem 0 0;
   padding: 0.9rem 1rem;

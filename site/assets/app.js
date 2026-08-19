@@ -29,6 +29,46 @@ const LEGACY_SOURCE_COLLECTION_METHODS = {
   brave: "API",
 };
 
+// Fetch health records a run under its internal key ("first_party_feeds"),
+// while the source mix counts finished evidence under the label a reader sees
+// ("First-party feed"). Without this bridge a source that returned nothing is
+// simply missing from the mix, and a reader cannot tell "this source looked
+// and found nothing" apart from "this source does not exist" (issue #260).
+const SOURCE_DISPLAY_NAMES = {
+  arxiv: "arXiv",
+  huggingface: "Hugging Face",
+  github: "GitHub",
+  openreview: "OpenReview",
+  semantic_scholar: "Semantic Scholar",
+  github_releases: "GitHub Release",
+  first_party_feeds: "First-party feed",
+  openalex: "OpenAlex",
+  brave: "Brave Web",
+};
+
+const sourceDisplayName = (key) =>
+  SOURCE_DISPLAY_NAMES[key] || String(key).replaceAll("_", " ");
+
+// Sources that ran for this day but put nothing into the ranked evidence, kept
+// in the order fetch health reports them so the ledger reads the same way every
+// day. A failed fetch is already reported by the Fetch health column, so this
+// covers both: a source that errored and one that succeeded with nothing to
+// show are equally invisible in the source mix, and equally worth flagging
+// because a silent zero can mean a broken source (issue #254).
+function zeroItemSources(day) {
+  const counts = day.source_counts || {};
+  const seen = new Set();
+  return (day.ingest_health || [])
+    .filter((entry) => entry.kind !== "attention")
+    .map((entry) => ({ ...entry, name: sourceDisplayName(entry.source) }))
+    .filter((entry) => {
+      if (Number(counts[entry.name] || 0) > 0) return false;
+      if (seen.has(entry.name)) return false;
+      seen.add(entry.name);
+      return true;
+    });
+}
+
 const byId = (id) => document.getElementById(id);
 
 // Interface language. English is the truth inside this file: every UI string
@@ -489,6 +529,16 @@ const I18N = {
     Events: "事件",
     Attention: "关注度",
     "Fetch health": "抓取状态",
+    // Sources that found nothing on a day (issue #260). The two sentence
+    // templates carry {sources} and {date} so zh can order them its own way.
+    "On {date} these sources ran but found nothing: {sources}.":
+      "{date},这些来源运行了但没有找到任何内容:{sources}。",
+    "On {date} these sources could not be reached: {sources}.":
+      "{date},这些来源无法访问:{sources}。",
+    "A source that stays at zero for several days is usually broken, not quiet.":
+      "一个来源连续几天都是零,通常说明它出了问题,而不是没有新内容。",
+    "This source ran and found nothing on this day.": "这个来源当天运行了,但没有找到任何内容。",
+    "This source could not be reached on this day.": "这个来源当天无法访问。",
     // --- Map ----------------------------------------------------------------
     "Big picture": "整体概览",
     "What we found": "我们发现了什么",
@@ -1892,6 +1942,7 @@ function renderTrends() {
   );
   hideDayTooltip();
   byId("snapshot-count").textContent = `${state.data.snapshot_count} ${t("snapshots")}`;
+  renderSourceGapNote(state.data.days[dayCount - 1]);
   replaceChildren(
     byId("trend-table"),
     [...state.data.days].reverse().map((day) => {
@@ -1908,7 +1959,7 @@ function renderTrends() {
           text: `${formatDate(day.since, { dateStyle: "short", timeStyle: "short" })} → ${formatDate(day.generated_at, { dateStyle: "short", timeStyle: "short" })}`,
         }),
         element("td", { text: day.evidence_count }),
-        element("td", { text: countMapText(day.source_counts) }),
+        element("td", {}, sourceMixCell(day)),
         element("td", {
           text: countMapText(day.category_counts),
         }),
@@ -2151,6 +2202,72 @@ function metricLabel(value, singular, plural = `${singular}s`) {
   const count = Number(value || 0);
   const noun = count === 1 ? t(singular) : t(plural);
   return `${count.toLocaleString()} ${noun}`;
+}
+
+// The ledger is long and the newest day sits at the top of it, so the gaps for
+// that day are stated once in plain words above the table. Naming the sources
+// is the point: "2 sources found nothing" tells a reader there is a problem but
+// not where to look, and the two answers (a source that ran and found nothing
+// versus one that could not be reached) call for different follow-up.
+function renderSourceGapNote(day) {
+  const note = byId("source-gap-note");
+  if (!note) return;
+  const gaps = day ? zeroItemSources(day) : [];
+  if (!gaps.length) {
+    note.hidden = true;
+    note.textContent = "";
+    return;
+  }
+  const unreachable = gaps.filter((entry) => !entry.ok).map((entry) => entry.name);
+  const empty = gaps.filter((entry) => entry.ok).map((entry) => entry.name);
+  const sentence = (template, names) =>
+    t(template, { date: formatDate(day.date), sources: names.join(", ") });
+  const sentences = [];
+  if (empty.length) {
+    sentences.push(sentence("On {date} these sources ran but found nothing: {sources}.", empty));
+  }
+  if (unreachable.length) {
+    sentences.push(
+      sentence("On {date} these sources could not be reached: {sources}.", unreachable),
+    );
+  }
+  note.textContent = `${sentences.join(" ")} ${t("A source that stays at zero for several days is usually broken, not quiet.")}`;
+  note.hidden = false;
+}
+
+// The source mix used to list only sources that found something, so a day on
+// which a source found nothing looked identical to a day on which that source
+// did not exist. The zeros are the interesting half: a source that quietly
+// returns nothing several days running is usually broken, not idle, so they are
+// spelled out here rather than left to be inferred from an absence (issue #260).
+function sourceMixCell(day) {
+  const found = Object.entries(day.source_counts || {});
+  const gaps = zeroItemSources(day);
+  const parts = [];
+  parts.push(
+    element("span", {
+      text: found.length
+        ? found.map(([name, count]) => `${name.replaceAll("_", " ")} ${count}`).join(" · ")
+        : t("none"),
+    }),
+  );
+  gaps.forEach((entry) => {
+    parts.push(
+      element("span", {
+        className: "source-gap",
+        text: `${entry.name} 0`,
+        attrs: {
+          // Why it is zero is the reader's next question, and the two answers
+          // mean different things: an error is a fault to chase, an empty run
+          // is a source that looked and found nothing worth keeping.
+          title: entry.ok
+            ? t("This source ran and found nothing on this day.")
+            : t("This source could not be reached on this day."),
+        },
+      }),
+    );
+  });
+  return parts;
 }
 
 function countMapText(values) {
