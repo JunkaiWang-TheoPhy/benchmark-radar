@@ -1,0 +1,47 @@
+name: Weekly Jargon Audit
+
+on:
+  schedule:
+    # Mondays 02:00 UTC = 10:00 Asia/Singapore, an hour after the daily radar
+    # so the two never contend for the same runner. Weekly rather than daily
+    # because the copy changes slowly and a report nobody has had time to act
+    # on is a report that gets skimmed (issue #241).
+    - cron: "0 2 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    permissions:
+      contents: read
+      issues: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Scan user-facing text for project vocabulary
+        run: python scripts/audit_jargon.py --markdown > body.md
+      - name: Open or update the tracking issue
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          title="Jargon in user-facing text — week of $(date -u +%Y-%m-%d)"
+          # One rolling issue, not one per week: the finding list is a
+          # standing state of the copy, so a new issue every Monday would
+          # bury the discussion that happened on the last one. The title
+          # carries the date so it is obvious when it was last refreshed.
+          existing=$(gh issue list --state open --label jargon \
+            --json number --jq '.[0].number // empty')
+          if [[ -n "${existing}" ]]; then
+            gh issue edit "${existing}" --title "${title}" --body-file body.md
+            echo "Updated issue #${existing}"
+          else
+            gh issue create --title "${title}" --body-file body.md \
+              --label jargon --label automated
+          fi
