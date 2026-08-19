@@ -44,14 +44,18 @@ SOURCES = {
     "ORGANIZATION_ICONS[Moonshot AI]": SIMPLE_ICONS.format("moonshotai"),
     "ORGANIZATION_ICONS[OpenAI]": LOBE.format("openai"),
     "ORGANIZATION_ICONS[Qwen]": SIMPLE_ICONS.format("qwen"),
-    # Neither set publishes a usable mark for these two, so both are drawn in
-    # this repo -- a bold X for xAI, the Z wordmark for Z.ai. Recorded as
-    # PLACEHOLDER rather than pinned to an upstream: the point of this file is
-    # that a hand-authored path is declared as one, not that it is forbidden.
-    # What was forbidden, and what shipped anyway, was a hand-authored path
-    # presenting itself as a real brand mark (Meta, issue #261).
+    # xAI ships one identity, and it is Grok's: the company has no separate
+    # corporate mark in use, so the organization and the model family are the
+    # same brand and now draw the same licensed glyph. The bold X that stood
+    # here was drawn in this repo for want of anything better.
+    "ORGANIZATION_ICONS[xAI]": LOBE.format("grok"),
+    # No set publishes a usable mark for Z.ai, so its Z wordmark is drawn in
+    # this repo. Recorded as PLACEHOLDER rather than pinned to an upstream:
+    # the point of this file is that a hand-authored path is declared as one,
+    # not that it is forbidden. What was forbidden, and what shipped anyway,
+    # was a hand-authored path presenting itself as a real brand mark (Meta,
+    # issue #261).
     "ORGANIZATION_ICONS[Z.ai]": PLACEHOLDER,
-    "ORGANIZATION_ICONS[xAI]": PLACEHOLDER,
     # Issue #266: the organizations that had been drawing the generic spark.
     # All from Lobe Icons, which carries AI-company marks simple-icons does
     # not. Two are the mark that set publishes for the company rather than a

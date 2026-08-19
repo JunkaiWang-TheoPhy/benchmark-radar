@@ -76,7 +76,7 @@ def test_every_brand_path_matches_the_upstream_mark_it_claims_to_be():
 
 
 def test_a_hand_drawn_mark_is_declared_rather_than_passed_off_as_a_brand():
-    """xAI and Z.ai have no licensed upstream mark and are drawn in this repo.
+    """Z.ai has no licensed upstream mark and is drawn in this repo.
 
     That is allowed; what is not is a hand-authored path presenting itself as
     a real brand mark. The distinction has to be recorded, because it is
@@ -85,10 +85,29 @@ def test_a_hand_drawn_mark_is_declared_rather_than_passed_off_as_a_brand():
     provenance = json.loads(PROVENANCE.read_text(encoding="utf-8"))["marks"]
     placeholders = {k for k, v in provenance.items() if v["url"].startswith("placeholder:")}
 
-    assert placeholders == {"ORGANIZATION_ICONS[xAI]", "ORGANIZATION_ICONS[Z.ai]"}
+    assert placeholders == {"ORGANIZATION_ICONS[Z.ai]"}
     for key, record in provenance.items():
         if key not in placeholders:
             assert record["url"].startswith("https://"), key
+
+
+def test_xai_draws_grok_because_the_company_and_the_model_share_one_brand():
+    """xAI ships no corporate mark separate from Grok's.
+
+    The organization drew a bold X drawn in this repo, while the model family
+    beside it drew the real licensed glyph -- two marks for one identity, and
+    the hand-drawn one was the fallback nobody had a better answer for.
+    """
+    tables = _tables()
+    assert tables["ORGANIZATION_ICONS"]["xAI"] == tables["MODEL_FAMILY_ICONS"]["Grok"]
+
+    provenance = json.loads(PROVENANCE.read_text(encoding="utf-8"))["marks"]
+    assert provenance["ORGANIZATION_ICONS[xAI]"]["url"].endswith("/grok.svg")
+    # Same bytes, so the two entries must carry the same digest.
+    assert (
+        provenance["ORGANIZATION_ICONS[xAI]"]["sha256"]
+        == provenance["MODEL_FAMILY_ICONS[Grok]"]["sha256"]
+    )
 
 
 def test_every_brand_path_is_well_formed_and_inside_the_viewbox():

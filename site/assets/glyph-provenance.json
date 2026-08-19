@@ -126,8 +126,8 @@
       "sha256": "25d3fb34f7223863ee29db2e45d4d2f663a467d945e19f6a867007705f0472b4"
     },
     "ORGANIZATION_ICONS[xAI]": {
-      "url": "placeholder:hand-drawn-in-repo",
-      "sha256": "f372eb010d9c2f6e420d38098cc4d6e76534704828bb74516b598264423c68b3"
+      "url": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/grok.svg",
+      "sha256": "b1c7535771ab4ca56c3678ac60cdbaccbcf7f7e53c6343717332e20bbb0c546b"
     }
   }
 }
