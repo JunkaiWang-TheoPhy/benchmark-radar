@@ -194,6 +194,18 @@ const ORGANIZATION_ICONS = {
 };
 // An unknown organization gets a neutral spark; rare enough that a rotating
 // color still carries the identity, and no glyph beats a wrong brand mark.
+//
+// "Wrong" means wrong, not small. The spark is what a MISSING mark looks
+// like, so falling back to it asserts that no mark exists -- the audit page
+// prints "no mark" on exactly that basis. Dropping a real mark because it is
+// hard to read at 14px therefore trades a degraded signal for a false one,
+// and lands the point in the same bucket as an organization we genuinely have
+// nothing for. AI21 and IBM were removed that way for issue #267 and restored
+// in 2268b22. IBM ships no symbol at any size: the striped lettering is the
+// mark, so "illegible" was never a choice between two glyphs.
+//
+// Fall back here only when the mark would be wrong or absent. Hard to read is
+// an argument for drawing it larger, never for drawing the spark instead.
 const ORGANIZATION_FALLBACK_ICON = "M12 2l2.1 6.9L21 11l-6.9 2.1L12 20l-2.1-6.9L3 11l6.9-2.1L12 2z";
 function organizationIcon(organization) {
   return ORGANIZATION_ICONS[organization] || [ORGANIZATION_FALLBACK_ICON];
