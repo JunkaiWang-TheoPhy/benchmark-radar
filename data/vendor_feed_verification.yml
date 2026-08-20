@@ -1,0 +1,555 @@
+# First-party feed verification record, issue #264.
+#
+# What this file is: the evidence behind the `sources.first_party_feeds.feeds`
+# allowlist in config.yml, and the record of which organizations were checked
+# and found to serve no first-party feed. Nothing in the pipeline reads this
+# file; config.yml is the live allowlist. This exists so the next verification
+# pass does not re-probe the same dead paths, and so a `not_found` verdict is
+# an auditable answer rather than an absence.
+#
+# Admission rule (unchanged from issue #98): the feed must be served by the
+# organization that authored the content. Community mirrors, social-media RSS
+# proxies and news aggregators are rejected, and a missing feed is never filled
+# with one. `feed_url: not_found` is a correct answer; those organizations are
+# monitored through domain-constrained Brave searches in config.yml instead.
+#
+# `admitted_to_config` records whether a verified feed was added to the live
+# allowlist. A verified feed can be legitimately absent from it, for instance
+# when a second endpoint carries the same publication stream.
+#
+# Verified 2026-08-20. `rejected_candidates` lists URLs that were probed and
+# failed, with the reason, so a plausible-looking dead path is not retried.
+
+vendors:
+- org: OpenAI
+  kind: model_vendor
+  population: model_vendor_prespecified
+  feed_url: https://openai.com/news/rss.xml
+  feed_format: rss
+  http_status: 200
+  entry_count: 1142
+  latest_entry_date: '2026-08-20'
+  latest_entry_title: How ChatGPT Work helps Stampli move ideas to market
+  discovery_method: tried_common_path
+  announcement_page_url: https://openai.com/news
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: The direct fetch of the news landing page received HTTP 403, but the supplied first-party RSS
+    URL returned a valid RSS document with populated items.
+- org: Google
+  kind: model_vendor
+  population: model_vendor_prespecified
+  feed_url: https://blog.google/innovation-and-ai/technology/ai/rss/
+  feed_format: rss
+  http_status: 200
+  entry_count: 20
+  latest_entry_date: '2026-08-19'
+  latest_entry_title: 5 new ways to level up your learning with Search
+  discovery_method: page_subscribe_link
+  announcement_page_url: https://blog.google/innovation-and-ai/technology/ai/
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: The primary feed is the Google Blog AI category feed. The DeepMind and Google Research feeds were
+    separately fetched and parsed as valid RSS feeds.
+  secondary_feeds:
+  - url: https://deepmind.google/blog/rss.xml
+    format: rss
+    covers: Google DeepMind news and research posts
+    admitted_to_config: true
+  - url: https://research.google/blog/rss/
+    format: rss
+    covers: Google Research blog posts
+    admitted_to_config: true
+- org: Mistral
+  kind: model_vendor
+  population: model_vendor_prespecified
+  feed_url: https://mistral.ai/news/rss
+  feed_format: rss
+  http_status: 200
+  entry_count: 81
+  latest_entry_date: '2026-08-20'
+  latest_entry_title: Agentic Search. More accurate and efficient results from your AI systems.
+  discovery_method: head_link_tag
+  announcement_page_url: https://mistral.ai/news/
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+- org: Meta
+  kind: model_vendor
+  population: model_vendor_prespecified
+  feed_url: https://research.facebook.com/feed/
+  feed_format: rss
+  http_status: 200
+  entry_count: 10
+  latest_entry_date: '2023-05-17'
+  latest_entry_title: How generational differences affect consumer attitudes towards ads
+  discovery_method: page_subscribe_link
+  announcement_page_url: https://ai.meta.com/blog/
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: 'The verified Meta Research feed is stale: its newest item is dated 2023-05-17. The inspected
+    AI at Meta Blog page did not declare a feed, and its tested common feed paths returned 404.'
+  rejected_candidates:
+  - url: https://ai.meta.com/blog/rss
+    reason: '404'
+  - url: https://ai.meta.com/blog/rss.xml
+    reason: '404'
+  - url: https://ai.meta.com/feed/
+    reason: '404'
+  - url: https://ai.meta.com/blog/feed/
+    reason: '404'
+  - url: https://ai.meta.com/blog/atom.xml
+    reason: '404'
+  - url: https://ai.meta.com/blog/index.xml
+    reason: '404'
+  - url: https://ai.meta.com/blog/rss/
+    reason: '404'
+- org: Ai2
+  kind: model_vendor
+  population: model_vendor_prespecified
+  feed_url: https://allenai.org/rss.xml
+  feed_format: rss
+  http_status: 200
+  entry_count: 25
+  latest_entry_date: '2026-08-18'
+  latest_entry_title: When a model reads a drug's class from its name—not its knowledge
+  discovery_method: head_link_tag
+  announcement_page_url: https://allenai.org/news
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: The verified root feed identifies itself as “Ai2 Blog” and contains current Ai2 posts.
+- org: Anthropic
+  kind: model_vendor
+  population: model_vendor_prespecified
+  feed_url: not_found
+  feed_format: not_found
+  http_status: not_found
+  entry_count: 0
+  latest_entry_date: not_found
+  latest_entry_title: not_found
+  discovery_method: none
+  announcement_page_url: https://www.anthropic.com/news
+  verified_at: '2026-08-20'
+  admitted_to_config: false
+  note: No alternate-feed declaration was found in the inspected News, Research, or Engineering page heads.
+    The Olshansk GitHub URL is a community-generated mirror and is explicitly excluded.
+  rejected_candidates:
+  - url: https://www.anthropic.com/news/rss.xml
+    reason: '404'
+  - url: https://www.anthropic.com/feed
+    reason: '404'
+  - url: https://www.anthropic.com/rss.xml
+    reason: '404'
+  - url: https://www.anthropic.com/news/feed
+    reason: '404'
+  - url: https://www.anthropic.com/news/rss
+    reason: '404'
+  - url: https://www.anthropic.com/research/rss.xml
+    reason: '404'
+  - url: https://www.anthropic.com/research/rss
+    reason: '404'
+  - url: https://www.anthropic.com/research/feed
+    reason: '404'
+  - url: https://www.anthropic.com/engineering/rss.xml
+    reason: '404'
+  - url: https://www.anthropic.com/engineering/rss
+    reason: '404'
+  - url: https://www.anthropic.com/engineering/feed
+    reason: '404'
+  - url: https://www.anthropic.com/atom.xml
+    reason: '404'
+  - url: https://www.anthropic.com/index.xml
+    reason: '404'
+  - url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml
+    reason: third-party proxy
+- org: DeepSeek
+  kind: model_vendor
+  population: model_vendor_prespecified
+  feed_url: not_found
+  feed_format: not_found
+  http_status: not_found
+  entry_count: 0
+  latest_entry_date: not_found
+  latest_entry_title: not_found
+  discovery_method: none
+  announcement_page_url: https://api-docs.deepseek.com/news
+  verified_at: '2026-08-20'
+  admitted_to_config: false
+  note: The official API Docs provides a native News section but no alternate-feed declaration or visible
+    feed link. Several apparent feed paths returned the HTML documentation page with HTTP 200, not a feed.
+  rejected_candidates:
+  - url: https://api-docs.deepseek.com/news/rss.xml
+    reason: returned HTML not XML
+  - url: https://api-docs.deepseek.com/news/feed
+    reason: returned HTML not XML
+  - url: https://api-docs.deepseek.com/rss.xml
+    reason: returned HTML not XML
+  - url: https://www.deepseek.com/rss.xml
+    reason: '404'
+  - url: https://www.deepseek.com/feed
+    reason: '404'
+  - url: https://api-docs.deepseek.com/news/index.xml
+    reason: returned HTML not XML
+  - url: https://api-docs.deepseek.com/news/atom.xml
+    reason: returned HTML not XML
+  - url: https://api-docs.deepseek.com/news/rss
+    reason: returned HTML not XML
+  - url: https://api-docs.deepseek.com/index.xml
+    reason: returned HTML not XML
+  - url: https://api-docs.deepseek.com/atom.xml
+    reason: returned HTML not XML
+- org: Qwen
+  kind: model_vendor
+  population: model_vendor_prespecified
+  feed_url: https://qwenlm.github.io/blog/index.xml
+  feed_format: rss
+  http_status: 200
+  entry_count: 44
+  latest_entry_date: '2025-09-23'
+  latest_entry_title: 'Qwen3Guard: Real-time Safety for Your Token Stream'
+  discovery_method: head_link_tag
+  announcement_page_url: https://qwen.ai/research
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: The Qwen-branded QwenLM GitHub Pages blog declares this RSS feed and links to qwen.ai; it states
+    that the newer blog is at qwen.ai/research. The feed is stale, with newest item dated 2025-09-23.
+    It is treated as first-party because it is published from the Qwen-controlled QwenLM site, not a community
+    mirror.
+  rejected_candidates:
+  - url: https://qwen.ai/rss.xml
+    reason: returned HTML not XML
+  - url: https://qwen.ai/feed
+    reason: returned HTML not XML
+  - url: https://qwenlm.github.io/blog/feed.xml
+    reason: '404'
+  - url: https://qwenlm.github.io/feed.xml
+    reason: '404'
+  - url: https://qwenlm.github.io/blog/rss.xml
+    reason: '404'
+- org: Moonshot AI
+  kind: model_vendor
+  population: model_vendor_prespecified
+  feed_url: not_found
+  feed_format: not_found
+  http_status: not_found
+  entry_count: 0
+  latest_entry_date: not_found
+  latest_entry_title: not_found
+  discovery_method: none
+  announcement_page_url: https://www.kimi.ai/blog/
+  verified_at: '2026-08-20'
+  admitted_to_config: false
+  note: Moonshot AI’s official site links its Research navigation to Kimi’s blog. Neither the Moonshot
+    nor Kimi publication pages declared a feed; tested common feed paths returned HTML or 404.
+  rejected_candidates:
+  - url: https://www.moonshot.ai/rss.xml
+    reason: returned HTML not XML
+  - url: https://www.moonshot.ai/feed
+    reason: returned HTML not XML
+  - url: https://moonshotai.github.io/feed.xml
+    reason: '404'
+  - url: https://moonshotai.github.io/index.xml
+    reason: '404'
+  - url: https://www.kimi.ai/blog/
+    reason: returned HTML not XML
+  - url: https://kimi.ai/blog/
+    reason: returned HTML not XML
+  - url: https://www.kimi.ai/blog/rss.xml
+    reason: returned HTML not XML
+  - url: https://www.kimi.ai/blog/rss
+    reason: returned HTML not XML
+  - url: https://www.kimi.ai/blog/feed
+    reason: returned HTML not XML
+  - url: https://www.kimi.ai/blog/feed.xml
+    reason: returned HTML not XML
+  - url: https://www.kimi.ai/blog/index.xml
+    reason: returned HTML not XML
+  - url: https://www.kimi.ai/rss.xml
+    reason: returned HTML not XML
+  - url: https://www.kimi.ai/feed
+    reason: returned HTML not XML
+  - url: https://www.kimi.ai/index.xml
+    reason: returned HTML not XML
+- org: Z.ai
+  kind: model_vendor
+  population: model_vendor_prespecified
+  feed_url: not_found
+  feed_format: not_found
+  http_status: not_found
+  entry_count: 0
+  latest_entry_date: not_found
+  latest_entry_title: not_found
+  discovery_method: none
+  announcement_page_url: https://z.ai/
+  verified_at: '2026-08-20'
+  admitted_to_config: false
+  note: Z.ai currently redirects to its chat product and the former Zhipu AI BigModel domain was also
+    checked as first-party scope. No alternate-feed declaration or parseable feed was found on either
+    domain.
+  rejected_candidates:
+  - url: https://z.ai/rss.xml
+    reason: '404'
+  - url: https://z.ai/feed
+    reason: '404'
+  - url: https://z.ai/blog/rss.xml
+    reason: '404'
+  - url: https://z.ai/blog/feed
+    reason: '404'
+  - url: https://www.bigmodel.cn/rss.xml
+    reason: returned HTML not XML
+  - url: https://www.bigmodel.cn/feed
+    reason: returned HTML not XML
+  - url: https://z.ai/news
+    reason: '404'
+  - url: https://z.ai/research
+    reason: '404'
+  - url: https://z.ai/rss
+    reason: '404'
+  - url: https://z.ai/atom.xml
+    reason: '404'
+  - url: https://z.ai/index.xml
+    reason: '404'
+  - url: https://www.bigmodel.cn/news
+    reason: returned HTML not XML
+  - url: https://www.bigmodel.cn/atom.xml
+    reason: returned HTML not XML
+  - url: https://www.bigmodel.cn/index.xml
+    reason: returned HTML not XML
+- org: xAI
+  kind: model_vendor
+  population: model_vendor_prespecified
+  feed_url: not_found
+  feed_format: not_found
+  http_status: not_found
+  entry_count: 0
+  latest_entry_date: not_found
+  latest_entry_title: not_found
+  discovery_method: none
+  announcement_page_url: https://x.ai/news
+  verified_at: '2026-08-20'
+  admitted_to_config: false
+  note: The current x.ai News index is branded SpaceXAI and includes xAI content, but exposes no feed
+    link. The blog route redirects to the news index; tested common feed paths were 403 or 404 and never
+    yielded a feed.
+  rejected_candidates:
+  - url: https://x.ai/rss.xml
+    reason: HTTP 403; returned HTML not XML
+  - url: https://x.ai/feed
+    reason: HTTP 403; returned HTML not XML
+  - url: https://x.ai/news/rss.xml
+    reason: '404'
+  - url: https://x.ai/news/feed
+    reason: '404'
+  - url: https://x.ai/blog/rss.xml
+    reason: HTTP 403; returned HTML not XML
+  - url: https://x.ai/blog/feed
+    reason: HTTP 403; returned HTML not XML
+  - url: https://x.ai/rss
+    reason: HTTP 403; returned HTML not XML
+  - url: https://x.ai/atom.xml
+    reason: HTTP 403; returned HTML not XML
+  - url: https://x.ai/index.xml
+    reason: HTTP 403; returned HTML not XML
+  - url: https://x.ai/news/rss
+    reason: '404'
+  - url: https://x.ai/news/atom.xml
+    reason: '404'
+  - url: https://x.ai/news/index.xml
+    reason: '404'
+additional_sources:
+- org: Hugging Face
+  kind: model_platform
+  population: adjacent_platform_or_research
+  feed_url: https://huggingface.co/blog/feed.xml
+  feed_format: rss
+  http_status: 200
+  entry_count: 845
+  latest_entry_date: '2026-08-20'
+  latest_entry_title: Up to 3.2x Faster Inference with LFM2.5-DSpark
+  discovery_method: head_link_tag
+  announcement_page_url: https://huggingface.co/blog
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: 'High-signal ecosystem feed for open models, model releases, evaluation methods, and hosted partner
+    announcements. It is broad: not every entry is a Hugging Face-authored release.'
+- org: Together AI
+  kind: model_platform
+  population: adjacent_platform_or_research
+  feed_url: https://www.together.ai/blog/rss.xml
+  feed_format: rss
+  http_status: 200
+  entry_count: 100
+  latest_entry_date: '2026-08-18'
+  latest_entry_title: 'DeepSeek V4 Pro 0813 vs GPT-5.6 Sol on DeepSWE: Cost, Coding, and Routing'
+  discovery_method: head_link_tag
+  announcement_page_url: https://www.together.ai/blog
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: Useful for open-model availability, inference benchmarks, routing, and serving announcements.
+- org: Ollama
+  kind: model_platform
+  population: adjacent_platform_or_research
+  feed_url: https://ollama.com/blog/rss.xml
+  feed_format: rss
+  http_status: 200
+  entry_count: 56
+  latest_entry_date: '2026-08-11'
+  latest_entry_title: NVIDIA Nemotron 3.5 Lightning
+  discovery_method: head_link_tag
+  announcement_page_url: https://ollama.com/blog
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: Useful for local and open-model availability announcements. It often reports model releases shortly
+    after they become runnable in Ollama.
+- org: Sakana AI
+  kind: model_vendor
+  population: adjacent_platform_or_research
+  feed_url: https://sakana.ai/feed.xml
+  feed_format: atom
+  http_status: 200
+  entry_count: 10
+  latest_entry_date: '2026-08-21'
+  latest_entry_title: Sakana Translateの翻訳モデルを新しい世代の「Sakana Namazu」へアップデート
+  discovery_method: head_link_tag
+  announcement_page_url: https://sakana.ai/blog/
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: Direct research-lab feed. It is Atom rather than RSS; entry links are relative to sakana.ai but
+    are valid feed links.
+- org: NVIDIA
+  kind: ai_platform
+  population: adjacent_platform_or_research
+  feed_url: https://developer.nvidia.com/blog/feed/
+  feed_format: atom
+  http_status: 200
+  entry_count: 100
+  latest_entry_date: '2026-08-20'
+  latest_entry_title: How Generative Recommenders Are Redefining RecSys at Scale
+  discovery_method: tried_common_path
+  announcement_page_url: https://developer.nvidia.com/blog/
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: Broad NVIDIA Technical Blog feed. Include only if the downstream classifier filters for generative
+    AI, model, benchmark, and agent terms.
+- org: AWS Machine Learning
+  kind: ai_platform
+  population: adjacent_platform_or_research
+  feed_url: https://aws.amazon.com/blogs/machine-learning/feed/
+  feed_format: rss
+  http_status: 200
+  entry_count: 20
+  latest_entry_date: '2026-08-20'
+  latest_entry_title: Authoring Dogwood policies from natural language in Amazon Bedrock AgentCore
+  discovery_method: head_link_tag
+  announcement_page_url: https://aws.amazon.com/blogs/machine-learning/
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: Broad AWS ML feed with useful Amazon Bedrock and foundation-model announcements; requires relevance
+    filtering.
+- org: Microsoft Research
+  kind: ai_research
+  population: adjacent_platform_or_research
+  feed_url: https://www.microsoft.com/en-us/research/feed/
+  feed_format: rss
+  http_status: 200
+  entry_count: 10
+  latest_entry_date: '2026-08-20'
+  latest_entry_title: Broadening access to Skala creates a faster path to predictive DFT
+  discovery_method: head_link_tag
+  announcement_page_url: https://www.microsoft.com/en-us/research/blog/
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: Broad research feed with periodic LLM and AI model research. It should be scored or filtered before
+    entering a model-release workflow.
+- org: IBM Research
+  kind: ai_research
+  population: adjacent_platform_or_research
+  feed_url: https://research.ibm.com/rss
+  feed_format: rss
+  http_status: 200
+  entry_count: 20
+  latest_entry_date: '2026-08-19'
+  latest_entry_title: IBM’s new modular architecture for cryogenic systems
+  discovery_method: head_link_tag
+  announcement_page_url: https://research.ibm.com/blog
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: Broad first-party research feed with AI and foundation-model coverage; requires relevance filtering.
+- org: Databricks
+  kind: ai_platform
+  population: adjacent_platform_or_research
+  feed_url: https://www.databricks.com/feed
+  feed_format: rss
+  http_status: 200
+  entry_count: 10
+  latest_entry_date: '2026-08-20'
+  latest_entry_title: 'Busting SQL Migration Myths: How New SQL Features Make Lift-and-Shift to Lakehouse
+    Easier'
+  discovery_method: page_subscribe_link
+  announcement_page_url: https://www.databricks.com/blog
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: Useful for Mosaic AI, agent, evaluation, and AI platform updates. The full feed contains data-engineering
+    posts, so apply relevance filtering.
+- org: Stability AI
+  kind: model_vendor
+  population: adjacent_platform_or_research
+  feed_url: https://stability.ai/news-updates?format=rss
+  feed_format: rss
+  http_status: 200
+  entry_count: 20
+  latest_entry_date: '2026-08-18'
+  latest_entry_title: Sharing a new way to work with Stable Audio
+  discovery_method: head_link_tag
+  announcement_page_url: https://stability.ai/news-updates
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: Direct model-vendor news feed for Stable Diffusion, Stable Audio, and related release updates.
+- org: Nomic AI
+  kind: model_vendor
+  population: adjacent_platform_or_research
+  feed_url: https://www.nomic.ai/feed.xml
+  feed_format: rss
+  http_status: 200
+  entry_count: 10
+  latest_entry_date: '2026-07-07'
+  latest_entry_title: Nomic live on Autodesk Marketplace
+  discovery_method: head_link_tag
+  announcement_page_url: https://www.nomic.ai/news
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: Direct vendor feed for embedding models, model infrastructure, and Nomic product updates.
+- org: Replicate
+  kind: model_platform
+  population: adjacent_platform_or_research
+  feed_url: https://replicate.com/blog/rss
+  feed_format: rss
+  http_status: 200
+  entry_count: 124
+  latest_entry_date: '2026-08-04'
+  latest_entry_title: The Ultimate Guide to FLUX 3
+  discovery_method: page_subscribe_link
+  announcement_page_url: https://replicate.com/blog
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: Useful for model availability, API integrations, and serving content. The corresponding Atom feed
+    was also verified.
+  secondary_feeds:
+  - url: https://replicate.com/blog/atom
+    format: atom
+    covers: Replicate blog posts; same publication stream as the primary RSS feed
+    admitted_to_config: false
+- org: LangChain
+  kind: ai_platform
+  population: adjacent_platform_or_research
+  feed_url: https://www.langchain.com/blog/rss.xml
+  feed_format: rss
+  http_status: 200
+  entry_count: 100
+  latest_entry_date: '2026-08-20'
+  latest_entry_title: Test Agent Changes with LangSmith Preview Builds
+  discovery_method: tried_common_path
+  announcement_page_url: https://www.langchain.com/blog
+  verified_at: '2026-08-20'
+  admitted_to_config: true
+  note: Useful for LLM-agent tooling, evaluation, observability, and framework releases. It is not a model-vendor
+    feed, so route it separately from core release posts.
