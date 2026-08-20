@@ -152,21 +152,33 @@ def test_task_preview_distinguishes_source_paraphrase_from_domain_fallback():
 
 
 def test_workbench_states_the_schema_needed_for_a_true_pareto_frontier():
+    # Issue #276: this panel used to say "Pareto frontier", "harness or
+    # scaffold" and "nondominated observations". The substance it has to keep
+    # is the list of things you must know before two scores can be compared,
+    # so these assert the meaning rather than the vocabulary that carried it.
     html = source("site/index.html")
     normalized = " ".join(html.split())
 
-    assert "What would make this a true Pareto frontier?" in normalized
+    assert "What would it take to chart best score against lowest cost?" in normalized
     for field in (
-        "benchmark version and split",
-        "metric direction",
-        "harness or scaffold",
-        "reasoning budget",
-        "cost or latency",
+        "which version of the test",
+        "which slice of it",
+        "whether a high number is good or bad",
+        "which model",
+        "what software ran it",
+        "how much thinking time",
+        "what it cost",
+        "how long it took",
+        "when it was published",
     ):
         assert field in normalized
-    assert "Only compatible configurations" in normalized
-    assert "connect only nondominated observations" in normalized
-    assert "publication-time slider" in normalized
+    # Codex review: the fields must be *recorded*, not identical. Model, cost,
+    # time and date are exactly what the chart varies, so asserting this line
+    # keeps a future rewrite from turning them back into equality constraints.
+    assert "are free to differ, because those are what the chart compares" in normalized
+    assert "It does not yet record those measurements." in normalized
+    assert "nothing else beats on both at once" in normalized
+    assert "date slider" in normalized
 
 
 def test_apex_agents_links_to_its_actual_paper():
