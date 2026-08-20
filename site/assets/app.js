@@ -433,6 +433,8 @@ const I18N = {
       "这是计算排名的精选来源列表。展开任意一张卡可看到其报告的全部基准,并按源文档的分组方式分组,以便我们的数据能逐行对照原文核查。",
     "Benchmarks with this name": "同名的基准",
     "no score read from a document yet": "尚无从文档中读到的分数",
+    "The crawled benchmark catalog could not be loaded, so these results may be incomplete.":
+      "无法加载抓取的基准目录,因此这些结果可能不完整。",
     "The benchmark registry could not be loaded, so this search covered collected observations only.":
       "无法加载基准登记册,因此本次搜索只覆盖了已收集的内容。",
     "No collected observation mentions \u201c{q}\u201d, but it is in the benchmark registry. The matches are listed above.":
@@ -1689,34 +1691,42 @@ function renderTodayBenchmarks() {
   const external = searchBenchmarkIndex(state.benchmarkIndex || [], query);
   // A row is only worth clicking if the panel it leads to can draw. Without a
   // curated leaderboard renderLeaderboard() returns early, so navigating would
-  // land the reader on a blank view: show the match, do not offer the trip.
+  // land the reader on a blank view. A button that goes nowhere is worse than
+  // no button, so the rows render as plain records instead.
   const navigate = Boolean(board?.entries?.length);
+  // loadBenchmarkIndex() resolves null only on failure. That is a different
+  // answer from a search that matched nothing, and it stays true whether or
+  // not the curated layer had a hit: reporting it only on an empty result
+  // would present half a registry search as a whole one.
+  const indexFailed = state.benchmarkIndexLoaded && state.benchmarkIndex === null;
+  // Sliced before the rows are built, not after. "bench" matches 355 of the
+  // 1,148 crawled records, and building every one of them into a DOM subtree
+  // with a listener to then discard all but 50 is work done on each keystroke.
+  const curatedShown = curated.slice(0, BENCHMARK_SEARCH_LIMIT);
+  const externalShown = external.slice(
+    0,
+    Math.max(0, BENCHMARK_SEARCH_LIMIT - curatedShown.length),
+  );
   const rows = [
-    ...curated.map((entry) => curatedResultRow(entry, { navigate })),
-    ...external.map((record) => benchmarkResultRow(record, { navigate })),
-  ].slice(0, BENCHMARK_SEARCH_LIMIT);
-  if (!rows.length) {
-    // A failed catalog fetch is not the same answer as a search that found
-    // nothing, and silently treating it as one puts the reader back in front
-    // of "clear one or more filters" with no way to know the registry was
-    // never consulted. loadBenchmarkIndex() resolves null only on failure.
-    if (state.benchmarkIndexLoaded && state.benchmarkIndex === null) {
-      section.hidden = false;
-      byId("today-benchmarks-note").textContent = t(
-        "The benchmark registry could not be loaded, so this search covered collected observations only.",
-      );
-      replaceChildren(byId("today-benchmarks-results"), []);
-      return 0;
-    }
+    ...curatedShown.map((entry) => curatedResultRow(entry, { navigate, inert: !navigate })),
+    ...externalShown.map((record) => benchmarkResultRow(record, { navigate, inert: !navigate })),
+  ];
+  if (!rows.length && !indexFailed) {
     section.hidden = true;
     replaceChildren(byId("today-benchmarks-results"), []);
     return 0;
   }
   section.hidden = false;
   const total = curated.length + external.length;
-  byId("today-benchmarks-note").textContent = t(
-    "Registry records matching \u201c{q}\u201d. These are benchmarks the radar tracks, not things collected on a date.",
-  ).replace("{q}", query);
+  const note = rows.length
+    ? t(
+        "Registry records matching \u201c{q}\u201d. These are benchmarks the radar tracks, not things collected on a date.",
+      ).replace("{q}", query)
+    : "";
+  const warning = indexFailed
+    ? t("The crawled benchmark catalog could not be loaded, so these results may be incomplete.")
+    : "";
+  byId("today-benchmarks-note").textContent = [note, warning].filter(Boolean).join(" ");
   replaceChildren(byId("today-benchmarks-results"), rows);
   return total;
 }
@@ -3436,7 +3446,7 @@ function opennessChip(status) {
   });
 }
 
-function benchmarkResultRow(record, { navigate = false } = {}) {
+function benchmarkResultRow(record, { navigate = false, inert = false } = {}) {
   const facts = [];
   // Every one of these renders an explicit "not established" rather than being
   // hidden. Hiding an empty field reads as "not applicable", and whether these
@@ -3473,6 +3483,10 @@ function benchmarkResultRow(record, { navigate = false } = {}) {
       }),
     ]),
   ]);
+  if (inert) {
+    button.disabled = true;
+    return button;
+  }
   button.addEventListener("click", () => {
     selectFrontier(record.slug);
     if (navigate) {
@@ -3552,7 +3566,7 @@ function searchCuratedEntries(board, query, { includeUnscored = false } = {}) {
 // benchmark updates a panel the reader is not looking at, so the click would
 // register as nothing happening. Carrying them to the panel is the only
 // behaviour that matches what the row looks like it promises.
-function curatedResultRow(entry, { navigate = false } = {}) {
+function curatedResultRow(entry, { navigate = false, inert = false } = {}) {
   // May be absent: a curated entry is a benchmark model cards report, which is
   // a separate fact from whether any score was read from a document for it.
   const record = scoreRecord(entry.benchmark_id);
@@ -3586,6 +3600,13 @@ function curatedResultRow(entry, { navigate = false } = {}) {
       }),
     ]),
   ]);
+  // Nothing to navigate to and no panel on screen to update: an enabled
+  // control whose click does nothing visible is a worse answer than a row that
+  // does not look clickable.
+  if (inert) {
+    button.disabled = true;
+    return button;
+  }
   button.addEventListener("click", () => {
     selectFrontier(entry.benchmark_id);
     if (navigate) {

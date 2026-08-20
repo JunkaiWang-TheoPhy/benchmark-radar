@@ -1627,6 +1627,22 @@ def test_a_benchmark_name_search_reaches_the_registry_not_only_the_daily_feed():
     # still does not pay for it.
     assert "if (!state.benchmarkIndexLoaded)" in section
 
+    # Capped before the rows are built. "bench" matches 355 of the 1,148
+    # crawled records, and building all of them into DOM subtrees with
+    # listeners to then drop all but 50 is work repeated on every keystroke.
+    assert "curated.slice(0, BENCHMARK_SEARCH_LIMIT)" in section
+    assert section.index("externalShown") < section.index("benchmarkResultRow(record")
+
+    # A failed catalog fetch is reported whether or not the curated layer
+    # matched. Only saying so on an empty result would present half a registry
+    # search as a whole one.
+    assert "const indexFailed =" in section
+    assert "if (!rows.length && !indexFailed)" in section
+
+    # With no leaderboard to land on, rows render inert rather than as buttons
+    # whose click does nothing the reader can see.
+    assert "inert: !navigate" in section
+
     # Clicking a row must draw the view it lands on. setView() toggles
     # visibility and the URL but does not render, so without this a first-time
     # visitor arrives at an empty leaderboard: 0 chart children, 0 table rows.
