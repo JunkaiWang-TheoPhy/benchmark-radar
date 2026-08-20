@@ -761,6 +761,8 @@ const I18N = {
       "不是逐字的基准条目。这是根据记录领域生成的示例格式;请使用官方来源查看确切的题目与评分规则。",
     "No score for this benchmark could be read verbatim from the cited documents, so there is no track to draw. An absent value is not a zero and not a plateau.":
       "无法从引文文档中逐字读到该基准的分数,因此没有可绘制的轨道。缺失的数值既不是零,也不是平台期。",
+    "No model card in this registry reports this benchmark yet, so there is no score to draw. That zero is a reading, not a gap in the collection.":
+      "本登记册中还没有任何模型卡报告该基准,因此没有可绘制的分数。这个零是一个读数,而不是收集上的缺口。",
     "No score for this benchmark could be read verbatim from the cited documents. An absent value is not a zero and not a plateau.":
       "无法从引文文档中逐字读到该基准的分数。缺失的数值既不是零,也不是平台期。",
     "Open public discussion ↗": "打开公开讨论 ↗",
@@ -4376,7 +4378,7 @@ function renderFrontierPicker(scored, selectedValue) {
   );
 }
 
-function renderExternalShell(board, scored, { eyebrow, heading, badge, message }) {
+function renderExternalShell(board, scored, { eyebrow, heading, badge, message, prependOption }) {
   clearFrontierPointSelection();
   setCanonicalFrontierChrome(false);
   byId("frontier-eyebrow").textContent = eyebrow;
@@ -4386,6 +4388,13 @@ function renderExternalShell(board, scored, { eyebrow, heading, badge, message }
   stage.hidden = false;
   stage.textContent = badge;
   renderFrontierPicker(scored, state.lfrontier);
+  if (prependOption) {
+    const picker = byId("frontier-benchmark");
+    const [value, label] = prependOption;
+    const existing = [...picker.options].find((candidate) => candidate.value === value);
+    if (existing) existing.selected = true;
+    else picker.prepend(option(value, label, true));
+  }
   replaceChildren(byId("frontier-external"), [
     element("p", { className: "empty-state", text: message }),
   ]);
@@ -5487,8 +5496,16 @@ function renderAdoptionFrontier(board) {
   // The index is not consulted: a canonical id and an external slug are separate
   // namespaces (every slug is source-prefixed), so no pending fetch can change
   // this answer.
+  //
+  // Resolved against every registry entry, not just the adopted ones. `adopted`
+  // is gated on card_count > 0, so a benchmark recorded before any model card
+  // reports it was invisible here and fell through to the default: issue #287,
+  // where ?lfrontier=rsi_bench drew AutomationBench's track, its 31.8% best on
+  // record and its model points, under a URL still reading rsi_bench and with
+  // nothing on the page saying so. A benchmark nobody has scored is exactly the
+  // one a reader is most likely to ask about, so it has to answer for itself.
   const unscoredEntry = state.lfrontier
-    ? adopted.find(
+    ? (board.entries || []).find(
         (candidate) =>
           candidate.benchmark_id === state.lfrontier && !scoreRecord(candidate.benchmark_id),
       )
@@ -5498,10 +5515,24 @@ function renderAdoptionFrontier(board) {
     renderExternalShell(board, scored, {
       eyebrow: t("Scores over time"),
       heading: unscoredEntry.name,
+      // Same contract renderExternalBenchmark keeps for crawled records: the
+      // picker only lists scored benchmarks, so an unscored selection matches
+      // no option and the browser falls back to showing the first one. A
+      // <select> reading AA-LCR beside a panel headed RSI-Bench is lying about
+      // the state, so the selection is prepended as its own option.
+      prependOption: [unscoredEntry.benchmark_id, unscoredEntry.name],
       badge: "",
-      message: t(
-        "No score for this benchmark could be read verbatim from the cited documents, so there is no track to draw. An absent value is not a zero and not a plateau.",
-      ),
+      // Two different absences, and a reader chasing a brand-new benchmark
+      // wants to know which one they hit. No card has reported it yet is a
+      // statement about the field's attention; cards report it but no score
+      // could be read verbatim is a statement about our sources.
+      message: unscoredEntry.card_count
+        ? t(
+            "No score for this benchmark could be read verbatim from the cited documents, so there is no track to draw. An absent value is not a zero and not a plateau.",
+          )
+        : t(
+            "No model card in this registry reports this benchmark yet, so there is no score to draw. That zero is a reading, not a gap in the collection.",
+          ),
     });
     return;
   }
