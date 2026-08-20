@@ -1637,7 +1637,14 @@ def test_a_benchmark_name_search_reaches_the_registry_not_only_the_daily_feed():
     # matched. Only saying so on an empty result would present half a registry
     # search as a whole one.
     assert "const indexFailed =" in section
-    assert "if (!rows.length && !indexFailed)" in section
+    assert "if (!rows.length && !indexFailed && !indexPending)" in section
+
+    # And an unsettled catalog is a third state. Zero matches is not a fact
+    # while the request is in flight, so a cold search for a crawled-only
+    # benchmark must not print "clear one or more filters" in the meantime.
+    assert "const indexPending = !state.benchmarkIndexLoaded;" in section
+    assert 'return !total && indexPending ? "pending" : total;' in section
+    assert 'benchmarkMatches === "pending"' in script
 
     # With no leaderboard to land on, rows render inert rather than as buttons
     # whose click does nothing the reader can see.

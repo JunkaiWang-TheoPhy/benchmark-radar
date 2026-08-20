@@ -121,6 +121,9 @@ function emptyTodayMessage(day, benchmarkMatches = 0) {
     !state.source &&
     !state.organization &&
     !state.event;
+  if (queryOnly && benchmarkMatches === "pending") {
+    return t("Still checking the benchmark registry\u2026");
+  }
   if (queryOnly && benchmarkMatches) {
     return t(
       state.todayDate === "all"
@@ -433,6 +436,7 @@ const I18N = {
       "这是计算排名的精选来源列表。展开任意一张卡可看到其报告的全部基准,并按源文档的分组方式分组,以便我们的数据能逐行对照原文核查。",
     "Benchmarks with this name": "同名的基准",
     "no score read from a document yet": "尚无从文档中读到的分数",
+    "Still checking the benchmark registry\u2026": "正在查询基准登记册\u2026",
     "The crawled benchmark catalog could not be loaded, so these results may be incomplete.":
       "无法加载抓取的基准目录,因此这些结果可能不完整。",
     "The benchmark registry could not be loaded, so this search covered collected observations only.":
@@ -1711,7 +1715,13 @@ function renderTodayBenchmarks() {
     ...curatedShown.map((entry) => curatedResultRow(entry, { navigate, inert: !navigate })),
     ...externalShown.map((record) => benchmarkResultRow(record, { navigate, inert: !navigate })),
   ];
-  if (!rows.length && !indexFailed) {
+  // Still on the wire. Zero matches is not yet a fact, so the empty list must
+  // not print the sentence this whole change exists to stop printing: on a
+  // cold search for a crawled-only benchmark the catalog has not arrived, and
+  // a slow request would leave "clear one or more filters" on screen for as
+  // long as it takes. Reported as pending until it settles.
+  const indexPending = !state.benchmarkIndexLoaded;
+  if (!rows.length && !indexFailed && !indexPending) {
     section.hidden = true;
     replaceChildren(byId("today-benchmarks-results"), []);
     return 0;
@@ -1725,10 +1735,12 @@ function renderTodayBenchmarks() {
     : "";
   const warning = indexFailed
     ? t("The crawled benchmark catalog could not be loaded, so these results may be incomplete.")
-    : "";
+    : indexPending
+      ? t("Still checking the benchmark registry\u2026")
+      : "";
   byId("today-benchmarks-note").textContent = [note, warning].filter(Boolean).join(" ");
   replaceChildren(byId("today-benchmarks-results"), rows);
-  return total;
+  return !total && indexPending ? "pending" : total;
 }
 
 function renderToday({ resultsOnly = false } = {}) {
