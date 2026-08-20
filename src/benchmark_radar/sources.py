@@ -89,6 +89,12 @@ def fetch_first_party_feeds(config: dict[str, Any], since: datetime, limit: int)
             raise ConnectorPayloadError("First-party feed is missing name or url")
         name = str(feed["name"]).strip()
         feed_url = str(feed["url"]).strip()
+        # Broad publisher feeds carry unrelated engineering posts that still hit a
+        # generic term like "benchmark". `require_any` narrows those feeds to the
+        # AI domain without loosening the shared keyword gate for everything else.
+        require_any = [
+            str(value).casefold() for value in (feed.get("require_any") or []) if str(value).strip()
+        ]
         root = ET.fromstring(get_text(feed_url, **_request_options(config)))
         root_name = _xml_local_name(root.tag)
         if root_name == "rss":
@@ -107,6 +113,8 @@ def fetch_first_party_feeds(config: dict[str, Any], since: datetime, limit: int)
             summary = clean_card_text(_feed_text(entry, "description", "summary", "content"))
             haystack = f"{title} {summary}".casefold()
             if not title or (keywords and not any(keyword in haystack for keyword in keywords)):
+                continue
+            if require_any and not any(keyword in haystack for keyword in require_any):
                 continue
             url = _feed_link(entry)
             source_id = _feed_text(entry, "id", "guid") or url

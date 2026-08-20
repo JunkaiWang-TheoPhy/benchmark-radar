@@ -340,10 +340,30 @@ sources:
         url: https://machinelearning.apple.com/rss.xml
       - name: AWS Machine Learning
         url: https://aws.amazon.com/blogs/machine-learning/feed/
+        require_any:
+          - ai
+          - llm
+          - language model
+          - foundation model
+          - generative
+          - agent
+          - model
+          - inference
+          - reasoning
       - name: Hugging Face Blog
         url: https://huggingface.co/blog/feed.xml
       - name: Microsoft Research
         url: https://www.microsoft.com/en-us/research/feed/
+        require_any:
+          - ai
+          - llm
+          - language model
+          - foundation model
+          - generative
+          - agent
+          - model
+          - inference
+          - reasoning
       - name: NVIDIA AI Blog
         url: https://blogs.nvidia.com/feed/
       # Added issue #98 pass: major LLM vendors with a verified live
@@ -381,10 +401,40 @@ sources:
         url: https://replicate.com/blog/rss
       - name: NVIDIA Developer
         url: https://developer.nvidia.com/blog/feed/
+        require_any:
+          - ai
+          - llm
+          - language model
+          - foundation model
+          - generative
+          - agent
+          - model
+          - inference
+          - reasoning
       - name: IBM Research
         url: https://research.ibm.com/rss
+        require_any:
+          - ai
+          - llm
+          - language model
+          - foundation model
+          - generative
+          - agent
+          - model
+          - inference
+          - reasoning
       - name: Databricks
         url: https://www.databricks.com/feed
+        require_any:
+          - ai
+          - llm
+          - language model
+          - foundation model
+          - generative
+          - agent
+          - model
+          - inference
+          - reasoning
       - name: LangChain
         url: https://www.langchain.com/blog/rss.xml
 
