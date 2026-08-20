@@ -1647,8 +1647,18 @@ def test_a_benchmark_name_search_reaches_the_registry_not_only_the_daily_feed():
     assert 'benchmarkMatches === "pending"' in script
 
     # With no leaderboard to land on, rows render inert rather than as buttons
-    # whose click does nothing the reader can see.
+    # whose click does nothing the reader can see. "Has entries" is not the
+    # test: renderAdoptionFrontier() gives up unless an adopted entry has a
+    # readable score record and a default entry resolves.
     assert "inert: !navigate" in section
+    assert "scoreRecord(item.benchmark_id)" in section
+    assert "frontierDefaultEntry(board)" in section
+
+    # A truncated list says so. Presenting 50 of 383 as "the matches" invites
+    # the reader to conclude a benchmark past row 50 is absent, which is the
+    # same wrong conclusion this issue is about.
+    assert "const truncated = total > rows.length;" in section
+    assert "Showing {shown} of {total} registry records" in section
 
     # Clicking a row must draw the view it lands on. setView() toggles
     # visibility and the URL but does not render, so without this a first-time

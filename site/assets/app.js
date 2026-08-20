@@ -436,6 +436,8 @@ const I18N = {
       "这是计算排名的精选来源列表。展开任意一张卡可看到其报告的全部基准,并按源文档的分组方式分组,以便我们的数据能逐行对照原文核查。",
     "Benchmarks with this name": "同名的基准",
     "no score read from a document yet": "尚无从文档中读到的分数",
+    "Showing {shown} of {total} registry records matching \u201c{q}\u201d. Narrow the search to see the rest.":
+      "显示与\u201c{q}\u201d匹配的 {total} 条登记册记录中的 {shown} 条。缩小搜索范围可查看其余记录。",
     "Still checking the benchmark registry\u2026": "正在查询基准登记册\u2026",
     "The crawled benchmark catalog could not be loaded, so these results may be incomplete.":
       "无法加载抓取的基准目录,因此这些结果可能不完整。",
@@ -1693,11 +1695,17 @@ function renderTodayBenchmarks() {
   const board = state.data?.model_card_leaderboard;
   const curated = searchCuratedEntries(board, query, { includeUnscored: true });
   const external = searchBenchmarkIndex(state.benchmarkIndex || [], query);
-  // A row is only worth clicking if the panel it leads to can draw. Without a
-  // curated leaderboard renderLeaderboard() returns early, so navigating would
-  // land the reader on a blank view. A button that goes nowhere is worse than
-  // no button, so the rows render as plain records instead.
-  const navigate = Boolean(board?.entries?.length);
+  // A row is only worth clicking if the panel it leads to can draw. That needs
+  // more than a non-empty board: renderAdoptionFrontier() gives up unless some
+  // adopted entry has a readable score record and a default entry resolves, so
+  // a registry of card mentions with no scores yet renders the same empty panel
+  // as no registry at all. A button that goes nowhere is worse than no button,
+  // so those rows render as plain records instead.
+  const navigate = Boolean(
+    (board?.entries || []).some(
+      (item) => item.card_count > 0 && scoreRecord(item.benchmark_id),
+    ) && frontierDefaultEntry(board),
+  );
   // loadBenchmarkIndex() resolves null only on failure. That is a different
   // answer from a search that matched nothing, and it stays true whether or
   // not the curated layer had a hit: reporting it only on an empty result
@@ -1728,10 +1736,21 @@ function renderTodayBenchmarks() {
   }
   section.hidden = false;
   const total = curated.length + external.length;
+  // Saying "matching X" over a truncated list invites the reader to conclude a
+  // benchmark that is present but past row 50 does not exist, which is the
+  // reading this whole change is trying to prevent. Show the arithmetic.
+  const truncated = total > rows.length;
   const note = rows.length
-    ? t(
-        "Registry records matching \u201c{q}\u201d. These are benchmarks the radar tracks, not things collected on a date.",
-      ).replace("{q}", query)
+    ? truncated
+      ? t(
+          "Showing {shown} of {total} registry records matching \u201c{q}\u201d. Narrow the search to see the rest.",
+        )
+          .replace("{shown}", rows.length)
+          .replace("{total}", total)
+          .replace("{q}", query)
+      : t(
+          "Registry records matching \u201c{q}\u201d. These are benchmarks the radar tracks, not things collected on a date.",
+        ).replace("{q}", query)
     : "";
   const warning = indexFailed
     ? t("The crawled benchmark catalog could not be loaded, so these results may be incomplete.")
