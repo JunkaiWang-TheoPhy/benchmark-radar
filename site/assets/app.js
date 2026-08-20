@@ -103,7 +103,16 @@ function zeroItemSources(day) {
 // Only speaks when the source filter alone is active. With a second filter
 // on, the source's own zero is no longer the whole story, and guessing which
 // of the two emptied the list would be a worse answer than the general one.
-function emptyTodayMessage(day) {
+function emptyTodayMessage(day, benchmarkMatches = 0) {
+  // A search that found the benchmark but no daily coverage of it is not a
+  // filter that is set too narrow, and telling the reader to widen it sends
+  // them adjusting controls that cannot produce the rows they want. Name what
+  // was found instead, and point at it (issue #245).
+  if (state.q.trim() && benchmarkMatches) {
+    return t(
+      "Nothing was collected about \u201c{q}\u201d on this date, but it is in the benchmark registry. The matches are listed above.",
+    ).replace("{q}", state.q.trim());
+  }
   const others = [state.q.trim(), state.kind, state.category, state.event].filter(Boolean);
   if (!state.source || others.length) {
     return t("No observations match these filters. Clear one or more filters to widen the view.");
@@ -407,6 +416,11 @@ const I18N = {
       "每张模型卡对同一基准只计一次。一张在四个配置中报告 AIME 的卡,与只报告一次的卡计数相同,因此冗长的附录不能压过不同的供应商。机构可以打破平局:六个供应商报告同一计数是共同标准,只有一个供应商报告则是自家风格。",
     "leaderboard.ledger.note":
       "这是计算排名的精选来源列表。展开任意一张卡可看到其报告的全部基准,并按源文档的分组方式分组,以便我们的数据能逐行对照原文核查。",
+    "Benchmarks with this name": "同名的基准",
+    "Registry records matching \u201c{q}\u201d. These are benchmarks the radar tracks, not things collected on a date.":
+      "登记册中与\u201c{q}\u201d匹配的记录。这些是雷达追踪的基准,而不是某一天收集到的内容。",
+    "Nothing was collected about \u201c{q}\u201d on this date, but it is in the benchmark registry. The matches are listed above.":
+      "这一天没有收集到关于\u201c{q}\u201d的内容,但它在基准登记册中。匹配结果列在上方。",
     "pareto.readiness.summary": "要把最高分数和最低成本画在一张图上,还差什么?",
     "pareto.readiness.note1":
       "两个分数只有在各自都记录了以下信息时才能比较:测的是哪个版本、取的是哪一部分、数值高好还是低好、用的哪个模型、由什么软件运行、给了多少思考时间、花了多少钱、用了多长时间、何时发布,以及这个数字出自哪里。其中测试本身和运行方式必须一致,而模型、成本、耗时和日期可以不同,因为它们正是图表要对比的内容。本站记录的是某张模型卡提到了某个基准,还没有记录这些测量值。",
@@ -1617,6 +1631,62 @@ function renderBuildMeta() {
   )} UTC`;
 }
 
+// The search box reads the daily feed: titles, summaries and source names of
+// what the crawl collected on a date. The benchmark registry is a different
+// dataset, and until issue #245 nothing joined them, so a reader searching for
+// a benchmark by name got one of two wrong answers. "researchclawbench"
+// returned "No observations match these filters", advice that cannot work
+// because clearing a filter does not add a dataset. "terminal-bench" was worse:
+// it returned an arXiv paper on uncertainty propagation, which ranked because
+// the string "Terminal-Bench-2" appears in its abstract. Both benchmarks are in
+// the registry with scores, and both were unreachable from the box that looks
+// like the way to find them.
+//
+// So the query runs against the registry too, and its matches are named as
+// benchmarks rather than mixed into a list sorted by daily priority. A prose
+// mention inside an abstract and a registry record are different kinds of
+// answer, and collapsing them is what produced the arXiv result.
+function renderTodayBenchmarks() {
+  const section = byId("today-benchmarks");
+  if (!section) return 0;
+  const query = state.q.trim();
+  if (!query) {
+    section.hidden = true;
+    replaceChildren(byId("today-benchmarks-results"), []);
+    return 0;
+  }
+  // Only fetched when someone actually searches, so the dashboard's first
+  // paint never waits on a catalog most visits do not open.
+  if (!state.benchmarkIndexLoaded) {
+    loadBenchmarkIndex().then((records) => {
+      state.benchmarkIndex = records;
+      state.benchmarkIndexLoaded = true;
+      if (state.q.trim()) renderToday({ resultsOnly: true });
+    });
+  }
+  const board = state.data?.model_card_leaderboard;
+  const curated = searchCuratedEntries(board, query);
+  const external = searchBenchmarkIndex(state.benchmarkIndex || [], query);
+  // The curated layer has a protocol and a time axis; the crawled layer is a
+  // name and a count. Same order the leaderboard's own picker uses.
+  const rows = [
+    ...curated.map((entry) => curatedResultRow(entry, { navigate: true })),
+    ...external.map((record) => benchmarkResultRow(record, { navigate: true })),
+  ].slice(0, BENCHMARK_SEARCH_LIMIT);
+  if (!rows.length) {
+    section.hidden = true;
+    replaceChildren(byId("today-benchmarks-results"), []);
+    return 0;
+  }
+  section.hidden = false;
+  const total = curated.length + external.length;
+  byId("today-benchmarks-note").textContent = t(
+    "Registry records matching \u201c{q}\u201d. These are benchmarks the radar tracks, not things collected on a date.",
+  ).replace("{q}", query);
+  replaceChildren(byId("today-benchmarks-results"), rows);
+  return total;
+}
+
 function renderToday({ resultsOnly = false } = {}) {
   // Events are bound before the data file resolves (initialize), so a nav
   // click or filter keystroke in the load window must no-op, not throw.
@@ -1642,6 +1712,7 @@ function renderToday({ resultsOnly = false } = {}) {
   // resultsOnly re-renders that follow each drawer interaction.
   updateFiltersCount();
   const observations = filteredObservations();
+  const benchmarkMatches = renderTodayBenchmarks();
   const resultsKey = [
     state.todayDate,
     state.q,
@@ -1693,7 +1764,7 @@ function renderToday({ resultsOnly = false } = {}) {
       : [
           element("p", {
             className: "empty-state",
-            text: emptyTodayMessage(day),
+            text: emptyTodayMessage(day, benchmarkMatches),
           }),
         ],
   );
@@ -3331,7 +3402,7 @@ function opennessChip(status) {
   });
 }
 
-function benchmarkResultRow(record) {
+function benchmarkResultRow(record, { navigate = false } = {}) {
   const facts = [];
   // Every one of these renders an explicit "not established" rather than being
   // hidden. Hiding an empty field reads as "not applicable", and whether these
@@ -3370,6 +3441,10 @@ function benchmarkResultRow(record) {
   ]);
   button.addEventListener("click", () => {
     selectFrontier(record.slug);
+    if (navigate) {
+      setView("leaderboard");
+      return;
+    }
     renderBenchmarkSearch();
     const board = state.data?.model_card_leaderboard;
     if (board) renderAdoptionFrontier(board);
@@ -3428,7 +3503,11 @@ function searchCuratedEntries(board, query) {
 // A curated result states what the crawled rows cannot: how many values were
 // read verbatim, and that this record charts. The layer is named on the row
 // rather than left to the reader to infer from the absence of a source chip.
-function curatedResultRow(entry) {
+// `navigate` is for rows rendered outside the leaderboard. There, selecting a
+// benchmark updates a panel the reader is not looking at, so the click would
+// register as nothing happening. Carrying them to the panel is the only
+// behaviour that matches what the row looks like it promises.
+function curatedResultRow(entry, { navigate = false } = {}) {
   const record = scoreRecord(entry.benchmark_id);
   const facts = [];
   if (entry.domain) facts.push(String(entry.domain).replaceAll("_", " "));
@@ -3456,6 +3535,10 @@ function curatedResultRow(entry) {
   ]);
   button.addEventListener("click", () => {
     selectFrontier(entry.benchmark_id);
+    if (navigate) {
+      setView("leaderboard");
+      return;
+    }
     renderBenchmarkSearch();
     const board = state.data?.model_card_leaderboard;
     if (board) renderAdoptionFrontier(board);

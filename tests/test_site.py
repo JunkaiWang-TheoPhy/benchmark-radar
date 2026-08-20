@@ -1564,12 +1564,12 @@ def test_an_empty_source_filter_says_why_instead_of_blaming_the_filter():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     # The empty list asks the helper rather than hardcoding one sentence.
-    assert "text: emptyTodayMessage(day)," in script
-    assert "function emptyTodayMessage(day)" in script
+    assert "text: emptyTodayMessage(day, benchmarkMatches)," in script
+    assert "function emptyTodayMessage(day" in script
 
     # It reuses issue #260's three states rather than inventing a fourth
     # answer that could disagree with the ledger on the same day.
-    helper = script.split("function emptyTodayMessage(day)", 1)[1][:1400]
+    helper = script.split("function emptyTodayMessage(day", 1)[1][:2000]
     assert "zeroItemSources(day)" in helper
     for state in ("unreachable", "empty", "unranked"):
         assert state in helper, state
@@ -1585,3 +1585,55 @@ def test_an_empty_source_filter_says_why_instead_of_blaming_the_filter():
         "Try another date, or clear the filter.",
     ):
         assert script.count(f'"{phrase}"') >= 2, phrase
+
+
+def test_a_benchmark_name_search_reaches_the_registry_not_only_the_daily_feed():
+    """Issue #245: the search box read the daily feed and nothing else.
+
+    Two wrong answers came out of that. "researchclawbench" returned "No
+    observations match these filters. Clear one or more filters", advice that
+    cannot work, because no filter setting adds a dataset the box never read.
+    "terminal-bench" was worse: it returned an arXiv paper on uncertainty
+    propagation, ranked because the string "Terminal-Bench-2" happens to appear
+    in its abstract, while the six Terminal-Bench records in the registry, one
+    of them carrying 51 reported scores, were unreachable.
+
+    Both benchmarks are in the registry. The query has to reach it.
+    """
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # The query runs against both registry layers, reusing the matchers the
+    # leaderboard already uses rather than a second, drifting implementation.
+    section = script.split("function renderTodayBenchmarks()", 1)[1].split(
+        "function renderToday(", 1
+    )[0]
+    assert "searchCuratedEntries(board, query)" in section
+    assert "searchBenchmarkIndex(state.benchmarkIndex || [], query)" in section
+
+    # Curated rows rank above crawled ones: same order the leaderboard picker
+    # uses, and the layer with a protocol and a time axis.
+    assert section.index("curatedResultRow") < section.index("benchmarkResultRow")
+
+    # Registry matches are named as such. Folding them into a list sorted by
+    # daily priority is what surfaced the arXiv paper over the benchmark.
+    assert "today-benchmarks" in section
+
+    # The catalog is only fetched once someone searches, so a normal visit
+    # still does not pay for it.
+    assert "if (!state.benchmarkIndexLoaded)" in section
+
+    # And the empty list stops advising a filter change that cannot help when
+    # the thing being searched for was found in the registry instead.
+    helper = script.split("function emptyTodayMessage(day", 1)[1][:1200]
+    assert "benchmarkMatches" in helper
+
+    # A t() string needs both halves in app.js: the English key the call site
+    # passes and the zh value it looks up. Missing the second is the silent
+    # failure mode, since the lookup just falls through to English.
+    assert script.count("Nothing was collected about") >= 2
+
+    # A data-i18n string is keyed from the HTML instead, so app.js carries the
+    # translation only and the English lives in the markup.
+    markup = Path("site/index.html").read_text(encoding="utf-8")
+    assert 'data-i18n="Benchmarks with this name"' in markup
+    assert '"Benchmarks with this name":' in script

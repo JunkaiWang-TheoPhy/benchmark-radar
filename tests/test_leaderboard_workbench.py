@@ -292,11 +292,15 @@ def test_detail_panel_renders_for_any_selected_record():
 def test_search_selection_updates_the_detail_panel():
     script = source("site/assets/app.js")
 
-    row = script.split("function benchmarkResultRow(record)", 1)[1].split(
+    row = script.split("function benchmarkResultRow(record", 1)[1].split(
         "function renderBenchmarkSearch", 1
     )[0]
     assert "selectFrontier(record.slug)" in row
     assert "renderAdoptionFrontier(board)" in row
+    # Issue #245 added a `navigate` path for rows rendered outside the
+    # leaderboard, where updating the panel in place would look like the click
+    # did nothing. It must not replace the in-place update the panel relies on.
+    assert "setView(\"leaderboard\")" in row
 
 
 def test_crawled_scores_are_partitioned_by_source_with_no_merge_path():
