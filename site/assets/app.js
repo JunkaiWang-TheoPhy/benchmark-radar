@@ -108,9 +108,24 @@ function emptyTodayMessage(day, benchmarkMatches = 0) {
   // filter that is set too narrow, and telling the reader to widen it sends
   // them adjusting controls that cannot produce the rows they want. Name what
   // was found instead, and point at it (issue #245).
-  if (state.q.trim() && benchmarkMatches) {
+  //
+  // Only when the query is the sole filter. With a second one active, a
+  // matching observation may exist and have been removed by that filter, so
+  // "nothing was collected" would be a claim this function cannot check. And
+  // the two date modes need different sentences: "on this date" is false in
+  // All dates mode, where the search already covered the whole archive.
+  const queryOnly =
+    state.q.trim() &&
+    !state.kind &&
+    !state.category &&
+    !state.source &&
+    !state.organization &&
+    !state.event;
+  if (queryOnly && benchmarkMatches) {
     return t(
-      "Nothing was collected about \u201c{q}\u201d on this date, but it is in the benchmark registry. The matches are listed above.",
+      state.todayDate === "all"
+        ? "No collected observation mentions \u201c{q}\u201d, but it is in the benchmark registry. The matches are listed above."
+        : "Nothing was collected about \u201c{q}\u201d on this date, but it is in the benchmark registry. The matches are listed above.",
     ).replace("{q}", state.q.trim());
   }
   const others = [state.q.trim(), state.kind, state.category, state.event].filter(Boolean);
@@ -417,6 +432,8 @@ const I18N = {
     "leaderboard.ledger.note":
       "这是计算排名的精选来源列表。展开任意一张卡可看到其报告的全部基准,并按源文档的分组方式分组,以便我们的数据能逐行对照原文核查。",
     "Benchmarks with this name": "同名的基准",
+    "No collected observation mentions \u201c{q}\u201d, but it is in the benchmark registry. The matches are listed above.":
+      "收集到的内容中没有提到\u201c{q}\u201d,但它在基准登记册中。匹配结果列在上方。",
     "Registry records matching \u201c{q}\u201d. These are benchmarks the radar tracks, not things collected on a date.":
       "登记册中与\u201c{q}\u201d匹配的记录。这些是雷达追踪的基准,而不是某一天收集到的内容。",
     "Nothing was collected about \u201c{q}\u201d on this date, but it is in the benchmark registry. The matches are listed above.":
@@ -3442,7 +3459,11 @@ function benchmarkResultRow(record, { navigate = false } = {}) {
   button.addEventListener("click", () => {
     selectFrontier(record.slug);
     if (navigate) {
+      // setView toggles visibility and the URL; it does not draw. On a first
+      // visit the leaderboard has never rendered, so switching to it without
+      // this leaves the reader on an empty panel.
       setView("leaderboard");
+      renderLeaderboard();
       return;
     }
     renderBenchmarkSearch();
@@ -3536,7 +3557,11 @@ function curatedResultRow(entry, { navigate = false } = {}) {
   button.addEventListener("click", () => {
     selectFrontier(entry.benchmark_id);
     if (navigate) {
+      // setView toggles visibility and the URL; it does not draw. On a first
+      // visit the leaderboard has never rendered, so switching to it without
+      // this leaves the reader on an empty panel.
       setView("leaderboard");
+      renderLeaderboard();
       return;
     }
     renderBenchmarkSearch();

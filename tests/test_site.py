@@ -1569,7 +1569,12 @@ def test_an_empty_source_filter_says_why_instead_of_blaming_the_filter():
 
     # It reuses issue #260's three states rather than inventing a fourth
     # answer that could disagree with the ledger on the same day.
-    helper = script.split("function emptyTodayMessage(day", 1)[1][:2000]
+    # Sliced to the next top-level function rather than a fixed character
+    # count, so adding a branch to this helper cannot silently push the
+    # assertions below out of the window being checked.
+    helper = script.split("function emptyTodayMessage(day", 1)[1].split(
+        "\nfunction ", 1
+    )[0]
     assert "zeroItemSources(day)" in helper
     for state in ("unreachable", "empty", "unranked"):
         assert state in helper, state
@@ -1622,10 +1627,32 @@ def test_a_benchmark_name_search_reaches_the_registry_not_only_the_daily_feed():
     # still does not pay for it.
     assert "if (!state.benchmarkIndexLoaded)" in section
 
+    # Clicking a row must draw the view it lands on. setView() toggles
+    # visibility and the URL but does not render, so without this a first-time
+    # visitor arrives at an empty leaderboard: 0 chart children, 0 table rows.
+    assert section.count("renderLeaderboard()") == 0
+    for row in ("function curatedResultRow(entry", "function benchmarkResultRow(record"):
+        body = script.split(row, 1)[1].split("\nfunction ", 1)[0]
+        assert 'setView("leaderboard");\n      renderLeaderboard();' in body, row
+
     # And the empty list stops advising a filter change that cannot help when
     # the thing being searched for was found in the registry instead.
-    helper = script.split("function emptyTodayMessage(day", 1)[1][:1200]
+    helper = script.split("function emptyTodayMessage(day", 1)[1].split(
+        "\nfunction ", 1
+    )[0]
     assert "benchmarkMatches" in helper
+
+    # The claim is only made when the query is the sole filter. With a second
+    # one active a matching observation may exist and have been filtered out,
+    # so "nothing was collected" would assert more than this function knows.
+    assert "queryOnly" in helper
+    for other in ("state.kind", "state.category", "state.source", "state.event"):
+        assert other in helper, other
+
+    # "on this date" is false in All dates mode, where the search already
+    # covered the whole archive, so that mode gets its own sentence.
+    assert 'state.todayDate === "all"' in helper
+    assert "No collected observation mentions" in helper
 
     # A t() string needs both halves in app.js: the English key the call site
     # passes and the zh value it looks up. Missing the second is the silent
