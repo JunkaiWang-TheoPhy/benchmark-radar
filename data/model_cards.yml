@@ -865,6 +865,28 @@ benchmarks:
       a public dataset; released 2026-04-22 per PDF metadata. Graded by an LLM
       against physician-written rubrics.
 
+  - id: rsi_bench
+    name: RSI-Bench
+    aliases:
+      - "RSI-Bench"
+      - "RSI Bench"
+      - "RSIBench"
+      - "Recursive Self-Improvement Benchmark"
+    domain: agent
+    url: https://www.rsi-benchmark.com/
+    released: 2026-08-07
+    caveat: >-
+      Announced by Scale AI on 2026-08-07 and still in preview: it is
+      soliciting task contributions rather than reporting results, so no model
+      card in this registry reports it and its adoption count is zero. That
+      zero is a real reading, not a gap in the crawl. Recorded now so the
+      benchmark is addressable by name before any score exists, and so the
+      first card to report it has an id to resolve against. Scores are
+      per-task against a baseline under a fixed compute budget, graded on
+      reliability, efficiency, generality and idea quality, so a single
+      headline number should not be expected. Not to be confused with the
+      llm-stats "RSI Index" record, which is a different instrument.
+
 # Model cards, technical reports and release posts.
 #
 # `organization` is the publisher of the document. `benchmarks` is the set of
