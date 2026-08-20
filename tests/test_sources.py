@@ -90,9 +90,7 @@ def test_first_party_feeds_require_any_narrows_broad_publishers(monkeypatch):
     )
 
     feed = {"name": "Broad Publisher", "url": "https://lab.example/rss"}
-    unfiltered = fetch_first_party_feeds(
-        {"feeds": [feed]}, datetime(2026, 8, 8, 0, tzinfo=UTC), 10
-    )
+    unfiltered = fetch_first_party_feeds({"feeds": [feed]}, datetime(2026, 8, 8, 0, tzinfo=UTC), 10)
     assert [item.title for item in unfiltered] == ["A new agent evaluation benchmark"]
 
     # The shared keyword gate still passes the item; require_any rejects it because
