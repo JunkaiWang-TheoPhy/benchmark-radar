@@ -1572,9 +1572,7 @@ def test_an_empty_source_filter_says_why_instead_of_blaming_the_filter():
     # Sliced to the next top-level function rather than a fixed character
     # count, so adding a branch to this helper cannot silently push the
     # assertions below out of the window being checked.
-    helper = script.split("function emptyTodayMessage(day", 1)[1].split(
-        "\nfunction ", 1
-    )[0]
+    helper = script.split("function emptyTodayMessage(day", 1)[1].split("\nfunction ", 1)[0]
     assert "zeroItemSources(day)" in helper
     for state in ("unreachable", "empty", "unranked"):
         assert state in helper, state
@@ -1672,9 +1670,7 @@ def test_a_benchmark_name_search_reaches_the_registry_not_only_the_daily_feed():
 
     # And the empty list stops advising a filter change that cannot help when
     # the thing being searched for was found in the registry instead.
-    helper = script.split("function emptyTodayMessage(day", 1)[1].split(
-        "\nfunction ", 1
-    )[0]
+    helper = script.split("function emptyTodayMessage(day", 1)[1].split("\nfunction ", 1)[0]
     assert "benchmarkMatches" in helper
 
     # The claim is only made when the query is the sole filter. With a second

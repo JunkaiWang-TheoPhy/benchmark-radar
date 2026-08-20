@@ -300,7 +300,7 @@ def test_search_selection_updates_the_detail_panel():
     # Issue #245 added a `navigate` path for rows rendered outside the
     # leaderboard, where updating the panel in place would look like the click
     # did nothing. It must not replace the in-place update the panel relies on.
-    assert "setView(\"leaderboard\")" in row
+    assert 'setView("leaderboard")' in row
 
 
 def test_crawled_scores_are_partitioned_by_source_with_no_merge_path():
