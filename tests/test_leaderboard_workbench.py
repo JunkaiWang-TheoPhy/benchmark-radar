@@ -606,3 +606,29 @@ def test_the_shortlist_says_what_it_ranks_by_behind_an_info_toggle():
     # And it escapes the navigator's scroll container rather than being clipped.
     pinned = styles.split(".benchmark-example-heading .info-disclosure-body", 1)[1][:200]
     assert "position: fixed" in pinned
+
+
+def test_a_benchmark_with_no_adopters_answers_for_itself():
+    # Issue #287: ?lfrontier=rsi_bench drew AutomationBench's chart. `adopted`
+    # is gated on card_count > 0, so a benchmark recorded before any model card
+    # reports it was filtered out before the unscored guard could see it. It
+    # matched no branch, fell through to the default entry, and the page
+    # printed another benchmark's track, its 31.8% best-on-record figure and
+    # its model points under a URL still reading rsi_bench, saying nothing.
+    script = source("site/assets/app.js")
+    body = script.split("function renderAdoptionFrontier(board)", 1)[1].split("\nfunction ", 1)[0]
+
+    # Resolved against every registry entry, not just the adopted subset.
+    guard = body.split("const unscoredEntry", 1)[1].split("if (unscoredEntry)", 1)[0]
+    assert "(board.entries || []).find(" in guard
+    assert "adopted.find(" not in guard
+
+    # Zero adopters and "adopters but no readable score" are different answers,
+    # and a reader chasing a brand-new benchmark wants to know which one it is.
+    assert "No model card in this registry reports this benchmark yet" in body
+    assert "unscoredEntry.card_count" in body
+
+    # The picker lists only scored benchmarks, so an unscored selection matches
+    # no option and the browser shows the first one instead: a <select> reading
+    # AA-LCR beside a panel headed RSI-Bench is lying about the state.
+    assert "prependOption" in body
