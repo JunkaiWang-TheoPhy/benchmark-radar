@@ -1625,7 +1625,10 @@ def test_a_benchmark_name_search_reaches_the_registry_not_only_the_daily_feed():
 
     # The catalog is only fetched once someone searches, so a normal visit
     # still does not pay for it.
-    assert "if (!state.benchmarkIndexLoaded)" in section
+    # Attached once. The promise is cached, so one handler per keystroke would
+    # all fire together on a slow fetch, each re-filtering and rebuilding.
+    assert "!state.benchmarkIndexLoaded && !benchmarkIndexRerenderQueued" in section
+    assert "benchmarkIndexRerenderQueued = true;" in section
 
     # Capped before the rows are built. "bench" matches 355 of the 1,148
     # crawled records, and building all of them into DOM subtrees with

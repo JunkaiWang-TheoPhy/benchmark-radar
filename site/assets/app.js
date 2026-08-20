@@ -1674,6 +1674,8 @@ function renderBuildMeta() {
 // benchmarks rather than mixed into a list sorted by daily priority. A prose
 // mention inside an abstract and a registry record are different kinds of
 // answer, and collapsing them is what produced the arXiv result.
+let benchmarkIndexRerenderQueued = false;
+
 function renderTodayBenchmarks() {
   const section = byId("today-benchmarks");
   if (!section) return 0;
@@ -1685,7 +1687,13 @@ function renderTodayBenchmarks() {
   }
   // Only fetched when someone actually searches, so the dashboard's first
   // paint never waits on a catalog most visits do not open.
-  if (!state.benchmarkIndexLoaded) {
+  //
+  // Attached once, not once per keystroke. loadBenchmarkIndex() caches its
+  // promise, so on a slow connection every debounced keystroke would hang
+  // another handler on the same fetch and they would all fire together when it
+  // landed, each one re-filtering the observations and rebuilding the list.
+  if (!state.benchmarkIndexLoaded && !benchmarkIndexRerenderQueued) {
+    benchmarkIndexRerenderQueued = true;
     loadBenchmarkIndex().then((records) => {
       state.benchmarkIndex = records;
       state.benchmarkIndexLoaded = true;
