@@ -435,18 +435,21 @@
               <aside class="frontier-context" aria-labelledby="frontier-task-heading">
                 <div id="frontier-task-preview"></div>
                 <details class="pareto-readiness">
-                  <summary data-i18n="pareto.readiness.summary">What would make this a true Pareto frontier?</summary>
+                  <summary data-i18n="pareto.readiness.summary">What would it take to chart best score against lowest cost?</summary>
                   <p data-i18n="pareto.readiness.note1">
-                    Comparable score observations need the benchmark version and split,
-                    metric direction, model, harness or scaffold, reasoning budget, cost or
-                    latency, publication date, and source. Only compatible configurations can
-                    share a score frontier; this registry currently stores mentions, not those
-                    measurements.
+                    Two scores can only be compared when each one records which version of
+                    the test it used, which slice of it, whether a high number is good or bad,
+                    which model, what software ran it, how much thinking time it was given,
+                    what it cost, how long it took, when it was published, and where the number
+                    came from. The test and the way it was run have to match; the model, cost,
+                    time and date are free to differ, because those are what the chart compares.
+                    This site records that a model card mentioned a benchmark. It does not yet
+                    record those measurements.
                   </p>
                   <p data-i18n="pareto.readiness.note2">
-                    With those observations, a Harbor-style view can put cost or latency on the
-                    x-axis and score on the y-axis, connect only nondominated observations, and
-                    use a publication-time slider to reveal how the frontier moved.
+                    Once they exist, this chart could plot cost or speed against score, and draw
+                    a line through only the results that nothing else beats on both at once. A
+                    date slider would then show how that line moved over time.
                   </p>
                 </details>
               </aside>
