@@ -1564,12 +1564,15 @@ def test_an_empty_source_filter_says_why_instead_of_blaming_the_filter():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     # The empty list asks the helper rather than hardcoding one sentence.
-    assert "text: emptyTodayMessage(day)," in script
-    assert "function emptyTodayMessage(day)" in script
+    assert "text: emptyTodayMessage(day, benchmarkMatches)," in script
+    assert "function emptyTodayMessage(day" in script
 
     # It reuses issue #260's three states rather than inventing a fourth
     # answer that could disagree with the ledger on the same day.
-    helper = script.split("function emptyTodayMessage(day)", 1)[1][:1400]
+    # Sliced to the next top-level function rather than a fixed character
+    # count, so adding a branch to this helper cannot silently push the
+    # assertions below out of the window being checked.
+    helper = script.split("function emptyTodayMessage(day", 1)[1].split("\nfunction ", 1)[0]
     assert "zeroItemSources(day)" in helper
     for state in ("unreachable", "empty", "unranked"):
         assert state in helper, state
@@ -1585,3 +1588,110 @@ def test_an_empty_source_filter_says_why_instead_of_blaming_the_filter():
         "Try another date, or clear the filter.",
     ):
         assert script.count(f'"{phrase}"') >= 2, phrase
+
+
+def test_a_benchmark_name_search_reaches_the_registry_not_only_the_daily_feed():
+    """Issue #245: the search box read the daily feed and nothing else.
+
+    Two wrong answers came out of that. "researchclawbench" returned "No
+    observations match these filters. Clear one or more filters", advice that
+    cannot work, because no filter setting adds a dataset the box never read.
+    "terminal-bench" was worse: it returned an arXiv paper on uncertainty
+    propagation, ranked because the string "Terminal-Bench-2" happens to appear
+    in its abstract, while the six Terminal-Bench records in the registry, one
+    of them carrying 51 reported scores, were unreachable.
+
+    Both benchmarks are in the registry. The query has to reach it.
+    """
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # The query runs against both registry layers, reusing the matchers the
+    # leaderboard already uses rather than a second, drifting implementation.
+    section = script.split("function renderTodayBenchmarks()", 1)[1].split(
+        "function renderToday(", 1
+    )[0]
+    assert "searchCuratedEntries(board, query, { includeUnscored: true })" in section
+    assert "searchBenchmarkIndex(state.benchmarkIndex || [], query)" in section
+
+    # Curated rows rank above crawled ones: same order the leaderboard picker
+    # uses, and the layer with a protocol and a time axis.
+    assert section.index("curatedResultRow") < section.index("benchmarkResultRow")
+
+    # Registry matches are named as such. Folding them into a list sorted by
+    # daily priority is what surfaced the arXiv paper over the benchmark.
+    assert "today-benchmarks" in section
+
+    # The catalog is only fetched once someone searches, so a normal visit
+    # still does not pay for it.
+    # Attached once. The promise is cached, so one handler per keystroke would
+    # all fire together on a slow fetch, each re-filtering and rebuilding.
+    assert "!state.benchmarkIndexLoaded && !benchmarkIndexRerenderQueued" in section
+    assert "benchmarkIndexRerenderQueued = true;" in section
+
+    # Capped before the rows are built. "bench" matches 355 of the 1,148
+    # crawled records, and building all of them into DOM subtrees with
+    # listeners to then drop all but 50 is work repeated on every keystroke.
+    assert "curated.slice(0, BENCHMARK_SEARCH_LIMIT)" in section
+    assert section.index("externalShown") < section.index("benchmarkResultRow(record")
+
+    # A failed catalog fetch is reported whether or not the curated layer
+    # matched. Only saying so on an empty result would present half a registry
+    # search as a whole one.
+    assert "const indexFailed =" in section
+    assert "if (!rows.length && !indexFailed && !indexPending)" in section
+
+    # And an unsettled catalog is a third state. Zero matches is not a fact
+    # while the request is in flight, so a cold search for a crawled-only
+    # benchmark must not print "clear one or more filters" in the meantime.
+    assert "const indexPending = !state.benchmarkIndexLoaded;" in section
+    assert 'return !total && indexPending ? "pending" : total;' in section
+    assert 'benchmarkMatches === "pending"' in script
+
+    # With no leaderboard to land on, rows render inert rather than as buttons
+    # whose click does nothing the reader can see. "Has entries" is not the
+    # test: renderAdoptionFrontier() gives up unless an adopted entry has a
+    # readable score record and a default entry resolves.
+    assert "inert: !navigate" in section
+    assert "scoreRecord(item.benchmark_id)" in section
+    assert "frontierDefaultEntry(board)" in section
+
+    # A truncated list says so. Presenting 50 of 383 as "the matches" invites
+    # the reader to conclude a benchmark past row 50 is absent, which is the
+    # same wrong conclusion this issue is about.
+    assert "const truncated = total > rows.length;" in section
+    assert "Showing {shown} of {total} registry records" in section
+
+    # Clicking a row must draw the view it lands on. setView() toggles
+    # visibility and the URL but does not render, so without this a first-time
+    # visitor arrives at an empty leaderboard: 0 chart children, 0 table rows.
+    for row in ("function curatedResultRow(entry", "function benchmarkResultRow(record"):
+        body = script.split(row, 1)[1].split("\nfunction ", 1)[0]
+        assert 'setView("leaderboard");\n      renderLeaderboard();' in body, row
+
+    # And the empty list stops advising a filter change that cannot help when
+    # the thing being searched for was found in the registry instead.
+    helper = script.split("function emptyTodayMessage(day", 1)[1].split("\nfunction ", 1)[0]
+    assert "benchmarkMatches" in helper
+
+    # The claim is only made when the query is the sole filter. With a second
+    # one active a matching observation may exist and have been filtered out,
+    # so "nothing was collected" would assert more than this function knows.
+    assert "queryOnly" in helper
+    for other in ("state.kind", "state.category", "state.source", "state.event"):
+        assert other in helper, other
+
+    # "on this date" is false in All dates mode, where the search already
+    # covered the whole archive, so that mode gets its own sentence.
+    assert 'state.todayDate === "all"' in helper
+    assert "No collected observation mentions" in helper
+
+    # A t() string needs both halves in app.js: the English key the call site
+    # passes and the zh value it looks up. Missing the second is the silent
+    # failure mode, since the lookup just falls through to English.
+    assert script.count("Nothing was collected about") >= 2
+
+    # A data-i18n string is keyed from the HTML instead, so app.js carries the
+    # translation only and the English lives in the markup.
+    markup = Path("site/index.html").read_text(encoding="utf-8")
+    assert 'data-i18n="Benchmarks with this name"' in markup
+    assert '"Benchmarks with this name":' in script

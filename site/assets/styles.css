@@ -3974,12 +3974,36 @@ footer {
   font-variant-numeric: tabular-nums;
 }
 
-#benchmark-search-results {
+#benchmark-search-results,
+#today-benchmarks-results {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
   max-height: 22rem;
   overflow-y: auto;
+}
+
+/* Registry matches sit above the day's list and answer a different question
+   than it does, so they are fenced off rather than run together with it. */
+.today-benchmarks {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.today-benchmarks-heading {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.today-benchmarks-note {
+  margin: 0.25rem 0 0.55rem;
+  font-size: 0.7rem;
+  line-height: 1.45;
+  color: var(--muted);
 }
 
 .benchmark-result {

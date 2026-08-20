@@ -103,7 +103,34 @@ function zeroItemSources(day) {
 // Only speaks when the source filter alone is active. With a second filter
 // on, the source's own zero is no longer the whole story, and guessing which
 // of the two emptied the list would be a worse answer than the general one.
-function emptyTodayMessage(day) {
+function emptyTodayMessage(day, benchmarkMatches = 0) {
+  // A search that found the benchmark but no daily coverage of it is not a
+  // filter that is set too narrow, and telling the reader to widen it sends
+  // them adjusting controls that cannot produce the rows they want. Name what
+  // was found instead, and point at it (issue #245).
+  //
+  // Only when the query is the sole filter. With a second one active, a
+  // matching observation may exist and have been removed by that filter, so
+  // "nothing was collected" would be a claim this function cannot check. And
+  // the two date modes need different sentences: "on this date" is false in
+  // All dates mode, where the search already covered the whole archive.
+  const queryOnly =
+    state.q.trim() &&
+    !state.kind &&
+    !state.category &&
+    !state.source &&
+    !state.organization &&
+    !state.event;
+  if (queryOnly && benchmarkMatches === "pending") {
+    return t("Still checking the benchmark registry\u2026");
+  }
+  if (queryOnly && benchmarkMatches) {
+    return t(
+      state.todayDate === "all"
+        ? "No collected observation mentions \u201c{q}\u201d, but it is in the benchmark registry. The matches are listed above."
+        : "Nothing was collected about \u201c{q}\u201d on this date, but it is in the benchmark registry. The matches are listed above.",
+    ).replace("{q}", state.q.trim());
+  }
   const others = [state.q.trim(), state.kind, state.category, state.event].filter(Boolean);
   if (!state.source || others.length) {
     return t("No observations match these filters. Clear one or more filters to widen the view.");
@@ -407,6 +434,21 @@ const I18N = {
       "每张模型卡对同一基准只计一次。一张在四个配置中报告 AIME 的卡,与只报告一次的卡计数相同,因此冗长的附录不能压过不同的供应商。机构可以打破平局:六个供应商报告同一计数是共同标准,只有一个供应商报告则是自家风格。",
     "leaderboard.ledger.note":
       "这是计算排名的精选来源列表。展开任意一张卡可看到其报告的全部基准,并按源文档的分组方式分组,以便我们的数据能逐行对照原文核查。",
+    "Benchmarks with this name": "同名的基准",
+    "no score read from a document yet": "尚无从文档中读到的分数",
+    "Showing {shown} of {total} registry records matching \u201c{q}\u201d. Narrow the search to see the rest.":
+      "显示与\u201c{q}\u201d匹配的 {total} 条登记册记录中的 {shown} 条。缩小搜索范围可查看其余记录。",
+    "Still checking the benchmark registry\u2026": "正在查询基准登记册\u2026",
+    "The crawled benchmark catalog could not be loaded, so these results may be incomplete.":
+      "无法加载抓取的基准目录,因此这些结果可能不完整。",
+    "The benchmark registry could not be loaded, so this search covered collected observations only.":
+      "无法加载基准登记册,因此本次搜索只覆盖了已收集的内容。",
+    "No collected observation mentions \u201c{q}\u201d, but it is in the benchmark registry. The matches are listed above.":
+      "收集到的内容中没有提到\u201c{q}\u201d,但它在基准登记册中。匹配结果列在上方。",
+    "Registry records matching \u201c{q}\u201d. These are benchmarks the radar tracks, not things collected on a date.":
+      "登记册中与\u201c{q}\u201d匹配的记录。这些是雷达追踪的基准,而不是某一天收集到的内容。",
+    "Nothing was collected about \u201c{q}\u201d on this date, but it is in the benchmark registry. The matches are listed above.":
+      "这一天没有收集到关于\u201c{q}\u201d的内容,但它在基准登记册中。匹配结果列在上方。",
     "pareto.readiness.summary": "要把最高分数和最低成本画在一张图上,还差什么?",
     "pareto.readiness.note1":
       "两个分数只有在各自都记录了以下信息时才能比较:测的是哪个版本、取的是哪一部分、数值高好还是低好、用的哪个模型、由什么软件运行、给了多少思考时间、花了多少钱、用了多长时间、何时发布,以及这个数字出自哪里。其中测试本身和运行方式必须一致,而模型、成本、耗时和日期可以不同,因为它们正是图表要对比的内容。本站记录的是某张模型卡提到了某个基准,还没有记录这些测量值。",
@@ -1617,6 +1659,117 @@ function renderBuildMeta() {
   )} UTC`;
 }
 
+// The search box reads the daily feed: titles, summaries and source names of
+// what the crawl collected on a date. The benchmark registry is a different
+// dataset, and until issue #245 nothing joined them, so a reader searching for
+// a benchmark by name got one of two wrong answers. "researchclawbench"
+// returned "No observations match these filters", advice that cannot work
+// because clearing a filter does not add a dataset. "terminal-bench" was worse:
+// it returned an arXiv paper on uncertainty propagation, which ranked because
+// the string "Terminal-Bench-2" appears in its abstract. Both benchmarks are in
+// the registry with scores, and both were unreachable from the box that looks
+// like the way to find them.
+//
+// So the query runs against the registry too, and its matches are named as
+// benchmarks rather than mixed into a list sorted by daily priority. A prose
+// mention inside an abstract and a registry record are different kinds of
+// answer, and collapsing them is what produced the arXiv result.
+let benchmarkIndexRerenderQueued = false;
+
+function renderTodayBenchmarks() {
+  const section = byId("today-benchmarks");
+  if (!section) return 0;
+  const query = state.q.trim();
+  if (!query) {
+    section.hidden = true;
+    replaceChildren(byId("today-benchmarks-results"), []);
+    return 0;
+  }
+  // Only fetched when someone actually searches, so the dashboard's first
+  // paint never waits on a catalog most visits do not open.
+  //
+  // Attached once, not once per keystroke. loadBenchmarkIndex() caches its
+  // promise, so on a slow connection every debounced keystroke would hang
+  // another handler on the same fetch and they would all fire together when it
+  // landed, each one re-filtering the observations and rebuilding the list.
+  if (!state.benchmarkIndexLoaded && !benchmarkIndexRerenderQueued) {
+    benchmarkIndexRerenderQueued = true;
+    loadBenchmarkIndex().then((records) => {
+      state.benchmarkIndex = records;
+      state.benchmarkIndexLoaded = true;
+      if (state.q.trim()) renderToday({ resultsOnly: true });
+    });
+  }
+  const board = state.data?.model_card_leaderboard;
+  const curated = searchCuratedEntries(board, query, { includeUnscored: true });
+  const external = searchBenchmarkIndex(state.benchmarkIndex || [], query);
+  // A row is only worth clicking if the panel it leads to can draw. That needs
+  // more than a non-empty board: renderAdoptionFrontier() gives up unless some
+  // adopted entry has a readable score record and a default entry resolves, so
+  // a registry of card mentions with no scores yet renders the same empty panel
+  // as no registry at all. A button that goes nowhere is worse than no button,
+  // so those rows render as plain records instead.
+  const navigate = Boolean(
+    (board?.entries || []).some(
+      (item) => item.card_count > 0 && scoreRecord(item.benchmark_id),
+    ) && frontierDefaultEntry(board),
+  );
+  // loadBenchmarkIndex() resolves null only on failure. That is a different
+  // answer from a search that matched nothing, and it stays true whether or
+  // not the curated layer had a hit: reporting it only on an empty result
+  // would present half a registry search as a whole one.
+  const indexFailed = state.benchmarkIndexLoaded && state.benchmarkIndex === null;
+  // Sliced before the rows are built, not after. "bench" matches 355 of the
+  // 1,148 crawled records, and building every one of them into a DOM subtree
+  // with a listener to then discard all but 50 is work done on each keystroke.
+  const curatedShown = curated.slice(0, BENCHMARK_SEARCH_LIMIT);
+  const externalShown = external.slice(
+    0,
+    Math.max(0, BENCHMARK_SEARCH_LIMIT - curatedShown.length),
+  );
+  const rows = [
+    ...curatedShown.map((entry) => curatedResultRow(entry, { navigate, inert: !navigate })),
+    ...externalShown.map((record) => benchmarkResultRow(record, { navigate, inert: !navigate })),
+  ];
+  // Still on the wire. Zero matches is not yet a fact, so the empty list must
+  // not print the sentence this whole change exists to stop printing: on a
+  // cold search for a crawled-only benchmark the catalog has not arrived, and
+  // a slow request would leave "clear one or more filters" on screen for as
+  // long as it takes. Reported as pending until it settles.
+  const indexPending = !state.benchmarkIndexLoaded;
+  if (!rows.length && !indexFailed && !indexPending) {
+    section.hidden = true;
+    replaceChildren(byId("today-benchmarks-results"), []);
+    return 0;
+  }
+  section.hidden = false;
+  const total = curated.length + external.length;
+  // Saying "matching X" over a truncated list invites the reader to conclude a
+  // benchmark that is present but past row 50 does not exist, which is the
+  // reading this whole change is trying to prevent. Show the arithmetic.
+  const truncated = total > rows.length;
+  const note = rows.length
+    ? truncated
+      ? t(
+          "Showing {shown} of {total} registry records matching \u201c{q}\u201d. Narrow the search to see the rest.",
+        )
+          .replace("{shown}", rows.length)
+          .replace("{total}", total)
+          .replace("{q}", query)
+      : t(
+          "Registry records matching \u201c{q}\u201d. These are benchmarks the radar tracks, not things collected on a date.",
+        ).replace("{q}", query)
+    : "";
+  const warning = indexFailed
+    ? t("The crawled benchmark catalog could not be loaded, so these results may be incomplete.")
+    : indexPending
+      ? t("Still checking the benchmark registry\u2026")
+      : "";
+  byId("today-benchmarks-note").textContent = [note, warning].filter(Boolean).join(" ");
+  replaceChildren(byId("today-benchmarks-results"), rows);
+  return !total && indexPending ? "pending" : total;
+}
+
 function renderToday({ resultsOnly = false } = {}) {
   // Events are bound before the data file resolves (initialize), so a nav
   // click or filter keystroke in the load window must no-op, not throw.
@@ -1642,6 +1795,7 @@ function renderToday({ resultsOnly = false } = {}) {
   // resultsOnly re-renders that follow each drawer interaction.
   updateFiltersCount();
   const observations = filteredObservations();
+  const benchmarkMatches = renderTodayBenchmarks();
   const resultsKey = [
     state.todayDate,
     state.q,
@@ -1693,7 +1847,7 @@ function renderToday({ resultsOnly = false } = {}) {
       : [
           element("p", {
             className: "empty-state",
-            text: emptyTodayMessage(day),
+            text: emptyTodayMessage(day, benchmarkMatches),
           }),
         ],
   );
@@ -3331,7 +3485,7 @@ function opennessChip(status) {
   });
 }
 
-function benchmarkResultRow(record) {
+function benchmarkResultRow(record, { navigate = false, inert = false } = {}) {
   const facts = [];
   // Every one of these renders an explicit "not established" rather than being
   // hidden. Hiding an empty field reads as "not applicable", and whether these
@@ -3368,8 +3522,20 @@ function benchmarkResultRow(record) {
       }),
     ]),
   ]);
+  if (inert) {
+    button.disabled = true;
+    return button;
+  }
   button.addEventListener("click", () => {
     selectFrontier(record.slug);
+    if (navigate) {
+      // setView toggles visibility and the URL; it does not draw. On a first
+      // visit the leaderboard has never rendered, so switching to it without
+      // this leaves the reader on an empty panel.
+      setView("leaderboard");
+      renderLeaderboard();
+      return;
+    }
     renderBenchmarkSearch();
     const board = state.data?.model_card_leaderboard;
     if (board) renderAdoptionFrontier(board);
@@ -3387,12 +3553,19 @@ function benchmarkResultRow(record) {
 // Matched on aliases as well as the name, because the registry records them
 // ("HLE" for Humanity's Last Exam) precisely so a reader does not have to know
 // the canonical spelling.
-function searchCuratedEntries(board, query) {
+// `includeUnscored` exists for callers that are answering "does the radar
+// track this?" rather than "can this be charted?". The leaderboard picker
+// needs a score record because it drives a chart, but 20 of the 79 curated
+// entries have no score progression, and 5 of those are in no crawled index
+// either: CVE-Bench, Chatbot Arena, CursorBench, MTOB and ViBench were tracked
+// benchmarks that name search could not find, which is issue #245 again with a
+// different benchmark in it.
+function searchCuratedEntries(board, query, { includeUnscored = false } = {}) {
   const needle = foldName(query);
   if (!needle) return [];
   const scored = [];
   for (const entry of board?.entries || []) {
-    if (!scoreRecord(entry.benchmark_id)) continue;
+    if (!includeUnscored && !scoreRecord(entry.benchmark_id)) continue;
     // Name and aliases identify the record; `domain` is what the placeholder
     // means by tasks and domains, since the task shape shown in the panel is
     // selected by domain. Matching it lets "agent" or "science" return a set
@@ -3428,7 +3601,13 @@ function searchCuratedEntries(board, query) {
 // A curated result states what the crawled rows cannot: how many values were
 // read verbatim, and that this record charts. The layer is named on the row
 // rather than left to the reader to infer from the absence of a source chip.
-function curatedResultRow(entry) {
+// `navigate` is for rows rendered outside the leaderboard. There, selecting a
+// benchmark updates a panel the reader is not looking at, so the click would
+// register as nothing happening. Carrying them to the panel is the only
+// behaviour that matches what the row looks like it promises.
+function curatedResultRow(entry, { navigate = false, inert = false } = {}) {
+  // May be absent: a curated entry is a benchmark model cards report, which is
+  // a separate fact from whether any score was read from a document for it.
   const record = scoreRecord(entry.benchmark_id);
   const facts = [];
   if (entry.domain) facts.push(String(entry.domain).replaceAll("_", " "));
@@ -3450,12 +3629,33 @@ function curatedResultRow(entry) {
       }),
       element("span", {
         className: "benchmark-result-scores",
-        text: metricLabel(record.observation_count, "score read from a document", "scores read from a document"),
+        text: record
+          ? metricLabel(
+              record.observation_count,
+              "score read from a document",
+              "scores read from a document",
+            )
+          : t("no score read from a document yet"),
       }),
     ]),
   ]);
+  // Nothing to navigate to and no panel on screen to update: an enabled
+  // control whose click does nothing visible is a worse answer than a row that
+  // does not look clickable.
+  if (inert) {
+    button.disabled = true;
+    return button;
+  }
   button.addEventListener("click", () => {
     selectFrontier(entry.benchmark_id);
+    if (navigate) {
+      // setView toggles visibility and the URL; it does not draw. On a first
+      // visit the leaderboard has never rendered, so switching to it without
+      // this leaves the reader on an empty panel.
+      setView("leaderboard");
+      renderLeaderboard();
+      return;
+    }
     renderBenchmarkSearch();
     const board = state.data?.model_card_leaderboard;
     if (board) renderAdoptionFrontier(board);
