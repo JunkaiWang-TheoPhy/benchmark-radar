@@ -37,7 +37,7 @@ def test_published_rubric_describes_every_scored_component():
 
     assert keys == list(rubric.WEIGHTS)
     assert reference["score_max"] == 100
-    assert reference["scoring_version"] == 3
+    assert reference["scoring_version"] == rubric.SCORING_VERSION
     for component in reference["components"]:
         assert component["weight"] == rubric.WEIGHTS[component["key"]]
         assert component["summary"].strip()
@@ -145,3 +145,66 @@ def test_formula_states_the_weights_it_applies():
 
     for component, weight in rubric.WEIGHTS.items():
         assert f"{weight:.2f} {component}" in formula
+
+
+def test_downloads_and_likes_cannot_reach_the_top_of_the_adoption_scale():
+    """Issue #278: a dataset's automated downloads took #2 from a 3,265-star repo.
+
+    Under v3's uncapped max-wins rule 25,238 downloads scored 88.04 against
+    87.85 for 3,265 stars. The cap has to leave the starred repository ahead
+    without collapsing the dataset to zero, which is what removing downloads
+    outright would have done.
+    """
+    dataset = item(metrics={"downloads": 25_238.0, "likes": 1.0})
+    starred = item(metrics={"stars": 3_265.0})
+
+    score_item(dataset, TAXONOMY, dataset.published_at, lookback_hours=48.0)
+    score_item(starred, TAXONOMY, starred.published_at, lookback_hours=48.0)
+
+    assert dataset.adoption_score == rubric.ADOPTION_CAPPED_METRICS["downloads"]
+    assert dataset.adoption_score < starred.adoption_score
+    # Not removed: a widely-downloaded dataset still outranks an unnoticed repo.
+    assert dataset.adoption_score > 0
+
+
+def test_the_cap_applies_per_metric_so_stars_stay_unbounded():
+    """A record carrying both counters is scored on the stronger, uncapped one.
+
+    Capping the result rather than each metric would penalize a repository for
+    also publishing downloads, which is the opposite of the intent.
+    """
+    both = item(metrics={"downloads": 25_238.0, "stars": 3_265.0})
+    stars_only = item(metrics={"stars": 3_265.0})
+
+    score_item(both, TAXONOMY, both.published_at, lookback_hours=48.0)
+    score_item(stars_only, TAXONOMY, stars_only.published_at, lookback_hours=48.0)
+
+    assert both.adoption_score == stars_only.adoption_score
+    assert both.adoption_score > rubric.ADOPTION_CAPPED_METRICS["downloads"]
+
+
+def test_a_small_download_count_scores_below_the_cap():
+    """The cap is a ceiling, not a floor: low counters still score low."""
+    quiet = item(metrics={"downloads": 10.0})
+
+    score_item(quiet, TAXONOMY, quiet.published_at, lookback_hours=48.0)
+
+    assert 0 < quiet.adoption_score < rubric.ADOPTION_CAPPED_METRICS["downloads"]
+
+
+def test_the_published_rubric_states_the_cap_and_the_self_exclusion():
+    reference = rubric.rubric_reference()
+    adoption = next(c for c in reference["components"] if c["key"] == "adoption")
+
+    assert any("capped at 60" in band for band in adoption["bands"])
+    assert any(rubric.SELF_REPOSITORY in limit for limit in reference["limits"])
+
+
+def test_v3_reference_is_not_relabelled_with_v4_arithmetic():
+    """Issue #32's guarantee: a past score keeps the rubric that produced it."""
+    v3 = rubric.v3_rubric_reference()
+    adoption = next(c for c in v3["components"] if c["key"] == "adoption")
+
+    assert v3["scoring_version"] == 3
+    assert not any("capped at" in band for band in adoption["bands"])
+    assert not any(rubric.SELF_REPOSITORY in limit for limit in v3["limits"])

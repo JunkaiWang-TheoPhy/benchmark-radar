@@ -272,6 +272,9 @@ def render_markdown(
         suppressed_future = int(selection.get("suppressed_future_dated") or 0)
         suppressed_untitled = int(selection.get("suppressed_untitled") or 0)
         suppressed_low_value = int(selection.get("suppressed_low_value") or 0)
+        # Absent from snapshots written before scoring v4, where self-records
+        # were simply ranked; `or 0` keeps those funnels rendering unchanged.
+        suppressed_self = int(selection.get("suppressed_self_reference") or 0)
         uncategorized = int(selection.get("suppressed_uncategorized") or 0)
         if "eligible" in selection:
             eligible = int(selection.get("eligible") or 0)
@@ -304,6 +307,11 @@ def render_markdown(
                 + (
                     f"**{suppressed_low_value}** low-value artifacts suppressed → "
                     if suppressed_low_value
+                    else ""
+                )
+                + (
+                    f"**{suppressed_self}** self-referential records excluded → "
+                    if suppressed_self
                     else ""
                 )
                 + (f"**{uncategorized}** uncategorized → " if uncategorized else "")
@@ -349,6 +357,11 @@ def render_markdown(
                     + (
                         f"**{suppressed_low_value}** low-value artifacts suppressed → "
                         if suppressed_low_value
+                        else ""
+                    )
+                    + (
+                        f"**{suppressed_self}** self-referential records excluded → "
+                        if suppressed_self
                         else ""
                     )
                     + (

@@ -1212,7 +1212,11 @@ def test_the_eligibility_counters_sum_to_the_drop():
     selection = _select(items)
 
     gap = selection["scored"] - selection["eligible"]
-    parts = selection["suppressed_low_value"] + selection["suppressed_uncategorized"]
+    parts = (
+        selection["suppressed_low_value"]
+        + selection["suppressed_self_reference"]
+        + selection["suppressed_uncategorized"]
+    )
     assert gap == parts
     assert selection["suppressed_uncategorized"] == 1
     assert selection["recommended"] == 1
@@ -1248,7 +1252,9 @@ def test_the_funnel_reconciles_when_nothing_is_eligible():
 
     assert selection["eligible"] == 0
     assert (
-        selection["suppressed_low_value"] + selection["suppressed_uncategorized"]
+        selection["suppressed_low_value"]
+        + selection["suppressed_self_reference"]
+        + selection["suppressed_uncategorized"]
         == selection["scored"]
     )
 
@@ -1316,3 +1322,115 @@ def test_a_non_finite_minimum_score_is_rejected():
     # funnel identity would break silently. `float()` accepts `.nan` from YAML.
     with pytest.raises(ValueError, match="finite"):
         _select([_fresh(source_id="a")], minimum_score=float("nan"))
+
+
+def test_this_repository_is_excluded_from_its_own_ranking():
+    """Issue #278: benchmark-radar reached the top 5 on 9 of the first 27 days.
+
+    Its description is wall-to-wall benchmark vocabulary and it is committed to
+    daily, so relevance and recency carried it past artifacts the field
+    actually uses. A radar that recommends itself is not reporting.
+    """
+    us = _fresh(
+        source="GitHub",
+        source_id="ktwu01/benchmark-radar",
+        url="https://github.com/ktwu01/benchmark-radar",
+        title="Benchmark Radar: a daily dataset and benchmark radar",
+    )
+
+    retained, selection = _score_and_select(
+        [us],
+        _funnel_config(),
+        now=FUNNEL_NOW,
+        fetched_count=1,
+        suppressed_count=0,
+        future_dated_count=0,
+    )
+
+    assert retained == []
+    assert selection["suppressed_self_reference"] == 1
+    # Billed to its own counter, not to the taxonomy's low-value deductions.
+    assert selection["suppressed_low_value"] == 0
+
+
+def test_self_exclusion_matches_the_repository_not_the_name():
+    """`H20Zhang/Agent-Benchmark-Radar` is a real record in the corpus.
+
+    A substring match on "benchmark-radar" would silently delete it, so the
+    rule matches the exact `owner/name` pair.
+    """
+    others = [
+        _fresh(
+            source="GitHub",
+            source_id="H20Zhang/Agent-Benchmark-Radar",
+            url="https://github.com/H20Zhang/Agent-Benchmark-Radar",
+            title="Agent Benchmark Radar dataset",
+        ),
+        _fresh(
+            source="GitHub",
+            source_id="someone/benchmark-radar-fork",
+            url="https://github.com/someone/benchmark-radar-fork",
+            title="A benchmark dataset fork",
+        ),
+    ]
+
+    retained, selection = _score_and_select(
+        others,
+        _funnel_config(),
+        now=FUNNEL_NOW,
+        fetched_count=len(others),
+        suppressed_count=0,
+        future_dated_count=0,
+    )
+
+    assert selection["suppressed_self_reference"] == 0
+    assert len(retained) == 2
+
+
+def test_self_exclusion_recognizes_the_repository_from_its_url_alone():
+    """A release record's `source_id` is a tag, not the `owner/name` pair."""
+    release = _fresh(
+        source="GitHub Release",
+        source_id="ktwu01/benchmark-radar:v1.2.0",
+        url="https://github.com/ktwu01/benchmark-radar/releases/tag/v1.2.0",
+        title="Benchmark Radar v1.2.0 dataset release",
+    )
+
+    retained, selection = _score_and_select(
+        [release],
+        _funnel_config(),
+        now=FUNNEL_NOW,
+        fetched_count=1,
+        suppressed_count=0,
+        future_dated_count=0,
+    )
+
+    assert retained == []
+    assert selection["suppressed_self_reference"] == 1
+
+
+def test_self_exclusion_survives_a_watchlist_hit():
+    """Suppression is checked before the watchlist, so it cannot be overridden."""
+    us = _fresh(
+        source="GitHub",
+        source_id="ktwu01/benchmark-radar",
+        url="https://github.com/ktwu01/benchmark-radar",
+        title="Benchmark Radar dataset",
+    )
+    config = _funnel_config()
+    config["watchlist"] = [
+        {"name": "Benchmark Radar", "aliases": ["benchmark radar", "benchmark-radar"]}
+    ]
+
+    retained, selection = _score_and_select(
+        [us],
+        config,
+        now=FUNNEL_NOW,
+        fetched_count=1,
+        suppressed_count=0,
+        future_dated_count=0,
+    )
+
+    # The record really did match the watchlist; suppression still won.
+    assert selection["watchlisted"] == 0
+    assert retained == []

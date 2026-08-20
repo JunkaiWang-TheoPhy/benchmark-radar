@@ -12,7 +12,7 @@ import hashlib
 import json
 from typing import Any
 
-SCORING_VERSION = 3
+SCORING_VERSION = 4
 SCORE_MAX = 100.0
 DEFAULT_LOOKBACK_HOURS = 48.0
 
@@ -112,6 +112,42 @@ ADOPTION_METRIC_SATURATION: dict[str, float] = {
     "downloads": 100_000.0,
     "likes": 1_000.0,
 }
+
+# Downloads and likes are not comparable achievements to a star or a citation.
+# A dataset accrues downloads from any script that pulls it once, and a like
+# costs less than a star does; both counters accumulate without anyone deciding
+# the artifact was worth keeping. Under the max-wins rule of v3 that asymmetry
+# was structural rather than incidental: GitHub records never carry downloads
+# and Hugging Face records never carry stars, so whichever counter saturates
+# most easily decided the ranking for the source that exposes it. On
+# 2026-08-19 a dataset with 25,238 downloads and 1 like scored adoption 88.0
+# and took the #2 slot from a 3,265-star repository at 87.8 (issue #278).
+#
+# Capping rather than removing: dropping downloads entirely would collapse
+# every Hugging Face dataset to adoption 0 and simply flip the bias toward
+# GitHub. A cap lets automated traffic place an artifact mid-pack while
+# reserving the top of the scale for counters that record a human decision.
+# 60 is the score of roughly 250 stars, so a capped download total still
+# outranks a barely-noticed repository and never outranks a widely-held one.
+# Stars and citations remain unbounded within the 0-100 scale.
+ADOPTION_CAPPED_METRICS: dict[str, float] = {
+    "downloads": 60.0,
+    "likes": 60.0,
+}
+
+# `ktwu01/benchmark-radar` is this project. Its description is wall-to-wall
+# benchmark vocabulary and it is committed to daily, so it scored relevance 100
+# and recency ~96 and reached the top 5 on 9 of the first 27 collected days
+# (issue #278). Whatever the arithmetic says, a radar that recommends itself is
+# not reporting on the field, and #32 already established that self-referential
+# artifacts do not belong in the daily list.
+#
+# Matched on the exact repository identity, never as a substring: an unrelated
+# `H20Zhang/Agent-Benchmark-Radar` appears in the corpus and is a legitimate
+# record. Both the canonical GitHub id and the URL host/path are checked
+# because a record can reach the pipeline from either shape.
+SELF_REPOSITORY = "ktwu01/benchmark-radar"
+SELF_REFERENCE_LABEL = "this project's own repository"
 
 
 def taxonomy_version(taxonomy: dict[str, Any]) -> str:
@@ -219,6 +255,11 @@ def _components(*, lookback_hours: float) -> list[dict[str, Any]]:
                 f"{metric} reaches 100 at {saturation:g}"
                 for metric, saturation in ADOPTION_METRIC_SATURATION.items()
             ]
+            + [
+                f"{metric} is capped at {cap:.0f}, the score of roughly 250 stars, "
+                "because the counter accumulates without a human decision"
+                for metric, cap in ADOPTION_CAPPED_METRICS.items()
+            ]
             + ["Uses the strongest available normalized counter", "Clamped to 0-100"],
         },
     ]
@@ -247,7 +288,10 @@ def rubric_reference(
             "Negative signals demote only named artifact patterns. Result indexes, "
             "submission placeholders, and visualization-only companions are suppressed; "
             "the selection funnel reports how many were removed.",
-            "Adoption measures attention, not correctness.",
+            "Adoption measures attention, not correctness. Counters that accumulate "
+            "without a human decision (downloads, likes) are capped below the top of "
+            "the adoption scale; stars and citations are not.",
+            f"This project's own repository ({SELF_REPOSITORY}) is excluded from its own ranking.",
             "Attention observations are shown separately and are never quality-scored.",
             "Watchlisted artifacts are retained whatever they score and sort first. Their "
             "rank reflects that request, not a higher score.",
@@ -265,6 +309,31 @@ def v2_rubric_reference(*, lookback_hours: float = DEFAULT_LOOKBACK_HOURS) -> di
         if component["key"] != "evidence":
             continue
         component["bands"] = [band.replace(", First-party feed", "") for band in component["bands"]]
+    return value
+
+
+def v3_rubric_reference(*, lookback_hours: float = DEFAULT_LOOKBACK_HOURS) -> dict[str, Any]:
+    """Describe v3 without retroactively applying v4's download cap.
+
+    A v3 score was produced by the uncapped max-wins adoption rule, and the
+    records that ranked under it included this repository. Explaining those
+    numbers with v4's bands would claim the run did something it did not, which
+    is the relabelling #32 forbids.
+    """
+    value = rubric_reference(lookback_hours=lookback_hours)
+    value["scoring_version"] = 3
+    for component in value["components"]:
+        if component["key"] != "adoption":
+            continue
+        component["bands"] = [band for band in component["bands"] if "capped at" not in band]
+    value["limits"] = [
+        # v3 capped nothing, so its adoption limit is the bare sentence.
+        "Adoption measures attention, not correctness."
+        if limit.startswith("Adoption measures")
+        else limit
+        for limit in value["limits"]
+        if not limit.startswith("This project's own repository")
+    ]
     return value
 
 

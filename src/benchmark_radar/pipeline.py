@@ -177,6 +177,25 @@ def match_proximity_rule(text: str, rule: dict[str, Any]) -> str | None:
     return None
 
 
+def is_self_reference(item: RadarItem) -> bool:
+    """Whether a record is this project reporting on itself.
+
+    Matched on the exact repository identity rather than on a substring, so an
+    unrelated repository whose name merely contains "benchmark-radar" (the
+    corpus already holds `H20Zhang/Agent-Benchmark-Radar`) keeps its place.
+    The canonical GitHub `source_id` is the reliable signal; the URL is checked
+    as well because a record can arrive from a release or first-party feed
+    whose id is not the `owner/name` pair.
+    """
+    if item.source_id and item.source_id.strip().lower() == rubric.SELF_REPOSITORY:
+        return True
+    parsed = urlsplit(item.url or "")
+    if parsed.netloc.lower().removeprefix("www.") != "github.com":
+        return False
+    parts = [part for part in parsed.path.lower().split("/") if part]
+    return len(parts) >= 2 and "/".join(parts[:2]) == rubric.SELF_REPOSITORY
+
+
 def score_item(
     item: RadarItem,
     taxonomy: dict[str, Any],
@@ -223,6 +242,8 @@ def score_item(
     item.suppression_reasons = [
         str(signal["label"]) for signal in deductions if signal["action"] == "suppress"
     ]
+    if is_self_reference(item):
+        item.suppression_reasons.append(rubric.SELF_REFERENCE_LABEL)
 
     evidence = rubric.EVIDENCE_BASE
     if item.source in rubric.EVIDENCE_PRIMARY_SOURCES:
@@ -244,11 +265,21 @@ def score_item(
         rubric.SCORE_MAX * (1.0 - age_hours / lookback_hours),
     )
 
+    # Each counter is scored on its own log curve against its own saturation
+    # point, then the strongest one wins. Counters that accumulate without a
+    # human decision are capped first, so a large automated download total can
+    # place a record mid-pack but cannot outscore a widely-starred repository
+    # (issue #278). The cap applies per metric before the max, not to the
+    # result, so a record carrying both stars and downloads is still free to
+    # score above the cap on its stars.
     adoption = max(
         (
-            rubric.SCORE_MAX
-            * math.log10(1 + max(0.0, float(item.metrics.get(metric, 0))))
-            / math.log10(1 + saturation)
+            min(
+                rubric.SCORE_MAX
+                * math.log10(1 + max(0.0, float(item.metrics.get(metric, 0))))
+                / math.log10(1 + saturation),
+                rubric.ADOPTION_CAPPED_METRICS.get(metric, rubric.SCORE_MAX),
+            )
             for metric, saturation in rubric.ADOPTION_METRIC_SATURATION.items()
             if item.metrics.get(metric, 0)
         ),
@@ -469,10 +500,21 @@ def _score_and_select(
     # auditable rather than looking like lost data.
     #
     # These counters mirror the eligibility predicate above in its own
-    # precedence order, so each excluded record has one reason and the two sum
-    # to `scored - eligible`. Recommendation is reported alongside the funnel,
+    # precedence order, so each excluded record has one reason and they sum to
+    # `scored - eligible`. Recommendation is reported alongside the funnel,
     # never as a drop reason.
-    suppressed_low_value = sum(1 for item in scored if item.suppression_reasons)
+    # Self-exclusion is counted apart from the low-value deductions. Both stop
+    # a record at the same gate, but billing "this project's own repository" to
+    # `suppressed_low_value` would report a credibility rule as a taxonomy
+    # judgement and make the low-value count untrue.
+    suppressed_self_reference = sum(
+        1 for item in scored if rubric.SELF_REFERENCE_LABEL in item.suppression_reasons
+    )
+    suppressed_low_value = sum(
+        1
+        for item in scored
+        if [reason for reason in item.suppression_reasons if reason != rubric.SELF_REFERENCE_LABEL]
+    )
     uncategorized = sum(
         1
         for item in scored
@@ -501,6 +543,8 @@ def _score_and_select(
         # Suppression now applies to watchlisted records too, so the count is
         # every suppressed record rather than only the un-watchlisted ones.
         "suppressed_low_value": suppressed_low_value,
+        # This project's own repository, removed from its own ranking (#278).
+        "suppressed_self_reference": suppressed_self_reference,
         # Deprecated compatibility field. Scores no longer suppress records.
         "suppressed_below_minimum": 0,
         # Matched no taxonomy category and was not explicitly watchlisted.
