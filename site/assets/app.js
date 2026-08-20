@@ -432,6 +432,9 @@ const I18N = {
     "leaderboard.ledger.note":
       "这是计算排名的精选来源列表。展开任意一张卡可看到其报告的全部基准,并按源文档的分组方式分组,以便我们的数据能逐行对照原文核查。",
     "Benchmarks with this name": "同名的基准",
+    "no score read from a document yet": "尚无从文档中读到的分数",
+    "The benchmark registry could not be loaded, so this search covered collected observations only.":
+      "无法加载基准登记册,因此本次搜索只覆盖了已收集的内容。",
     "No collected observation mentions \u201c{q}\u201d, but it is in the benchmark registry. The matches are listed above.":
       "收集到的内容中没有提到\u201c{q}\u201d,但它在基准登记册中。匹配结果列在上方。",
     "Registry records matching \u201c{q}\u201d. These are benchmarks the radar tracks, not things collected on a date.":
@@ -1682,15 +1685,29 @@ function renderTodayBenchmarks() {
     });
   }
   const board = state.data?.model_card_leaderboard;
-  const curated = searchCuratedEntries(board, query);
+  const curated = searchCuratedEntries(board, query, { includeUnscored: true });
   const external = searchBenchmarkIndex(state.benchmarkIndex || [], query);
-  // The curated layer has a protocol and a time axis; the crawled layer is a
-  // name and a count. Same order the leaderboard's own picker uses.
+  // A row is only worth clicking if the panel it leads to can draw. Without a
+  // curated leaderboard renderLeaderboard() returns early, so navigating would
+  // land the reader on a blank view: show the match, do not offer the trip.
+  const navigate = Boolean(board?.entries?.length);
   const rows = [
-    ...curated.map((entry) => curatedResultRow(entry, { navigate: true })),
-    ...external.map((record) => benchmarkResultRow(record, { navigate: true })),
+    ...curated.map((entry) => curatedResultRow(entry, { navigate })),
+    ...external.map((record) => benchmarkResultRow(record, { navigate })),
   ].slice(0, BENCHMARK_SEARCH_LIMIT);
   if (!rows.length) {
+    // A failed catalog fetch is not the same answer as a search that found
+    // nothing, and silently treating it as one puts the reader back in front
+    // of "clear one or more filters" with no way to know the registry was
+    // never consulted. loadBenchmarkIndex() resolves null only on failure.
+    if (state.benchmarkIndexLoaded && state.benchmarkIndex === null) {
+      section.hidden = false;
+      byId("today-benchmarks-note").textContent = t(
+        "The benchmark registry could not be loaded, so this search covered collected observations only.",
+      );
+      replaceChildren(byId("today-benchmarks-results"), []);
+      return 0;
+    }
     section.hidden = true;
     replaceChildren(byId("today-benchmarks-results"), []);
     return 0;
@@ -3483,12 +3500,19 @@ function benchmarkResultRow(record, { navigate = false } = {}) {
 // Matched on aliases as well as the name, because the registry records them
 // ("HLE" for Humanity's Last Exam) precisely so a reader does not have to know
 // the canonical spelling.
-function searchCuratedEntries(board, query) {
+// `includeUnscored` exists for callers that are answering "does the radar
+// track this?" rather than "can this be charted?". The leaderboard picker
+// needs a score record because it drives a chart, but 20 of the 79 curated
+// entries have no score progression, and 5 of those are in no crawled index
+// either: CVE-Bench, Chatbot Arena, CursorBench, MTOB and ViBench were tracked
+// benchmarks that name search could not find, which is issue #245 again with a
+// different benchmark in it.
+function searchCuratedEntries(board, query, { includeUnscored = false } = {}) {
   const needle = foldName(query);
   if (!needle) return [];
   const scored = [];
   for (const entry of board?.entries || []) {
-    if (!scoreRecord(entry.benchmark_id)) continue;
+    if (!includeUnscored && !scoreRecord(entry.benchmark_id)) continue;
     // Name and aliases identify the record; `domain` is what the placeholder
     // means by tasks and domains, since the task shape shown in the panel is
     // selected by domain. Matching it lets "agent" or "science" return a set
@@ -3529,6 +3553,8 @@ function searchCuratedEntries(board, query) {
 // register as nothing happening. Carrying them to the panel is the only
 // behaviour that matches what the row looks like it promises.
 function curatedResultRow(entry, { navigate = false } = {}) {
+  // May be absent: a curated entry is a benchmark model cards report, which is
+  // a separate fact from whether any score was read from a document for it.
   const record = scoreRecord(entry.benchmark_id);
   const facts = [];
   if (entry.domain) facts.push(String(entry.domain).replaceAll("_", " "));
@@ -3550,7 +3576,13 @@ function curatedResultRow(entry, { navigate = false } = {}) {
       }),
       element("span", {
         className: "benchmark-result-scores",
-        text: metricLabel(record.observation_count, "score read from a document", "scores read from a document"),
+        text: record
+          ? metricLabel(
+              record.observation_count,
+              "score read from a document",
+              "scores read from a document",
+            )
+          : t("no score read from a document yet"),
       }),
     ]),
   ]);

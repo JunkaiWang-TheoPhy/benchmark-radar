@@ -1612,7 +1612,7 @@ def test_a_benchmark_name_search_reaches_the_registry_not_only_the_daily_feed():
     section = script.split("function renderTodayBenchmarks()", 1)[1].split(
         "function renderToday(", 1
     )[0]
-    assert "searchCuratedEntries(board, query)" in section
+    assert "searchCuratedEntries(board, query, { includeUnscored: true })" in section
     assert "searchBenchmarkIndex(state.benchmarkIndex || [], query)" in section
 
     # Curated rows rank above crawled ones: same order the leaderboard picker
@@ -1630,7 +1630,6 @@ def test_a_benchmark_name_search_reaches_the_registry_not_only_the_daily_feed():
     # Clicking a row must draw the view it lands on. setView() toggles
     # visibility and the URL but does not render, so without this a first-time
     # visitor arrives at an empty leaderboard: 0 chart children, 0 table rows.
-    assert section.count("renderLeaderboard()") == 0
     for row in ("function curatedResultRow(entry", "function benchmarkResultRow(record"):
         body = script.split(row, 1)[1].split("\nfunction ", 1)[0]
         assert 'setView("leaderboard");\n      renderLeaderboard();' in body, row

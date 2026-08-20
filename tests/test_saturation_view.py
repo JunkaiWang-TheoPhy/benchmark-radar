@@ -231,12 +231,16 @@ def test_curated_search_matches_aliases_and_ranks_the_exact_one_first():
     # a prefix hit for "HLE" and, ranked on entry-name length, beat the record
     # literally named HLE. The matched alias is what gets ranked.
     script = source("site/assets/app.js")
-    search = script.split("function searchCuratedEntries(board, query)", 1)[1].split("\n}", 1)[0]
+    search = script.split("function searchCuratedEntries(board, query", 1)[1].split("\n}", 1)[0]
 
     assert "entry.aliases || []" in search
     assert "name === needle ? 0 : name.startsWith(needle) ? 1 : 2" in search
     # Only scored benchmarks are offered, same rule as the picker.
-    assert "if (!scoreRecord(entry.benchmark_id)) continue;" in search
+    # The picker drives a chart, so it still skips entries with no score
+    # record. Issue #245 added an opt-in for callers asking only "is this
+    # tracked?"; the default must stay off so this panel is unaffected.
+    assert "if (!includeUnscored && !scoreRecord(entry.benchmark_id)) continue;" in search
+    assert "includeUnscored = false" in search
 
 
 def test_search_still_works_when_the_crawled_index_is_unavailable():
@@ -365,7 +369,7 @@ def test_search_matches_the_fields_the_placeholder_promises():
     # publisher and modality are the equivalent there.
     script = source("site/assets/app.js")
 
-    curated = script.split("function searchCuratedEntries(board, query)", 1)[1].split("\n}", 1)[0]
+    curated = script.split("function searchCuratedEntries(board, query", 1)[1].split("\n}", 1)[0]
     assert "foldName(entry.domain).includes(needle)" in curated
     # A field hit is a weaker answer than a name hit and ranks below every one.
     assert "const best = hits.length ? Math.min(...hits.map(tier)) : 3;" in curated
