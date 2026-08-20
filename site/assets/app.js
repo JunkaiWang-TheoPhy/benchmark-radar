@@ -680,11 +680,12 @@ const I18N = {
     "Reported score": "报告的分数",
     "Score as reported": "报告的分数",
     "self reported": "自行报告",
-    "ordered by score, low to high. Dates shown are model release dates, not when each score was measured.":
-      "按分数从低到高排列。所示日期为模型发布日期，而非各分数的测量日期。",
+    "model release date, not when the score was measured": "模型发布日期,而不是分数的测量时间",
+    "model release date, not when the score was measured · {n} row(s) with no release date are in the table below only":
+      "模型发布日期,而不是分数的测量时间 · 另有 {n} 行没有发布日期,仅列于下方表格",
     "best reported": "报告的最高分",
-    "{count} scores reported to {source}, ordered by score rather than by date: the only date recorded is each model's own announcement date, not when this score was measured. Highest {best} by {model}, lowest {low}.":
-      "向 {source} 报告的 {count} 个分数，按分数而非日期排列：唯一记录的日期是每个模型自身的发布日期，而非该分数的测量日期。最高 {best}（{model}），最低 {low}。",
+    "{count} scores reported to {source}, placed at each model's release date, which is the only date recorded and is not when the score was measured. Highest {best} by {model}, lowest {low}.":
+      "向 {source} 报告的 {count} 个分数,按各模型的发布日期排布;这是唯一记录在案的日期,并非分数的测量时间。最高 {best},来自 {model};最低 {low}。",
     "Date (model release)": "日期（模型发布）",
     "Benchmark home ↗": "基准主页 ↗",
     "Top cards": "头部模型卡",
@@ -1171,6 +1172,15 @@ function eventTimestamp(item) {
 
 // Time is one of the highest-signal attributes on a Today page, so rows show
 // how long ago an event happened instead of a bare "UPDATED" (issue #248).
+// A YYYY-MM-DD as a UTC timestamp, or NaN when it is absent or unparseable.
+// Pinned to T00:00:00Z for the same reason scoreTrackChart's axis is: a bare
+// date string is parsed in local time by some engines, which slides a point
+// across a day boundary depending on where the reader is sitting.
+function dateValue(date) {
+  if (!date) return Number.NaN;
+  return new Date(`${String(date).slice(0, 10)}T00:00:00Z`).getTime();
+}
+
 function relativeTime(iso) {
   if (!iso) return "";
   const time = new Date(iso).getTime();
@@ -4021,31 +4031,62 @@ function externalScoresBlock(shard) {
 
 // --- The reported field (crawled scores) -------------------------------------
 //
-// A crawled row carries no evaluation date and no protocol, so it cannot go on
-// the curated panel's time axis, and it is not joined to the curated layer's
+// A crawled row carries no protocol, so it is not joined to the curated layer's
 // `benchmark_scores.yml` records: none of the join-rule machinery in
 // `scoreTrackChart` (instrument/protocol grouping, evidence grading) applies to
-// a row with neither field. What it does share with that chart is everything
-// visual -- same margins, same point size, same pale-face-plus-brand-glyph
-// marker, same grid and tick classes -- because the reader should not have to
-// learn a second chart language to read a second kind of evidence. Only the
-// axis differs in kind: score low-to-high stands in for the time axis, and the
-// label says plainly that it is not one.
+// a row without one. What it does share with that chart is everything visual --
+// same margins, same point size, same pale-face-plus-brand-glyph marker, same
+// grid and tick classes -- because the reader should not have to learn a second
+// chart language to read a second kind of evidence.
+//
+// It does carry a date. Every one of the 5,544 crawled rows has a
+// `reported_date`, and `date_precision` is `model_announcement` for all of
+// them: it is when the model was announced, never when this score was measured
+// (issue #279). Those are different facts, and the axis is only honest if it
+// says which one it is drawing.
+//
+// So the x-axis is the model's release date, labelled as such. That answers a
+// real question -- are newer models better at this benchmark? -- without
+// claiming to answer one it cannot: nothing here says when anyone ran the
+// evaluation. A model released in March can be scored in August, so reading
+// these points as a measurement timeline would be wrong, and the axis label
+// and every tooltip say "model release" rather than "date" to stop that.
+//
+// Ordering by score, which is what this chart did before, threw the dates away
+// entirely and produced a monotonic ramp that looks like progress and is really
+// just a sorted list.
 function externalScoreChart(source, payload) {
   const meta = externalSourceMeta(source);
   // A row whose value did not parse is in the table verbatim and out of the
   // chart: a point can only be drawn at a position, and there is no honest
-  // position for a value that is not a number. Sorted ascending so the axis
-  // reads low-to-high left-to-right, same direction as every other quantity
-  // axis on the site.
-  const plotted = (payload.rows || [])
-    .filter((row) => typeof row.value === "number" && Number.isFinite(row.value))
-    .sort((a, b) => a.value - b.value);
+  // position for a value that is not a number. A row with no parseable release
+  // date is out for the same reason once the axis is time: there is no honest
+  // x for it. Both exclusions are stated under the chart rather than left to
+  // be inferred from a count that does not add up.
+  const numeric = (payload.rows || []).filter(
+    (row) => typeof row.value === "number" && Number.isFinite(row.value),
+  );
+  const dated = numeric.filter((row) => Number.isFinite(dateValue(row.reported_date)));
+  const undatedCount = numeric.length - dated.length;
+  // Sorted by date so the axis reads left to right in time. Ties broken by
+  // score so same-day releases land in a stable order rather than whatever
+  // order the crawl happened to return.
+  const plotted = dated
+    .slice()
+    .sort(
+      (a, b) => dateValue(a.reported_date) - dateValue(b.reported_date) || a.value - b.value,
+    );
   if (!plotted.length) return null;
 
-  const values = plotted.map((row) => row.value);
-  const low = Math.min(...values);
-  const high = Math.max(...values);
+  // Sorted for the band and the tick labels. `plotted` is in date order now, so
+  // its last element is the most recently released model, not the best score:
+  // reading the best off the end of the array is exactly the bug the date axis
+  // would introduce if these two orderings were conflated.
+  const values = plotted.map((row) => row.value).sort((a, b) => a - b);
+  const low = values[0];
+  const high = values[values.length - 1];
+  const bestRow = plotted.reduce((best, row) => (row.value > best.value ? row : best), plotted[0]);
+  const bestValue = high;
   const pad = Math.max((high - low) * 0.18, Math.abs(high) * 0.05, Number.EPSILON);
   const band = { low: low - pad, high: high + pad };
 
@@ -4058,11 +4099,15 @@ function externalScoreChart(source, payload) {
   const plotWidth = width - margin.left - margin.right;
   const height = margin.top + scoreHeight + margin.bottom;
   const scoreTop = margin.top;
-  // A single-model field has no interval to spread across, so its one point is
-  // drawn at the left edge of the plot rather than at the midpoint of a range
-  // that does not exist.
-  const step = plotted.length > 1 ? plotWidth / (plotted.length - 1) : 0;
-  const x = (index) => margin.left + index * step;
+  // Positioned by date, so a cluster of releases in one month reads as a
+  // cluster rather than being spread evenly by rank. A field whose releases all
+  // land on one day has no interval to spread across, so its points are drawn
+  // at the left edge rather than at the midpoint of a range that does not exist.
+  const times = plotted.map((row) => dateValue(row.reported_date));
+  const firstTime = Math.min(...times);
+  const lastTime = Math.max(...times);
+  const span = lastTime - firstTime;
+  const x = (time) => (span > 0 ? margin.left + ((time - firstTime) / span) * plotWidth : margin.left);
   const scoreY = (value) => {
     if (band.high <= band.low) return scoreTop + scoreHeight / 2;
     return scoreTop + scoreHeight - ((value - band.low) / (band.high - band.low)) * scoreHeight;
@@ -4072,12 +4117,12 @@ function externalScoreChart(source, payload) {
     viewBox: `0 0 ${width} ${height}`,
     role: "group",
     "aria-label": t(
-      "{count} scores reported to {source}, ordered by score rather than by date: the only date recorded is each model's own announcement date, not when this score was measured. Highest {best} by {model}, lowest {low}.",
+      "{count} scores reported to {source}, placed at each model's release date, which is the only date recorded and is not when the score was measured. Highest {best} by {model}, lowest {low}.",
       {
         count: plotted.length.toLocaleString(),
         source: meta.name,
-        best: values[values.length - 1],
-        model: plotted[plotted.length - 1].model_name || t("not recorded"),
+        best: bestValue,
+        model: bestRow.model_name || t("not recorded"),
         low: values[0],
       },
     ),
@@ -4108,7 +4153,6 @@ function externalScoreChart(source, payload) {
     );
   }
 
-  const bestValue = values[values.length - 1];
   const bestY = scoreY(bestValue);
   svg.append(
     svgElement("line", {
@@ -4127,8 +4171,8 @@ function externalScoreChart(source, payload) {
     ),
   );
 
-  for (const [index, row] of plotted.entries()) {
-    const pointX = x(index);
+  for (const row of plotted) {
+    const pointX = x(dateValue(row.reported_date));
     const pointY = scoreY(row.value);
     const thirdParty = row.reported_by === "third_party";
     const group = svgElement("g", {
@@ -4184,6 +4228,27 @@ function externalScoreChart(source, payload) {
   }
   enableFrontierTouchTargets(svg);
 
+  // Endpoint ticks, matching the curated chart's axis. They label the real
+  // first and last release date rather than a padded range, for the same
+  // reason the score ticks do (issue #269).
+  if (span > 0) {
+    const endpoints = [
+      [margin.left, firstTime, "start"],
+      [margin.left + plotWidth, lastTime, "end"],
+    ];
+    for (const [tickX, time, anchor] of endpoints) {
+      svg.append(
+        svgElement(
+          "text",
+          { x: tickX, y: height - 26, "text-anchor": anchor, class: "frontier-tick" },
+          formatDate(new Date(time).toISOString().slice(0, 10), {
+            year: "numeric",
+            month: "short",
+          }),
+        ),
+      );
+    }
+  }
   svg.append(
     svgElement(
       "text",
@@ -4193,7 +4258,15 @@ function externalScoreChart(source, payload) {
         "text-anchor": "middle",
         class: "frontier-axis-label",
       },
-      t("ordered by score, low to high. Dates shown are model release dates, not when each score was measured."),
+      // Says which date this is on the axis itself, not only in a tooltip a
+      // reader has to open. "Model release date" is the whole claim: nothing
+      // here records when any of these scores was actually measured.
+      undatedCount
+        ? t("model release date, not when the score was measured · {n} row(s) with no release date are in the table below only").replace(
+            "{n}",
+            undatedCount.toLocaleString(),
+          )
+        : t("model release date, not when the score was measured"),
     ),
   );
   return svg;

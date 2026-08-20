@@ -361,41 +361,67 @@ def test_every_crawled_score_is_a_plotted_point():
     assert "externalScoreChart(source, payload)" in table
     assert "<table" not in table.replace('"table"', "").replace("'table'", "")
     assert "(payload.rows || [])" in chart
-    assert ".slice(" not in chart
     # A value that did not parse into a number has no position on an axis, so it
-    # is dropped. That is the only row the chart may drop, and it drops it by
-    # testing the value rather than by a cap.
+    # is dropped, and it is dropped by testing the value rather than by a cap.
     assert 'typeof row.value === "number" && Number.isFinite(row.value)' in chart
+    # No cap. The bare .slice() copies before sorting so the source array is
+    # not mutated; the only .slice(0, N) is ISO-date truncation, not a row
+    # limit. A truncating slice over the rows would silently hide scores.
+    assert ".slice()" in chart
+    assert ".slice(0, 10)" in chart and chart.count(".slice(0,") == 1
+    # The x-axis is a date now (issue #279), so a row with no parseable release
+    # date has no honest position either. That drops nothing today -- all 5,544
+    # numeric crawled rows carry a reported_date -- but if it ever does, the
+    # count is stated under the chart rather than left to be inferred from a
+    # total that does not add up.
+    assert "undatedCount" in chart
+    assert "with no release date are in the table below only" in chart
 
 
-def test_the_crawled_chart_axis_is_score_not_time():
-    # A crawled row's only date is announcement_date, the MODEL's own release
-    # date, not a measurement date -- normalize_llm_stats fills reported_date
-    # from it now (external_catalog.py:_observation), so the field is real,
-    # but it is still not a time this chart's x-axis is entitled to use: the
-    # x position comes from each row's own value (sorted ascending), and the
-    # axis label says in words that the date recorded is model release, not
-    # measurement time, so this is still not a time axis despite the date
-    # existing.
+def test_the_crawled_chart_axis_is_release_date_and_says_so():
+    # Supersedes test_the_crawled_chart_axis_is_score_not_time (issue #279).
+    #
+    # That test pinned a deliberate decision from c8e001d: the date exists on
+    # every row, but it is the MODEL's announcement date, so the axis stayed
+    # score-ordered rather than claim a measurement time it does not have.
+    # The concern was right; the remedy threw the date away and drew a sorted
+    # list that ramps upward and reads like progress.
+    #
+    # The axis is now that release date, and the honesty burden moves onto the
+    # label: every place the reader can look must say which date this is. A
+    # model released in March can be evaluated in August, so nothing here is a
+    # measurement timeline, and the assertions below are what stop it drifting
+    # into being presented as one.
     script = source("site/assets/app.js")
 
     chart = script.split("function externalScoreChart(source, payload)", 1)[1].split(
         "\nfunction externalSourceTable", 1
     )[0]
 
-    assert "a.value - b.value" in chart
-    # The label was shortened (issue #269): it had grown into a defensive
-    # sentence that read as an excuse for the dates rather than a description
-    # of the axis. The claim it has to make is unchanged -- ordered by score,
-    # and the dates are release dates rather than measurement times.
-    assert "ordered by score, low to high." in chart
-    assert "model release dates, not when each score was measured" in chart
-    # reported_date is read (for the pinned card's Date row), but never as an
-    # x-coordinate: the axis-building code above the point loop never touches it.
-    assert "row.reported_date" in chart
-    assert "x(row.reported_date)" not in chart
-    # And no segment between points, for the same reason the curated chart draws
-    # none: adjacency by score is not a trajectory.
+    # Positioned by date, so a burst of releases in one month reads as a burst
+    # rather than being spread evenly by rank.
+    assert "x(dateValue(row.reported_date))" in chart
+    assert "const times = plotted.map((row) => dateValue(row.reported_date));" in chart
+    # Ordered by date, ties broken by score so same-day releases are stable.
+    assert "dateValue(a.reported_date) - dateValue(b.reported_date) || a.value - b.value" in chart
+
+    # The visible axis label, the aria-label and the pinned card all name the
+    # date as a release date. Losing any one of them is how a chart starts
+    # implying it plots measurements.
+    assert "model release date, not when the score was measured" in chart
+    assert "is not when the score was measured" in chart
+    assert '"Date (model release)"' in script
+
+    # `plotted` is in date order, so the last element is the newest model, not
+    # the best score. Reading the best off the end of the array is the specific
+    # bug this reordering would introduce if the two were conflated.
+    assert "const bestRow = plotted.reduce(" in chart
+    assert "plotted[plotted.length - 1].model_name" not in chart
+    assert "const values = plotted.map((row) => row.value).sort((a, b) => a - b);" in chart
+
+    # And still no segment between points: a line would assert a trajectory
+    # through models that were never a series, which is the claim the curated
+    # chart earns with a protocol and this one does not.
     assert "polyline" not in chart
 
 
