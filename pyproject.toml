@@ -31,6 +31,10 @@ packages = ["src/benchmark_radar"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Make the checkout's own src/ win over the installed editable package. Without
+# this, running pytest from a git worktree imports benchmark_radar from whichever
+# checkout was pip-installed, so the tests silently measure the wrong source tree.
+pythonpath = ["src"]
 
 [tool.ruff]
 line-length = 100
