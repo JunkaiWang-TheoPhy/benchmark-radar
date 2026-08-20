@@ -83,6 +83,33 @@ def test_first_party_feeds_parse_rss_and_atom_and_filter_noise(monkeypatch):
     assert items[0].source_id == "Lab Atom:tag:lab.example,2026:leaderboard"
 
 
+def test_first_party_feeds_require_any_narrows_broad_publishers(monkeypatch):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_text",
+        lambda url, attempts=3, timeout=30: FIRST_PARTY_RSS,
+    )
+
+    feed = {"name": "Broad Publisher", "url": "https://lab.example/rss"}
+    unfiltered = fetch_first_party_feeds({"feeds": [feed]}, datetime(2026, 8, 8, 0, tzinfo=UTC), 10)
+    assert [item.title for item in unfiltered] == ["A new agent evaluation benchmark"]
+
+    # The shared keyword gate still passes the item; require_any rejects it because
+    # no AI-domain term appears, which is what keeps storage or database posts out.
+    filtered = fetch_first_party_feeds(
+        {"feeds": [{**feed, "require_any": ["protein folding"]}]},
+        datetime(2026, 8, 8, 0, tzinfo=UTC),
+        10,
+    )
+    assert filtered == []
+
+    kept = fetch_first_party_feeds(
+        {"feeds": [{**feed, "require_any": ["agent"]}]},
+        datetime(2026, 8, 8, 0, tzinfo=UTC),
+        10,
+    )
+    assert [item.title for item in kept] == ["A new agent evaluation benchmark"]
+
+
 def test_first_party_feeds_reject_non_feed_documents(monkeypatch):
     monkeypatch.setattr(
         "benchmark_radar.sources.get_text",

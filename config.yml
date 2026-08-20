@@ -340,10 +340,30 @@ sources:
         url: https://machinelearning.apple.com/rss.xml
       - name: AWS Machine Learning
         url: https://aws.amazon.com/blogs/machine-learning/feed/
+        require_any:
+          - ai
+          - llm
+          - language model
+          - foundation model
+          - generative
+          - agent
+          - model
+          - inference
+          - reasoning
       - name: Hugging Face Blog
         url: https://huggingface.co/blog/feed.xml
       - name: Microsoft Research
         url: https://www.microsoft.com/en-us/research/feed/
+        require_any:
+          - ai
+          - llm
+          - language model
+          - foundation model
+          - generative
+          - agent
+          - model
+          - inference
+          - reasoning
       - name: NVIDIA AI Blog
         url: https://blogs.nvidia.com/feed/
       # Added issue #98 pass: major LLM vendors with a verified live
@@ -362,6 +382,61 @@ sources:
         url: https://www.together.ai/blog/rss.xml
       - name: Sakana AI
         url: https://sakana.ai/feed.xml
+      # Added issue #264 pass, 2026-08-20. Each URL below was fetched and
+      # confirmed to parse as RSS or Atom with at least one titled, linked
+      # entry. Anthropic, DeepSeek, Moonshot AI, Z.ai and xAI were re-checked
+      # in the same pass and still serve no first-party feed; they are routed
+      # through the domain-constrained Brave searches below instead. The
+      # per-vendor verdicts, including rejected candidates, are recorded in
+      # data/vendor_feed_verification.yml.
+      - name: Qwen
+        url: https://qwenlm.github.io/blog/index.xml
+      - name: Ollama
+        url: https://ollama.com/blog/rss.xml
+      - name: Stability AI
+        url: https://stability.ai/news-updates?format=rss
+      - name: Nomic AI
+        url: https://www.nomic.ai/feed.xml
+      - name: Replicate
+        url: https://replicate.com/blog/rss
+      - name: NVIDIA Developer
+        url: https://developer.nvidia.com/blog/feed/
+        require_any:
+          - ai
+          - llm
+          - language model
+          - foundation model
+          - generative
+          - agent
+          - model
+          - inference
+          - reasoning
+      - name: IBM Research
+        url: https://research.ibm.com/rss
+        require_any:
+          - ai
+          - llm
+          - language model
+          - foundation model
+          - generative
+          - agent
+          - model
+          - inference
+          - reasoning
+      - name: Databricks
+        url: https://www.databricks.com/feed
+        require_any:
+          - ai
+          - llm
+          - language model
+          - foundation model
+          - generative
+          - agent
+          - model
+          - inference
+          - reasoning
+      - name: LangChain
+        url: https://www.langchain.com/blog/rss.xml
 
   openalex:
     enabled: true
@@ -388,6 +463,13 @@ sources:
       - site:mistral.ai/news benchmark evaluation dataset
       - site:stability.ai/news benchmark evaluation dataset
       - site:01.ai/blog benchmark evaluation dataset
+      # Issue #264 re-check: these vendors publish model cards we track but
+      # still serve no first-party feed, and had no fallback path at all.
+      - site:api-docs.deepseek.com/news benchmark evaluation dataset
+      - site:qwen.ai benchmark evaluation dataset
+      - site:kimi.ai/blog benchmark evaluation dataset
+      - site:z.ai/blog benchmark evaluation dataset
+      - site:x.ai/news benchmark evaluation dataset
 
 attention:
   hacker_news:
