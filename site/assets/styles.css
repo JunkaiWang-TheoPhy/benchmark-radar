@@ -3645,6 +3645,49 @@ dialog::backdrop {
   background: #ffe1d9;
 }
 
+/* The banner's two calls to action sit inline after the sentence: a link into
+   the public Actions log and the contact button that opens the same dialog as
+   the header badge. Inheriting the banner font keeps them reading as part of
+   one notice rather than a second UI layer bolted on top of it. */
+.stale-banner-actions {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-left: 1rem;
+  white-space: nowrap;
+}
+
+.stale-banner-action {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+}
+
+.stale-banner-action:hover,
+.stale-banner-action:focus-visible {
+  text-decoration-thickness: 2px;
+}
+
+button.stale-banner-action {
+  appearance: none;
+}
+
+.stale-banner-action svg {
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.3em;
+  vertical-align: -0.12em;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
 .error-state {
   max-width: 720px;
   padding: 7rem 0;
