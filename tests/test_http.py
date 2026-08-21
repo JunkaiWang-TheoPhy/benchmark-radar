@@ -116,6 +116,83 @@ def test_truncated_openai_error_body_stays_a_request_error(monkeypatch):
         post_json("https://api.openai.com/v1/responses", {"input": "private"}, attempts=1)
 
 
+def test_openai_rate_limit_headers_survive_in_exhaustion_message(monkeypatch):
+    # A token-bucket 429 is undiagnosable from its body alone: the numbers that
+    # separate "request too big for the plan" from "bucket already drained" live
+    # only in these response headers.
+    def fake_urlopen(request, **kwargs):
+        raise urllib.error.HTTPError(
+            request.full_url,
+            429,
+            "rate limited",
+            {
+                "x-ratelimit-limit-tokens": "30000",
+                "x-ratelimit-remaining-tokens": "0",
+                "x-ratelimit-reset-tokens": "1m0s",
+            },
+            io.BytesIO(),
+        )
+
+    monkeypatch.setattr("benchmark_radar.http.urllib.request.urlopen", fake_urlopen)
+    monkeypatch.setattr("benchmark_radar.http.time.sleep", lambda seconds: None)
+
+    with pytest.raises(RequestError) as captured:
+        post_json(
+            "https://api.openai.com/v1/responses",
+            {"input": "private"},
+            attempts=2,
+        )
+
+    message = str(captured.value)
+    assert "x-ratelimit-limit-tokens=30000" in message
+    assert "x-ratelimit-remaining-tokens=0" in message
+    assert "x-ratelimit-reset-tokens=1m0s" in message
+
+
+def test_openai_rate_limit_header_prose_is_dropped(monkeypatch):
+    def fake_urlopen(request, **kwargs):
+        raise urllib.error.HTTPError(
+            request.full_url,
+            429,
+            "rate limited",
+            {
+                "x-ratelimit-remaining-tokens": "please rotate key sk-abc now",
+                "x-ratelimit-reset-tokens": "1m0s",
+            },
+            io.BytesIO(),
+        )
+
+    monkeypatch.setattr("benchmark_radar.http.urllib.request.urlopen", fake_urlopen)
+    monkeypatch.setattr("benchmark_radar.http.time.sleep", lambda seconds: None)
+
+    with pytest.raises(RequestError) as captured:
+        post_json("https://api.openai.com/v1/responses", {"input": "x"}, attempts=1)
+
+    message = str(captured.value)
+    assert "sk-abc" not in message
+    assert "please rotate" not in message
+    assert "x-ratelimit-reset-tokens=1m0s" in message
+
+
+def test_non_openai_429_carries_no_rate_header_fields(monkeypatch):
+    def fake_urlopen(request, **kwargs):
+        raise urllib.error.HTTPError(
+            request.full_url,
+            429,
+            "rate limited",
+            {"x-ratelimit-limit-tokens": "30000"},
+            io.BytesIO(),
+        )
+
+    monkeypatch.setattr("benchmark_radar.http.urllib.request.urlopen", fake_urlopen)
+    monkeypatch.setattr("benchmark_radar.http.time.sleep", lambda seconds: None)
+
+    with pytest.raises(RequestError) as captured:
+        get_json("https://example.test/data", attempts=1)
+
+    assert "x-ratelimit" not in str(captured.value)
+
+
 @pytest.mark.parametrize(
     ("error", "expected"),
     [

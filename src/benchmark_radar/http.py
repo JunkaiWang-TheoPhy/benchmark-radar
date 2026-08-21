@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import http.client
 import json
+import re
 import ssl
 import time
 import urllib.error
@@ -42,6 +43,35 @@ def _safe_openai_error_detail(url: str, error: urllib.error.HTTPError) -> str:
         if isinstance(detail.get(key), (str, int, float)) and str(detail[key]).strip()
     ]
     return f" ({', '.join(fields)})" if fields else ""
+
+
+_RATE_LIMIT_HEADER_KEYS = (
+    "x-ratelimit-limit-requests",
+    "x-ratelimit-limit-tokens",
+    "x-ratelimit-remaining-requests",
+    "x-ratelimit-remaining-tokens",
+    "x-ratelimit-reset-requests",
+    "x-ratelimit-reset-tokens",
+)
+_RATE_LIMIT_HEADER_VALUE = re.compile(r"^[\w.:%/,+-]{1,48}$")
+
+
+def _safe_openai_rate_headers(url: str, error: urllib.error.HTTPError) -> str:
+    """Expose structured rate-limit numbers from response headers.
+
+    A token-bucket 429 body never says whether the request exceeded the plan's
+    per-minute allowance or the bucket was already drained by other usage; the
+    x-ratelimit-* headers do. Values are server-generated numbers and reset
+    durations, validated so nothing prose-like reaches public failure output.
+    """
+    if urllib.parse.urlsplit(url).netloc != "api.openai.com" or error.headers is None:
+        return ""
+    fields = []
+    for key in _RATE_LIMIT_HEADER_KEYS:
+        value = error.headers.get(key)
+        if value and _RATE_LIMIT_HEADER_VALUE.match(value):
+            fields.append(f"{key}={value.strip()}")
+    return f" [{', '.join(fields)}]" if fields else ""
 
 
 def get_json(
@@ -122,7 +152,10 @@ def _request(
             # a query string: some APIs carry credentials there.
             detail = _safe_openai_error_detail(url, error)
             if error.code != 429 and error.code < 500:
-                raise RequestError(f"HTTP {error.code} from {_safe_url(url)}{detail}") from None
+                raise RequestError(
+                    f"HTTP {error.code} from {_safe_url(url)}{detail}"
+                    f"{_safe_openai_rate_headers(url, error)}"
+                ) from None
             last_error = error
             last_http_detail = detail
             retry_after = error.headers.get("Retry-After") if error.headers else None
@@ -145,6 +178,7 @@ def _request(
         raise RequestError(
             f"HTTP {last_error.code} from {_safe_url(url)} after {attempts} attempts"
             f"{last_http_detail}"
+            f"{_safe_openai_rate_headers(url, last_error)}"
         ) from None
     raise RequestError(
         f"{type(last_error).__name__} from {_safe_url(url)} after {attempts} attempts"
