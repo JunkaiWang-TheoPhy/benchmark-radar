@@ -383,6 +383,15 @@ main {
   padding: clamp(2.25rem, 4vw, 3.75rem) 0 6rem;
 }
 
+/* The leaderboard's primary object is the figure, so its top chrome is a
+   budget rather than a canvas: on a 1440x900 laptop the chart began at
+   y=1356, entirely below the fold, behind KPI cards and accordions that
+   summarise it. Those moved below the figure; this recovers the last of the
+   gap so the visualization is visibly underway on load. */
+#leaderboard-view {
+  padding-top: clamp(1.25rem, 2vw, 1.75rem);
+}
+
 .view-heading {
   display: flex;
   gap: 2rem;
@@ -839,7 +848,8 @@ input {
 
 .answer-disclosure-summary::before {
   content: "›";
-  font-size: 0.9rem;
+  font-size: 2.7rem;
+  line-height: 1;
   line-height: 1;
   transition: transform 140ms ease;
 }
@@ -895,13 +905,13 @@ input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 48px;
+  height: 48px;
   border: 1px solid var(--line);
   border-radius: 50%;
   color: var(--blue-deep);
   font-family: var(--utility);
-  font-size: 1rem;
+  font-size: 2.2rem;
   line-height: 1;
   transition:
     transform 140ms ease,
@@ -1948,8 +1958,9 @@ td a {
   flex: none;
   color: var(--blue-deep);
   font-family: var(--utility);
-  font-size: 1.5rem;
-  font-weight: 400;
+  font-size: 3rem;
+  line-height: 1;
+  font-weight: 300;
 }
 
 .relationship-explorer[open] > summary::after {
@@ -2083,61 +2094,23 @@ td a {
 
 /* Model Card Adoption Rank (issue #83) */
 
-.leaderboard-intro {
-  display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.8fr);
-  gap: clamp(2rem, 5vw, 5rem);
-  align-items: end;
-  margin-bottom: 1.5rem;
-}
-
-.leaderboard-title-block h1 {
-  max-width: 920px;
-}
-
+/* Same size as the ranking heading below it. At the global h1 scale (48px)
+   this line was the largest thing on the page and outweighed both the ranking
+   it introduces and the figure it sits above, while saying less than either. */
 .leaderboard-deck {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
   max-width: 780px;
-  margin: 1rem 0 0;
+  margin: 0.45rem 0 0;
   color: var(--muted);
-  font-size: clamp(0.95rem, 1.3vw, 1.12rem);
+  font-size: clamp(0.92rem, 1.2vw, 1.02rem);
+  line-height: 1.45;
 }
 
-.method-note {
-  border-top: 1px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
-}
-
-.method-note summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 48px;
-  color: var(--blue-deep);
-  cursor: pointer;
-  font-family: var(--utility);
-  font-size: 0.7rem;
-  letter-spacing: 0.06em;
-  list-style: none;
-  text-transform: uppercase;
-}
-
-.method-note summary::after {
-  content: "+";
-  font-size: 1rem;
-}
-
-.method-note[open] summary::after {
-  content: "−";
-}
-
-.method-note summary::-webkit-details-marker,
 .ledger-summary::-webkit-details-marker {
   display: none;
-}
-
-.method-note p {
-  color: var(--muted);
-  font-size: 0.82rem;
 }
 
 .evidence-strip {
@@ -2205,7 +2178,7 @@ td a {
   right: 0;
   color: var(--blue-deep);
   font-family: var(--utility);
-  font-size: 1rem;
+  font-size: 3rem;
   line-height: 1;
   transition: transform 140ms ease;
 }
@@ -2274,7 +2247,7 @@ td a {
   content: "›";
   color: var(--blue-deep);
   font-family: var(--utility);
-  font-size: 0.9rem;
+  font-size: 2.7rem;
   line-height: 1;
   transition: transform 140ms ease;
 }
@@ -2329,6 +2302,94 @@ td a {
   border-top: 1px dashed var(--line);
 }
 
+/* The ranking leads the page it is named after (issue #256). One line per
+   benchmark: the name is the scanning target, the count is the measure, and
+   the rank is a small fixed-width marker rather than a competing number. */
+.leaderboard-top {
+  margin: 0 0 0.9rem;
+}
+
+.leaderboard-top-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+
+.leaderboard-top-heading h2 {
+  font-family: var(--display);
+  font-size: 1.35rem;
+  margin: 0;
+}
+
+.leaderboard-top-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.leaderboard-top-row {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.22rem 0.85rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.leaderboard-top-row:last-child {
+  border-bottom: none;
+}
+
+.leaderboard-top-rank {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.leaderboard-top-name {
+  font-family: var(--display);
+  font-size: 0.98rem;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.leaderboard-top-count {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* The title and its (i) sit on one line, with the source and score count on a
+   single subline underneath (issue #298). Replaces an eyebrow, a badge and a
+   second heading that between them said the same two facts three times. */
+.frontier-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* The explainer toggle rides on the title line, so its own vertical margin
+   would push the title off its baseline. Its expanded body takes the full row
+   instead of becoming a flex sibling of the heading. */
+.frontier-title-row .frontier-explainer-sub {
+  margin: 0;
+}
+
+.frontier-title-row .frontier-explainer-sub[open] {
+  flex-basis: 100%;
+}
+
+.frontier-subline {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
 .benchmark-workbench {
   display: grid;
   grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
@@ -2337,6 +2398,10 @@ td a {
   margin: 1.75rem 0 2.5rem;
 }
 
+/* --canvas rather than --panel: against the main area the brighter surface
+   read as an overlay sitting on top of the page rather than part of it
+   (issue #298). The search field keeps its white fill and heavy border, so
+   the control the panel exists for still carries the contrast. */
 .benchmark-navigator {
   position: sticky;
   top: 1rem;
@@ -2344,8 +2409,21 @@ td a {
   overflow-y: auto;
   padding: 1.25rem;
   border: 1px solid var(--ink);
-  background: var(--panel);
+  /* A real grey, not the page background. At --canvas the panel was the exact
+     colour of the page behind it, so beside the near-black figure it read as
+     something floating on the page rather than part of it. The search field
+     keeps its white fill and heavy border, so the control the panel exists for
+     still carries the contrast. */
+  background: #c3ccd1;
   box-shadow: var(--shadow);
+}
+
+/* Muted greys chosen against a near-white surface do not carry on the darker
+   panel, so the supporting text inside it darkens with the background. */
+.benchmark-navigator .benchmark-search-status,
+.benchmark-navigator .benchmark-result-facts,
+.benchmark-navigator .benchmark-example-meta {
+  color: #3d4d54;
 }
 
 .benchmark-navigator h2 {
@@ -2367,7 +2445,7 @@ td a {
 }
 
 .frontier-panel {
-  padding: clamp(1.25rem, 3vw, 2rem);
+  padding: clamp(1rem, 2vw, 1.35rem) clamp(1.25rem, 3vw, 2rem) clamp(1.25rem, 3vw, 2rem);
   border: 1px solid var(--ink);
   background: #0d1519;
   color: #f3f6f7;
@@ -2745,6 +2823,17 @@ td a {
 .score-point:hover .score-point-citation-ring,
 .score-point.is-selected .score-point-citation-ring {
   r: 13px;
+}
+
+/* The running best (issue #288). Solid and stepped, deliberately unlike any
+   point-to-point join: the steps are horizontal and vertical only, so the eye
+   reads "held, then rose" rather than "moved continuously between these two
+   reports", which is the interpolation this corpus cannot support. */
+.score-frontier-line {
+  stroke: #4c948b;
+  stroke-width: 1.75;
+  stroke-linejoin: miter;
+  opacity: 0.85;
 }
 
 .score-best-line {
@@ -3672,12 +3761,6 @@ footer {
     align-items: start;
   }
 
-  .leaderboard-intro {
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
-    align-items: start;
-  }
-
   .evidence-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4034,30 +4117,11 @@ footer {
   font-weight: 600;
 }
 
-.benchmark-result-facts,
-.benchmark-result-meta {
+.benchmark-result-facts {
   font-size: 0.76rem;
   color: var(--muted);
 }
 
-.benchmark-result-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  align-items: center;
-}
-
-/* Curated rows are marked in the search list rather than left to be told apart
-   by the absence of a source chip. The curated layer is the one with a protocol
-   and a time axis, so which layer a result came from is the first thing a
-   reader needs before clicking it. */
-.benchmark-result-source-curated {
-  border: 1px solid var(--accent);
-  border-radius: 999px;
-  padding: 0.05rem 0.45rem;
-  font-size: 0.72rem;
-  color: var(--accent);
-}
 
 /* Openness is a statement about what we know, so `unknown` is neutral rather
    than a warning. Only a positive verdict gets emphasis. */
@@ -4091,7 +4155,9 @@ footer {
 .findings-summary::after,
 .adoption-table-summary::after {
   content: "+";
-  font-size: 1rem;
+  font-size: 3rem;
+  line-height: 1;
+  font-weight: 300;
 }
 
 .findings-panel[open] .findings-summary::after,
@@ -4212,16 +4278,6 @@ footer {
   font-size: 0.76rem;
 }
 
-.external-source-heading {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.3rem;
-}
-
-.external-source-heading h4 {
-  margin: 0;
-}
 
 /* A round (i) toggle for one line of provenance text. The marker itself is
    the affordance -- an outlined circle, always visible, brightened on
@@ -4235,14 +4291,14 @@ footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 32px;
+  height: 32px;
   border: 1px solid #6ea8dc;
   border-radius: 50%;
   color: #6ea8dc;
   cursor: pointer;
   font-family: var(--utility);
-  font-size: 0.68rem;
+  font-size: 1.2rem;
   font-style: italic;
   line-height: 1;
   list-style: none;

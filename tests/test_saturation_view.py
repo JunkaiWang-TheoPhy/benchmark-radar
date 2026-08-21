@@ -52,6 +52,11 @@ def test_the_score_layer_draws_no_connecting_line_at_all():
     )[0]
 
     assert "polyline" not in chart
+    # A <path> draws the same segment a <polyline> would, so the ban names the
+    # shape rather than one element. The running-best line is stepped (H/V
+    # only): "nothing had beaten this yet", not a trajectory between points.
+    for command in (" L ", "`L ${"):
+        assert command not in chart, "a diagonal path segment is a trajectory claim"
     assert "if (!series.connectable) continue;" not in chart
     assert "score-line" not in script
     assert "score-line" not in styles
@@ -507,7 +512,6 @@ def test_the_adoption_marks_are_gone_from_the_chart():
         "card-rug-tick",
         "card-rug-baseline",
         "frontier-release-line",
-        "frontier-line",
         "MIN_TICK_GAP",
         "organizationCount",
         "maxOrganizations",
@@ -515,6 +519,16 @@ def test_the_adoption_marks_are_gone_from_the_chart():
     ):
         assert mark not in script, f"{mark} still drawn"
         assert mark not in styles, f"{mark} still styled"
+
+    # `frontier-line` was the adoption staircase's join. It is checked apart
+    # from the list above because issue #288 added `score-frontier-line` -- the
+    # running best -- and a bare substring test cannot tell the two apart. The
+    # retired class is gone; the new one is a different mark making a different
+    # claim (nothing had beaten this yet, rather than these points are a line).
+    for text in (script, styles):
+        assert "score-frontier-line" in text
+        assert '"frontier-line"' not in text
+        assert ".frontier-line" not in text
 
     # The score marks are untouched. They carry their own classes, so a check
     # that the adoption ones are absent cannot pass by emptying the chart.
@@ -560,7 +574,15 @@ def test_the_axis_and_header_name_the_score_reading():
     html = source("site/index.html")
     script = source("site/assets/app.js")
 
-    assert 't("reported scores over time")' in script
+    # The heading is the benchmark's name and the eyebrow says what kind of
+    # picture it is. They used to say the same thing twice: an eyebrow reading
+    # "Scores over time" above a heading reading "<name> reported scores over
+    # time". What must not drift is that a single reading is never presented as
+    # a track over time.
+    assert 'byId("frontier-heading").textContent = entry.name;' in script
+    assert "spansTime(record)" in script
+    assert 't("Scores over time")' in script
+    assert '"charted score"' in script
     assert "adoption trajectory" not in script
     # The counts line and the reporting-stage sentence are gone from the markup,
     # so nothing can repopulate them.
