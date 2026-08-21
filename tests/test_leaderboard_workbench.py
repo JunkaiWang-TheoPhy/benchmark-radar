@@ -666,7 +666,7 @@ def test_the_shortlist_says_what_it_ranks_by_behind_an_info_toggle():
     script = source("site/assets/app.js")
     styles = source("site/assets/styles.css")
 
-    assert 'data-i18n="Most reported in model cards"' in html
+    assert 'data-i18n="Most reported benchmarks in model cards"' in html
     assert 'id="benchmark-example-info"' in html
     # Reuses infoDisclosure rather than inventing a second (i) pattern.
     assert "infoDisclosure(" in script.split("function renderBenchmarkNavigator", 1)[1][:1200]

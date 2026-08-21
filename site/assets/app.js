@@ -400,7 +400,7 @@ const I18N = {
     "Benchmark reported scores over time": "基准报告分数随时间的变化",
     "All tracked benchmarks": "所有追踪的基准",
     "Search every benchmark": "搜索全部基准",
-    "Most reported in model cards": "模型卡中报告最多",
+    "Most reported benchmarks in model cards": "模型卡中报告最多的benchmark",
     "Jump to a benchmark": "跳转到某个基准",
     "One score, copied from the report that published it": "一个分数，照抄自发布它的报告",
     "Show all {n} ranked benchmarks": "显示全部 {n} 个排名基准",
