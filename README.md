@@ -14,6 +14,10 @@ every day, and keeps updating.
 
 **简体中文版本请见 [README.zh-CN.md](README.zh-CN.md).**
 
+<a href="https://koutian.is-a.dev/benchmark-radar/?view=leaderboard&lfrontier=llm-stats-aime-2025">
+  <img src="assets/aime-2025-leaderboard.png" alt="AIME 2025 leaderboard frontier chart, plotting every reported score against each model's release date" width="720" />
+</a>
+
 ## Use it
 
 - **[Open the dashboard](https://koutian.is-a.dev/benchmark-radar/)** — today's insights, trends, popular benchmarks, model-card adoption, and more
