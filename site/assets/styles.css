@@ -109,9 +109,9 @@ footer {
   font-family: var(--display);
   font-size: clamp(1.25rem, 3vw, 1.75rem);
   font-stretch: condensed;
+  font-weight: 400;
   letter-spacing: 0.025em;
   line-height: 1;
-  text-transform: uppercase;
 }
 
 .brand small,
