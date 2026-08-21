@@ -1,0 +1,10 @@
+{
+  "generated_at": "2999-12-31T23:59:59Z",
+  "days": [
+    {
+      "date": "2999-12-31",
+      "required_coverage_complete": false,
+      "required_coverage_gaps": ["arxiv listings", "hugging face"]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "generated_at": "2020-01-01T00:00:00Z",
+  "days": [
+    {
+      "date": "2019-12-31",
+      "required_coverage_complete": true,
+      "required_coverage_gaps": []
+    }
+  ]
+}

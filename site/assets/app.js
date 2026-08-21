@@ -822,6 +822,11 @@ const I18N = {
     "{source} returned something on this day, but none of it scored high enough to be listed.":
       "{source} 在这一天有返回内容，但都未达到列入所需的分数。",
     "Try another date, or clear the filter.": "请尝试其他日期，或清除筛选条件。",
+    // Stale-run banner: plain words a first-time reader can act on.
+    "Last updated {date}, {hours} hours ago. The automatic update has not succeeded since.":
+      "数据上次更新于 {date}，距今 {hours} 小时。那之后的自动更新一直没有成功。",
+    "Some sources failed to answer on {date}: {gaps}.": "{date} 有几个来源没有响应：{gaps}。",
+    "What broke?": "哪里出了问题？",
     "one value read verbatim from a cited document": "一个从引文文档中逐字读到的数值",
     "not yet reported": "尚未报告",
     "points to zero, the floor of this metric": "指向零,该指标的底线",
@@ -7216,22 +7221,60 @@ async function renderRepoBadges() {
 // means both the scheduled run and its same-day retry were missed.
 const STALE_AFTER_HOURS = 30;
 
+// The banner's one job is to send a worried reader somewhere useful within a
+// click: the public Actions log answers "what broke", and the contact dialog
+// that already exists on the page answers "who do I tell". The error messages
+// in those logs are credential-safe by construction, so linking out publishes
+// nothing the repository does not already show.
+const DAILY_RADAR_RUNS_URL = `https://github.com/${REPO_SLUG}/actions/workflows/daily-radar.yml`;
+
+function contactGlyph() {
+  // Same speech-bubble path as the header's Contact badge (issue #213), so a
+  // reader meets one icon for one meaning.
+  const icon = svgElement("svg", { viewBox: "0 0 24 24", "aria-hidden": "true" });
+  icon.append(
+    svgElement("path", {
+      d: "M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z",
+    }),
+  );
+  return icon;
+}
+
+async function pointAtLatestFailedRun(link) {
+  // The workflows page lists every workflow and buries yesterday's failure.
+  // One unauthenticated lookup pins the link to the exact failed run, which is
+  // where "was it the API key or something else" is actually answered. Any
+  // failure keeps the fallback href, which always resolves.
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${REPO_SLUG}/actions/workflows/daily-radar.yml/runs?status=failure&per_page=1`,
+      { headers: { Accept: "application/vnd.github+json" } },
+    );
+    if (!response.ok) return;
+    const data = await response.json();
+    const url = data.workflow_runs?.[0]?.html_url;
+    if (url) link.setAttribute("href", url);
+  } catch (_) {
+    // Offline or rate-limited: the fallback href already points somewhere real.
+  }
+}
+
 function renderStaleBanner() {
   const banner = byId("stale-banner");
   const latestDay = state.data.days[state.data.days.length - 1];
   const generatedAt = new Date(state.data.generated_at);
   const ageHours = (Date.now() - generatedAt.getTime()) / 3_600_000;
   const degraded = !latestDay.required_coverage_complete;
+  banner.classList.toggle("stale-banner-degraded", degraded);
   if (ageHours <= STALE_AFTER_HOURS && !degraded) {
     banner.hidden = true;
-    banner.textContent = "";
-    banner.classList.remove("stale-banner-degraded");
+    banner.replaceChildren();
     return;
   }
   const parts = [];
   if (ageHours > STALE_AFTER_HOURS) {
     parts.push(
-      t("Latest snapshot is from {date} UTC ({hours}h ago) — the scheduled run may have failed.", {
+      t("Last updated {date}, {hours} hours ago. The automatic update has not succeeded since.", {
         date: formatDate(state.data.generated_at, {
           dateStyle: "medium",
           timeStyle: "short",
@@ -7242,14 +7285,34 @@ function renderStaleBanner() {
   }
   if (degraded) {
     parts.push(
-      t("Required source failures on {date}: {gaps}.", {
+      t("Some sources failed to answer on {date}: {gaps}.", {
         date: latestDay.date,
         gaps: latestDay.required_coverage_gaps.join(", "),
       }),
     );
   }
-  banner.textContent = parts.join(" ");
-  banner.classList.toggle("stale-banner-degraded", degraded);
+
+  const whatBroke = element("a", {
+    className: "stale-banner-action",
+    text: t("What broke?"),
+    attrs: { href: DAILY_RADAR_RUNS_URL, target: "_blank", rel: "noopener noreferrer" },
+  });
+  pointAtLatestFailedRun(whatBroke);
+
+  // A <button>, not an <a>: it opens the existing contact dialog instead of
+  // navigating away, exactly like the header badge does.
+  const contactButton = element("button", {
+    type: "button",
+    className: "stale-banner-action",
+    attrs: { "aria-haspopup": "dialog" },
+  });
+  contactButton.append(contactGlyph(), document.createTextNode(t("Contact")));
+  contactButton.addEventListener("click", openContact);
+
+  banner.replaceChildren(
+    document.createTextNode(parts.join(" ")),
+    element("span", { className: "stale-banner-actions" }, [whatBroke, contactButton]),
+  );
   banner.hidden = false;
 }
 
