@@ -1208,6 +1208,96 @@ def test_rendered_questions_keep_english_prose_when_zh_fields_are_absent():
     assert "今天首次观察到的记录大多是智能体评估框架。" not in text
 
 
+def _rendered_stale_banner(
+    fixture: str | None = None, lang: str | None = None, resolve_failure: bool = False
+):
+    """Run the real stale-banner renderer over a fixture and return its DOM tree.
+
+    Source assertions cannot tell "renders two actions" from "mentions Contact",
+    and the failed-run deep link only exists after an async lookup resolves, so
+    the renderer runs for real and the settled tree is asserted on.
+    """
+    import json
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if not node:
+        import pytest
+
+        pytest.skip("node is not installed")
+    result = subprocess.run(
+        [
+            node,
+            "tests/render_stale_banner_harness.mjs",
+            *([fixture] if fixture else []),
+            *(["--resolve-failure"] if resolve_failure else []),
+            *([lang] if lang else []),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=True,
+    )
+    return json.loads(result.stdout)
+
+
+def test_rendered_stale_banner_names_the_gap_and_offers_two_actions():
+    import re
+
+    banner = _rendered_stale_banner("tests/fixtures/stale_radar.json")
+    nodes = list(_flatten(banner))
+
+    assert {n["className"] for n in nodes} >= {"stale-banner-actions", "stale-banner-action"}
+    # The hour count moves with the clock, so only the sentence shape is pinned.
+    assert re.search(
+        r"Last updated Jan 1, 2020.*hours ago\. The automatic update has not succeeded since\.",
+        banner["children"][0]["text"],
+    )
+    # The fallback href must already be live before any deep-link lookup returns.
+    link = next(n for n in nodes if n["tag"] == "a")
+    assert link["text"] == "What broke?"
+    assert link["href"].startswith("https://github.com/ktwu01/benchmark-radar/actions/")
+    button = next(n for n in nodes if n["tag"] == "button")
+    assert button["text"] == "Contact"
+
+
+def test_rendered_stale_banner_translates_copy_under_zh():
+    banner = _rendered_stale_banner("tests/fixtures/stale_radar.json", "zh")
+    nodes = list(_flatten(banner))
+
+    link = next(n for n in nodes if n["tag"] == "a")
+    button = next(n for n in nodes if n["tag"] == "button")
+    assert link["text"] == "哪里出了问题？"
+    assert button["text"] == "联系"
+    assert "那之后的自动更新一直没有成功。" in banner["children"][0]["text"]
+    assert "The automatic update has not succeeded" not in banner["children"][0]["text"]
+
+
+def test_rendered_stale_banner_marks_degraded_coverage_with_the_gaps():
+    banner = _rendered_stale_banner("tests/fixtures/degraded_radar.json")
+
+    assert "stale-banner-degraded" in {n["className"] for n in _flatten(banner)}
+    assert "Some sources failed to answer on 2999-12-31: arxiv listings, hugging face." in [
+        n["text"] for n in _flatten(banner)
+    ]
+
+
+def test_rendered_fresh_snapshot_keeps_the_banner_hidden():
+    banner = _rendered_stale_banner("tests/fixtures/fresh_radar.json")
+
+    assert banner["hidden"] is True
+    assert banner["text"] == ""
+
+
+def test_rendered_stale_banner_deep_links_the_latest_failed_run():
+    """When the Actions API answers, "What broke?" pins the exact failed run."""
+    banner = _rendered_stale_banner(resolve_failure=True)
+    link = next(n for n in _flatten(banner) if n["tag"] == "a")
+
+    assert link["href"] == "https://github.com/ktwu01/benchmark-radar/actions/runs/32439770574"
+
+
 def test_dashboard_and_markdown_format_statistics_identically():
     """The two renderers must print the same figure for the same statistic.
 
