@@ -385,9 +385,10 @@ const I18N = {
     "{n}h ago": "{n} 小时前",
     "{n}d ago": "{n} 天前",
     "yesterday": "昨天",
-    "{loaded} of {total} results loaded · scroll for more":
-      "已加载 {loaded}/{total} 条结果 · 下滑加载更多",
-    "All {total} results loaded": "已加载全部 {total} 条结果",
+    "Page {page} of {pages} · showing {start}–{end} of {total}":
+      "第 {page}/{pages} 页 · 显示第 {start}–{end} 条，共 {total} 条",
+    Previous: "上一页",
+    Next: "下一页",
     "normal": "正常",
     "Sort: Priority ↓": "排序:优先度 ↓",
     "Sort: Date, then Priority ↓": "排序:日期,再按优先度 ↓",
@@ -757,11 +758,16 @@ const I18N = {
     Email: "邮件",
     WeChat: "微信",
     Discord: "Discord",
-    "Want the full dataset? No crawler needed: star the repository, then get in touch and I will share a one-click export.":
-      "想要完整数据集？不需要爬虫：先给仓库点个 Star，然后联系我，我会告诉你怎么一键导出。",
+    "The complete dataset is free to download. If it saves you research time, star the repository so other eval builders can find it.":
+      "完整数据集可以免费下载。如果它帮你节省了研究时间，请给仓库点个 Star，让更多评测开发者找到它。",
+    "Download the dataset": "下载数据集",
     "Star the repository": "给仓库点 Star",
-    "Want the dataset? No crawler needed: star the repository, then":
-      "想要数据集？不需要爬虫：先给仓库点 Star，然后",
+    "Free dataset. No crawler needed.": "免费数据集，无需爬虫。",
+    "If this saved you research time, star the repository and help other eval builders find it.":
+      "如果它帮你节省了研究时间，请给仓库点 Star，让更多评测开发者找到它。",
+    "Share Benchmark Radar": "分享 Benchmark Radar",
+    "Copy link": "复制链接",
+    Copied: "已复制",
     "contact the author": "联系作者",
     "for a one-click export.": "即可一键导出。",
     // --- Remaining dynamic strings ------------------------------------------
@@ -924,6 +930,7 @@ const state = {
   event: "",
   entity: "",
   rubric: "",
+  contact: false,
   trendReleasedOnly: false,
   // Leaderboard filters carry their own prefixed keys so a shared permalink can
   // hold a Today filter and a Leaderboard filter at once without either view
@@ -943,9 +950,10 @@ const state = {
   leaderboardShowAll: false,
   leaderboardTopExpanded: false,
   todayResultsKey: "",
-  todayResultsLimit: TODAY_PAGE_SIZE,
-  todayRenderedCount: 0,
+  todayPage: 1,
   observations: null,
+  fullDataLoaded: false,
+  fullDataPromise: null,
 };
 
 function element(tag, options = {}, children = []) {
@@ -1060,6 +1068,7 @@ function readUrl() {
   state.source = params.get("source") || "";
   state.organization = params.get("organization") || "";
   state.event = params.get("event") || "";
+  state.todayPage = Math.max(1, Number.parseInt(params.get("page") || "1", 10) || 1);
   state.entity = params.get("entity") || "";
   state.lq = params.get("lq") || "";
   state.ldomain = params.get("ldomain") || "";
@@ -1067,7 +1076,12 @@ function readUrl() {
   state.lera = params.get("lera") || "";
   state.lfrontier = params.get("lfrontier") || "";
   state.lfrontierExplicit = Boolean(state.lfrontier);
-  state.rubric = new URLSearchParams(window.location.hash.slice(1)).get("rubric") || "";
+  const rawHash = window.location.hash.slice(1);
+  const hashParams = new URLSearchParams(rawHash);
+  state.contact = rawHash === "contact" || hashParams.has("contact");
+  state.rubric = rawHash === "rubric"
+    ? "current"
+    : hashParams.get("rubric") || "";
 }
 
 // `push` adds a history entry; `replace` overwrites the current one.
@@ -1105,6 +1119,7 @@ function writeUrl(mode = "replace") {
     if (state.source) params.set("source", state.source);
     if (state.organization) params.set("organization", state.organization);
     if (state.event) params.set("event", state.event);
+    if (state.todayPage > 1) params.set("page", state.todayPage);
   }
   if (state.view === "map" && state.entity) params.set("entity", state.entity);
   if (state.view === "leaderboard") {
@@ -1121,9 +1136,10 @@ function writeUrl(mode = "replace") {
   const query = params.toString();
   // The rubric dialog is a hashtag, not a query param, so a shared link like
   // #rubric=2 reads as "jump to this section" rather than another filter.
-  const hashParams = new URLSearchParams();
-  if (state.rubric) hashParams.set("rubric", state.rubric);
-  const hash = hashParams.toString();
+  let hash = "";
+  if (state.contact) hash = "contact";
+  else if (state.rubric === "current") hash = "rubric";
+  else if (state.rubric) hash = `rubric=${encodeURIComponent(state.rubric)}`;
   const url = `${window.location.pathname}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   // Pushing a URL identical to the current one would make Back a no-op that
   // looks broken: the reader presses it, the address bar does not change, and
@@ -1141,13 +1157,14 @@ function writeUrl(mode = "replace") {
 // page would silently disagree with its own address bar. This is what makes the
 // pushes above safe: the restored URL is read back into state and the view it
 // describes is drawn (issue #286).
-function onPopState() {
+async function onPopState() {
   // Before the payload lands, state is not yet drawable. Read the URL anyway:
   // initialize() renders from state once the fetch settles, and skipping the
   // read here would leave it rendering whatever the reader navigated away
   // from while the address bar showed the restored entry.
   readUrl();
   if (!state.data) return;
+  await ensureDataForState();
   // A leaderboard permalink on a build with no curated registry has nothing to
   // show, same fallback initialize() applies. Without it, Back into such an
   // entry opens an empty section behind a hidden nav button.
@@ -1162,10 +1179,16 @@ function onPopState() {
   // The rubric lives in the hash rather than the query, so it is restored
   // separately: Back out of an open dialog should close it.
   const dialog = byId("rubric-dialog");
-  if (state.rubric && state.data.rubrics?.[state.rubric]) {
-    if (!dialog?.open) openRubric(null, state.rubric);
+  if (state.rubric) {
+    if (!dialog?.open) openRubric(null, state.rubric === "current" ? null : state.rubric);
   } else if (dialog?.open) {
     dialog.close();
+  }
+  const contactDialog = byId("contact-dialog");
+  if (state.contact) {
+    if (!contactDialog?.open) openContact(false);
+  } else if (contactDialog?.open) {
+    contactDialog.close();
   }
 }
 
@@ -1936,40 +1959,6 @@ function renderTodayBenchmarks() {
   return !total && indexPending ? "pending" : total;
 }
 
-// Loads the next page when the sentinel below the list scrolls into view
-// (issue #311). One observer for the session: the sentinel never leaves the
-// DOM, so a render only re-teaches it how many results remain. A load bumps
-// the bound and re-renders, which re-fires this callback while the sentinel
-// is still on screen -- that is what keeps filling a short first page until
-// something scrollable exists, without ever carding the whole day up front.
-let todaySentinelObserver = null;
-
-function todayPageLimit() {
-  // Without IntersectionObserver there is no scroll trigger, and the manual
-  // button is gone; capping the list there would strand every row past the
-  // first page behind a control that does not exist. The bound is the scroll
-  // loading mechanism, so an engine without one gets the uncapped list.
-  if (typeof IntersectionObserver === "undefined") return Infinity;
-  return state.todayResultsLimit;
-}
-
-function watchTodaySentinel(remainingResults) {
-  const sentinel = byId("today-sentinel");
-  if (!sentinel) return;
-  if (typeof IntersectionObserver === "undefined") return;
-  if (!todaySentinelObserver) {
-    todaySentinelObserver = new IntersectionObserver((entries) => {
-      if (!entries.some((entry) => entry.isIntersecting)) return;
-      const total = filteredObservations().length;
-      if (state.todayResultsLimit >= total) return;
-      state.todayResultsLimit += TODAY_PAGE_SIZE;
-      renderToday({ resultsOnly: true });
-    });
-  }
-  todaySentinelObserver.disconnect();
-  todaySentinelObserver.observe(sentinel);
-}
-
 function renderToday({ resultsOnly = false } = {}) {
   // Events are bound before the data file resolves (initialize), so a nav
   // click or filter keystroke in the load window must no-op, not throw.
@@ -2005,17 +1994,18 @@ function renderToday({ resultsOnly = false } = {}) {
     state.organization,
     state.event,
   ].join("\u0000");
-  let resultsKeyChanged = false;
   if (resultsKey !== state.todayResultsKey) {
-    resultsKeyChanged = true;
+    if (state.todayResultsKey) state.todayPage = 1;
     state.todayResultsKey = resultsKey;
-    state.todayResultsLimit = TODAY_PAGE_SIZE;
   }
-  // A single busy scan can carry hundreds of observations. Bound every render,
-  // not just the all-dates archive, so initial load and filter feedback never
-  // have to build the entire card list before the reader can interact.
-  const visibleObservations = observations.slice(0, todayPageLimit());
-  const remainingResults = observations.length - visibleObservations.length;
+  // A single busy scan can carry hundreds of observations. Real pages keep the
+  // DOM bounded without silently loading everything as the reader reaches the
+  // bottom. They also make position explicit and back-button friendly.
+  const pageCount = Math.max(1, Math.ceil(observations.length / TODAY_PAGE_SIZE));
+  state.todayPage = Math.min(Math.max(1, state.todayPage), pageCount);
+  const pageStart = (state.todayPage - 1) * TODAY_PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + TODAY_PAGE_SIZE, observations.length);
+  const visibleObservations = observations.slice(pageStart, pageEnd);
   // The legend is two readings, not three (issue #311): the class breakdown
   // and the order. The raw total repeated what the breakdown already adds up
   // to, and the attention noun lost its verb now that it stands beside
@@ -2037,46 +2027,30 @@ function renderToday({ resultsOnly = false } = {}) {
     : showingAllDates
       ? t("Sort: Date, then Priority ↓")
       : t("Sort: Priority ↓");
-  // A load-more pass appends the new page rather than rebuilding the list:
-  // replaceChildren would recreate every <details> closed, collapsing a card
-  // the reader had expanded and jumping them up the page mid-read.
   const listHost = byId("today-list");
-  const renderedCount = state.todayRenderedCount || 0;
-  const growsInPlace =
-    !resultsKeyChanged && renderedCount > 0 && visibleObservations.length > renderedCount;
-  if (growsInPlace) {
-    // The appended slice maps from zero, so the rank offset travels with it:
-    // page two continues at 21, not back at 01.
-    listHost.append(
-      ...visibleObservations
-        .slice(renderedCount)
-        .map((item, offset) => observationCard(item, renderedCount + offset)),
-    );
-  } else {
-    replaceChildren(
-      listHost,
-      visibleObservations.length
-        ? visibleObservations.map(observationCard)
-        : [
-            element("p", {
-              className: "empty-state",
-              text: emptyTodayMessage(day, benchmarkMatches),
-            }),
-          ],
-    );
-  }
-  state.todayRenderedCount = visibleObservations.length;
-  // What is loaded, said where more loads from (issue #311). Scrolling this
-  // paragraph into view pulls the next page, so the count doubles as the
-  // control's own status line.
-  byId("today-loaded").textContent =
-    remainingResults > 0
-      ? t("{loaded} of {total} results loaded · scroll for more", {
-          loaded: visibleObservations.length,
-          total: observations.length,
-        })
-      : t("All {total} results loaded", { total: observations.length });
-  watchTodaySentinel(remainingResults);
+  replaceChildren(
+    listHost,
+    visibleObservations.length
+      ? visibleObservations.map((item, offset) => observationCard(item, pageStart + offset))
+      : [
+          element("p", {
+            className: "empty-state",
+            text: emptyTodayMessage(day, benchmarkMatches),
+          }),
+        ],
+  );
+  byId("today-page-status").textContent = t(
+    "Page {page} of {pages} · showing {start}–{end} of {total}",
+    {
+      page: state.todayPage,
+      pages: pageCount,
+      start: observations.length ? pageStart + 1 : 0,
+      end: pageEnd,
+      total: observations.length,
+    },
+  );
+  byId("today-page-prev").disabled = state.todayPage <= 1;
+  byId("today-page-next").disabled = state.todayPage >= pageCount;
 
   if (resultsOnly) {
     writeUrl();
@@ -2893,7 +2867,8 @@ function openRubric(item = null, versionOverride = null) {
   const version = Number(data.scoring_version) || 1;
   const current = Number(state.data?.rubric?.scoring_version) || version;
   const isLegacy = version !== current;
-  state.rubric = String(version);
+  state.contact = false;
+  state.rubric = isLegacy ? String(version) : "current";
   writeUrl();
   const header = [
     element("p", {
@@ -7164,12 +7139,14 @@ function brandIcon(name) {
 // opens this dialog, so a reader lands on a choice rather than being launched
 // out of the page on a guess.
 //
-// Since issue #311 it also answers "where is the data": the header export
-// button is gone, and dataset requests are meant to arrive as a conversation.
-// Star first, then ask -- the note says so, so neither side wastes a round
-// trip.
-function openContact() {
+// Dataset access stays free. Contact is for corrections, missing sources, and
+// collaboration, while the sheet still gives a reader direct routes to the
+// dataset and the repository.
+function openContact(updateUrl = true) {
   const dialog = byId("contact-dialog");
+  state.rubric = "";
+  state.contact = true;
+  if (updateUrl) writeUrl("push");
   replaceChildren(byId("contact-content"), [
     element("p", { className: "detail-source", text: "Benchmark Radar" }),
     element("h2", {
@@ -7208,13 +7185,15 @@ function openContact() {
         element("span", { className: "contact-value", text: `ID ${DISCORD_ID}` }),
       ]),
     ]),
-    // The dataset answer travels with the contact channels (issue #311): a
-    // reader opening this sheet to ask for data reads the terms of the ask
-    // before writing it.
     element("div", { className: "contact-dataset" }, [
       element("p", {
         className: "detail-summary",
-        text: t("Want the full dataset? No crawler needed: star the repository, then get in touch and I will share a one-click export."),
+        text: t("The complete dataset is free to download. If it saves you research time, star the repository so other eval builders can find it."),
+      }),
+      element("a", {
+        className: "primary-link",
+        text: t("Download the dataset"),
+        attrs: { href: "data/radar.json" },
       }),
       element("a", {
         className: "secondary-link",
@@ -7227,7 +7206,7 @@ function openContact() {
       }),
     ]),
   ]);
-  dialog.showModal();
+  if (!dialog.open) dialog.showModal();
 }
 
 // Filter keystrokes only rebuild the bounded result list. Briefing, questions,
@@ -7249,12 +7228,19 @@ function bindEvents() {
   const langToggle = byId("lang-toggle");
   if (langToggle) langToggle.addEventListener("click", toggleLang);
   document.querySelectorAll("[data-view]").forEach((button) => {
-    button.addEventListener("click", () => {
-      setView(button.dataset.view);
-      if (button.dataset.view === "today") renderToday();
-      if (button.dataset.view === "leaderboard") renderLeaderboard();
-      if (button.dataset.view === "trends") renderTrends();
-      if (button.dataset.view === "map") renderTrendMap();
+    button.addEventListener("click", async () => {
+      const view = button.dataset.view;
+      try {
+        if (["trends", "map"].includes(view)) await ensureFullData();
+      } catch (error) {
+        console.error(error);
+        return;
+      }
+      setView(view);
+      if (view === "today") renderToday();
+      if (view === "leaderboard") renderLeaderboard();
+      if (view === "trends") renderTrends();
+      if (view === "map") renderTrendMap();
     });
   });
   // Reads every control rather than the event target, so the <select>
@@ -7292,9 +7278,26 @@ function bindEvents() {
     renderAdoptionFrontier(state.data.model_card_leaderboard);
     writeUrl("push");
   });
-  byId("today-date").addEventListener("change", (event) => {
+  byId("today-date").addEventListener("change", async (event) => {
     state.todayDate = event.target.value;
+    try {
+      await ensureDataForState();
+    } catch (error) {
+      console.error(error);
+      return;
+    }
     renderToday();
+  });
+  byId("today-page-prev").addEventListener("click", () => {
+    if (state.todayPage <= 1) return;
+    state.todayPage -= 1;
+    renderToday({ resultsOnly: true });
+    byId("today-list").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  byId("today-page-next").addEventListener("click", () => {
+    state.todayPage += 1;
+    renderToday({ resultsOnly: true });
+    byId("today-list").scrollIntoView({ behavior: "smooth", block: "start" });
   });
   byId("trend-released-only").addEventListener("change", (event) => {
     state.trendReleasedOnly = event.target.checked;
@@ -7360,7 +7363,7 @@ function bindEvents() {
   document.querySelectorAll("#filters, #leaderboard-filters").forEach((form) => {
     form.addEventListener("submit", (event) => event.preventDefault());
   });
-  byId("clear-filters").addEventListener("click", () => {
+  byId("clear-filters").addEventListener("click", async () => {
     state.todayDate = "all";
     state.q = "";
     state.kind = "";
@@ -7368,6 +7371,12 @@ function bindEvents() {
     state.source = "";
     state.organization = "";
     state.event = "";
+    try {
+      await ensureFullData();
+    } catch (error) {
+      console.error(error);
+      return;
+    }
     renderToday();
   });
   // The drawer trigger, its outside-click and Escape dismissal, and the
@@ -7407,6 +7416,26 @@ function bindEvents() {
   byId("contact-close").addEventListener("click", () => byId("contact-dialog").close());
   byId("contact-dialog").addEventListener("click", (event) => {
     if (event.target === byId("contact-dialog")) byId("contact-dialog").close();
+  });
+  byId("contact-dialog").addEventListener("close", () => {
+    state.contact = false;
+    writeUrl();
+  });
+  byId("share-radar").addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    const shareData = {
+      title: document.title,
+      text: t("Share Benchmark Radar"),
+      url: window.location.href,
+    };
+    try {
+      if (navigator.share) await navigator.share(shareData);
+      else await navigator.clipboard.writeText(shareData.url);
+      button.textContent = t("Copied");
+      setTimeout(() => { button.textContent = t("Copy link"); }, 1600);
+    } catch (error) {
+      if (error?.name !== "AbortError") console.error(error);
+    }
   });
 }
 
@@ -7558,23 +7587,56 @@ function renderStaleBanner() {
   banner.hidden = false;
 }
 
-// The refresh control revalidates radar.json against the server (cache:
-// "reload" bypasses the reader's local copy) so a day rebuilt since the
-// page loaded can appear without a full reload. A failed or incompatible
-// refresh keeps the current data rather than blanking the dashboard.
-async function refreshData() {
-  try {
-    const response = await fetch("data/radar.json", { cache: "reload" });
+function compatibleDashboard(data) {
+  return data?.schema_version === 2 && Array.isArray(data.days) && data.days.length > 0;
+}
+
+function stateNeedsFullData() {
+  if (state.fullDataLoaded) return false;
+  if (["trends", "map"].includes(state.view)) return true;
+  return state.view === "today" && Boolean(
+    state.todayDate === "all" ||
+    (state.todayDate && state.todayDate !== state.data?.latest_date)
+  );
+}
+
+async function ensureFullData(cache = "default") {
+  if (state.fullDataLoaded) return state.data;
+  if (state.fullDataPromise) return state.fullDataPromise;
+  state.fullDataPromise = (async () => {
+    const response = await fetch("data/radar.json", { cache });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    if (
-      data.schema_version !== 2 ||
-      !Array.isArray(data.days) ||
-      !data.days.length
-    ) {
-      throw new Error("No compatible snapshots");
-    }
+    if (!compatibleDashboard(data)) throw new Error("No compatible snapshots");
     state.data = data;
+    state.fullDataLoaded = true;
+    state.observations = null;
+    renderTodayDateOptions();
+    return data;
+  })();
+  try {
+    return await state.fullDataPromise;
+  } finally {
+    state.fullDataPromise = null;
+  }
+}
+
+async function ensureDataForState() {
+  if (stateNeedsFullData()) await ensureFullData();
+}
+
+// The refresh control revalidates whichever payload the reader has paid for.
+// A latest-day visitor refreshes the small bootstrap; history-heavy views that
+// already upgraded refresh the full public corpus.
+async function refreshData() {
+  try {
+    const path = state.fullDataLoaded ? "data/radar.json" : "data/radar-bootstrap.json";
+    const response = await fetch(path, { cache: "reload" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (!compatibleDashboard(data)) throw new Error("No compatible snapshots");
+    state.data = data;
+    state.observations = null;
     if (state.todayDate !== "all" && !state.data.facets.dates.includes(state.todayDate)) {
       state.todayDate = state.data.latest_date;
     }
@@ -7594,21 +7656,15 @@ async function initialize() {
   // Independent of the data file, so badges still render on an error state.
   renderRepoBadges();
   try {
-    // radar.json is ~34MB and regenerated once a day. Let the browser cache
-    // it (GitHub Pages serves conditional headers, so a repeat visit reuses
-    // the cached copy and revalidates rather than re-downloading the whole
-    // corpus). cache: "no-store" forced a full re-download every load, which
-    // was the dominant part of the page's slow first interaction (issue #222).
-    const response = await fetch("data/radar.json");
+    // The default payload carries the latest day, aggregate counts, and the
+    // leaderboard. Trends, Explore, All dates, and historical permalinks lazily
+    // upgrade to the full public corpus only when the reader asks for them.
+    const response = await fetch("data/radar-bootstrap.json");
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     state.data = await response.json();
-    if (
-      state.data.schema_version !== 2 ||
-      !Array.isArray(state.data.days) ||
-      !state.data.days.length
-    ) {
-      throw new Error("No compatible snapshots");
-    }
+    if (!compatibleDashboard(state.data)) throw new Error("No compatible snapshots");
+    state.fullDataLoaded = !state.data.bootstrap;
+    await ensureDataForState();
     if (state.todayDate !== "all" && !state.data.facets.dates.includes(state.todayDate)) {
       state.todayDate = state.data.latest_date;
     }
@@ -7631,9 +7687,8 @@ async function initialize() {
 
     renderBuildMeta();
     renderStaleBanner();
-    if (state.rubric && state.data.rubrics?.[state.rubric]) {
-      openRubric(null, state.rubric);
-    }
+    if (state.rubric) openRubric(null, state.rubric === "current" ? null : state.rubric);
+    if (state.contact) openContact(false);
   } catch (error) {
     document.querySelectorAll(".view").forEach((section) => {
       section.hidden = true;

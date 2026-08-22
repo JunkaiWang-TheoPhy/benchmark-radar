@@ -3740,28 +3740,88 @@ dialog::backdrop {
   text-transform: uppercase;
 }
 
-/* The load status sits where more results load from (issue #311): quiet
-   metadata, not a control, because scrolling is the control. */
-.today-loaded-note {
+/* Explicit pages keep a long day bounded without turning the footer into an
+   invisible scroll trigger. */
+.today-pagination {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.8rem;
+  align-items: center;
   margin: 1.25rem 0 0;
+}
+
+.today-pagination p {
+  margin: 0;
   color: var(--muted);
   font-family: var(--utility);
   font-size: 0.72rem;
   letter-spacing: 0.06em;
+  text-align: center;
   text-transform: uppercase;
 }
 
-/* The scroll target the observer watches. Zero-height elements can report
-   degenerate intersections in some engines, so it keeps one pixel. */
-#today-sentinel {
-  height: 1px;
+.today-pagination button {
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font-family: var(--utility);
+  font-size: 0.7rem;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.today-pagination button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.adoption-cta {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1.5rem;
+  padding: 1.1rem;
+  border: 1px solid var(--ink);
+  background: #fff4d6;
+}
+
+.adoption-cta p {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.05rem;
+}
+
+.adoption-actions,
+.footer-dataset-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.adoption-actions button {
+  background: transparent;
+  cursor: pointer;
 }
 
 .footer-dataset {
-  margin: 0.4rem 0 0;
-  color: var(--muted);
-  font-family: var(--body);
-  font-size: 0.78rem;
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.7rem 0 0;
+  padding: 0.9rem;
+  border-left: 3px solid var(--orange);
+  background: #fff4d6;
+  color: var(--ink);
+  font-family: var(--utility);
+  font-size: 0.75rem;
+}
+
+.footer-dataset a,
+.footer-contact-link {
+  color: var(--ink);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .footer-contact-link {

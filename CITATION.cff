@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If Benchmark Radar supports your research or evaluation work, please cite it using this metadata."
+title: "Benchmark Radar"
+type: dataset
+authors:
+  - family-names: Wu
+    given-names: Koutian
+repository-code: "https://github.com/ktwu01/benchmark-radar"
+url: "https://koutian.is-a.dev/benchmark-radar/"
+license: MIT
+version: 0.3.0
+abstract: >-
+  A daily evidence-first radar and machine-readable corpus for AI benchmarks,
+  evaluations, datasets, model-card reporting, and data quality.

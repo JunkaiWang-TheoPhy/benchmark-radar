@@ -30,6 +30,21 @@ class SiteParser(HTMLParser):
             self.local_refs.append(reference)
 
 
+def test_readmes_offer_free_data_and_an_earned_star_request():
+    english = Path("README.md").read_text(encoding="utf-8")
+    chinese = Path("README.zh-CN.md").read_text(encoding="utf-8")
+
+    assert "[README.zh-CN.md](README.zh-CN.md)" in english
+    assert "[README.md](README.md)" in chinese
+    assert "Click the image" in english
+    assert "点击图片" in chinese
+    assert "data/radar.json" in english and "no crawler or contact required" in english
+    assert "data/radar.json" in chinese and "无需爬虫或联系作者" in chinese
+    assert "star the repository" in english
+    assert "给仓库点个 Star" in chinese
+    assert Path("CITATION.cff").exists()
+
+
 def test_site_has_accessible_landmarks_and_views():
     parser = SiteParser()
     parser.feed(Path("site/index.html").read_text(encoding="utf-8"))
@@ -93,15 +108,15 @@ def test_scan_date_can_be_reset_to_all_dates():
     assert 'state.todayDate === "all" || item.snapshot_date === state.todayDate' in script
     assert 'state.todayDate = "all";' in script
     assert 'params.set("date", "all")' in script
-    # The list is bounded and scroll-fed (issue #311): one page at a time, no
-    # button, a status line saying how much is loaded.
-    assert "observations.slice(0, todayPageLimit())" in script
-    assert "state.todayResultsLimit += TODAY_PAGE_SIZE" in script
+    # The list is bounded by explicit pages (issue #322), so reaching the
+    # footer never silently appends the rest of the archive.
+    assert "observations.slice(pageStart, pageEnd)" in script
+    assert "state.todayPage += 1" in script
     assert "const TODAY_PAGE_SIZE = 20;" in script
-    assert 'id="today-loaded"' in html
-    assert 'id="today-sentinel"' in html
-    assert "function watchTodaySentinel(" in script
-    assert 'id="today-show-more"' not in html
+    assert 'id="today-page-status"' in html
+    assert 'id="today-page-prev"' in html
+    assert 'id="today-page-next"' in html
+    assert "IntersectionObserver" not in script
     assert 'byId("daily-briefing").hidden = showingAllDates' in script
     assert 'byId("source-health-panel").hidden = showingAllDates' in script
 
@@ -112,7 +127,7 @@ def test_dashboard_bounds_work_before_and_during_filtering():
 
     assert "state.observations = [...evidence, ...attention].sort" in script
     assert "if (state.observations) return state.observations" in script
-    assert "const visibleObservations = observations.slice(0, todayPageLimit())" in script
+    assert "const visibleObservations = observations.slice(pageStart, pageEnd)" in script
     assert "renderToday({ resultsOnly: true })" in script
     assert 'if (state.view === "today") renderToday()' in script
     assert 'if (state.view === "leaderboard") renderLeaderboard()' in script
@@ -272,9 +287,33 @@ def test_rubric_dialog_is_linkable_by_url_hash():
     # Issue #41: opening the rubric must be shareable as a hashtag link, and
     # loading that link must reopen the same rubric version.
     assert "state.rubric" in script
-    assert 'window.location.hash.slice(1)).get("rubric")' in script
-    assert 'hashParams.set("rubric", state.rubric)' in script
-    assert "openRubric(null, state.rubric)" in script
+    assert 'rawHash === "rubric"' in script
+    assert 'hash = "rubric"' in script
+    assert 'state.rubric === "current" ? null : state.rubric' in script
+
+
+def test_contact_dialog_and_current_rubric_have_clean_hash_links():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'rawHash === "contact"' in script
+    assert 'hash = "contact"' in script
+    assert "state.contact = true;" in script
+    assert "openContact(false)" in script
+    assert 'else if (state.rubric === "current") hash = "rubric";' in script
+    # Historical records remain linkable to the rubric that scored them.
+    assert "hash = `rubric=${encodeURIComponent(state.rubric)}`" in script
+
+
+def test_initial_page_uses_small_bootstrap_and_lazy_loads_history():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    initialize = script.split("async function initialize()", 1)[1]
+    assert 'fetch("data/radar-bootstrap.json")' in initialize
+    assert "await ensureDataForState();" in initialize
+    loader = script.split("async function ensureFullData(", 1)[1].split("\nasync function ", 1)[0]
+    assert 'fetch("data/radar.json", { cache })' in loader
+    assert '["trends", "map"].includes(state.view)' in script
+    assert 'state.todayDate === "all"' in script
 
 
 def test_rubric_is_read_from_published_data_not_restated_in_the_browser():
@@ -313,7 +352,10 @@ def test_today_view_has_one_filterable_observation_list_and_one_source_status():
     assert 'id="today-list"' in html
     assert 'id="filters"' in html
     assert 'id="kind-filter"' in html
-    assert "visibleObservations.map(observationCard)" in script
+    assert (
+        "visibleObservations.map((item, offset) => observationCard(item, pageStart + offset))"
+        in script
+    )
     assert "Daily field note" not in html
     assert "What entered the field?" not in html
     assert "today-overview" not in html
@@ -343,7 +385,8 @@ def test_today_toolbar_keeps_secondary_filters_in_a_popover():
     assert "function updateFiltersCount()" in script
     assert "function closeFiltersDrawer()" in script
     assert "function refreshData()" in script
-    assert 'fetch("data/radar.json", { cache: "reload" })' in script
+    assert 'state.fullDataLoaded ? "data/radar.json" : "data/radar-bootstrap.json"' in script
+    assert 'const response = await fetch(path, { cache: "reload" });' in script
     assert "drawer.hidden = true" in script
 
 
@@ -618,7 +661,7 @@ def test_leaderboard_view_is_a_first_class_dashboard_view():
     assert "leaderboard-view" in parser.ids
     assert 'data-view="leaderboard"' in html
     assert '"map", "leaderboard"' in script
-    assert 'if (button.dataset.view === "leaderboard") renderLeaderboard();' in script
+    assert 'if (view === "leaderboard") renderLeaderboard();' in script
     assert "state.data?.model_card_leaderboard" in script
 
 
@@ -1897,48 +1940,27 @@ def test_issue_311_the_today_list_loads_one_page_at_a_time():
     """A busy day carded 100+ results before the reader could scroll.
 
     The first paint now carries 20 cards, the legend is two readings instead
-    of three, and more load only when the reader scrolls to the sentinel under
-    the list. The status line at the bottom states how much is on screen, so
-    progressive loading never reads as a truncated list.
+    of three, and explicit previous/next controls move through stable pages.
     """
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
-    # One named page size, applied at first paint and on every filter change.
+    # One named page size, with a URL-backed current page.
     assert "const TODAY_PAGE_SIZE = 20;" in script
-    assert "todayResultsLimit: TODAY_PAGE_SIZE," in script
+    assert "todayPage: 1," in script
+    assert 'params.get("page")' in script
+    assert 'params.set("page", state.todayPage)' in script
     renderer = script.split("function renderToday({ resultsOnly = false } = {})", 1)[1].split(
         "\nfunction ", 1
     )[0]
-    assert "state.todayResultsLimit = TODAY_PAGE_SIZE;" in renderer
-    assert "const visibleObservations = observations.slice(0, todayPageLimit());" in renderer
-
-    # Scroll loads; no button competes with it.
-    assert "function watchTodaySentinel(" in script
-    watcher = script.split("function watchTodaySentinel(", 1)[1].split("\nfunction ", 1)[0]
-    assert "new IntersectionObserver(" in watcher
-    assert "state.todayResultsLimit += TODAY_PAGE_SIZE;" in watcher
-    assert "renderToday({ resultsOnly: true });" in watcher
-    assert 'id="today-sentinel"' in html
-    assert "watchTodaySentinel(remainingResults);" in renderer
-    assert 'id="today-show-more"' not in html
-
-    # A load-more pass appends the new page instead of rebuilding the list,
-    # so a card the reader expanded stays open under them.
-    assert "const growsInPlace =" in renderer
-    assert "listHost.append(" in renderer
-    assert "observationCard(item, renderedCount + offset))" in renderer
-    assert "state.todayRenderedCount = visibleObservations.length;" in renderer
-
-    # No IntersectionObserver, no scroll trigger, no button: the cap would
-    # strand every row past the first page, so the bound is removed instead.
-    fallback = script.split("function todayPageLimit()", 1)[1].split("\nfunction ", 1)[0]
-    assert "return Infinity;" in fallback
-    assert "observations.slice(0, todayPageLimit())" in renderer
-
-    # The bottom line reports what loaded.
-    assert "{loaded} of {total} results loaded · scroll for more" in renderer
-    assert "All {total} results loaded" in renderer
+    assert "Math.ceil(observations.length / TODAY_PAGE_SIZE)" in renderer
+    assert "const visibleObservations = observations.slice(pageStart, pageEnd);" in renderer
+    assert 'byId("today-page-prev").disabled' in renderer
+    assert 'byId("today-page-next").disabled' in renderer
+    assert 'id="today-page-prev"' in html
+    assert 'id="today-page-next"' in html
+    assert 'id="today-page-status"' in html
+    assert "IntersectionObserver" not in script
 
     # The legend keeps the class breakdown and the order; the raw total and
     # its duplicated noun are gone, and "need attention" lost its verb.
@@ -1947,15 +1969,17 @@ def test_issue_311_the_today_list_loads_one_page_at_a_time():
     assert '${attentionCount} ${t("attention")}' in renderer
     assert '"need attention"' not in script
 
-    # Dataset access moved out of the header: contact-first, star-first.
+    # Dataset access remains free; starring is an earned request, not a gate.
     assert 'id="badge-export"' not in html
     assert 'id="export-dialog"' not in html
     assert "function openExport(" not in script
     assert "function observationsToCsv(" not in script
     assert "function downloadText(" not in script
-    footer = html.split('<p class="footer-dataset">', 1)[1].split("</p>", 1)[0]
-    assert "No crawler needed: star the repository" in footer
+    footer = html.split('<div class="footer-dataset">', 1)[1].split("</div>", 1)[0]
+    assert "Free dataset. No crawler needed." in footer
+    assert 'href="data/radar.json"' in footer
     assert 'id="footer-contact"' in footer
-    contact = script.split("function openContact()", 1)[1].split("dialog.showModal();", 1)[0]
-    assert "No crawler needed: star the repository" in contact
+    contact = script.split("function openContact(", 1)[1].split("dialog.showModal();", 1)[0]
+    assert "The complete dataset is free to download" in contact
+    assert 'href: "data/radar.json"' in contact
     assert 'className: "contact-dataset"' in contact
