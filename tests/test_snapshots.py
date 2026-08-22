@@ -252,10 +252,7 @@ def test_rebuild_writes_a_small_latest_day_bootstrap(tmp_path):
     assert bootstrap["corpus"] == {"aggregates": dashboard["corpus"]["aggregates"]}
     # The leaderboard's score panel renders straight off this payload and
     # nothing upgrades it to the full bundle first, so the progression ships.
-    assert (
-        bootstrap["benchmark_score_progression"]
-        == dashboard["benchmark_score_progression"]
-    )
+    assert bootstrap["benchmark_score_progression"] == dashboard["benchmark_score_progression"]
     assert bootstrap_path.stat().st_size < output.stat().st_size
 
 
