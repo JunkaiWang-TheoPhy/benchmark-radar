@@ -20,5 +20,12 @@ jobs:
       - run: python -m pip install -e '.[dev]'
       - run: ruff check .
       - run: ruff format --check .
+      # Before pytest, not just before classify. The search index and the 1,148
+      # per-benchmark shards are derived and untracked, so a fresh checkout has
+      # neither, and `classify` builds the crawled half of site/data/models.json
+      # by globbing the shard directory. Running it first also un-skips the
+      # corpus-backed tests, which guarded themselves on those files existing
+      # and so had never run in CI at all.
+      - run: benchmark-radar normalize-external
       - run: pytest -q
       - run: benchmark-radar classify
