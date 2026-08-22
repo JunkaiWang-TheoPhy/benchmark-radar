@@ -755,3 +755,117 @@ def test_the_score_layer_is_keyed_by_the_same_benchmark_id_as_adoption():
     script = source("site/assets/app.js")
 
     assert "benchmark_score_progression?.benchmarks?.[benchmarkId]" in script
+
+
+def test_issue_312_the_saturation_view_reveals_left_to_right():
+    """The chart popped in fully drawn, so the reader never saw the shape form.
+
+    The running-best line now draws itself across the axis and each point
+    brightens while the drawing front crosses its date: the reveal reads in
+    the same direction the data does. The entrance is presentation only -- a
+    reduced-motion reader gets the finished chart immediately.
+    """
+    script = source("site/assets/app.js")
+    styles = source("site/assets/styles.css")
+    chart = script.split("function scoreTrackChart(", 1)[1].split(
+        "\nfunction clearAdoptionFrontier", 1
+    )[0]
+
+    # The line declares its length, so CSS can draw it with a dash offset
+    # instead of script measuring geometry on a detached tree.
+    assert 'pathLength: "1",' in chart
+
+    # Each point carries its own delay on the timeline, derived from where it
+    # sits on the x axis rather than from its row order.
+    assert "function frontierPointRevealDelay(pointX, margin, plotWidth)" in script
+    assert "(pointX - margin.left) / plotWidth" in script
+    assert "frontierPointRevealDelay(pointX, margin, plotWidth)" in chart
+    assert "style: `--reveal-delay:${revealDelay}ms`," in chart
+
+    # The crawled layer's points share the same reveal: one kind of mark gets
+    # one entrance, so selecting a crawled benchmark does not fade everything
+    # in at once while the curated one staggers.
+    external = script.split("function externalScoreChart(", 1)[1].split("\nfunction ", 1)[0]
+    assert "frontierPointRevealDelay" in external
+
+    # The issue's definition is enforced in the same pass: points that hold
+    # the best value as of their date are the line; every other reading fades
+    # back behind it, and recovers on hover or focus. Dimming is gated on the
+    # line actually existing -- no line, nothing recedes behind it.
+    assert "const frontierMarks = new Set();" in chart
+    assert "if (frontier && frontier.steps.length) {" in chart
+    assert "if (point.value === best) {" in chart
+    # Membership carries the comparable run's own key, so an unrelated run
+    # reporting the same number on the same date is not drawn onto the line.
+    assert "`${frontier.key}\\u0000${point.time}\\u0000${point.value}`" in chart
+    assert '`${observation.instrument || ""}\\u0000${observation.protocol || ""}\\u0000' in chart
+    # Same-date readings collapse to their directional best before the steps
+    # are built, so what is drawn and what is emphasized cannot disagree: the
+    # line never steps through an inferior number that shares a better
+    # reading's date.
+    assert "const bestByDate = new Map();" in chart
+    assert ".sort((a, b) => a[0] - b[0])" in chart
+    assert "runningBestSteps(points, { descends: scoreDescends })" in chart
+
+    # A shell or empty state replaces the chart on screen, so a running
+    # completion timer may not spend the reveal it can no longer show.
+    shell = script.split("function renderExternalShell(", 1)[1].split("\nfunction ", 1)[0]
+    assert "drawnFrontierEntranceKey = null;" in shell
+    clear_fn = script.split("function clearAdoptionFrontier(message)", 1)[1].split("\n}", 1)[0]
+    assert "drawnFrontierEntranceKey = null;" in clear_fn
+    # Dimming itself is gated on a line being drawn: with no comparable pair
+    # there is no reference, and every point keeps full emphasis rather than
+    # all of them receding together.
+    assert "const offTheLine = Boolean(frontierSteps?.length) && !onFrontier;" in chart
+    assert 'offTheLine ? " score-point-dim" : ""' in chart
+    dim = styles.split(".score-point-dim .score-point-face {", 1)[1][:200]
+    assert "fill-opacity: 0.6;" in dim
+    assert ".score-point-dim:hover .score-point-face" in styles
+    assert ".score-point-dim.is-selected .score-point-glyph" in styles
+
+    # The entrance is gated to arrivals and runs to completion before it is
+    # spent: a redraw into a hidden panel never spends an entrance, and the
+    # crawled catalog settling mid-reveal replays rather than cancels it.
+    assert "function frontierShouldAnimate(key)" in script
+    gate = script.split("function frontierShouldAnimate(key)", 1)[1].split("\n}", 1)[0]
+    assert 'if (state.view !== "leaderboard") return false;' in gate
+    assert "completedFrontierEntranceKey === key" in gate
+    # And the completion callback rechecks visibility and the drawn selection:
+    # leaving mid-reveal -- to another view, another benchmark, or a hidden
+    # tab -- must still play the entrance on return.
+    assert "const spendOrDefer = () => {" in gate
+    assert 'document.visibilityState !== "visible"' in gate
+    assert "drawnFrontierEntranceKey === key" in gate
+    assert 'state.view === "leaderboard" && drawnFrontierEntranceKey === key' in gate
+    assert "const FRONTIER_ENTRANCE_MS = 1400;" in script
+    assert "frontierShouldAnimate(`curated:${entry.benchmark_id}`)" in script
+    assert "frontierShouldAnimate(`external:${record.slug}`)" in script
+    assert script.count('"score-chart-enter"') == 2
+
+    # A superseded shard callback may not paint: two renders of one record
+    # before its cached shard settles would otherwise let the second paint
+    # clear the entrance class before the browser drew a frame.
+    assert "let externalRenderSeq = 0;" in script
+    external_render = script.split("function renderExternalBenchmark(board, scored, record)", 1)[
+        1
+    ].split("\nfunction ", 1)[0]
+    assert "const renderToken = ++externalRenderSeq;" in external_render
+    assert "if (renderToken !== externalRenderSeq) return;" in external_render
+
+    line_rule = styles.split(".score-chart-enter .score-frontier-line {", 1)[1][:400]
+    assert "stroke-dasharray: 1;" in line_rule
+    assert "stroke-dashoffset: 1;" in line_rule
+    assert "animation: score-frontier-draw" in line_rule
+    assert "@keyframes score-frontier-draw" in styles
+
+    point_rule = styles.split(".score-chart-enter .score-point {", 1)[1][:300]
+    assert "opacity: 0;" in point_rule
+    assert "animation: score-point-reveal" in point_rule
+    assert "animation-delay: var(--reveal-delay, 0ms);" in point_rule
+
+    # And the whole entrance collapses for prefers-reduced-motion. The guard
+    # must match the gated selectors or it would lose the cascade.
+    guard = styles.split("@media (prefers-reduced-motion: reduce)", 1)[1][:600]
+    assert ".score-chart-enter .score-point" in guard
+    assert ".score-chart-enter .score-frontier-line" in guard
+    assert "stroke-dashoffset: 0;" in guard

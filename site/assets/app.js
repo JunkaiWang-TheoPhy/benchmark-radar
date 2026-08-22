@@ -4312,12 +4312,15 @@ function externalScoreChart(source, payload) {
     const pointX = x(dateValue(row.reported_date));
     const pointY = scoreY(row.value);
     const thirdParty = row.reported_by === "third_party";
+    // Same left-to-right reveal as the curated chart (issue #312): one kind
+    // of mark, one entrance, on both layers.
     const group = svgElement("g", {
       class: `score-point${thirdParty ? " score-point-third-party" : ""}`,
       tabindex: "0",
       role: "button",
       "aria-pressed": "false",
       "data-frontier-point": "",
+      style: `--reveal-delay:${frontierPointRevealDelay(pointX, margin, plotWidth)}ms`,
       "aria-label":
         `${row.model_name || t("not recorded")} ${t("by")} ${row.organization || t("not recorded")}` +
         (thirdParty ? `, ${t("cited by")} ${meta.name}` : "") +
@@ -4655,6 +4658,9 @@ function renderExternalShell(
 ) {
   clearFrontierPointSelection();
   setCanonicalFrontierChrome(false);
+  // A shell replaces whatever chart was on screen, so no completion timer may
+  // spend a reveal the reader is no longer looking at.
+  drawnFrontierEntranceKey = null;
   // An empty eyebrow or badge is hidden rather than rendered blank: a crawled
   // record states its source once, on the subline, and repeating it in a
   // non-interactive chip beside the title read as broken state (issue #298).
@@ -4686,6 +4692,12 @@ function renderExternalShell(
   ]);
 }
 
+// Superseded shard paints are dropped: if the same record is rendered twice
+// before its (cached) shard promise settles, only the latest call may paint,
+// or the second paint would clear the entrance class before the browser ever
+// drew the first frame.
+let externalRenderSeq = 0;
+
 function renderExternalBenchmark(board, scored, record) {
   const meta = externalSourceMeta(record.source);
   // One title, one metadata line. The eyebrow ("External catalog record") and
@@ -4707,10 +4719,13 @@ function renderExternalBenchmark(board, scored, record) {
   if (existing) existing.selected = true;
   else picker.prepend(option(record.slug, `${record.name} · ${meta.name}`, true));
   const container = byId("frontier-external");
+  const renderToken = ++externalRenderSeq;
   loadBenchmarkShard(record.slug).then((shard) => {
     // The reader may have moved on while the shard was on the wire; only paint
-    // if this record is still the selection.
+    // if this record is still the selection -- and only if no newer render of
+    // this panel has superseded this callback.
     if (state.lfrontier !== record.slug) return;
+    if (renderToken !== externalRenderSeq) return;
     if (!shard) {
       // A failed shard fetch leaves the index row and the selection in place;
       // only the panel reports the failure (display plan step 7).
@@ -4722,6 +4737,12 @@ function renderExternalBenchmark(board, scored, record) {
       ]);
       return;
     }
+    // The entrance is keyed to arriving at this record; a re-render after an
+    // unrelated panel redraw does not replay it.
+    container.classList.toggle(
+      "score-chart-enter",
+      frontierShouldAnimate(`external:${record.slug}`),
+    );
     replaceChildren(container, externalBenchmarkDetail(shard));
   });
 }
@@ -5445,6 +5466,56 @@ function renderFrontierOrgKey(record) {
 // score band now gets the full height the staircase, the card rug, and the
 // inter-band gaps vacated, and the only marks on the chart are the scores, the
 // connections the join rule permits, and the reading gap.
+// Entrance timing for the score charts (issue #312). A point brightens while
+// the drawing front crosses its date, so the reveal reads left to right the
+// way the data does. 120ms lets the line start first; 780ms spreads the
+// points across the 900ms drawing window. Shared by both layers so a reader
+// never learns two reveal behaviors for one kind of mark.
+function frontierPointRevealDelay(pointX, margin, plotWidth) {
+  return Math.round(120 + ((pointX - margin.left) / plotWidth) * 780);
+}
+
+// The entrance plays when the reader arrives at a benchmark and runs to
+// completion before it is spent. The crawled catalog settling mid-reveal
+// re-renders this panel, and a key spent on first paint would cancel the very
+// reveal it was drawn for: same-selection repaints inside the window replay
+// the entrance from its start rather than cutting it off, and once the window
+// closes the selection counts as seen, so later repaints render finished.
+// The key commits only while the Leaderboard is the visible view: a redraw
+// into a hidden panel must not spend an entrance the reader has yet to see.
+const FRONTIER_ENTRANCE_MS = 1400;
+let completedFrontierEntranceKey = null;
+let frontierEntranceTimer = null;
+let drawnFrontierEntranceKey = null;
+
+function frontierShouldAnimate(key) {
+  if (state.view !== "leaderboard") return false;
+  // Remember what is actually on screen: the completion callback below may
+  // fire after the reader has moved to another benchmark.
+  drawnFrontierEntranceKey = key;
+  const done = completedFrontierEntranceKey === key;
+  if (!done) {
+    clearTimeout(frontierEntranceTimer);
+    const spendOrDefer = () => {
+      // Spending the entrance requires that it was seen to the end: a hidden
+      // tab defers its own completion, and a reader who navigated away -- to
+      // another view or another benchmark -- gets the reveal again on return.
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState !== "visible"
+      ) {
+        frontierEntranceTimer = setTimeout(spendOrDefer, FRONTIER_ENTRANCE_MS);
+        return;
+      }
+      if (state.view === "leaderboard" && drawnFrontierEntranceKey === key) {
+        completedFrontierEntranceKey = key;
+      }
+    };
+    frontierEntranceTimer = setTimeout(spendOrDefer, FRONTIER_ENTRANCE_MS);
+  }
+  return !done;
+}
+
 function scoreTrackChart(entry, board) {
   const record = scoreRecord(entry.benchmark_id);
   // Callers only ever select a benchmark that has a score record; this guard is
@@ -5581,9 +5652,57 @@ function scoreTrackChart(entry, board) {
         value: observation.value,
       });
     }
-    const frontierSteps = [...runs.values()]
-      .map((points) => runningBestSteps(points, { descends: scoreDescends }))
-      .sort((a, b) => b.length - a.length)[0];
+    // Same-date readings collapse to their directional best before anything
+    // reads them: drawn in source order, the line could step twice on one
+    // date and pass through an inferior number that shares a better reading's
+    // date. Collapsing here means the steps, and the membership marks derived
+    // from them, can never disagree.
+    const collapsedRuns = [...runs.entries()].map(([key, points]) => {
+      const bestByDate = new Map();
+      for (const point of points) {
+        const current = bestByDate.get(point.time);
+        if (
+          current === undefined ||
+          (scoreDescends ? point.value < current : point.value > current)
+        ) {
+          bestByDate.set(point.time, point.value);
+        }
+      }
+      const collapsed = [...bestByDate.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([time, value]) => ({ time, value }));
+      return { key, points: collapsed };
+    });
+    // The line belongs to exactly one comparable run -- the one with the most
+    // advances (issue #288). Its steps draw it; its best-so-far holders light
+    // up with it.
+    const runSteps = collapsedRuns.map(({ key, points }) => ({
+      key,
+      points,
+      steps: runningBestSteps(points, { descends: scoreDescends }),
+    }));
+    const frontier = runSteps.sort((a, b) => b.steps.length - a.steps.length)[0];
+    const frontierSteps = frontier?.steps;
+    // Which points the saturation line is made of (issue #312's definition):
+    // within that run, every reading that holds the best value as of its
+    // date. These stay at full emphasis; all other points fade back so the
+    // eye lands on the line first. Membership is keyed by run, then time and
+    // value, so an unrelated run reporting the same number on the same date
+    // is not mistaken for the line. Gated on the line actually existing -- a
+    // benchmark whose history holds no comparable pair draws no line, so
+    // nothing may dim behind an absent reference.
+    const frontierMarks = new Set();
+    if (frontier && frontier.steps.length) {
+      let best = null;
+      for (const point of frontier.points) {
+        if (best === null || (scoreDescends ? point.value < best : point.value > best)) {
+          best = point.value;
+        }
+        if (point.value === best) {
+          frontierMarks.add(`${frontier.key}\u0000${point.time}\u0000${point.value}`);
+        }
+      }
+    }
     if (frontierSteps?.length) {
       svg.append(
         svgElement("path", {
@@ -5595,6 +5714,11 @@ function scoreTrackChart(entry, board) {
           ),
           class: "score-frontier-line",
           fill: "none",
+          // Normalized length: the entrance animation (issue #312) draws the
+          // line with a dash offset from 1 to 0, which needs a total length
+          // known in advance. Measuring geometry on this detached tree is not
+          // portable, so the length is declared instead.
+          pathLength: "1",
         }),
       );
     }
@@ -5628,12 +5752,36 @@ function scoreTrackChart(entry, board) {
             source.document_type || t("model card"),
           ).replaceAll("_", " ")})`
         : observation.source_id.replaceAll("_", " ");
+      const pointX = x(observation.reported_at);
+      const pointY = scoreY(observation.value);
+      // "其他的点可以淡化" (issue #312): readings that are not part of the
+      // saturation line recede behind it -- but only while there IS a line.
+      // A benchmark with no comparable pair draws no reference, so every
+      // point keeps full emphasis rather than all of it receding together.
+      // Hover and focus restore a receded point, so de-emphasis never costs
+      // legibility. Membership is looked up under the observation's own
+      // comparable run, so a same-date same-value reading from another run
+      // stays off the line.
+      const onFrontier = frontierMarks.has(
+        `${observation.instrument || ""}\u0000${observation.protocol || ""}\u0000${new Date(
+          `${observation.reported_at}T00:00:00Z`,
+        ).getTime()}\u0000${observation.value}`,
+      );
+      const offTheLine = Boolean(frontierSteps?.length) && !onFrontier;
+      // Entrance order follows the axis (issue #312): each point brightens
+      // while the drawing front crosses its date, so the reveal reads left to
+      // right the way the data does. The timing is shared with the crawled
+      // layer's chart so both figures reveal the same way.
+      const revealDelay = frontierPointRevealDelay(pointX, margin, plotWidth);
       const group = svgElement("g", {
-        class: `score-point${observation.reported_by ? " score-point-third-party" : ""}`,
+        class: `score-point${
+          offTheLine ? " score-point-dim" : ""
+        }${observation.reported_by ? " score-point-third-party" : ""}`,
         tabindex: "0",
         role: "button",
         "aria-pressed": "false",
         "data-frontier-point": "",
+        style: `--reveal-delay:${revealDelay}ms`,
         "aria-label":
           `${observation.value} ${record.metric} ${t("by")} ${observation.model} ` +
           `(${observation.organization}), ${formatDate(observation.reported_at, {
@@ -5642,8 +5790,6 @@ function scoreTrackChart(entry, board) {
           (observation.reported_by ? `, ${t("cited by")} ${observation.reported_by}` : "") +
           `. ${t("Click to pin record details")}.`,
       });
-      const pointX = x(observation.reported_at);
-      const pointY = scoreY(observation.value);
       group.append(
         svgElement("circle", {
           cx: pointX,
@@ -5814,6 +5960,9 @@ function clearAdoptionFrontier(message) {
   // restored here rather than at each call site: an external selection that
   // hid it must not leave the next canonical render missing its chart blocks.
   setCanonicalFrontierChrome(true);
+  // The empty state replaces any chart on screen, so a running completion
+  // timer must not spend its reveal.
+  drawnFrontierEntranceKey = null;
   byId("frontier-eyebrow").textContent = t("Scores over time");
   const stage = byId("frontier-stage");
   stage.textContent = "";
@@ -5981,6 +6130,10 @@ function renderAdoptionFrontier(board) {
   renderFrontierLegend(entry, record);
   renderFrontierOrgKey(record);
   clearFrontierPointSelection();
+  byId("frontier-chart").classList.toggle(
+    "score-chart-enter",
+    frontierShouldAnimate(`curated:${entry.benchmark_id}`),
+  );
   replaceChildren(byId("frontier-chart"), [scoreTrackChart(entry, board), frontierTooltip()]);
   renderScoreReadout(entry);
   renderFrontierTaskPreview(entry);

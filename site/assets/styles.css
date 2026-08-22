@@ -2630,6 +2630,29 @@ td a {
   cursor: pointer;
 }
 
+/* Entrance (issue #312): points fade up one by one, ordered by their date,
+   while the running-best line draws itself across the axis. The whole block
+   is gated on .score-chart-enter, which a render adds only when the reader
+   arrived at a new selection -- incidental redraws of the same chart repaint
+   it finished, not from zero. Point delays arrive as a custom property set
+   per point, so the drawing code places each mark on the timeline without
+   knowing anything about the CSS. */
+.score-chart-enter .score-point {
+  opacity: 0;
+  animation: score-point-reveal 420ms ease-out forwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+@keyframes score-point-reveal {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 .frontier-tick,
 .frontier-axis-label {
   fill: #aebcc1;
@@ -2890,6 +2913,68 @@ td a {
   stroke-width: 1.75;
   stroke-linejoin: miter;
   opacity: 0.85;
+}
+
+/* Entrance (issue #312): the line draws itself left to right while the
+   points brighten along it. The path declares pathLength="1", so a dash of
+   length 1 is the whole line and the offset animates from hidden to drawn
+   without measuring geometry in script. Scoped like the points, to arrivals. */
+.score-chart-enter .score-frontier-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: score-frontier-draw 900ms ease-out 120ms forwards;
+}
+
+@keyframes score-frontier-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* "其他的点可以淡化" (issue #312): readings off the saturation line recede
+   behind it instead of competing with it for the eye. The de-emphasis sits on
+   the marks inside the group rather than the group's own opacity, which the
+   entrance animation owns. Reading one still works: hover and focus bring a
+   receded point back to full strength. */
+.score-point-dim .score-point-face {
+  fill-opacity: 0.6;
+  stroke-opacity: 0.45;
+}
+
+.score-point-dim .score-point-citation-ring,
+.score-point-dim .score-point-glyph {
+  opacity: 0.5;
+}
+
+.score-point-dim:hover .score-point-face,
+.score-point-dim:focus .score-point-face,
+.score-point-dim.is-selected .score-point-face {
+  fill-opacity: 1;
+  stroke-opacity: 1;
+}
+
+.score-point-dim:hover .score-point-citation-ring,
+.score-point-dim:focus .score-point-citation-ring,
+.score-point-dim.is-selected .score-point-citation-ring,
+.score-point-dim:hover .score-point-glyph,
+.score-point-dim:focus .score-point-glyph,
+.score-point-dim.is-selected .score-point-glyph {
+  opacity: 1;
+}
+
+/* The entrance is presentation, not information: readers who ask for reduced
+   motion get the finished chart immediately. */
+@media (prefers-reduced-motion: reduce) {
+  .score-chart-enter .score-point {
+    animation: none;
+    opacity: 1;
+  }
+
+  .score-chart-enter .score-frontier-line {
+    animation: none;
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+  }
 }
 
 .score-best-line {
