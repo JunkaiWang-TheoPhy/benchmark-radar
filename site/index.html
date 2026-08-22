@@ -327,15 +327,28 @@
               <div id="today-benchmarks-results"></div>
             </section>
             <div class="signal-list" id="today-list"></div>
-            <!--
-              The list is bounded (issue #311): the first paint carries one page
-              of results, and this note states how many of the day's results are
-              on screen. Scrolling to it loads the next page in place, so a
-              reader never waits on the whole day (or the whole archive) being
-              carded before they can read.
-            -->
-            <p class="today-loaded-note" id="today-loaded" role="status"></p>
-            <div id="today-sentinel" aria-hidden="true"></div>
+            <nav class="today-pagination" aria-label="Result pages">
+              <button type="button" id="today-page-prev" data-i18n="Previous">Previous</button>
+              <p id="today-page-status" role="status"></p>
+              <button type="button" id="today-page-next" data-i18n="Next">Next</button>
+            </nav>
+            <aside class="adoption-cta" aria-label="Support Benchmark Radar">
+              <p data-i18n="If this saved you research time, star the repository and help other eval builders find it.">
+                If this saved you research time, star the repository and help other eval builders find it.
+              </p>
+              <span class="adoption-actions">
+                <a
+                  class="primary-link"
+                  href="https://github.com/ktwu01/benchmark-radar"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-i18n="Star the repository"
+                >Star the repository</a>
+                <button type="button" class="secondary-link" id="share-radar" data-i18n="Copy link">
+                  Copy link
+                </button>
+              </span>
+            </aside>
           </div>
           <div>
             <!-- The day's narrative and Q&A describe the whole scan date
@@ -735,22 +748,24 @@
 
     <footer>
       <p id="build-meta">Updated —</p>
-      <!--
-        Dataset access without a crawler (issue #311): the header export button
-        is gone, so this note is the standing answer to "where is the data".
-        Star first, then ask; the contact button opens the same sheet as the
-        header badge.
-      -->
-      <p class="footer-dataset">
-        <span data-i18n="Want the dataset? No crawler needed: star the repository, then">Want the dataset? No crawler needed: star the repository, then</span>
-        <button
-          type="button"
-          class="footer-contact-link"
-          id="footer-contact"
-          data-i18n="contact the author"
-        >contact the author</button>
-        <span data-i18n="for a one-click export.">for a one-click export.</span>
-      </p>
+      <div class="footer-dataset">
+        <strong data-i18n="Free dataset. No crawler needed.">Free dataset. No crawler needed.</strong>
+        <span class="footer-dataset-actions">
+          <a href="data/radar.json" data-i18n="Download the dataset">Download the dataset</a>
+          <a
+            href="https://github.com/ktwu01/benchmark-radar"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-i18n="Star the repository"
+          >Star the repository</a>
+          <button
+            type="button"
+            class="footer-contact-link"
+            id="footer-contact"
+            data-i18n="contact the author"
+          >contact the author</button>
+        </span>
+      </div>
     </footer>
   </body>
 </html>

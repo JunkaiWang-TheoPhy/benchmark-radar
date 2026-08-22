@@ -1,0 +1,42 @@
+name: Show how you use Benchmark Radar
+description: Share a project, paper, evaluation, or workflow that Benchmark Radar helped.
+title: "Use case: "
+labels: ["use-case"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Independent use is the best signal that this project is useful. A short
+        note is enough, and a public link helps other eval builders learn from it.
+
+  - type: input
+    id: project
+    attributes:
+      label: What are you building or researching?
+      placeholder: An agent evaluation suite for customer-support workflows
+    validations:
+      required: true
+
+  - type: textarea
+    id: use
+    attributes:
+      label: How did Benchmark Radar help?
+      description: Name the page, dataset, benchmark, or decision that was useful.
+    validations:
+      required: true
+
+  - type: input
+    id: link
+    attributes:
+      label: Public link
+      description: Optional project, paper, post, repository, or evaluation link.
+      placeholder: https://example.com/my-eval-project
+    validations:
+      required: false
+
+  - type: textarea
+    id: feedback
+    attributes:
+      label: What would make it more useful?
+    validations:
+      required: false

@@ -235,6 +235,25 @@ def test_rebuild_is_deterministic(tmp_path):
     assert first["days"][0]["attention"]["active_count"] == 1
 
 
+def test_rebuild_writes_a_small_latest_day_bootstrap(tmp_path):
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(26), snapshot_dir)
+    write_snapshot(radar_run(27), snapshot_dir)
+    output = tmp_path / "site" / "data" / "radar.json"
+
+    dashboard = rebuild_dashboard(snapshot_dir, output)
+
+    bootstrap_path = output.with_name("radar-bootstrap.json")
+    assert bootstrap_path.exists()
+    bootstrap = json.loads(bootstrap_path.read_text(encoding="utf-8"))
+    assert bootstrap["bootstrap"] is True
+    assert [day["date"] for day in bootstrap["days"]] == ["2026-07-27"]
+    assert bootstrap["facets"]["dates"] == ["2026-07-26", "2026-07-27"]
+    assert bootstrap["corpus"] == {"aggregates": dashboard["corpus"]["aggregates"]}
+    assert bootstrap["benchmark_score_progression"] == {}
+    assert bootstrap_path.stat().st_size < output.stat().st_size
+
+
 def test_rebuild_can_publish_the_feed_from_the_same_snapshot_history(tmp_path):
     snapshot_dir = tmp_path / "snapshots"
     write_snapshot(radar_run(26), snapshot_dir)

@@ -1,5 +1,7 @@
 # Benchmark Radar
 
+**简体中文:** [README.zh-CN.md](README.zh-CN.md)
+
 <!-- The record-count badge is data-driven: it is regenerated from the corpus on
 every collection, so it states what the project actually holds rather than a
 hand-edited number (issue #197). -->
@@ -12,7 +14,7 @@ web. It pulls evidence from **arXiv, GitHub, Hugging Face, OpenAlex, OpenReview,
 first-party lab feeds, Brave Search, Semantic Scholar, Hacker News, and more**
 every day, and keeps updating.
 
-**简体中文版本请见 [README.zh-CN.md](README.zh-CN.md).**
+**Click the image to watch how reported AIME 2025 scores saturated over time.**
 
 <a href="https://koutian.is-a.dev/benchmark-radar/?view=leaderboard&lfrontier=llm-stats-aime-2025">
   <img src="assets/aime-2025-leaderboard.png" alt="AIME 2025 leaderboard frontier chart, plotting every reported score against each model's release date" width="720" />
@@ -22,16 +24,17 @@ every day, and keeps updating.
 
 - **[Open the dashboard](https://koutian.is-a.dev/benchmark-radar/)** — today's insights, trends, popular benchmarks, model-card adoption, and more
 - **[Subscribe via RSS](https://koutian.is-a.dev/benchmark-radar/feed.xml)** — get new benchmark signals every day
-- **[Download all curated data](https://koutian.is-a.dev/benchmark-radar/data/radar.json)** — export the full machine-readable corpus in one click
+- **[Download the complete dataset](https://koutian.is-a.dev/benchmark-radar/data/radar.json)** — free, public, machine-readable JSON; no crawler or contact required
 - **[Contribute](CONTRIBUTING.md)** — add benchmarks, model cards, sources, or fixes
 
-If this is useful, **star the repo**.
+If Benchmark Radar saves you research time, **[star the repository](https://github.com/ktwu01/benchmark-radar)**. It helps other eval builders find it.
 
 ## More
 
 - **Scoring rubric:** [`src/benchmark_radar/rubric.py`](src/benchmark_radar/rubric.py)
 - **Model-card adoption data:** [`data/model_cards.yml`](data/model_cards.yml)
 - **Public corpus schema:** [`docs/cumulative-corpus.schema.json`](docs/cumulative-corpus.schema.json)
+- **Citation metadata:** [`CITATION.cff`](CITATION.cff)
 - **Configuration:** [`config.yml`](config.yml)
 - **Run locally:** `python -m pip install -e '.[dev]' && benchmark-radar`
 - **Support / bugs:** [open an issue](https://github.com/ktwu01/benchmark-radar/issues)
