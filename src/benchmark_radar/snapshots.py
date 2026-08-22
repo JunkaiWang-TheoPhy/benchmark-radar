@@ -1044,10 +1044,14 @@ def dashboard_bootstrap(dashboard: dict[str, Any]) -> dict[str, Any]:
 
     The full bundle contains every historical observation and every corpus
     entity.  Today and the model-card leaderboard need neither: they use the
-    latest day, the curated leaderboard, and corpus aggregate counts.  Keep the
-    public ``radar.json`` export intact for researchers, while giving the
-    browser a much smaller default document and letting history-heavy views
-    fetch the full bundle only when opened.
+    latest day, the curated leaderboard, its score progression, and corpus
+    aggregate counts.  Keep the public ``radar.json`` export intact for
+    researchers, while giving the browser a much smaller default document and
+    letting history-heavy views fetch the full bundle only when opened.
+
+    The score progression stays in this payload.  It is what the leaderboard's
+    score panel reads, and no view upgrades to the full bundle on the reader's
+    way to that panel, so dropping it left the panel permanently empty.
     """
     corpus = dashboard.get("corpus") or {}
     return {
@@ -1055,10 +1059,6 @@ def dashboard_bootstrap(dashboard: dict[str, Any]) -> dict[str, Any]:
         "bootstrap": True,
         "days": (dashboard.get("days") or [])[-1:],
         "corpus": {"aggregates": corpus.get("aggregates") or {}},
-        # This history is only consumed alongside the full multi-day payload.
-        # Omitting it removes another sizeable block without changing Today or
-        # the leaderboard's first paint.
-        "benchmark_score_progression": {},
     }
 
 

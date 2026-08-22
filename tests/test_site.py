@@ -570,7 +570,10 @@ def test_static_html_references_existing_local_assets():
     # Pages generates these from validated source data before upload. Their
     # generators and rendered structure have dedicated tests, while this check
     # remains about static assets that must exist in a clean checkout.
-    generated_assets = {"feed.xml"}
+    # radar.json is the dashboard bundle the "Download the dataset" link points
+    # at. Pages writes it during the build, before the artifact upload, so the
+    # published link resolves; it is absent from a clean checkout by design.
+    generated_assets = {"feed.xml", "data/radar.json"}
     missing = []
     for reference in parser.local_refs:
         path = urlsplit(reference).path
