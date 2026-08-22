@@ -1804,7 +1804,7 @@ function renderTodayBenchmarks() {
     0,
     Math.max(0, BENCHMARK_SEARCH_LIMIT - curatedShown.length),
   );
-  const curatedNames = curatedNameSet(board);
+  const curatedNames = curatedNameSet(curatedShown);
   const rows = [
     ...curatedShown.map((entry) => curatedResultRow(entry, { navigate, inert: !navigate })),
     ...externalShown.map((record) =>
@@ -3524,12 +3524,21 @@ function foldName(value) {
   return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
-// The names a curated entry answers to, folded. The registry is the authority
-// on which benchmarks exist, so this set is what a crawled row is checked
-// against before it is rendered as if it were a separate benchmark.
-function curatedNameSet(board) {
+// The names the curated rows ON SCREEN answer to, folded.
+//
+// Built from the rows actually rendered, never from the whole registry. The
+// caption these feed says "above", which is a claim about the list the reader
+// is looking at, and the two sets come apart: a query can match a crawled
+// record on publisher or modality rather than on its name, so searching "text"
+// returns the llm-stats GPQA row while no curated GPQA row matched or rendered.
+// Checking the full registry would caption that row "also tracked in the
+// registry above" and point the reader at nothing.
+//
+// Passing the shown rows also handles the search cap for free: a curated match
+// pushed past BENCHMARK_SEARCH_LIMIT is not above either.
+function curatedNameSet(entries) {
   const names = new Set();
-  for (const entry of board?.entries || []) {
+  for (const entry of entries || []) {
     for (const name of [entry.name, ...(entry.aliases || [])]) {
       const folded = foldName(name);
       if (folded) names.add(folded);
@@ -3804,7 +3813,7 @@ function renderBenchmarkSearch() {
     Math.max(0, BENCHMARK_SEARCH_LIMIT - shownCurated.length),
   );
   const total = curatedMatches.length + externalMatches.length;
-  const curatedNames = curatedNameSet(board);
+  const curatedNames = curatedNameSet(shownCurated);
   replaceChildren(container, [
     ...shownCurated.map(curatedResultRow),
     ...shownExternal.map((record) => benchmarkResultRow(record, { curatedNames })),
