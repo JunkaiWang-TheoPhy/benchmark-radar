@@ -250,7 +250,12 @@ def test_rebuild_writes_a_small_latest_day_bootstrap(tmp_path):
     assert [day["date"] for day in bootstrap["days"]] == ["2026-07-27"]
     assert bootstrap["facets"]["dates"] == ["2026-07-26", "2026-07-27"]
     assert bootstrap["corpus"] == {"aggregates": dashboard["corpus"]["aggregates"]}
-    assert bootstrap["benchmark_score_progression"] == {}
+    # The leaderboard's score panel renders straight off this payload and
+    # nothing upgrades it to the full bundle first, so the progression ships.
+    assert (
+        bootstrap["benchmark_score_progression"]
+        == dashboard["benchmark_score_progression"]
+    )
     assert bootstrap_path.stat().st_size < output.stat().st_size
 
 
