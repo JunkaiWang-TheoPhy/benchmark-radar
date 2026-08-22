@@ -21,6 +21,13 @@ on:
       # identity edit must rebuild the published shards, or the site keeps
       # serving last month's catalog.
       - "data/leaderboard_snapshots/**"
+      # The registry beside those CSVs, not just the CSVs. `normalize-external`
+      # reads this file for the crawl id, the column mapping and crawled_at, so
+      # a commit that only corrects one of those changes the catalog the build
+      # produces. Missing here, such a commit would never deploy: the shards it
+      # would have changed are ignored now, so there is no companion `site/**`
+      # edit left to trigger the build on its behalf.
+      - "data/leaderboard_snapshots.yml"
       - "data/external/identity.yml"
       - "site/**"
       # The dashboard build imports the package transitively through
