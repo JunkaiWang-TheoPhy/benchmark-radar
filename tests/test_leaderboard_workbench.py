@@ -1028,3 +1028,35 @@ def test_issue_304_an_unresolved_slug_stops_naming_itself_in_the_url():
     # showing the default under the reader's own slug.
     assert "!state.benchmarkIndexLoaded" in dispatch
     assert "Could not load details for this benchmark." in dispatch
+
+
+def test_issue_313_the_title_is_half_size_and_its_info_is_anchored():
+    """The h1 was the largest object on the page and its (i) floated away.
+
+    At 48px uppercase the heading wrapped and filled its max-width box, so the
+    info toggle rendered hundreds of pixels right of the last glyph with
+    nothing to explain. Half scale fits the title on one line, which is what
+    lets flexbox anchor the toggle immediately after it; wrap keeps that true
+    by stacking on narrow screens instead of drifting.
+    """
+    styles = source("site/assets/styles.css")
+    html = source("site/index.html")
+
+    rule = styles.split(".leaderboard-top-heading h1 {", 1)[1].split("}", 1)[0]
+    assert "font-size: clamp(1.25rem, 2vw, 1.5rem);" in rule
+    assert "margin: 0;" in rule
+    # The global h1 caps its width at 800px; the heading is a flex item, so that
+    # cap is what let the title's box stretch and strand the (i). Reset it here
+    # so the title is content-sized and the toggle anchors to its last glyph.
+    assert "max-width: none;" in rule
+    # The old dead h2 selector (markup is <h1> since #256) is gone, not left to
+    # rot beside the rule that replaced it.
+    assert ".leaderboard-top-heading h2" not in styles
+
+    heading = styles.split(".leaderboard-top-heading {", 1)[1].split("}", 1)[0]
+    assert "flex-wrap: wrap;" in heading
+    assert "align-items: center;" in heading
+
+    # The toggle stays a sibling of the heading inside one flex row.
+    row = html.split('class="leaderboard-top-heading"', 1)[1].split("</div>", 1)[0]
+    assert row.index('id="leaderboard-heading"') < row.index('id="leaderboard-top-info"')
