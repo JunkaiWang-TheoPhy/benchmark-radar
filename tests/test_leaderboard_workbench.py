@@ -897,37 +897,31 @@ def test_issue_288_the_charts_draw_a_running_best_not_an_invented_cost_axis():
     script = source("site/assets/app.js")
     styles = source("site/assets/styles.css")
 
-    steps = script.split("function runningBestSteps(points", 1)[1].split("\n}\n", 1)[0]
-    # Better is not always larger, so the frontier follows the metric rather
-    # than the number, or it would trace the worst result on a lower-is-better
-    # benchmark.
-    assert "descends ? point.value < best : point.value > best" in steps
-    # A line through one date asserts nothing, so it is not drawn.
-    assert "if (dated.length < 2) return [];" in steps
-    assert "if (new Set(dated.map((point) => point.time)).size < 2) return [];" in steps
-
-    # Stepped, never diagonal: a slope would imply the score moved continuously
-    # between two reports, which is interpolation this corpus cannot support.
-    path = script.split("function runningBestPath(steps, x, y, endX)", 1)[1].split("\n}\n", 1)[0]
-    assert "`H ${x(step.time)}`" in path
-    assert "`V ${y(step.value)}`" in path
-    assert "L " not in path
-
-    # A maximum is a comparability claim -- it says these numbers can be ranked
-    # against each other -- so the line is drawn ONLY where that holds.
-    #
-    # The curated layer partitions by instrument AND protocol, the same rule the
-    # join uses: GPQA Diamond carries "Pass@1, 8K output limit" beside "averaged
-    # over 10 samples", and a max across those asserts they measure the same
-    # thing. 22 of 59 curated benchmarks have two dates inside one such group.
-    assert script.count('class: "score-frontier-line"') == 1
-    assert "{ descends: scoreDescends }" in script
-    assert ".score-frontier-line {" in styles
+    # The browser is geometry-only. Direction, same-date collapse, strict
+    # improvement and all-observation scope are normalized in Python, so the
+    # final value and the readout cannot be calculated from different subsets.
     curated = script.split("function scoreTrackChart(", 1)[1].split(
         "\nfunction clearAdoptionFrontier", 1
     )[0]
-    assert 'observation.instrument || ""' in curated
-    assert 'observation.protocol || ""' in curated
+    assert "record.historical_best_frontier?.points || []" in curated
+    assert "runningBestSteps" not in curated
+
+    # Stepped, never diagonal: a slope would imply the score moved continuously
+    # between two reports, which is interpolation this corpus cannot support.
+    path = script.split("function historicalBestPath(points, x, y, endX)", 1)[1].split("\n}\n", 1)[
+        0
+    ]
+    assert "`H ${x(point.reported_at)}`" in path
+    assert "`V ${y(point.value)}`" in path
+    assert "L " not in path
+
+    # The historical best is benchmark-wide as the label promises. Protocol
+    # remains in the tooltip and in the separate comparable-series readout; it
+    # cannot choose a lower subgroup frontier behind the reader's back.
+    assert script.count('class: "score-frontier-line"') == 1
+    assert ".score-frontier-line {" in styles
+    assert "frontierMarks.has(observation.observation_id)" in curated
+    assert "observation.protocol" in curated
 
     # The crawled layer draws none. Its normalizer records `direction: None` and
     # comparability `none` because the source states neither, so ranking its
