@@ -438,7 +438,7 @@ const I18N = {
     "All dates": "所有日期",
     "How to read this chart": "如何解读这张图",
     "frontier.explainer.sub":
-      "每个能从引文文档中逐字读到的数值,按该文档的发布日期放置(而非任何评测日期),只在测试变体与运行条件完全一致时才相连。末端趋于平直通常意味着没有更新的数字可读,因此缺口被标出而不是用线穿过。一条曲线是否已经饱和,由你来判读,本面板不会给出饱和分数。",
+      "每个能从引文文档中逐字读到的数值,都按该文档的发布日期放置,而不是按评测日期。折线只直接连接在所显示数值中创下新报告纪录的实际观测点;它不会在两次报告之间维持某个分数,也不会延伸到最后一个纪录之后。测试版本和运行条件可能不同,因此这是一条报告纪录路径,而不是同条件趋势。没有更新数字可读时,缺口会被标出而不是用线穿过。基准是否已经饱和,仍由你来判断,本面板不会给出饱和结论。",
     "leaderboard.filters.note":
       "每张模型卡对同一基准只计一次。一张在四个配置中报告 AIME 的卡,与只报告一次的卡计数相同,因此冗长的附录不能压过不同的供应商。机构可以打破平局:六个供应商报告同一计数是共同标准,只有一个供应商报告则是自家风格。",
     "leaderboard.ledger.note":
@@ -4007,10 +4007,9 @@ const EXTERNAL_SOURCE_META = {
       // "No date is recorded" was false and was the complaint in issue #269:
       // every one of the 5,544 rows carries one. What is missing is a date for
       // the measurement -- the date recorded is the model's own release -- and
-      // that is the distinction worth stating, since it is why these rows are
-      // ordered by score rather than drawn on a time axis. The axis label was
-      // corrected then; this note was not.
-      "Self-reported scores collected by LLM Stats. No evaluation protocol is recorded, and the only date is each model's own release, not when the score was measured, so rows are listed in the source's own order.",
+      // that is the distinction worth stating. Higher values are better within
+      // each LLM Stats benchmark; the x axis remains the model release date.
+      "Self-reported scores collected by LLM Stats. Higher values are better. No evaluation protocol is recorded, and the only date is each model's own release, not when the score was measured. The line links successive reported highs by model release; it is not an evaluation-time trend.",
     emptyKey: "LLM Stats recorded no scores for this benchmark.",
   },
   opencompass_hub: {
@@ -4307,8 +4306,25 @@ function externalScoreChart(source, payload) {
   const values = plotted.map((row) => row.value).sort((a, b) => a - b);
   const low = values[0];
   const high = values[values.length - 1];
-  const bestRow = plotted.reduce((best, row) => (row.value > best.value ? row : best), plotted[0]);
-  const bestValue = high;
+  // Direction belongs to the normalized series contract. LLM Stats is
+  // higher-is-better; keeping the branch makes this renderer honest if another
+  // source later supplies a lower-is-better series.
+  const recordDirection =
+    payload.series?.direction || (source === "llm_stats" ? "higher_is_better" : null);
+  const descends = recordDirection === "lower_is_better";
+  const bestRow = plotted.reduce((best, row) => {
+    const improves = descends ? row.value < best.value : row.value > best.value;
+    if (improves) return row;
+    if (row.value !== best.value) return best;
+    return (row.rank_in_source_response ?? Number.MAX_SAFE_INTEGER) <
+      (best.rank_in_source_response ?? Number.MAX_SAFE_INTEGER)
+      ? row
+      : best;
+  }, plotted[0]);
+  const bestValue = bestRow.value;
+  const recordSetters = externalRecordSetters(plotted, recordDirection);
+  const hasRecordPath = recordSetters.length >= 2;
+  const recordMarks = new Set(recordSetters.map((row) => row.obs_id));
   const pad = Math.max((high - low) * 0.18, Math.abs(high) * 0.05, Number.EPSILON);
   const band = { low: low - pad, high: high + pad };
 
@@ -4339,7 +4355,7 @@ function externalScoreChart(source, payload) {
     viewBox: `0 0 ${width} ${height}`,
     role: "group",
     "aria-label": t(
-      "{count} scores reported to {source}, placed at each model's release date, which is the only date recorded and is not when the score was measured. Highest {best} by {model}, lowest {low}.",
+      "{count} scores reported to {source}, placed at each model's release date, which is the only date recorded and is not when the score was measured. Best reported {best} by {model}, lowest observed {low}.",
       {
         count: plotted.length.toLocaleString(),
         source: meta.name,
@@ -4391,19 +4407,44 @@ function externalScoreChart(source, payload) {
     );
   }
 
+  // The old chart labeled one value "best" while refusing to draw successive
+  // records. That is why AIME 2025 showed 115 dots and no line. Direction now
+  // comes from the normalized series, and the path links the actual strict
+  // record dots directly. It remains a sequence by model release date, not an
+  // evaluation-time trend.
+  if (hasRecordPath) {
+    const clipId = `external-record-clip-${String(payload.series?.series_id || source).replace(
+      /[^a-z0-9_-]+/gi,
+      "-",
+    )}`;
+    const definitions = svgElement("defs");
+    const clip = svgElement("clipPath", { id: clipId });
+    clip.append(
+      svgElement("rect", {
+        x: margin.left,
+        y: scoreTop - 4,
+        width: plotWidth,
+        height: scoreHeight + 8,
+        class: "score-frontier-clip",
+      }),
+    );
+    definitions.append(clip);
+    svg.append(definitions);
+    svg.append(
+      svgElement("path", {
+        d: recordSetterPath(
+          recordSetters,
+          (row) => x(dateValue(row.reported_date)),
+          (row) => scoreY(row.value),
+        ),
+        class: "score-frontier-line",
+        fill: "none",
+        "clip-path": `url(#${clipId})`,
+      }),
+    );
+  }
+
   const bestY = scoreY(bestValue);
-  // No running-best line on this layer, deliberately (issue #288 review).
-  //
-  // A maximum is a comparability claim: it says these numbers can be ranked
-  // against each other. This layer cannot support that. The normalizer records
-  // `direction: None` because the source states no metric direction, and
-  // `comparability_class: none` because it records no protocol -- see
-  // external_catalog.py, "the only honest comparability class is none". Taking
-  // a max over those rows would assume larger-is-better and assume the rows are
-  // measuring the same thing, and neither is in evidence.
-  //
-  // The flat best-on-record rule stays: it labels one row's own value, which is
-  // a fact about that row rather than a ranking across rows.
   svg.append(
     svgElement("line", {
       x1: margin.left,
@@ -4428,10 +4469,13 @@ function externalScoreChart(source, payload) {
     const pointX = x(dateValue(row.reported_date));
     const pointY = scoreY(row.value);
     const thirdParty = row.reported_by === "third_party";
+    const offTheLine = hasRecordPath && !recordMarks.has(row.obs_id);
     // Same left-to-right reveal as the curated chart (issue #312): one kind
     // of mark, one entrance, on both layers.
     const group = svgElement("g", {
-      class: `score-point${thirdParty ? " score-point-third-party" : ""}`,
+      class: `score-point${offTheLine ? " score-point-dim" : ""}${
+        thirdParty ? " score-point-third-party" : ""
+      }`,
       tabindex: "0",
       role: "button",
       "aria-pressed": "false",
@@ -4697,6 +4741,19 @@ function setCanonicalFrontierChrome(visible) {
     // tab order and in every document-wide query behind a `hidden` attribute
     // that only affects painting (issue #261).
     if (visible) replaceChildren(external, []);
+  }
+  // External records replace the eyebrow with a source subline. Restore both
+  // pieces of title chrome when the picker returns to curated data; otherwise
+  // AIME kept saying "115 reported scores · LLM Stats" and "Scores over time"
+  // stayed hidden even though the chart and heading had switched layers.
+  if (visible) {
+    const eyebrow = byId("frontier-eyebrow");
+    if (eyebrow) eyebrow.hidden = false;
+    const subline = byId("frontier-subline");
+    if (subline) {
+      subline.textContent = "";
+      subline.hidden = true;
+    }
   }
 }
 
@@ -5023,57 +5080,53 @@ function spansTime(record) {
 // the interesting movement into a sliver. The band is padded around the observed
 // range instead, and the axis is labelled with its real bounds so a reader
 // cannot mistake a zoomed axis for a full one.
-// The running best: for each date, the highest score anyone had reached by
-// then (issue #288). Requested as a Pareto frontier "just like
-// harbor-index.org", whose frontier plots cost against pass rate. This corpus
-// records neither cost nor latency for any score -- a curated observation
-// carries value/model/organization/reported_at/instrument/protocol, a crawled
-// row carries value/model_name/reported_date -- so that chart cannot be drawn
-// here without inventing the axis. Tracked separately.
-//
-// What IS drawable is the same idea on the axes this chart already has: the
-// set of points nothing else beats, which on one score axis over time is the
-// running maximum. It says "nothing had beaten this yet", never "these points
-// are a series", so it does not reintroduce the segment the join rule forbids.
-//
-// But a maximum is still a comparability claim -- it says these numbers can be
-// ranked against each other -- so callers must pass points that share an
-// instrument and a protocol. The crawled layer cannot: it records neither, and
-// its normalizer sets comparability to none, so it draws no line at all.
-//
-// Returns [] when the line would assert nothing: fewer than two distinct dates,
-// or a single point.
-function runningBestSteps(points, { descends = false } = {}) {
-  const dated = points
-    .filter((point) => Number.isFinite(point.time) && Number.isFinite(point.value))
-    .sort((a, b) => a.time - b.time);
-  if (dated.length < 2) return [];
-  if (new Set(dated.map((point) => point.time)).size < 2) return [];
-  const steps = [];
-  let best = null;
-  for (const point of dated) {
-    // "Better" is not always larger: a lower-is-better metric improves
-    // downward, and the frontier has to follow the metric rather than the
-    // number, or it would trace the worst result on those benchmarks.
-    const improves = best === null || (descends ? point.value < best : point.value > best);
-    if (!improves) continue;
-    best = point.value;
-    steps.push({ time: point.time, value: best });
-  }
-  return steps.length >= 2 ? steps : [];
+// Link actual record-setting observations, and only those observations. A
+// staircase says the score continuously held between reports; extending it to
+// the chart edge says it still held after the last report. Neither statement is
+// in the data. A direct segment says only what this mark is meant to say:
+// reported record A was followed by reported record B.
+function recordSetterPath(points, xValue, yValue) {
+  if (points.length < 2) return "";
+  return points
+    .map((point, index) => `${index ? "L" : "M"} ${xValue(point)} ${yValue(point)}`)
+    .join(" ");
 }
 
-// Steps as an SVG path: horizontal to the next improvement's date, then
-// vertical to its value. A diagonal would imply the score moved continuously
-// between two reports, which is the interpolation this corpus cannot support.
-function runningBestPath(steps, x, y, endX) {
-  const parts = [`M ${x(steps[0].time)} ${y(steps[0].value)}`];
-  for (const step of steps.slice(1)) {
-    parts.push(`H ${x(step.time)}`);
-    parts.push(`V ${y(step.value)}`);
+// External rows have release dates rather than evaluation dates, so this is a
+// reported-record sequence by model release, not a measurement trend. Collapse
+// one date to its directional best, then retain strict record setters. Exact
+// ties prefer the source's better rank and finally its stable observation id.
+function externalRecordSetters(rows, direction) {
+  if (!direction) return [];
+  const descends = direction === "lower_is_better";
+  const bestByDate = new Map();
+  for (const row of rows) {
+    const time = dateValue(row.reported_date);
+    const current = bestByDate.get(time);
+    const improves =
+      !current || (descends ? row.value < current.value : row.value > current.value);
+    const winsTie =
+      current &&
+      row.value === current.value &&
+      ((row.rank_in_source_response ?? Number.MAX_SAFE_INTEGER) <
+        (current.rank_in_source_response ?? Number.MAX_SAFE_INTEGER) ||
+        ((row.rank_in_source_response ?? Number.MAX_SAFE_INTEGER) ===
+          (current.rank_in_source_response ?? Number.MAX_SAFE_INTEGER) &&
+          String(row.obs_id || "") < String(current.obs_id || "")));
+    if (improves || winsTie) bestByDate.set(time, row);
   }
-  parts.push(`H ${endX}`);
-  return parts.join(" ");
+
+  const setters = [];
+  let best = null;
+  for (const row of [...bestByDate.values()].sort(
+    (a, b) => dateValue(a.reported_date) - dateValue(b.reported_date),
+  )) {
+    if (best === null || (descends ? row.value < best : row.value > best)) {
+      best = row.value;
+      setters.push(row);
+    }
+  }
+  return setters;
 }
 
 function scoreBand(record) {
@@ -5090,6 +5143,7 @@ function scoreBand(record) {
 
 function scoreReadout(entry, record) {
   const saturation = record.saturation;
+  const historicalBest = record.historical_best_frontier?.points?.at(-1);
   const evidence = record.evidence;
   const rows = [
     element("div", { className: "score-readout-figure" }, [
@@ -5101,11 +5155,11 @@ function scoreReadout(entry, record) {
         text: record.observation_count === 1 ? t("Only charted score") : t("Best on record"),
       }),
       element("strong", {
-        text: `${saturation.best_value}${record.unit === "percent" ? "%" : ""}`,
+        text: `${historicalBest?.value ?? saturation.best_value}${record.unit === "percent" ? "%" : ""}`,
       }),
       element("small", {
-        text: `${saturation.best_model} · ${saturation.best_organization} · ${formatDate(
-          saturation.best_reported_at,
+        text: `${historicalBest?.model ?? saturation.best_model} · ${historicalBest?.organization ?? saturation.best_organization} · ${formatDate(
+          historicalBest?.reported_at ?? saturation.best_reported_at,
           { dateStyle: "medium" },
         )}`,
       }),
@@ -5582,13 +5636,17 @@ function renderFrontierOrgKey(record) {
 // score band now gets the full height the staircase, the card rug, and the
 // inter-band gaps vacated, and the only marks on the chart are the scores, the
 // connections the join rule permits, and the reading gap.
-// Entrance timing for the score charts (issue #312). A point brightens while
-// the drawing front crosses its date, so the reveal reads left to right the
-// way the data does. 120ms lets the line start first; 780ms spreads the
-// points across the 900ms drawing window. Shared by both layers so a reader
-// never learns two reveal behaviors for one kind of mark.
+// Entrance timing for the score charts (issue #312). The previous 900ms sweep
+// was over before the historical shape could be read. One 3.6s x-axis sweep
+// now drives both the clip that exposes the line and the date-derived point
+// delays, so a vertical step cannot make the line and its point drift apart.
+const FRONTIER_SWEEP_DELAY_MS = 180;
+const FRONTIER_SWEEP_MS = 3600;
+const FRONTIER_POINT_FADE_MS = 360;
+
 function frontierPointRevealDelay(pointX, margin, plotWidth) {
-  return Math.round(120 + ((pointX - margin.left) / plotWidth) * 780);
+  const fraction = Math.max(0, Math.min(1, (pointX - margin.left) / plotWidth));
+  return Math.round(FRONTIER_SWEEP_DELAY_MS + fraction * FRONTIER_SWEEP_MS);
 }
 
 // The entrance plays when the reader arrives at a benchmark and runs to
@@ -5599,7 +5657,8 @@ function frontierPointRevealDelay(pointX, margin, plotWidth) {
 // closes the selection counts as seen, so later repaints render finished.
 // The key commits only while the Leaderboard is the visible view: a redraw
 // into a hidden panel must not spend an entrance the reader has yet to see.
-const FRONTIER_ENTRANCE_MS = 1400;
+const FRONTIER_ENTRANCE_MS =
+  FRONTIER_SWEEP_DELAY_MS + FRONTIER_SWEEP_MS + FRONTIER_POINT_FADE_MS + 120;
 let completedFrontierEntranceKey = null;
 let frontierEntranceTimer = null;
 let drawnFrontierEntranceKey = null;
@@ -5745,103 +5804,51 @@ function scoreTrackChart(entry, board) {
     // dates does and does not support. Words can carry that caveat; a line
     // cannot.
 
-    // The frontier: where the best-so-far actually rose (issue #288). The
-    // requested cost-versus-score chart cannot be drawn from this corpus, which
-    // records no cost for any score; this is the same idea on the axes the
-    // chart already has. It asserts only that nothing had beaten a value yet,
-    // never that the points between are a series -- which is why it coexists
-    // with the join rule that forbids connecting adjacent points.
-    // Partitioned by instrument AND protocol, the same rule the join uses. A
-    // max across protocols is still a comparability claim: on GPQA Diamond the
-    // observations run "Pass@1, 8K output limit" beside "averaged over 10
-    // samples", and ranking those against each other asserts they measure the
-    // same thing (issue #288 review).
-    //
-    // The largest comparable group wins the line, so the chart draws the one
-    // run it can actually speak to rather than a mixture it cannot.
-    const runs = new Map();
-    for (const observation of record.observations) {
-      const key = `${observation.instrument || ""}\u0000${observation.protocol || ""}`;
-      if (!runs.has(key)) runs.set(key, []);
-      runs.get(key).push({
-        time: new Date(`${observation.reported_at}T00:00:00Z`).getTime(),
-        value: observation.value,
-      });
-    }
-    // Same-date readings collapse to their directional best before anything
-    // reads them: drawn in source order, the line could step twice on one
-    // date and pass through an inferior number that shares a better reading's
-    // date. Collapsing here means the steps, and the membership marks derived
-    // from them, can never disagree.
-    const collapsedRuns = [...runs.entries()].map(([key, points]) => {
-      const bestByDate = new Map();
-      for (const point of points) {
-        const current = bestByDate.get(point.time);
-        if (
-          current === undefined ||
-          (scoreDescends ? point.value < current : point.value > current)
-        ) {
-          bestByDate.set(point.time, point.value);
-        }
-      }
-      const collapsed = [...bestByDate.entries()]
-        .sort((a, b) => a[0] - b[0])
-        .map(([time, value]) => ({ time, value }));
-      return { key, points: collapsed };
-    });
-    // The line belongs to exactly one comparable run -- the one with the most
-    // advances (issue #288). Its steps draw it; its best-so-far holders light
-    // up with it.
-    const runSteps = collapsedRuns.map(({ key, points }) => ({
-      key,
-      points,
-      steps: runningBestSteps(points, { descends: scoreDescends }),
-    }));
-    const frontier = runSteps.sort((a, b) => b.steps.length - a.steps.length)[0];
-    const frontierSteps = frontier?.steps;
-    // Which points the saturation line is made of (issue #312's definition):
-    // within that run, every reading that holds the best value as of its
-    // date. These stay at full emphasis; all other points fade back so the
-    // eye lands on the line first. Membership is keyed by run, then time and
-    // value, so an unrelated run reporting the same number on the same date
-    // is not mistaken for the line. Gated on the line actually existing -- a
-    // benchmark whose history holds no comparable pair draws no line, so
-    // nothing may dim behind an absent reference.
-    const frontierMarks = new Set();
-    if (frontier && frontier.steps.length) {
-      let best = null;
-      for (const point of frontier.points) {
-        if (best === null || (scoreDescends ? point.value < best : point.value > best)) {
-          best = point.value;
-        }
-        if (point.value === best) {
-          frontierMarks.add(`${frontier.key}\u0000${point.time}\u0000${point.value}`);
-        }
-      }
-    }
-    if (frontierSteps?.length) {
+    // One normalized source of truth (issue #312): the backend selects strict
+    // record setters from every observation this chart renders. Protocol still
+    // governs the separate like-for-like comparison readout; it cannot make a
+    // visible 94.3 disappear from a benchmark-wide historical-best line.
+    const frontierPoints = record.historical_best_frontier?.points || [];
+    const frontierMarks = new Set(frontierPoints.map((point) => point.observation_id));
+    const hasRecordPath = frontierPoints.length >= 2;
+    if (hasRecordPath) {
+      // Reveal by x position, not SVG path length. Path distance changes with
+      // the size of each score jump, while point timing is based on date. A
+      // rectangular clip is one literal left-to-right time sweep shared by
+      // both marks.
+      const clipId = `historical-best-clip-${entry.benchmark_id.replace(/[^a-z0-9_-]+/gi, "-")}`;
+      const definitions = svgElement("defs");
+      const clip = svgElement("clipPath", { id: clipId });
+      clip.append(
+        svgElement("rect", {
+          x: margin.left,
+          y: scoreTop - 4,
+          width: plotWidth,
+          height: scoreHeight + 8,
+          class: "score-frontier-clip",
+        }),
+      );
+      definitions.append(clip);
+      svg.append(definitions);
       svg.append(
         svgElement("path", {
-          d: runningBestPath(
-            frontierSteps,
-            (time) => x(new Date(time).toISOString().slice(0, 10)),
-            scoreY,
-            margin.left + plotWidth,
+          d: recordSetterPath(
+            frontierPoints,
+            (point) => x(point.reported_at),
+            (point) => scoreY(point.value),
           ),
           class: "score-frontier-line",
           fill: "none",
-          // Normalized length: the entrance animation (issue #312) draws the
-          // line with a dash offset from 1 to 0, which needs a total length
-          // known in advance. Measuring geometry on this detached tree is not
-          // portable, so the length is declared instead.
-          pathLength: "1",
+          "clip-path": `url(#${clipId})`,
         }),
       );
     }
 
     // The best-on-record marker. Drawn as a horizontal rule rather than a point
     // because it is a fact about the whole corpus to date, not about one date.
-    const bestY = scoreY(record.saturation.best_value);
+    const historicalBest = frontierPoints.at(-1);
+    const bestValue = historicalBest?.value ?? record.saturation.best_value;
+    const bestY = scoreY(bestValue);
     svg.append(
       svgElement("line", {
         x1: margin.left,
@@ -5855,7 +5862,7 @@ function scoreTrackChart(entry, board) {
       svgElement(
         "text",
         { x: width - margin.right, y: bestY - 6, "text-anchor": "end", class: "score-best-label" },
-        `${t("best on record")} ${record.saturation.best_value}`,
+        `${t("best on record")} ${bestValue}`,
       ),
     );
 
@@ -5871,19 +5878,14 @@ function scoreTrackChart(entry, board) {
       const pointX = x(observation.reported_at);
       const pointY = scoreY(observation.value);
       // "其他的点可以淡化" (issue #312): readings that are not part of the
-      // saturation line recede behind it -- but only while there IS a line.
-      // A benchmark with no comparable pair draws no reference, so every
-      // point keeps full emphasis rather than all of it receding together.
+      // historical-best line recede behind it -- but only while there IS a
+      // normalized frontier. A chart lacking that payload keeps every point at
+      // full emphasis instead of implying membership the browser cannot know.
       // Hover and focus restore a receded point, so de-emphasis never costs
-      // legibility. Membership is looked up under the observation's own
-      // comparable run, so a same-date same-value reading from another run
-      // stays off the line.
-      const onFrontier = frontierMarks.has(
-        `${observation.instrument || ""}\u0000${observation.protocol || ""}\u0000${new Date(
-          `${observation.reported_at}T00:00:00Z`,
-        ).getTime()}\u0000${observation.value}`,
-      );
-      const offTheLine = Boolean(frontierSteps?.length) && !onFrontier;
+      // legibility. Membership uses the stable normalized observation id; no
+      // protocol key or floating-point reconstruction exists on this path.
+      const onFrontier = frontierMarks.has(observation.observation_id);
+      const offTheLine = hasRecordPath && !onFrontier;
       // Entrance order follows the axis (issue #312): each point brightens
       // while the drawing front crosses its date, so the reveal reads left to
       // right the way the data does. The timing is shared with the crawled

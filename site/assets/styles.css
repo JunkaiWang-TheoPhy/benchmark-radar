@@ -2671,7 +2671,7 @@ td a {
    knowing anything about the CSS. */
 .score-chart-enter .score-point {
   opacity: 0;
-  animation: score-point-reveal 420ms ease-out forwards;
+  animation: score-point-reveal 360ms ease-out forwards;
   animation-delay: var(--reveal-delay, 0ms);
 }
 
@@ -2936,30 +2936,37 @@ td a {
   r: 13px;
 }
 
-/* The running best (issue #288). Solid and stepped, deliberately unlike any
-   point-to-point join: the steps are horizontal and vertical only, so the eye
-   reads "held, then rose" rather than "moved continuously between these two
-   reports", which is the interpolation this corpus cannot support. */
+/* The reported-record path (issues #288 and #312). It links only actual strict
+   record setters, directly from one observed point to the next; it never holds
+   a score across an unobserved interval or extends past the final record. */
 .score-frontier-line {
   stroke: #4c948b;
   stroke-width: 1.75;
-  stroke-linejoin: miter;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   opacity: 0.85;
 }
 
-/* Entrance (issue #312): the line draws itself left to right while the
-   points brighten along it. The path declares pathLength="1", so a dash of
-   length 1 is the whole line and the offset animates from hidden to drawn
-   without measuring geometry in script. Scoped like the points, to arrivals. */
-.score-chart-enter .score-frontier-line {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: score-frontier-draw 900ms ease-out 120ms forwards;
+/* Entrance (issue #312): a full-width clip rectangle scales across the x axis
+   in exactly the same 3.6s interval used to schedule points by date. Unlike a
+   stroke dash, the sweep is independent of each segment's slope and length, so
+   the line reaches every record when its point brightens. */
+.score-frontier-clip {
+  transform-box: fill-box;
+  transform-origin: left center;
 }
 
-@keyframes score-frontier-draw {
+.score-chart-enter .score-frontier-clip {
+  animation: score-frontier-sweep 3600ms linear 180ms both;
+}
+
+@keyframes score-frontier-sweep {
+  from {
+    transform: scaleX(0);
+  }
+
   to {
-    stroke-dashoffset: 0;
+    transform: scaleX(1);
   }
 }
 
@@ -3002,10 +3009,9 @@ td a {
     opacity: 1;
   }
 
-  .score-chart-enter .score-frontier-line {
+  .score-chart-enter .score-frontier-clip {
     animation: none;
-    stroke-dasharray: none;
-    stroke-dashoffset: 0;
+    transform: none;
   }
 }
 

@@ -36,15 +36,11 @@ def test_the_score_track_occupies_the_whole_plot():
     assert "x(observation.reported_at)" in chart
 
 
-def test_the_score_layer_draws_no_connecting_line_at_all():
-    # A shared instrument and protocol makes two numbers comparable; it does not
-    # make them a series, and a segment asserts the second. On shipped GPQA
-    # Diamond the old join rule connected DeepSeek-V4-Pro (90.1) to
-    # DeepSeek-V4-Flash (88.1) and drew a decline out of a smaller model, and
-    # connected two vendors' unrelated models into an apparent trajectory.
-    # Restricting which pairs may join does not fix that: the defect is in the
-    # segment. Comparability is still computed, and still stated in prose by the
-    # paired comparison readout.
+def test_the_score_layer_links_only_successive_record_setters():
+    # The old comparison join connected ordinary adjacent observations and
+    # manufactured model trajectories. The replacement is narrower: a direct
+    # path receives only strict record setters and never reads comparable
+    # protocol series as a time series.
     script = source("site/assets/app.js")
     styles = source("site/assets/styles.css")
     chart = script.split("function scoreTrackChart(", 1)[1].split(
@@ -52,17 +48,14 @@ def test_the_score_layer_draws_no_connecting_line_at_all():
     )[0]
 
     assert "polyline" not in chart
-    # A <path> draws the same segment a <polyline> would, so the ban names the
-    # shape rather than one element. The running-best line is stepped (H/V
-    # only): "nothing had beaten this yet", not a trajectory between points.
-    for command in (" L ", "`L ${"):
-        assert command not in chart, "a diagonal path segment is a trajectory claim"
+    assert "recordSetterPath(" in chart
+    assert "const hasRecordPath = frontierPoints.length >= 2;" in chart
     assert "if (!series.connectable) continue;" not in chart
     assert "score-line" not in script
     assert "score-line" not in styles
-    # The one horizontal rule that remains is the best-on-record reference,
-    # which is a fact about the corpus to date rather than a join between points.
-    assert "const bestY = scoreY(record.saturation.best_value);" in chart
+    # The horizontal rule remains a separate best-on-record reference.
+    assert "const historicalBest = frontierPoints.at(-1);" in chart
+    assert "const bestY = scoreY(bestValue);" in chart
 
 
 def test_comparability_is_stated_in_prose_rather_than_drawn():
@@ -742,7 +735,9 @@ def test_the_explainer_leaves_saturation_as_the_readers_judgement():
     assert "no newer number could be read" in html
     assert "the gap is marked rather than drawn through" in html
     assert "stays a reading you make, not a score this panel prints" in html
-    assert "connected only where the test variant and run conditions" in html
+    assert "directly links actual observations that set a new reported record" in html
+    assert "neither holds a score between reports nor extends past the final record" in html
+    assert "reported-record path, not a like-for-like trend" in html
     # And it names the date the x axis carries, rather than leaving "time" to be
     # read as an evaluation date.
     dateline = "placed at the date that document was published rather than at any evaluation date"
@@ -771,9 +766,13 @@ def test_issue_312_the_saturation_view_reveals_left_to_right():
         "\nfunction clearAdoptionFrontier", 1
     )[0]
 
-    # The line declares its length, so CSS can draw it with a dash offset
-    # instead of script measuring geometry on a detached tree.
-    assert 'pathLength: "1",' in chart
+    # Membership and geometry consume the normalized backend frontier. The
+    # browser must not recalculate a second answer or select one protocol run.
+    assert "record.historical_best_frontier?.points || []" in chart
+    assert "frontierPoints.map((point) => point.observation_id)" in chart
+    assert "frontierMarks.has(observation.observation_id)" in chart
+    assert "const runs = new Map();" not in chart
+    assert "runningBestSteps" not in chart
 
     # Each point carries its own delay on the timeline, derived from where it
     # sits on the x axis rather than from its row order.
@@ -788,24 +787,12 @@ def test_issue_312_the_saturation_view_reveals_left_to_right():
     external = script.split("function externalScoreChart(", 1)[1].split("\nfunction ", 1)[0]
     assert "frontierPointRevealDelay" in external
 
-    # The issue's definition is enforced in the same pass: points that hold
-    # the best value as of their date are the line; every other reading fades
-    # back behind it, and recovers on hover or focus. Dimming is gated on the
-    # line actually existing -- no line, nothing recedes behind it.
-    assert "const frontierMarks = new Set();" in chart
-    assert "if (frontier && frontier.steps.length) {" in chart
-    assert "if (point.value === best) {" in chart
-    # Membership carries the comparable run's own key, so an unrelated run
-    # reporting the same number on the same date is not drawn onto the line.
-    assert "`${frontier.key}\\u0000${point.time}\\u0000${point.value}`" in chart
-    assert '`${observation.instrument || ""}\\u0000${observation.protocol || ""}\\u0000' in chart
-    # Same-date readings collapse to their directional best before the steps
-    # are built, so what is drawn and what is emphasized cannot disagree: the
-    # line never steps through an inferior number that shares a better
-    # reading's date.
-    assert "const bestByDate = new Map();" in chart
-    assert ".sort((a, b) => a[0] - b[0])" in chart
-    assert "runningBestSteps(points, { descends: scoreDescends })" in chart
+    # The line is exposed by an x-axis clip, not by path distance. A dash takes
+    # extra time on steep segments and falls out of sync with date-based points.
+    assert 'svgElement("clipPath", { id: clipId })' in chart
+    assert 'class: "score-frontier-clip"' in chart
+    assert '"clip-path": `url(#${clipId})`' in chart
+    assert "pathLength" not in chart
 
     # A shell or empty state replaces the chart on screen, so a running
     # completion timer may not spend the reveal it can no longer show.
@@ -813,10 +800,11 @@ def test_issue_312_the_saturation_view_reveals_left_to_right():
     assert "drawnFrontierEntranceKey = null;" in shell
     clear_fn = script.split("function clearAdoptionFrontier(message)", 1)[1].split("\n}", 1)[0]
     assert "drawnFrontierEntranceKey = null;" in clear_fn
-    # Dimming itself is gated on a line being drawn: with no comparable pair
-    # there is no reference, and every point keeps full emphasis rather than
-    # all of them receding together.
-    assert "const offTheLine = Boolean(frontierSteps?.length) && !onFrontier;" in chart
+    # Dimming itself is gated on a real link: zero or one record setter draws no
+    # path, so every point keeps full emphasis rather than receding behind a
+    # reference that does not exist.
+    assert "const hasRecordPath = frontierPoints.length >= 2;" in chart
+    assert "const offTheLine = hasRecordPath && !onFrontier;" in chart
     assert 'offTheLine ? " score-point-dim" : ""' in chart
     dim = styles.split(".score-point-dim .score-point-face {", 1)[1][:200]
     assert "fill-opacity: 0.6;" in dim
@@ -837,7 +825,8 @@ def test_issue_312_the_saturation_view_reveals_left_to_right():
     assert 'document.visibilityState !== "visible"' in gate
     assert "drawnFrontierEntranceKey === key" in gate
     assert 'state.view === "leaderboard" && drawnFrontierEntranceKey === key' in gate
-    assert "const FRONTIER_ENTRANCE_MS = 1400;" in script
+    assert "const FRONTIER_SWEEP_MS = 3600;" in script
+    assert "FRONTIER_SWEEP_DELAY_MS + FRONTIER_SWEEP_MS + FRONTIER_POINT_FADE_MS" in script
     assert "frontierShouldAnimate(`curated:${entry.benchmark_id}`)" in script
     assert "frontierShouldAnimate(`external:${record.slug}`)" in script
     assert script.count('"score-chart-enter"') == 2
@@ -852,11 +841,9 @@ def test_issue_312_the_saturation_view_reveals_left_to_right():
     assert "const renderToken = ++externalRenderSeq;" in external_render
     assert "if (renderToken !== externalRenderSeq) return;" in external_render
 
-    line_rule = styles.split(".score-chart-enter .score-frontier-line {", 1)[1][:400]
-    assert "stroke-dasharray: 1;" in line_rule
-    assert "stroke-dashoffset: 1;" in line_rule
-    assert "animation: score-frontier-draw" in line_rule
-    assert "@keyframes score-frontier-draw" in styles
+    clip_rule = styles.split(".score-chart-enter .score-frontier-clip {", 1)[1][:300]
+    assert "animation: score-frontier-sweep 3600ms linear 180ms both" in clip_rule
+    assert "@keyframes score-frontier-sweep" in styles
 
     point_rule = styles.split(".score-chart-enter .score-point {", 1)[1][:300]
     assert "opacity: 0;" in point_rule
@@ -867,5 +854,5 @@ def test_issue_312_the_saturation_view_reveals_left_to_right():
     # must match the gated selectors or it would lose the cascade.
     guard = styles.split("@media (prefers-reduced-motion: reduce)", 1)[1][:600]
     assert ".score-chart-enter .score-point" in guard
-    assert ".score-chart-enter .score-frontier-line" in guard
-    assert "stroke-dashoffset: 0;" in guard
+    assert ".score-chart-enter .score-frontier-clip" in guard
+    assert "transform: none;" in guard

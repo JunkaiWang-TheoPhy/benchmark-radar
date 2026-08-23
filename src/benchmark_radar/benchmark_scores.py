@@ -11,13 +11,15 @@ The two readings are published against one time axis so a reader can see the
 case the issue asks about -- a benchmark that everyone adopts *and* whose
 headroom is closing -- without having to hold two charts in their head.
 
-WHY THIS IS NOT A "HIGHEST SCORE SO FAR" LINE
+WHY A HISTORICAL BEST IS NOT A SATURATION VERDICT
 
 The data file states the trap plainly and this module is built to respect it: a
 running maximum rises or stays flat by construction, so a flat run is not
 evidence of saturation. It is equally consistent with vendors having stopped
 reporting the benchmark, with a protocol change, or with nobody having published
-since. Three things are therefore computed and published separately, and none of
+since. The benchmark-wide historical-best frontier is therefore a presentation
+of record-setting observations, not evidence of a trend or a ceiling. Three
+analytical readings are computed and published separately, and none of
 them is allowed to be read as the others:
 
 `best`
@@ -211,6 +213,21 @@ def load_scores(path: Path = DEFAULT_SCORES_PATH) -> dict[str, Any]:
             raise BenchmarkScoreError(f"{label} read_from must be one of {', '.join(_READ_FROM)}")
         reported_at = _require_date(result["reported_at"], label=f"{label} reported_at")
         row = {
+            # Stable within the curated trust domain. The tuple is already the
+            # loader's uniqueness contract below, so publishing it gives every
+            # downstream consumer one identity for selection, frontier
+            # membership and tests instead of rebuilding an ad-hoc key from a
+            # subset of fields.
+            "observation_id": "\u0000".join(
+                (
+                    "curated",
+                    benchmark_id,
+                    str(result["source_id"]),
+                    str(result["instrument"]),
+                    str(result["protocol"]),
+                    str(result["model"]),
+                )
+            ),
             "benchmark_id": benchmark_id,
             "instrument": str(result["instrument"]),
             "protocol": str(result["protocol"]),
@@ -516,6 +533,71 @@ def _saturation(
     }
 
 
+def _historical_best_frontier(
+    rows: list[dict[str, Any]],
+    direction: str,
+) -> dict[str, Any]:
+    """Normalize one benchmark's visible scores into its running best.
+
+    The scope is deliberately every valid observation rendered for this
+    benchmark, regardless of protocol. Protocol remains attached to each
+    observation and still governs like-for-like comparisons in ``series``;
+    it does not secretly redefine a chart labelled as the benchmark-wide
+    historical best.
+
+    Readings on one publication date collapse to the directional best before
+    records are selected. Equal later values are not new records. A stable
+    observation id breaks an exact same-date/value tie without depending on
+    YAML row order.
+    """
+    best_by_date: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        current = best_by_date.get(row["reported_at"])
+        if current is None:
+            best_by_date[row["reported_at"]] = row
+            continue
+        improves = (
+            row["value"] > current["value"]
+            if direction == "higher_is_better"
+            else row["value"] < current["value"]
+        )
+        if improves or (
+            row["value"] == current["value"] and row["observation_id"] < current["observation_id"]
+        ):
+            best_by_date[row["reported_at"]] = row
+
+    points: list[dict[str, Any]] = []
+    running_best: float | None = None
+    for reported_at in sorted(best_by_date):
+        row = best_by_date[reported_at]
+        improves = running_best is None or (
+            row["value"] > running_best
+            if direction == "higher_is_better"
+            else row["value"] < running_best
+        )
+        if not improves:
+            continue
+        running_best = row["value"]
+        points.append(
+            {
+                "observation_id": row["observation_id"],
+                "reported_at": row["reported_at"],
+                "value": row["value"],
+                "model": row["model"],
+                "organization": row["organization"],
+                "source_id": row["source_id"],
+            }
+        )
+
+    return {
+        "definition": "running_best_of_all_rendered_observations",
+        "date_kind": "document_publication",
+        "direction": direction,
+        "tie_policy": "strict_improvement",
+        "points": points,
+    }
+
+
 def score_progression(
     scores: dict[str, Any],
     registry: dict[str, Any] | None = None,
@@ -540,6 +622,7 @@ def score_progression(
         metric = scores["benchmarks"][benchmark_id]
         series = _series(rows)
         dates = sorted({row["reported_at"] for row in rows})
+        historical_best_frontier = _historical_best_frontier(rows, metric["direction"])
         benchmarks[benchmark_id] = {
             "benchmark_id": benchmark_id,
             "metric": metric["metric"],
@@ -554,6 +637,7 @@ def score_progression(
             "series": series,
             "comparable_series_count": sum(1 for item in series if item["connectable"]),
             "saturation": _saturation(rows, metric, series),
+            "historical_best_frontier": historical_best_frontier,
             "evidence": _evidence_grade(series, rows),
             "observations": sorted(
                 rows,
@@ -571,9 +655,10 @@ def score_progression(
         "benchmarks": benchmarks,
         "measures": (
             "Scores read verbatim from cited documents, connected only where instrument "
-            "and protocol are identical. A value's absence is not a zero and a flat run is "
-            "not evidence of saturation: it is equally consistent with vendors having "
-            "stopped reporting the benchmark."
+            "and protocol are identical. The historical-best frontier spans every displayed "
+            "score; it records new benchmark-wide highs or lows but is not a comparable "
+            "series or a saturation verdict. A value's absence is not a zero and a flat run "
+            "is equally consistent with vendors having stopped reporting the benchmark."
         ),
         "join_rule": (
             "Two values may be connected only when both the instrument and the protocol "

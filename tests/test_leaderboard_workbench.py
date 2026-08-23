@@ -1,8 +1,48 @@
+import json
 from pathlib import Path
 
 
 def source(path: str) -> str:
     return Path(path).read_text(encoding="utf-8")
+
+
+def test_external_aime_2025_has_a_source_ranked_record_sequence():
+    """Issue #312: 115 drawable dots cannot silently produce no record path."""
+    shard = json.loads(
+        Path("site/data/benchmarks/llm-stats-aime-2025.json").read_text(encoding="utf-8")
+    )
+    rows = shard["scores_by_source"]["llm_stats"]["rows"]
+    series = shard["scores_by_source"]["llm_stats"]["series"]
+
+    assert len(rows) == 115
+    assert series["direction"] == "higher_is_better"
+    assert series["direction_basis"] == "source_rank_descending"
+    ranked = sorted(rows, key=lambda row: row["rank_in_source_response"])
+    assert [row["value"] for row in ranked] == sorted(
+        (row["value"] for row in ranked), reverse=True
+    )
+
+    best_by_date = {}
+    for row in rows:
+        current = best_by_date.get(row["reported_date"])
+        if current is None or (row["value"], -row["rank_in_source_response"]) > (
+            current["value"],
+            -current["rank_in_source_response"],
+        ):
+            best_by_date[row["reported_date"]] = row
+
+    setters = []
+    best = None
+    for row in (best_by_date[date] for date in sorted(best_by_date)):
+        if best is None or row["value"] > best:
+            best = row["value"]
+            setters.append(row)
+
+    assert [(row["reported_date"], row["value"]) for row in setters] == [
+        ("2025-01-10", 0.498),
+        ("2025-02-17", 0.933),
+        ("2025-07-09", 1.0),
+    ]
 
 
 def test_the_frontier_opens_on_the_benchmark_the_page_ranks_first():
@@ -451,21 +491,22 @@ def test_the_crawled_chart_axis_is_release_date_and_says_so():
     assert "not when the score was measured" in script
 
     # `plotted` is in date order, so the last element is the newest model, not
-    # the best score. Reading the best off the end of the array is the specific
-    # bug this reordering would introduce if the two were conflated.
-    assert "const bestRow = plotted.reduce(" in chart
+    # the best score. Best follows the normalized higher-is-better contract;
+    # source rank is only the deterministic tie break.
+    assert 'source === "llm_stats" ? "higher_is_better" : null' in chart
+    assert 'const descends = recordDirection === "lower_is_better";' in chart
+    assert "row.value > best.value" in chart
+    assert "row.rank_in_source_response ?? Number.MAX_SAFE_INTEGER" in chart
     assert "plotted[plotted.length - 1].model_name" not in chart
     assert "const values = plotted.map((row) => row.value).sort((a, b) => a - b);" in chart
 
-    # And still no segment between points: a line would assert a trajectory
-    # through models that were never a series, which is the claim the curated
-    # chart earns with a protocol and this one does not.
-    assert "polyline" not in chart
-    # A <path> draws the same segment a <polyline> would, so the ban names the
-    # shape rather than one element. The running-best line is stepped (H/V
-    # only): "nothing had beaten this yet", not a trajectory between points.
-    for command in (" L ", "`L ${"):
-        assert command not in chart, "a diagonal path segment is a trajectory claim"
+    # The record path is explicitly a sequence by model release date, not an
+    # evaluation-time trend. Its direction comes from the normalized series
+    # contract rather than being reverse-engineered in the renderer.
+    assert "payload.series?.direction ||" in chart
+    assert "const recordSetters = externalRecordSetters(plotted, recordDirection);" in chart
+    assert "if (hasRecordPath)" in chart
+    assert 'class: "score-frontier-line"' in chart
 
 
 def test_the_crawled_chart_reuses_the_curated_chart_classes():
@@ -625,6 +666,14 @@ def test_leaving_a_crawled_record_empties_its_panel_rather_than_hiding_it():
 
     assert "external.hidden = visible;" in chrome
     assert "if (visible) replaceChildren(external, []);" in chrome
+    # External title provenance must leave with the external chart. Without
+    # this reset, curated AIME inherited "115 reported scores · LLM Stats" and
+    # its own "Scores over time" eyebrow remained hidden.
+    assert 'const eyebrow = byId("frontier-eyebrow");' in chrome
+    assert "eyebrow.hidden = false;" in chrome
+    assert 'const subline = byId("frontier-subline");' in chrome
+    assert 'subline.textContent = "";' in chrome
+    assert "subline.hidden = true;" in chrome
 
 
 def test_the_crawled_chart_ticks_label_real_values_not_padded_bounds():
@@ -897,59 +946,52 @@ def test_issue_288_the_charts_draw_a_running_best_not_an_invented_cost_axis():
     script = source("site/assets/app.js")
     styles = source("site/assets/styles.css")
 
-    steps = script.split("function runningBestSteps(points", 1)[1].split("\n}\n", 1)[0]
-    # Better is not always larger, so the frontier follows the metric rather
-    # than the number, or it would trace the worst result on a lower-is-better
-    # benchmark.
-    assert "descends ? point.value < best : point.value > best" in steps
-    # A line through one date asserts nothing, so it is not drawn.
-    assert "if (dated.length < 2) return [];" in steps
-    assert "if (new Set(dated.map((point) => point.time)).size < 2) return [];" in steps
-
-    # Stepped, never diagonal: a slope would imply the score moved continuously
-    # between two reports, which is interpolation this corpus cannot support.
-    path = script.split("function runningBestPath(steps, x, y, endX)", 1)[1].split("\n}\n", 1)[0]
-    assert "`H ${x(step.time)}`" in path
-    assert "`V ${y(step.value)}`" in path
-    assert "L " not in path
-
-    # A maximum is a comparability claim -- it says these numbers can be ranked
-    # against each other -- so the line is drawn ONLY where that holds.
-    #
-    # The curated layer partitions by instrument AND protocol, the same rule the
-    # join uses: GPQA Diamond carries "Pass@1, 8K output limit" beside "averaged
-    # over 10 samples", and a max across those asserts they measure the same
-    # thing. 22 of 59 curated benchmarks have two dates inside one such group.
-    assert script.count('class: "score-frontier-line"') == 1
-    assert "{ descends: scoreDescends }" in script
-    assert ".score-frontier-line {" in styles
+    # The browser is geometry-only. Direction, same-date collapse, strict
+    # improvement and all-observation scope are normalized in Python, so the
+    # final value and the readout cannot be calculated from different subsets.
     curated = script.split("function scoreTrackChart(", 1)[1].split(
         "\nfunction clearAdoptionFrontier", 1
     )[0]
-    assert 'observation.instrument || ""' in curated
-    assert 'observation.protocol || ""' in curated
+    assert "record.historical_best_frontier?.points || []" in curated
+    assert "runningBestSteps" not in curated
 
-    # The crawled layer draws none. Its normalizer records `direction: None` and
-    # comparability `none` because the source states neither, so ranking its
-    # rows against each other would assume both.
+    # The visual links one actual record setter directly to the next. It does
+    # not invent horizontal holds, vertical jumps, or an extension beyond the
+    # final report, and one point alone cannot produce a line.
+    path = script.split("function recordSetterPath(points, xValue, yValue)", 1)[1].split(
+        "\n}\n", 1
+    )[0]
+    assert 'if (points.length < 2) return "";' in path
+    assert '${index ? "L" : "M"}' in path
+    assert "parts.push(`H " not in path
+    assert "parts.push(`V " not in path
+    assert "endX" not in path
+
+    # The historical best is benchmark-wide as the label promises. Protocol
+    # remains in the tooltip and in the separate comparable-series readout; it
+    # cannot choose a lower subgroup frontier behind the reader's back.
+    assert script.count('class: "score-frontier-line"') == 2
+    assert ".score-frontier-line {" in styles
+    assert "frontierMarks.has(observation.observation_id)" in curated
+    assert "observation.protocol" in curated
+
+    # The crawled layer now draws successive reported highs. Direction is a
+    # normalized LLM Stats property, not a browser inference.
     crawled = script.split("function externalScoreChart(source, payload)", 1)[1].split(
         "\nfunction externalSourceTable", 1
     )[0]
-    assert "score-frontier-line" not in crawled
+    assert "payload.series?.direction" in crawled
+    assert 'source === "llm_stats" ? "higher_is_better" : null' in crawled
+    assert "sourceRankDirection" not in script
+    assert "externalRecordSetters(plotted, recordDirection)" in crawled
+    assert "score-frontier-line" in crawled
     assert "runningBestSteps" not in crawled
 
-    # And it did not reintroduce the join the evidence rules forbid: the
-    # running best says "nothing had beaten this yet", never "these points are
-    # a series".
-    chart = script.split("function scoreTrackChart(", 1)[1].split(
-        "\nfunction clearAdoptionFrontier", 1
-    )[0]
-    assert "polyline" not in chart
-    # A <path> draws the same segment a <polyline> would, so the ban names the
-    # shape rather than one element. The running-best line is stepped (H/V
-    # only): "nothing had beaten this yet", not a trajectory between points.
-    for command in (" L ", "`L ${"):
-        assert command not in chart, "a diagonal path segment is a trajectory claim"
+    # Neither renderer connects every model into a trend. Both pass only strict
+    # record setters to the direct-path geometry.
+    assert "polyline" not in curated
+    assert "recordSetterPath(" in curated
+    assert "recordSetterPath(" in crawled
 
 
 def test_the_ranking_expands_and_the_intro_condensed_into_one_toggle():
