@@ -14,7 +14,11 @@ import {
   modelGlyph,
 } from "./glyphs.js";
 
-const ALL_DATES_PAGE_SIZE = 100;
+// One page of results, in the list and at a time (issue #311). The first
+// paint carries 20 cards; each further page is loaded by scrolling to the
+// sentinel below the list. 100 at once was the archive bound, and a busy day
+// paid for all of it before the reader could scroll.
+const TODAY_PAGE_SIZE = 20;
 // Snapshots recorded before SourceHealth.method existed carry no method
 // field; this fills the gap for historical dates only (issue #174).
 const LEGACY_SOURCE_COLLECTION_METHODS = {
@@ -317,7 +321,6 @@ const I18N = {
     "Site utilities": "网站工具",
     "Switch to Chinese (中文)": "切换到中文",
     "Switch to English": "切换到英文",
-    "Export the dataset": "导出数据集",
     "Get in touch · Email, WeChat, Discord": "联系我 · 邮件、微信、Discord",
     Data: "数据",
     Contact: "联系",
@@ -371,7 +374,6 @@ const I18N = {
     "Refresh data": "刷新数据",
     "Today's radar": "今日雷达",
     "Matching observations": "匹配结果",
-    "Show more results": "显示更多结果",
     Sources: "来源",
     "All-time totals": "全部统计",
     All: "全部",
@@ -383,10 +385,11 @@ const I18N = {
     "{n}h ago": "{n} 小时前",
     "{n}d ago": "{n} 天前",
     "yesterday": "昨天",
-    "result": "条结果",
-    "results": "条结果",
+    "Page {page} of {pages} · showing {start}–{end} of {total}":
+      "第 {page}/{pages} 页 · 显示第 {start}–{end} 条，共 {total} 条",
+    Previous: "上一页",
+    Next: "下一页",
     "normal": "正常",
-    "need attention": "需关注",
     "Sort: Priority ↓": "排序:优先度 ↓",
     "Sort: Date, then Priority ↓": "排序:日期,再按优先度 ↓",
     "Sort: Date ↓": "排序:日期 ↓",
@@ -401,10 +404,13 @@ const I18N = {
     "All tracked benchmarks": "所有追踪的基准",
     "Search every benchmark": "搜索全部基准",
     "Most reported benchmarks in model cards": "模型卡中报告最多的benchmark",
+    Rank: "排名",
+    Benchmark: "基准",
+    "leaderboard.column.model_cards": "模型卡数量",
     "Jump to a benchmark": "跳转到某个基准",
     "One score, copied from the report that published it": "一个分数，照抄自发布它的报告",
-    "Show all {n} ranked benchmarks": "显示全部 {n} 个排名基准",
-    "Show the top {n}": "只显示前 {n} 个",
+    "Show all {n} benchmarks": "显示全部 {n} 个基准",
+    "Show top {n}": "只显示前 {n} 个",
     "A report counts once per test, even if it lists that test several times. Some reports publish their results as a picture rather than text, and we read those with software that can misread a digit, so the list at the bottom of this page links every count back to the report it came from.":
       "一份报告对同一项测试只计一次，即使它列出了多次。有些报告以图片而非文字发布结果，我们用软件读取，可能会看错数字，因此本页底部的清单把每个计数链接回它的来源报告。",
     model: "个模型",
@@ -432,7 +438,7 @@ const I18N = {
     "All dates": "所有日期",
     "How to read this chart": "如何解读这张图",
     "frontier.explainer.sub":
-      "每个能从引文文档中逐字读到的数值,按该文档的发布日期放置(而非任何评测日期),只在测试变体与运行条件完全一致时才相连。末端趋于平直通常意味着没有更新的数字可读,因此缺口被标出而不是用线穿过。一条曲线是否已经饱和,由你来判读,本面板不会给出饱和分数。",
+      "每个能从引文文档中逐字读到的数值,都按该文档的发布日期放置,而不是按评测日期。折线只直接连接在所显示数值中创下新报告纪录的实际观测点;它不会在两次报告之间维持某个分数,也不会延伸到最后一个纪录之后。测试版本和运行条件可能不同,因此这是一条报告纪录路径,而不是同条件趋势。没有更新数字可读时,缺口会被标出而不是用线穿过。基准是否已经饱和,仍由你来判断,本面板不会给出饱和结论。",
     "leaderboard.filters.note":
       "每张模型卡对同一基准只计一次。一张在四个配置中报告 AIME 的卡,与只报告一次的卡计数相同,因此冗长的附录不能压过不同的供应商。机构可以打破平局:六个供应商报告同一计数是共同标准,只有一个供应商报告则是自家风格。",
     "leaderboard.ledger.note":
@@ -516,13 +522,8 @@ const I18N = {
     new: "新增",
     active: "活跃",
     none: "无",
-    result: "条结果",
-    results: "条结果",
     evidence: "条证据",
-    attention: "个关注信号",
-    Show: "显示",
-    more: "更多",
-    remaining: "条剩余",
+    attention: "关注",
     flat: "持平",
     up: "上升",
     down: "下降",
@@ -712,16 +713,64 @@ const I18N = {
     "shown": "显示",
     "tracked": "追踪",
     "of": "共",
-    // --- Export / contact -----------------------------------------------------
-    "Benchmark Radar · data export": "Benchmark Radar · 数据导出",
-    "Take the data with you": "把数据带走",
-    "Download full dataset (JSON)": "下载全量数据集 (JSON)",
-    "Download current view (CSV · {rows} rows)": "下载当前视图 (CSV · {rows} 行)",
+    // --- External catalog detail (issue #316) --------------------------------
+    // The crawled benchmark detail panel (identity / openness / size) shipped
+    // its section headings, field labels and "not established" placeholders in
+    // English under zh, so only the shared "Released" line came through. These
+    // cover the rest of that panel; the benchmark's own description text stays
+    // as authored because it is source data, not chrome.
+    Identity: "基本信息",
+    "description not established": "简介尚未确定",
+    Publisher: "发布方",
+    "publisher not established": "发布方尚未确定",
+    "release date not established": "发布日期尚未确定",
+    Modality: "模态",
+    "modality not established": "模态尚未确定",
+    "No paper, repository, dataset or site link established.":
+      "尚未确定论文、代码仓库、数据集或站点链接。",
+    "Identity below is inherited from the {donor} card for a reviewed equivalent benchmark; scores are unchanged.":
+      "以下基本信息继承自 {donor} 中经人工核对为同一基准的记录；分数不受影响。",
+    Openness: "开放性",
+    "openness not established": "开放性尚未确定",
+    open: "开放",
+    restricted: "受限",
+    "Code licence": "代码许可证",
+    "Data licence": "数据许可证",
+    "not established": "尚未确定",
+    "No openness evidence recorded.": "未记录开放性证据。",
+    Size: "规模",
+    "size not established": "规模尚未确定",
+    "counts the": "统计的是",
+    "what it counts is unclear": "统计对象不明",
+    "evidence ↗": "证据 ↗",
+    // Publisher roles and artifact kinds are label maps keyed by a raw enum, so
+    // an unmapped role/kind still falls back to its raw value rather than blank.
+    "published the hub card": "发布了 Hub 卡片",
+    "organization behind the paper": "论文背后的机构",
+    maintainer: "维护者",
+    Paper: "论文",
+    "Code repository": "代码仓库",
+    Dataset: "数据集",
+    "Project site": "项目站点",
+    // --- Contact --------------------------------------------------------------
     "Benchmark Radar": "Benchmark 雷达日报",
     "Get in touch": "联系我",
     Email: "邮件",
     WeChat: "微信",
     Discord: "Discord",
+    "The complete dataset is free to download. If it saves you research time, star the repository so other eval builders can find it.":
+      "完整数据集可以免费下载。如果它帮你节省了研究时间，请给仓库点个 Star，让更多评测开发者找到它。",
+    Download: "下载",
+    "Star the repository": "给仓库点 Star",
+    "Free dataset. No crawler needed.": "免费数据集，无需爬虫。",
+    "If this saved you research time, cite the work, star the repo and help other eval builders find it.":
+      "如果它帮你节省了研究时间，请引用这项工作、给仓库点 Star，让更多评测开发者找到它。",
+    Cite: "引用",
+    "Share Benchmark Radar": "分享 Benchmark Radar",
+    Share: "分享",
+    Copied: "已复制",
+    Contact: "联系作者",
+    "for a one-click export.": "即可一键导出。",
     // --- Remaining dynamic strings ------------------------------------------
     " on a": " 以",
     " scored records on": " 项已评分记录,以",
@@ -742,14 +791,11 @@ const I18N = {
     "Click to pin record details": "点击固定记录详情",
     Comments: "评论",
     "Discovery sources": "发现来源",
-    "Doing related-work research, or hunting for a benchmark on a topic? This database aggregates every benchmark, evaluation, and dataset the radar has surfaced, and you can query it by topic, source, or organization before you export. Everything listed below is the same data the dashboard renders.":
-      "在做相关工作研究,或想按主题查找基准?这个数据库汇总了雷达发现过的每一个基准、评测与数据集,可以在导出前按主题、来源或机构查询。下方列出的所有内容与仪表盘渲染的是同一份数据。",
     "Every benchmark this document puts in front of readers, counted once each. These are mentions, not scores: the source records the configuration, and this registry deliberately does not.":
       "此文档呈现给读者的每个基准,各计一次。这是提及次数,不是分数:来源记录了配置,而这个登记册刻意不记录。",
     "Every record matching at least one taxonomy category is retained. A score of":
       "只要匹配至少一个分类类别的记录都会被保留。达到分数",
     "How priority is scored": "优先度如何评分",
-    "Leaderboard (CSV)": "排行榜 (CSV)",
     "Most represented organizations": "出现最多的机构",
     "No benchmark is reported by a curated card yet.": "目前还没有精选模型卡报告任何基准。",
     "No description published at the source.": "来源没有发布描述。",
@@ -871,6 +917,37 @@ const I18N = {
     evaluations: "评测",
     "times found": "次发现",
     "also tracked in the registry above": "上方登记表中已收录",
+    // --- Coverage for dynamic t() call sites ---------------------------------
+    "or above marks the item as recommended; it does not control inclusion. Watchlisted artifacts are also retained.":
+      "及以上分数表示该条目被推荐；该分数不决定是否收录。观察名单中的工件同样会保留。",
+    "not scored": "未评分",
+    "data quality": "数据质量",
+    "no scores collected": "未采集到分数",
+    "{shown} of {total} matches": "共 {total} 条匹配，已显示 {shown} 条",
+    "No benchmark matches that name": "没有匹配该名称的基准",
+    "Benchmark search is unavailable right now": "基准搜索暂时不可用",
+    "not recorded": "未记录",
+    "The source declares a maximum of {max} but carries values above it, so that bound is not a scale.":
+      "来源声明的满分是 {max}，但存在超过它的数值，因此这个上限并不是一个统一的量表。",
+    "same benchmark, other source": "同一基准，其他来源",
+    "related split": "相关子集",
+    "same framework": "同一框架",
+    "introduced in the same paper": "出自同一篇论文",
+    "has a related variant": "存在相关变体",
+    "Related records": "相关记录",
+    "External benchmark": "外部基准",
+    "Loading benchmark details…": "正在加载基准详情…",
+    "Could not load details for this benchmark.": "无法加载该基准的详情。",
+    "Ranked by how many curated model cards report each benchmark, which measures vendor reporting convention rather than benchmark quality. A crawled score count answers a different question: AIME 2025 carries 115 crawled scores and GPQA Diamond 26 model cards, and those are different measures rather than competing ones.":
+      "排名依据是每个基准被多少张精选模型卡报告，衡量的是厂商的报告惯例而非基准质量。爬取到的分数数量回答的是另一个问题：AIME 2025 有 115 个爬取到的分数，GPQA Diamond 有 26 张模型卡，两者是不同的度量而不是互相竞争的指标。",
+    "points to the {bound}-point bound of this metric": "指向该指标 {bound} 分的上限",
+    "across {domains}{listed}.": "覆盖 {domains}{listed}。",
+    " · {count} released in the newest 18-month window already appear across three or more dated organizations. Follow their trajectories before reading the raw rank.":
+      " · 最近 18 个月窗口内发布的 {count} 项已经出现在三家及以上有明确日期的机构中。在解读原始排名之前，先看它们的轨迹变化。",
+    "Show all {count} benchmarks": "显示全部 {count} 个基准",
+    "Star this repository on GitHub. {count} stars": "在 GitHub 上给这个仓库点 Star。{count} 个 star",
+    "Fork this repository on GitHub. {count} forks": "在 GitHub 上 fork 这个仓库。{count} 个 fork",
+    "Open a new issue on GitHub. {count} issues open": "在 GitHub 上提交新 issue。当前有 {count} 个 open issue",
   },
 };
 
@@ -886,6 +963,7 @@ const state = {
   event: "",
   entity: "",
   rubric: "",
+  contact: false,
   trendReleasedOnly: false,
   // Leaderboard filters carry their own prefixed keys so a shared permalink can
   // hold a Today filter and a Leaderboard filter at once without either view
@@ -905,8 +983,10 @@ const state = {
   leaderboardShowAll: false,
   leaderboardTopExpanded: false,
   todayResultsKey: "",
-  todayResultsLimit: ALL_DATES_PAGE_SIZE,
+  todayPage: 1,
   observations: null,
+  fullDataLoaded: false,
+  fullDataPromise: null,
 };
 
 function element(tag, options = {}, children = []) {
@@ -1021,6 +1101,7 @@ function readUrl() {
   state.source = params.get("source") || "";
   state.organization = params.get("organization") || "";
   state.event = params.get("event") || "";
+  state.todayPage = Math.max(1, Number.parseInt(params.get("page") || "1", 10) || 1);
   state.entity = params.get("entity") || "";
   state.lq = params.get("lq") || "";
   state.ldomain = params.get("ldomain") || "";
@@ -1028,7 +1109,12 @@ function readUrl() {
   state.lera = params.get("lera") || "";
   state.lfrontier = params.get("lfrontier") || "";
   state.lfrontierExplicit = Boolean(state.lfrontier);
-  state.rubric = new URLSearchParams(window.location.hash.slice(1)).get("rubric") || "";
+  const rawHash = window.location.hash.slice(1);
+  const hashParams = new URLSearchParams(rawHash);
+  state.contact = rawHash === "contact" || hashParams.has("contact");
+  state.rubric = rawHash === "rubric"
+    ? "current"
+    : hashParams.get("rubric") || "";
 }
 
 // `push` adds a history entry; `replace` overwrites the current one.
@@ -1066,6 +1152,7 @@ function writeUrl(mode = "replace") {
     if (state.source) params.set("source", state.source);
     if (state.organization) params.set("organization", state.organization);
     if (state.event) params.set("event", state.event);
+    if (state.todayPage > 1) params.set("page", state.todayPage);
   }
   if (state.view === "map" && state.entity) params.set("entity", state.entity);
   if (state.view === "leaderboard") {
@@ -1082,9 +1169,10 @@ function writeUrl(mode = "replace") {
   const query = params.toString();
   // The rubric dialog is a hashtag, not a query param, so a shared link like
   // #rubric=2 reads as "jump to this section" rather than another filter.
-  const hashParams = new URLSearchParams();
-  if (state.rubric) hashParams.set("rubric", state.rubric);
-  const hash = hashParams.toString();
+  let hash = "";
+  if (state.contact) hash = "contact";
+  else if (state.rubric === "current") hash = "rubric";
+  else if (state.rubric) hash = `rubric=${encodeURIComponent(state.rubric)}`;
   const url = `${window.location.pathname}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   // Pushing a URL identical to the current one would make Back a no-op that
   // looks broken: the reader presses it, the address bar does not change, and
@@ -1102,13 +1190,14 @@ function writeUrl(mode = "replace") {
 // page would silently disagree with its own address bar. This is what makes the
 // pushes above safe: the restored URL is read back into state and the view it
 // describes is drawn (issue #286).
-function onPopState() {
+async function onPopState() {
   // Before the payload lands, state is not yet drawable. Read the URL anyway:
   // initialize() renders from state once the fetch settles, and skipping the
   // read here would leave it rendering whatever the reader navigated away
   // from while the address bar showed the restored entry.
   readUrl();
   if (!state.data) return;
+  await ensureDataForState();
   // A leaderboard permalink on a build with no curated registry has nothing to
   // show, same fallback initialize() applies. Without it, Back into such an
   // entry opens an empty section behind a hidden nav button.
@@ -1123,10 +1212,65 @@ function onPopState() {
   // The rubric lives in the hash rather than the query, so it is restored
   // separately: Back out of an open dialog should close it.
   const dialog = byId("rubric-dialog");
-  if (state.rubric && state.data.rubrics?.[state.rubric]) {
-    if (!dialog?.open) openRubric(null, state.rubric);
+  if (state.rubric) {
+    if (!dialog?.open) openRubric(null, state.rubric === "current" ? null : state.rubric);
   } else if (dialog?.open) {
     dialog.close();
+  }
+  const contactDialog = byId("contact-dialog");
+  if (state.contact) {
+    if (!contactDialog?.open) openContact(false);
+  } else if (contactDialog?.open) {
+    contactDialog.close();
+  }
+}
+
+// Issue #236. Crawlers see one document; these four states are still four
+// different pages a reader can land on and link to, so each one restates its
+// own title, description, and canonical URL when it becomes active. The
+// canonicals carry only the view parameter: filter permutations (q, date,
+// lq, lfrontier, ...) consolidate into the clean view URL instead of
+// fragmenting ranking signals across every state of the same page. These
+// strings are English on purpose: they describe the site to a search engine,
+// while the visible interface translates through data-i18n.
+const VIEW_SEO = {
+  today: {
+    title: "Benchmark Radar — today's new AI benchmarks",
+    description:
+      "A daily evidence-first map of new AI benchmarks, evaluations, and datasets, collected every day from arXiv, GitHub, Hugging Face, OpenReview, Semantic Scholar, Hacker News, and first-party lab feeds.",
+    query: "",
+  },
+  leaderboard: {
+    title: "Most reported AI benchmarks in frontier model cards | Benchmark Radar",
+    description:
+      "Which benchmarks frontier labs actually report: a live Model Card Adoption Rank computed from curated model cards and system cards, plus reported score progression over time.",
+    query: "view=leaderboard",
+  },
+  trends: {
+    title: "AI benchmark discovery trends over time | Benchmark Radar",
+    description:
+      "Daily volume of new AI benchmark evidence by category, source, and event, with a ledger of every collection day in the corpus.",
+    query: "view=trends",
+  },
+  map: {
+    title: "Explore connections across AI benchmarks | Benchmark Radar",
+    description:
+      "See how benchmarks, datasets, evaluations, sources, and organizations connect across the Benchmark Radar corpus, and jump from any topic into the filtered daily list.",
+    query: "view=map",
+  },
+};
+
+function applyViewSeo(view) {
+  const seo = VIEW_SEO[view] || VIEW_SEO.today;
+  document.title = seo.title;
+  const description = document.querySelector('meta[name="description"]');
+  if (description) description.setAttribute("content", seo.description);
+  const canonical = document.querySelector('link[rel="canonical"]');
+  if (canonical) {
+    const url = new URL(window.location.pathname, window.location.origin);
+    if (seo.query) url.search = seo.query;
+    else url.search = "";
+    canonical.setAttribute("href", url.href);
   }
 }
 
@@ -1134,6 +1278,7 @@ function onPopState() {
 // popstate), where writing history again would either duplicate the entry or
 // fight the entry being restored.
 function setView(view, update = true, mode = "push") {
+  applyViewSeo(view);
   if (view !== "leaderboard" && selectedFrontierPoint) {
     clearFrontierPointSelection();
   }
@@ -1886,29 +2031,27 @@ function renderToday({ resultsOnly = false } = {}) {
     state.event,
   ].join("\u0000");
   if (resultsKey !== state.todayResultsKey) {
+    if (state.todayResultsKey) state.todayPage = 1;
     state.todayResultsKey = resultsKey;
-    state.todayResultsLimit = ALL_DATES_PAGE_SIZE;
   }
-  // A single busy scan can carry hundreds of observations. Bound every render,
-  // not just the all-dates archive, so initial load and filter feedback never
-  // have to build the entire card list before the reader can interact.
-  const visibleObservations = observations.slice(0, state.todayResultsLimit);
-  const remainingResults = observations.length - visibleObservations.length;
-  const showMore = byId("today-show-more");
-  showMore.hidden = remainingResults <= 0;
-  showMore.textContent = remainingResults > 0
-    ? `${t("Show")} ${Math.min(ALL_DATES_PAGE_SIZE, remainingResults)} ${t("more")} · ${remainingResults} ${t("remaining")}`
-    : t("Show more results");
+  // A single busy scan can carry hundreds of observations. Real pages keep the
+  // DOM bounded without silently loading everything as the reader reaches the
+  // bottom. They also make position explicit and back-button friendly.
+  const pageCount = Math.max(1, Math.ceil(observations.length / TODAY_PAGE_SIZE));
+  state.todayPage = Math.min(Math.max(1, state.todayPage), pageCount);
+  const pageStart = (state.todayPage - 1) * TODAY_PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + TODAY_PAGE_SIZE, observations.length);
+  const visibleObservations = observations.slice(pageStart, pageEnd);
+  // The legend is two readings, not three (issue #311): the class breakdown
+  // and the order. The raw total repeated what the breakdown already adds up
+  // to, and the attention noun lost its verb now that it stands beside
+  // "normal" instead of a sentence.
   const evidenceCount = observations.filter(
     (item) => item.observation_kind === "evidence",
   ).length;
   const attentionCount = observations.length - evidenceCount;
-  byId("today-count").textContent =
-    `${observations.length} ${observations.length === 1 ? t("result") : t("results")}`;
-  // The two classes are mutually exclusive, so name them instead of leaving
-  // EVIDENCE and ATTENTION as unexplained jargon (issue #248).
   byId("today-breakdown").textContent =
-    `${evidenceCount} ${t("normal")} · ${attentionCount} ${t("need attention")}`;
+    `${evidenceCount} ${t("normal")} · ${attentionCount} ${t("attention")}`;
   // The list is sorted by priority within a day; say so at the point of use
   // rather than making the reader infer it. Attention rows carry no priority,
   // so a kind-filtered attention set falls back to date order, and in All
@@ -1920,10 +2063,11 @@ function renderToday({ resultsOnly = false } = {}) {
     : showingAllDates
       ? t("Sort: Date, then Priority ↓")
       : t("Sort: Priority ↓");
+  const listHost = byId("today-list");
   replaceChildren(
-    byId("today-list"),
+    listHost,
     visibleObservations.length
-      ? visibleObservations.map(observationCard)
+      ? visibleObservations.map((item, offset) => observationCard(item, pageStart + offset))
       : [
           element("p", {
             className: "empty-state",
@@ -1931,6 +2075,18 @@ function renderToday({ resultsOnly = false } = {}) {
           }),
         ],
   );
+  byId("today-page-status").textContent = t(
+    "Page {page} of {pages} · showing {start}–{end} of {total}",
+    {
+      page: state.todayPage,
+      pages: pageCount,
+      start: observations.length ? pageStart + 1 : 0,
+      end: pageEnd,
+      total: observations.length,
+    },
+  );
+  byId("today-page-prev").disabled = state.todayPage <= 1;
+  byId("today-page-next").disabled = state.todayPage >= pageCount;
 
   if (resultsOnly) {
     writeUrl();
@@ -2747,7 +2903,8 @@ function openRubric(item = null, versionOverride = null) {
   const version = Number(data.scoring_version) || 1;
   const current = Number(state.data?.rubric?.scoring_version) || version;
   const isLegacy = version !== current;
-  state.rubric = String(version);
+  state.contact = false;
+  state.rubric = isLegacy ? String(version) : "current";
   writeUrl();
   const header = [
     element("p", {
@@ -3901,10 +4058,9 @@ const EXTERNAL_SOURCE_META = {
       // "No date is recorded" was false and was the complaint in issue #269:
       // every one of the 5,544 rows carries one. What is missing is a date for
       // the measurement -- the date recorded is the model's own release -- and
-      // that is the distinction worth stating, since it is why these rows are
-      // ordered by score rather than drawn on a time axis. The axis label was
-      // corrected then; this note was not.
-      "Self-reported scores collected by LLM Stats. No evaluation protocol is recorded, and the only date is each model's own release, not when the score was measured, so rows are listed in the source's own order.",
+      // that is the distinction worth stating. Higher values are better within
+      // each LLM Stats benchmark; the x axis remains the model release date.
+      "Self-reported scores collected by LLM Stats. Higher values are better. No evaluation protocol is recorded, and the only date is each model's own release, not when the score was measured. The line links successive reported highs by model release; it is not an evaluation-time trend.",
     emptyKey: "LLM Stats recorded no scores for this benchmark.",
   },
   opencompass_hub: {
@@ -3966,6 +4122,25 @@ function externalFactList(facts) {
 // empty one says "not established" instead of disappearing: hiding an empty
 // field reads as "not applicable", and whether these facts are known is
 // precisely the reader's question (display plan step 4).
+// A record with no identity of its own may show a reviewed equivalent's
+// (issue #262): llm-stats carries the scores and the OpenCompass card carries
+// the publisher, artifacts and dates. When it does, the borrowed values are
+// never presented as this source's own -- this note names the donor card and
+// the review, so "Anthropic" reads as "from the OpenCompass card", not "from
+// LLM Stats".
+function externalInheritanceNote(detail) {
+  const inheritance = detail.identity_inheritance;
+  if (!inheritance) return null;
+  const donorName = externalSourceMeta(inheritance.donor_source).name;
+  return element("p", {
+    className: "external-inherited",
+    text: t(
+      "Identity below is inherited from the {donor} card for a reviewed equivalent benchmark; scores are unchanged.",
+      { donor: donorName },
+    ),
+  });
+}
+
 function externalIdentityBlock(detail) {
   const publisher = detail.publisher;
   const description = l10nProse(detail.description?.en, detail.description?.zh);
@@ -3980,6 +4155,7 @@ function externalIdentityBlock(detail) {
       className: "external-description",
       text: description || t("description not established"),
     }),
+    externalInheritanceNote(detail),
     externalFactList([
       [
         t("Publisher"),
@@ -4181,8 +4357,25 @@ function externalScoreChart(source, payload) {
   const values = plotted.map((row) => row.value).sort((a, b) => a - b);
   const low = values[0];
   const high = values[values.length - 1];
-  const bestRow = plotted.reduce((best, row) => (row.value > best.value ? row : best), plotted[0]);
-  const bestValue = high;
+  // Direction belongs to the normalized series contract. LLM Stats is
+  // higher-is-better; keeping the branch makes this renderer honest if another
+  // source later supplies a lower-is-better series.
+  const recordDirection =
+    payload.series?.direction || (source === "llm_stats" ? "higher_is_better" : null);
+  const descends = recordDirection === "lower_is_better";
+  const bestRow = plotted.reduce((best, row) => {
+    const improves = descends ? row.value < best.value : row.value > best.value;
+    if (improves) return row;
+    if (row.value !== best.value) return best;
+    return (row.rank_in_source_response ?? Number.MAX_SAFE_INTEGER) <
+      (best.rank_in_source_response ?? Number.MAX_SAFE_INTEGER)
+      ? row
+      : best;
+  }, plotted[0]);
+  const bestValue = bestRow.value;
+  const recordSetters = externalRecordSetters(plotted, recordDirection);
+  const hasRecordPath = recordSetters.length >= 2;
+  const recordMarks = new Set(recordSetters.map((row) => row.obs_id));
   const pad = Math.max((high - low) * 0.18, Math.abs(high) * 0.05, Number.EPSILON);
   const band = { low: low - pad, high: high + pad };
 
@@ -4213,7 +4406,7 @@ function externalScoreChart(source, payload) {
     viewBox: `0 0 ${width} ${height}`,
     role: "group",
     "aria-label": t(
-      "{count} scores reported to {source}, placed at each model's release date, which is the only date recorded and is not when the score was measured. Highest {best} by {model}, lowest {low}.",
+      "{count} scores reported to {source}, placed at each model's release date, which is the only date recorded and is not when the score was measured. Best reported {best} by {model}, lowest observed {low}.",
       {
         count: plotted.length.toLocaleString(),
         source: meta.name,
@@ -4265,19 +4458,44 @@ function externalScoreChart(source, payload) {
     );
   }
 
+  // The old chart labeled one value "best" while refusing to draw successive
+  // records. That is why AIME 2025 showed 115 dots and no line. Direction now
+  // comes from the normalized series, and the path links the actual strict
+  // record dots directly. It remains a sequence by model release date, not an
+  // evaluation-time trend.
+  if (hasRecordPath) {
+    const clipId = `external-record-clip-${String(payload.series?.series_id || source).replace(
+      /[^a-z0-9_-]+/gi,
+      "-",
+    )}`;
+    const definitions = svgElement("defs");
+    const clip = svgElement("clipPath", { id: clipId });
+    clip.append(
+      svgElement("rect", {
+        x: margin.left,
+        y: scoreTop - 4,
+        width: plotWidth,
+        height: scoreHeight + 8,
+        class: "score-frontier-clip",
+      }),
+    );
+    definitions.append(clip);
+    svg.append(definitions);
+    svg.append(
+      svgElement("path", {
+        d: recordSetterPath(
+          recordSetters,
+          (row) => x(dateValue(row.reported_date)),
+          (row) => scoreY(row.value),
+        ),
+        class: "score-frontier-line",
+        fill: "none",
+        "clip-path": `url(#${clipId})`,
+      }),
+    );
+  }
+
   const bestY = scoreY(bestValue);
-  // No running-best line on this layer, deliberately (issue #288 review).
-  //
-  // A maximum is a comparability claim: it says these numbers can be ranked
-  // against each other. This layer cannot support that. The normalizer records
-  // `direction: None` because the source states no metric direction, and
-  // `comparability_class: none` because it records no protocol -- see
-  // external_catalog.py, "the only honest comparability class is none". Taking
-  // a max over those rows would assume larger-is-better and assume the rows are
-  // measuring the same thing, and neither is in evidence.
-  //
-  // The flat best-on-record rule stays: it labels one row's own value, which is
-  // a fact about that row rather than a ranking across rows.
   svg.append(
     svgElement("line", {
       x1: margin.left,
@@ -4302,12 +4520,18 @@ function externalScoreChart(source, payload) {
     const pointX = x(dateValue(row.reported_date));
     const pointY = scoreY(row.value);
     const thirdParty = row.reported_by === "third_party";
+    const offTheLine = hasRecordPath && !recordMarks.has(row.obs_id);
+    // Same left-to-right reveal as the curated chart (issue #312): one kind
+    // of mark, one entrance, on both layers.
     const group = svgElement("g", {
-      class: `score-point${thirdParty ? " score-point-third-party" : ""}`,
+      class: `score-point${offTheLine ? " score-point-dim" : ""}${
+        thirdParty ? " score-point-third-party" : ""
+      }`,
       tabindex: "0",
       role: "button",
       "aria-pressed": "false",
       "data-frontier-point": "",
+      style: `--reveal-delay:${frontierPointRevealDelay(pointX, margin, plotWidth)}ms`,
       "aria-label":
         `${row.model_name || t("not recorded")} ${t("by")} ${row.organization || t("not recorded")}` +
         (thirdParty ? `, ${t("cited by")} ${meta.name}` : "") +
@@ -4569,6 +4793,19 @@ function setCanonicalFrontierChrome(visible) {
     // that only affects painting (issue #261).
     if (visible) replaceChildren(external, []);
   }
+  // External records replace the eyebrow with a source subline. Restore both
+  // pieces of title chrome when the picker returns to curated data; otherwise
+  // AIME kept saying "115 reported scores · LLM Stats" and "Scores over time"
+  // stayed hidden even though the chart and heading had switched layers.
+  if (visible) {
+    const eyebrow = byId("frontier-eyebrow");
+    if (eyebrow) eyebrow.hidden = false;
+    const subline = byId("frontier-subline");
+    if (subline) {
+      subline.textContent = "";
+      subline.hidden = true;
+    }
+  }
 }
 
 // Shared shell for the three external states (record, loading, unavailable):
@@ -4645,6 +4882,9 @@ function renderExternalShell(
 ) {
   clearFrontierPointSelection();
   setCanonicalFrontierChrome(false);
+  // A shell replaces whatever chart was on screen, so no completion timer may
+  // spend a reveal the reader is no longer looking at.
+  drawnFrontierEntranceKey = null;
   // An empty eyebrow or badge is hidden rather than rendered blank: a crawled
   // record states its source once, on the subline, and repeating it in a
   // non-interactive chip beside the title read as broken state (issue #298).
@@ -4676,6 +4916,12 @@ function renderExternalShell(
   ]);
 }
 
+// Superseded shard paints are dropped: if the same record is rendered twice
+// before its (cached) shard promise settles, only the latest call may paint,
+// or the second paint would clear the entrance class before the browser ever
+// drew the first frame.
+let externalRenderSeq = 0;
+
 function renderExternalBenchmark(board, scored, record) {
   const meta = externalSourceMeta(record.source);
   // One title, one metadata line. The eyebrow ("External catalog record") and
@@ -4697,10 +4943,13 @@ function renderExternalBenchmark(board, scored, record) {
   if (existing) existing.selected = true;
   else picker.prepend(option(record.slug, `${record.name} · ${meta.name}`, true));
   const container = byId("frontier-external");
+  const renderToken = ++externalRenderSeq;
   loadBenchmarkShard(record.slug).then((shard) => {
     // The reader may have moved on while the shard was on the wire; only paint
-    // if this record is still the selection.
+    // if this record is still the selection -- and only if no newer render of
+    // this panel has superseded this callback.
     if (state.lfrontier !== record.slug) return;
+    if (renderToken !== externalRenderSeq) return;
     if (!shard) {
       // A failed shard fetch leaves the index row and the selection in place;
       // only the panel reports the failure (display plan step 7).
@@ -4712,6 +4961,12 @@ function renderExternalBenchmark(board, scored, record) {
       ]);
       return;
     }
+    // The entrance is keyed to arriving at this record; a re-render after an
+    // unrelated panel redraw does not replay it.
+    container.classList.toggle(
+      "score-chart-enter",
+      frontierShouldAnimate(`external:${record.slug}`),
+    );
     replaceChildren(container, externalBenchmarkDetail(shard));
   });
 }
@@ -4876,57 +5131,53 @@ function spansTime(record) {
 // the interesting movement into a sliver. The band is padded around the observed
 // range instead, and the axis is labelled with its real bounds so a reader
 // cannot mistake a zoomed axis for a full one.
-// The running best: for each date, the highest score anyone had reached by
-// then (issue #288). Requested as a Pareto frontier "just like
-// harbor-index.org", whose frontier plots cost against pass rate. This corpus
-// records neither cost nor latency for any score -- a curated observation
-// carries value/model/organization/reported_at/instrument/protocol, a crawled
-// row carries value/model_name/reported_date -- so that chart cannot be drawn
-// here without inventing the axis. Tracked separately.
-//
-// What IS drawable is the same idea on the axes this chart already has: the
-// set of points nothing else beats, which on one score axis over time is the
-// running maximum. It says "nothing had beaten this yet", never "these points
-// are a series", so it does not reintroduce the segment the join rule forbids.
-//
-// But a maximum is still a comparability claim -- it says these numbers can be
-// ranked against each other -- so callers must pass points that share an
-// instrument and a protocol. The crawled layer cannot: it records neither, and
-// its normalizer sets comparability to none, so it draws no line at all.
-//
-// Returns [] when the line would assert nothing: fewer than two distinct dates,
-// or a single point.
-function runningBestSteps(points, { descends = false } = {}) {
-  const dated = points
-    .filter((point) => Number.isFinite(point.time) && Number.isFinite(point.value))
-    .sort((a, b) => a.time - b.time);
-  if (dated.length < 2) return [];
-  if (new Set(dated.map((point) => point.time)).size < 2) return [];
-  const steps = [];
-  let best = null;
-  for (const point of dated) {
-    // "Better" is not always larger: a lower-is-better metric improves
-    // downward, and the frontier has to follow the metric rather than the
-    // number, or it would trace the worst result on those benchmarks.
-    const improves = best === null || (descends ? point.value < best : point.value > best);
-    if (!improves) continue;
-    best = point.value;
-    steps.push({ time: point.time, value: best });
-  }
-  return steps.length >= 2 ? steps : [];
+// Link actual record-setting observations, and only those observations. A
+// staircase says the score continuously held between reports; extending it to
+// the chart edge says it still held after the last report. Neither statement is
+// in the data. A direct segment says only what this mark is meant to say:
+// reported record A was followed by reported record B.
+function recordSetterPath(points, xValue, yValue) {
+  if (points.length < 2) return "";
+  return points
+    .map((point, index) => `${index ? "L" : "M"} ${xValue(point)} ${yValue(point)}`)
+    .join(" ");
 }
 
-// Steps as an SVG path: horizontal to the next improvement's date, then
-// vertical to its value. A diagonal would imply the score moved continuously
-// between two reports, which is the interpolation this corpus cannot support.
-function runningBestPath(steps, x, y, endX) {
-  const parts = [`M ${x(steps[0].time)} ${y(steps[0].value)}`];
-  for (const step of steps.slice(1)) {
-    parts.push(`H ${x(step.time)}`);
-    parts.push(`V ${y(step.value)}`);
+// External rows have release dates rather than evaluation dates, so this is a
+// reported-record sequence by model release, not a measurement trend. Collapse
+// one date to its directional best, then retain strict record setters. Exact
+// ties prefer the source's better rank and finally its stable observation id.
+function externalRecordSetters(rows, direction) {
+  if (!direction) return [];
+  const descends = direction === "lower_is_better";
+  const bestByDate = new Map();
+  for (const row of rows) {
+    const time = dateValue(row.reported_date);
+    const current = bestByDate.get(time);
+    const improves =
+      !current || (descends ? row.value < current.value : row.value > current.value);
+    const winsTie =
+      current &&
+      row.value === current.value &&
+      ((row.rank_in_source_response ?? Number.MAX_SAFE_INTEGER) <
+        (current.rank_in_source_response ?? Number.MAX_SAFE_INTEGER) ||
+        ((row.rank_in_source_response ?? Number.MAX_SAFE_INTEGER) ===
+          (current.rank_in_source_response ?? Number.MAX_SAFE_INTEGER) &&
+          String(row.obs_id || "") < String(current.obs_id || "")));
+    if (improves || winsTie) bestByDate.set(time, row);
   }
-  parts.push(`H ${endX}`);
-  return parts.join(" ");
+
+  const setters = [];
+  let best = null;
+  for (const row of [...bestByDate.values()].sort(
+    (a, b) => dateValue(a.reported_date) - dateValue(b.reported_date),
+  )) {
+    if (best === null || (descends ? row.value < best : row.value > best)) {
+      best = row.value;
+      setters.push(row);
+    }
+  }
+  return setters;
 }
 
 function scoreBand(record) {
@@ -4943,6 +5194,7 @@ function scoreBand(record) {
 
 function scoreReadout(entry, record) {
   const saturation = record.saturation;
+  const historicalBest = record.historical_best_frontier?.points?.at(-1);
   const evidence = record.evidence;
   const rows = [
     element("div", { className: "score-readout-figure" }, [
@@ -4954,11 +5206,11 @@ function scoreReadout(entry, record) {
         text: record.observation_count === 1 ? t("Only charted score") : t("Best on record"),
       }),
       element("strong", {
-        text: `${saturation.best_value}${record.unit === "percent" ? "%" : ""}`,
+        text: `${historicalBest?.value ?? saturation.best_value}${record.unit === "percent" ? "%" : ""}`,
       }),
       element("small", {
-        text: `${saturation.best_model} · ${saturation.best_organization} · ${formatDate(
-          saturation.best_reported_at,
+        text: `${historicalBest?.model ?? saturation.best_model} · ${historicalBest?.organization ?? saturation.best_organization} · ${formatDate(
+          historicalBest?.reported_at ?? saturation.best_reported_at,
           { dateStyle: "medium" },
         )}`,
       }),
@@ -5435,6 +5687,61 @@ function renderFrontierOrgKey(record) {
 // score band now gets the full height the staircase, the card rug, and the
 // inter-band gaps vacated, and the only marks on the chart are the scores, the
 // connections the join rule permits, and the reading gap.
+// Entrance timing for the score charts (issue #312). The previous 900ms sweep
+// was over before the historical shape could be read. One 3.6s x-axis sweep
+// now drives both the clip that exposes the line and the date-derived point
+// delays, so a vertical step cannot make the line and its point drift apart.
+const FRONTIER_SWEEP_DELAY_MS = 180;
+const FRONTIER_SWEEP_MS = 3600;
+const FRONTIER_POINT_FADE_MS = 360;
+
+function frontierPointRevealDelay(pointX, margin, plotWidth) {
+  const fraction = Math.max(0, Math.min(1, (pointX - margin.left) / plotWidth));
+  return Math.round(FRONTIER_SWEEP_DELAY_MS + fraction * FRONTIER_SWEEP_MS);
+}
+
+// The entrance plays when the reader arrives at a benchmark and runs to
+// completion before it is spent. The crawled catalog settling mid-reveal
+// re-renders this panel, and a key spent on first paint would cancel the very
+// reveal it was drawn for: same-selection repaints inside the window replay
+// the entrance from its start rather than cutting it off, and once the window
+// closes the selection counts as seen, so later repaints render finished.
+// The key commits only while the Leaderboard is the visible view: a redraw
+// into a hidden panel must not spend an entrance the reader has yet to see.
+const FRONTIER_ENTRANCE_MS =
+  FRONTIER_SWEEP_DELAY_MS + FRONTIER_SWEEP_MS + FRONTIER_POINT_FADE_MS + 120;
+let completedFrontierEntranceKey = null;
+let frontierEntranceTimer = null;
+let drawnFrontierEntranceKey = null;
+
+function frontierShouldAnimate(key) {
+  if (state.view !== "leaderboard") return false;
+  // Remember what is actually on screen: the completion callback below may
+  // fire after the reader has moved to another benchmark.
+  drawnFrontierEntranceKey = key;
+  const done = completedFrontierEntranceKey === key;
+  if (!done) {
+    clearTimeout(frontierEntranceTimer);
+    const spendOrDefer = () => {
+      // Spending the entrance requires that it was seen to the end: a hidden
+      // tab defers its own completion, and a reader who navigated away -- to
+      // another view or another benchmark -- gets the reveal again on return.
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState !== "visible"
+      ) {
+        frontierEntranceTimer = setTimeout(spendOrDefer, FRONTIER_ENTRANCE_MS);
+        return;
+      }
+      if (state.view === "leaderboard" && drawnFrontierEntranceKey === key) {
+        completedFrontierEntranceKey = key;
+      }
+    };
+    frontierEntranceTimer = setTimeout(spendOrDefer, FRONTIER_ENTRANCE_MS);
+  }
+  return !done;
+}
+
 function scoreTrackChart(entry, board) {
   const record = scoreRecord(entry.benchmark_id);
   // Callers only ever select a benchmark that has a score record; this guard is
@@ -5548,50 +5855,51 @@ function scoreTrackChart(entry, board) {
     // dates does and does not support. Words can carry that caveat; a line
     // cannot.
 
-    // The frontier: where the best-so-far actually rose (issue #288). The
-    // requested cost-versus-score chart cannot be drawn from this corpus, which
-    // records no cost for any score; this is the same idea on the axes the
-    // chart already has. It asserts only that nothing had beaten a value yet,
-    // never that the points between are a series -- which is why it coexists
-    // with the join rule that forbids connecting adjacent points.
-    // Partitioned by instrument AND protocol, the same rule the join uses. A
-    // max across protocols is still a comparability claim: on GPQA Diamond the
-    // observations run "Pass@1, 8K output limit" beside "averaged over 10
-    // samples", and ranking those against each other asserts they measure the
-    // same thing (issue #288 review).
-    //
-    // The largest comparable group wins the line, so the chart draws the one
-    // run it can actually speak to rather than a mixture it cannot.
-    const runs = new Map();
-    for (const observation of record.observations) {
-      const key = `${observation.instrument || ""}\u0000${observation.protocol || ""}`;
-      if (!runs.has(key)) runs.set(key, []);
-      runs.get(key).push({
-        time: new Date(`${observation.reported_at}T00:00:00Z`).getTime(),
-        value: observation.value,
-      });
-    }
-    const frontierSteps = [...runs.values()]
-      .map((points) => runningBestSteps(points, { descends: scoreDescends }))
-      .sort((a, b) => b.length - a.length)[0];
-    if (frontierSteps?.length) {
+    // One normalized source of truth (issue #312): the backend selects strict
+    // record setters from every observation this chart renders. Protocol still
+    // governs the separate like-for-like comparison readout; it cannot make a
+    // visible 94.3 disappear from a benchmark-wide historical-best line.
+    const frontierPoints = record.historical_best_frontier?.points || [];
+    const frontierMarks = new Set(frontierPoints.map((point) => point.observation_id));
+    const hasRecordPath = frontierPoints.length >= 2;
+    if (hasRecordPath) {
+      // Reveal by x position, not SVG path length. Path distance changes with
+      // the size of each score jump, while point timing is based on date. A
+      // rectangular clip is one literal left-to-right time sweep shared by
+      // both marks.
+      const clipId = `historical-best-clip-${entry.benchmark_id.replace(/[^a-z0-9_-]+/gi, "-")}`;
+      const definitions = svgElement("defs");
+      const clip = svgElement("clipPath", { id: clipId });
+      clip.append(
+        svgElement("rect", {
+          x: margin.left,
+          y: scoreTop - 4,
+          width: plotWidth,
+          height: scoreHeight + 8,
+          class: "score-frontier-clip",
+        }),
+      );
+      definitions.append(clip);
+      svg.append(definitions);
       svg.append(
         svgElement("path", {
-          d: runningBestPath(
-            frontierSteps,
-            (time) => x(new Date(time).toISOString().slice(0, 10)),
-            scoreY,
-            margin.left + plotWidth,
+          d: recordSetterPath(
+            frontierPoints,
+            (point) => x(point.reported_at),
+            (point) => scoreY(point.value),
           ),
           class: "score-frontier-line",
           fill: "none",
+          "clip-path": `url(#${clipId})`,
         }),
       );
     }
 
     // The best-on-record marker. Drawn as a horizontal rule rather than a point
     // because it is a fact about the whole corpus to date, not about one date.
-    const bestY = scoreY(record.saturation.best_value);
+    const historicalBest = frontierPoints.at(-1);
+    const bestValue = historicalBest?.value ?? record.saturation.best_value;
+    const bestY = scoreY(bestValue);
     svg.append(
       svgElement("line", {
         x1: margin.left,
@@ -5605,7 +5913,7 @@ function scoreTrackChart(entry, board) {
       svgElement(
         "text",
         { x: width - margin.right, y: bestY - 6, "text-anchor": "end", class: "score-best-label" },
-        `${t("best on record")} ${record.saturation.best_value}`,
+        `${t("best on record")} ${bestValue}`,
       ),
     );
 
@@ -5618,12 +5926,31 @@ function scoreTrackChart(entry, board) {
             source.document_type || t("model card"),
           ).replaceAll("_", " ")})`
         : observation.source_id.replaceAll("_", " ");
+      const pointX = x(observation.reported_at);
+      const pointY = scoreY(observation.value);
+      // "其他的点可以淡化" (issue #312): readings that are not part of the
+      // historical-best line recede behind it -- but only while there IS a
+      // normalized frontier. A chart lacking that payload keeps every point at
+      // full emphasis instead of implying membership the browser cannot know.
+      // Hover and focus restore a receded point, so de-emphasis never costs
+      // legibility. Membership uses the stable normalized observation id; no
+      // protocol key or floating-point reconstruction exists on this path.
+      const onFrontier = frontierMarks.has(observation.observation_id);
+      const offTheLine = hasRecordPath && !onFrontier;
+      // Entrance order follows the axis (issue #312): each point brightens
+      // while the drawing front crosses its date, so the reveal reads left to
+      // right the way the data does. The timing is shared with the crawled
+      // layer's chart so both figures reveal the same way.
+      const revealDelay = frontierPointRevealDelay(pointX, margin, plotWidth);
       const group = svgElement("g", {
-        class: `score-point${observation.reported_by ? " score-point-third-party" : ""}`,
+        class: `score-point${
+          offTheLine ? " score-point-dim" : ""
+        }${observation.reported_by ? " score-point-third-party" : ""}`,
         tabindex: "0",
         role: "button",
         "aria-pressed": "false",
         "data-frontier-point": "",
+        style: `--reveal-delay:${revealDelay}ms`,
         "aria-label":
           `${observation.value} ${record.metric} ${t("by")} ${observation.model} ` +
           `(${observation.organization}), ${formatDate(observation.reported_at, {
@@ -5632,8 +5959,6 @@ function scoreTrackChart(entry, board) {
           (observation.reported_by ? `, ${t("cited by")} ${observation.reported_by}` : "") +
           `. ${t("Click to pin record details")}.`,
       });
-      const pointX = x(observation.reported_at);
-      const pointY = scoreY(observation.value);
       group.append(
         svgElement("circle", {
           cx: pointX,
@@ -5804,6 +6129,9 @@ function clearAdoptionFrontier(message) {
   // restored here rather than at each call site: an external selection that
   // hid it must not leave the next canonical render missing its chart blocks.
   setCanonicalFrontierChrome(true);
+  // The empty state replaces any chart on screen, so a running completion
+  // timer must not spend its reveal.
+  drawnFrontierEntranceKey = null;
   byId("frontier-eyebrow").textContent = t("Scores over time");
   const stage = byId("frontier-stage");
   stage.textContent = "";
@@ -5971,6 +6299,10 @@ function renderAdoptionFrontier(board) {
   renderFrontierLegend(entry, record);
   renderFrontierOrgKey(record);
   clearFrontierPointSelection();
+  byId("frontier-chart").classList.toggle(
+    "score-chart-enter",
+    frontierShouldAnimate(`curated:${entry.benchmark_id}`),
+  );
   replaceChildren(byId("frontier-chart"), [scoreTrackChart(entry, board), frontierTooltip()]);
   renderScoreReadout(entry);
   renderFrontierTaskPreview(entry);
@@ -6270,6 +6602,10 @@ function renderLeaderboardTop(board) {
     if (more) more.hidden = true;
     return;
   }
+  // Each row's bar is scaled against the top entry currently on screen, so the
+  // gap the reader is meant to see (e.g. GPQA Diamond vs. everything below it)
+  // stays visible whether five rows are shown or all of them are (issue #314).
+  const maxCount = Math.max(...entries.map((entry) => entry.card_count));
   replaceChildren(
     host,
     entries.map((entry) =>
@@ -6279,6 +6615,12 @@ function renderLeaderboardTop(board) {
           text: String(entry.rank).padStart(2, "0"),
         }),
         element("span", { className: "leaderboard-top-name", text: entry.name }),
+        element("span", { className: "leaderboard-top-bar" }, [
+          element("span", {
+            className: "leaderboard-top-bar-fill",
+            attrs: { style: `width:${((entry.card_count / maxCount) * 100).toFixed(1)}%` },
+          }),
+        ]),
         element("span", {
           className: "leaderboard-top-count",
           text: metricLabel(entry.card_count, "model card"),
@@ -6289,8 +6631,8 @@ function renderLeaderboardTop(board) {
   if (more) {
     more.hidden = ranked.length <= LEADERBOARD_TOP_LIMIT;
     more.textContent = state.leaderboardTopExpanded
-      ? t("Show the top {n}").replace("{n}", String(LEADERBOARD_TOP_LIMIT))
-      : t("Show all {n} ranked benchmarks").replace("{n}", String(ranked.length));
+      ? `${t("Show top {n}").replace("{n}", String(LEADERBOARD_TOP_LIMIT))} ↑`
+      : `${t("Show all {n} benchmarks").replace("{n}", String(ranked.length))} ↓`;
   }
 }
 
@@ -6876,121 +7218,20 @@ function brandIcon(name) {
   return svg;
 }
 
-function observationsToCsv(observations) {
-  const columns = [
-    "date",
-    "kind",
-    "title",
-    "summary",
-    "source",
-    "event_kind",
-    "categories",
-    "organizations",
-    "url",
-    "score",
-  ];
-  const escape = (value) => {
-    const text = String(value ?? "");
-    // Quotes and separators force quoting; a leading =, +, -, or @ is also
-    // quoted so a scraped cell cannot execute as a spreadsheet formula.
-    const mustQuote = /[",\n\r]/.test(text) || /^[=+\-@]/.test(text);
-    return mustQuote ? `"${text.replaceAll('"', '""')}"` : text;
-  };
-  const rows = observations.map((item) =>
-    [
-      item.snapshot_date,
-      item.observation_kind,
-      escape(item.title),
-      escape(item.summary || ""),
-      escape(item.source),
-      escape(item.event_kind),
-      escape((item.categories || []).join("; ")),
-      escape((item.organizations || []).join("; ")),
-      escape(item.url || item.primary_artifact_url || ""),
-      Number(item.total_score || 0).toFixed(2),
-    ].join(","),
-  );
-  return [columns.join(","), ...rows].join("\r\n");
-}
-
-function downloadText(filename, text, mimeType = "text/plain") {
-  const blob = new Blob([text], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
-// The export dialog (issue #193) does two things at once: it states the
-// usecase that makes this more than a dump, and it puts one-click downloads
-// behind a single control. The usecase is the reason the site exists for a
-// reader doing related-work research: find every benchmark on a topic, or take
-// the whole corpus with you. The JSON link and the client-side CSV are both
-// derived from the same in-memory data the dashboard renders, so an export can
-// never disagree with the screen it came from.
-function openExport() {
-  const dialog = byId("export-dialog");
-  if (!state.data) return;
-  const filtered = filteredObservations();
-  replaceChildren(byId("export-content"), [
-    element("p", { className: "detail-source", text: t("Benchmark Radar · data export") }),
-    element("h2", {
-      className: "detail-title export-title",
-      text: t("Take the data with you"),
-      attrs: { id: "export-title" },
-    }),
-    element("p", {
-      className: "detail-summary",
-      text: t("Doing related-work research, or hunting for a benchmark on a topic? This database aggregates every benchmark, evaluation, and dataset the radar has surfaced, and you can query it by topic, source, or organization before you export. Everything listed below is the same data the dashboard renders."),
-    }),
-    element("div", { className: "export-actions" }, [
-      element("a", {
-        className: "primary-link",
-        text: t("Download full dataset (JSON)"),
-        attrs: { href: "data/radar.json", download: "benchmark-radar.json" },
-      }),
-      element("button", {
-        className: "secondary-link export-csv-button",
-        text: t("Download current view (CSV · {rows} rows)", { rows: filtered.length }),
-        attrs: { type: "button" },
-      }),
-      element("a", {
-        className: "secondary-link",
-        text: t("Leaderboard (CSV)"),
-        attrs: { href: "data/leaderboard.csv", download: "leaderboard.csv" },
-      }),
-    ]),
-    element("p", {
-      className: "discovery-note",
-      text: t("{observations} observations across {snapshots} daily snapshots.", {
-        observations: allObservations().length,
-        snapshots: state.data.snapshot_count,
-      }),
-    }),
-  ]);
-  byId("export-content")
-    .querySelector(".export-csv-button")
-    .addEventListener("click", () => {
-      downloadText(
-        `benchmark-radar-${state.todayDate === "all" ? "all" : state.todayDate}.csv`,
-        observationsToCsv(filtered),
-        "text/csv;charset=utf-8",
-      );
-    });
-  dialog.showModal();
-}
-
 // The contact dialog (issue #191) keeps every reach-out channel in one place:
 // email, WeChat, and Discord. The header badge (issue #213) merged the two
 // separate WeChat and Discord buttons into a single Contact control that
 // opens this dialog, so a reader lands on a choice rather than being launched
 // out of the page on a guess.
-function openContact() {
+//
+// Dataset access stays free. Contact is for corrections, missing sources, and
+// collaboration, while the sheet still gives a reader direct routes to the
+// dataset and the repository.
+function openContact(updateUrl = true) {
   const dialog = byId("contact-dialog");
+  state.rubric = "";
+  state.contact = true;
+  if (updateUrl) writeUrl("push");
   replaceChildren(byId("contact-content"), [
     element("p", { className: "detail-source", text: "Benchmark Radar" }),
     element("h2", {
@@ -7029,8 +7270,28 @@ function openContact() {
         element("span", { className: "contact-value", text: `ID ${DISCORD_ID}` }),
       ]),
     ]),
+    element("div", { className: "contact-dataset" }, [
+      element("p", {
+        className: "detail-summary",
+        text: t("The complete dataset is free to download. If it saves you research time, star the repository so other eval builders can find it."),
+      }),
+      element("a", {
+        className: "primary-link",
+        text: t("Download"),
+        attrs: { href: "data/radar.json" },
+      }),
+      element("a", {
+        className: "secondary-link",
+        text: t("Star the repository"),
+        attrs: {
+          href: `https://github.com/${REPO_SLUG}`,
+          target: "_blank",
+          rel: "noopener noreferrer",
+        },
+      }),
+    ]),
   ]);
-  dialog.showModal();
+  if (!dialog.open) dialog.showModal();
 }
 
 // Filter keystrokes only rebuild the bounded result list. Briefing, questions,
@@ -7052,12 +7313,22 @@ function bindEvents() {
   const langToggle = byId("lang-toggle");
   if (langToggle) langToggle.addEventListener("click", toggleLang);
   document.querySelectorAll("[data-view]").forEach((button) => {
-    button.addEventListener("click", () => {
-      setView(button.dataset.view);
-      if (button.dataset.view === "today") renderToday();
-      if (button.dataset.view === "leaderboard") renderLeaderboard();
-      if (button.dataset.view === "trends") renderTrends();
-      if (button.dataset.view === "map") renderTrendMap();
+    button.addEventListener("click", async (event) => {
+      // View nav entries are anchors so crawlers can follow them; keep the
+      // navigation client-side instead of a full page reload.
+      if (event.target.closest("a")) event.preventDefault();
+      const view = button.dataset.view;
+      try {
+        if (["trends", "map"].includes(view)) await ensureFullData();
+      } catch (error) {
+        console.error(error);
+        return;
+      }
+      setView(view);
+      if (view === "today") renderToday();
+      if (view === "leaderboard") renderLeaderboard();
+      if (view === "trends") renderTrends();
+      if (view === "map") renderTrendMap();
     });
   });
   // Reads every control rather than the event target, so the <select>
@@ -7095,13 +7366,26 @@ function bindEvents() {
     renderAdoptionFrontier(state.data.model_card_leaderboard);
     writeUrl("push");
   });
-  byId("today-date").addEventListener("change", (event) => {
+  byId("today-date").addEventListener("change", async (event) => {
     state.todayDate = event.target.value;
+    try {
+      await ensureDataForState();
+    } catch (error) {
+      console.error(error);
+      return;
+    }
     renderToday();
   });
-  byId("today-show-more").addEventListener("click", () => {
-    state.todayResultsLimit += ALL_DATES_PAGE_SIZE;
+  byId("today-page-prev").addEventListener("click", () => {
+    if (state.todayPage <= 1) return;
+    state.todayPage -= 1;
     renderToday({ resultsOnly: true });
+    byId("today-list").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  byId("today-page-next").addEventListener("click", () => {
+    state.todayPage += 1;
+    renderToday({ resultsOnly: true });
+    byId("today-list").scrollIntoView({ behavior: "smooth", block: "start" });
   });
   byId("trend-released-only").addEventListener("change", (event) => {
     state.trendReleasedOnly = event.target.checked;
@@ -7167,7 +7451,7 @@ function bindEvents() {
   document.querySelectorAll("#filters, #leaderboard-filters").forEach((form) => {
     form.addEventListener("submit", (event) => event.preventDefault());
   });
-  byId("clear-filters").addEventListener("click", () => {
+  byId("clear-filters").addEventListener("click", async () => {
     state.todayDate = "all";
     state.q = "";
     state.kind = "";
@@ -7175,6 +7459,12 @@ function bindEvents() {
     state.source = "";
     state.organization = "";
     state.event = "";
+    try {
+      await ensureFullData();
+    } catch (error) {
+      console.error(error);
+      return;
+    }
     renderToday();
   });
   // The drawer trigger, its outside-click and Escape dismissal, and the
@@ -7207,15 +7497,33 @@ function bindEvents() {
   // Reachable without a record in hand, for a reader who wants the method
   // before they trust any single row.
   byId("rubric-nav").addEventListener("click", () => openRubric());
-  byId("badge-export").addEventListener("click", openExport);
   byId("badge-contact").addEventListener("click", openContact);
-  byId("export-close").addEventListener("click", () => byId("export-dialog").close());
-  byId("export-dialog").addEventListener("click", (event) => {
-    if (event.target === byId("export-dialog")) byId("export-dialog").close();
-  });
+  // The footer's "Contact" button opens the same sheet as the header
+  // badge (issue #311): one contact surface, two doors.
+  byId("footer-contact").addEventListener("click", openContact);
   byId("contact-close").addEventListener("click", () => byId("contact-dialog").close());
   byId("contact-dialog").addEventListener("click", (event) => {
     if (event.target === byId("contact-dialog")) byId("contact-dialog").close();
+  });
+  byId("contact-dialog").addEventListener("close", () => {
+    state.contact = false;
+    writeUrl();
+  });
+  byId("share-radar").addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    const shareData = {
+      title: document.title,
+      text: t("Share Benchmark Radar"),
+      url: window.location.href,
+    };
+    try {
+      if (navigator.share) await navigator.share(shareData);
+      else await navigator.clipboard.writeText(shareData.url);
+      button.textContent = t("Copied");
+      setTimeout(() => { button.textContent = t("Share"); }, 1600);
+    } catch (error) {
+      if (error?.name !== "AbortError") console.error(error);
+    }
   });
 }
 
@@ -7367,23 +7675,56 @@ function renderStaleBanner() {
   banner.hidden = false;
 }
 
-// The refresh control revalidates radar.json against the server (cache:
-// "reload" bypasses the reader's local copy) so a day rebuilt since the
-// page loaded can appear without a full reload. A failed or incompatible
-// refresh keeps the current data rather than blanking the dashboard.
-async function refreshData() {
-  try {
-    const response = await fetch("data/radar.json", { cache: "reload" });
+function compatibleDashboard(data) {
+  return data?.schema_version === 2 && Array.isArray(data.days) && data.days.length > 0;
+}
+
+function stateNeedsFullData() {
+  if (state.fullDataLoaded) return false;
+  if (["trends", "map"].includes(state.view)) return true;
+  return state.view === "today" && Boolean(
+    state.todayDate === "all" ||
+    (state.todayDate && state.todayDate !== state.data?.latest_date)
+  );
+}
+
+async function ensureFullData(cache = "default") {
+  if (state.fullDataLoaded) return state.data;
+  if (state.fullDataPromise) return state.fullDataPromise;
+  state.fullDataPromise = (async () => {
+    const response = await fetch("data/radar.json", { cache });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    if (
-      data.schema_version !== 2 ||
-      !Array.isArray(data.days) ||
-      !data.days.length
-    ) {
-      throw new Error("No compatible snapshots");
-    }
+    if (!compatibleDashboard(data)) throw new Error("No compatible snapshots");
     state.data = data;
+    state.fullDataLoaded = true;
+    state.observations = null;
+    renderTodayDateOptions();
+    return data;
+  })();
+  try {
+    return await state.fullDataPromise;
+  } finally {
+    state.fullDataPromise = null;
+  }
+}
+
+async function ensureDataForState() {
+  if (stateNeedsFullData()) await ensureFullData();
+}
+
+// The refresh control revalidates whichever payload the reader has paid for.
+// A latest-day visitor refreshes the small bootstrap; history-heavy views that
+// already upgraded refresh the full public corpus.
+async function refreshData() {
+  try {
+    const path = state.fullDataLoaded ? "data/radar.json" : "data/radar-bootstrap.json";
+    const response = await fetch(path, { cache: "reload" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (!compatibleDashboard(data)) throw new Error("No compatible snapshots");
+    state.data = data;
+    state.observations = null;
     if (state.todayDate !== "all" && !state.data.facets.dates.includes(state.todayDate)) {
       state.todayDate = state.data.latest_date;
     }
@@ -7403,21 +7744,15 @@ async function initialize() {
   // Independent of the data file, so badges still render on an error state.
   renderRepoBadges();
   try {
-    // radar.json is ~34MB and regenerated once a day. Let the browser cache
-    // it (GitHub Pages serves conditional headers, so a repeat visit reuses
-    // the cached copy and revalidates rather than re-downloading the whole
-    // corpus). cache: "no-store" forced a full re-download every load, which
-    // was the dominant part of the page's slow first interaction (issue #222).
-    const response = await fetch("data/radar.json");
+    // The default payload carries the latest day, aggregate counts, and the
+    // leaderboard. Trends, Explore, All dates, and historical permalinks lazily
+    // upgrade to the full public corpus only when the reader asks for them.
+    const response = await fetch("data/radar-bootstrap.json");
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     state.data = await response.json();
-    if (
-      state.data.schema_version !== 2 ||
-      !Array.isArray(state.data.days) ||
-      !state.data.days.length
-    ) {
-      throw new Error("No compatible snapshots");
-    }
+    if (!compatibleDashboard(state.data)) throw new Error("No compatible snapshots");
+    state.fullDataLoaded = !state.data.bootstrap;
+    await ensureDataForState();
     if (state.todayDate !== "all" && !state.data.facets.dates.includes(state.todayDate)) {
       state.todayDate = state.data.latest_date;
     }
@@ -7440,9 +7775,8 @@ async function initialize() {
 
     renderBuildMeta();
     renderStaleBanner();
-    if (state.rubric && state.data.rubrics?.[state.rubric]) {
-      openRubric(null, state.rubric);
-    }
+    if (state.rubric) openRubric(null, state.rubric === "current" ? null : state.rubric);
+    if (state.contact) openContact(false);
   } catch (error) {
     document.querySelectorAll(".view").forEach((section) => {
       section.hidden = true;

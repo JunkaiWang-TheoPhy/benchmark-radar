@@ -218,6 +218,112 @@ def test_best_value_respects_a_lower_is_better_direction(tmp_path):
     assert saturation["headroom"] == 10.0
 
 
+def test_historical_best_frontier_uses_every_rendered_protocol(tmp_path):
+    """Issue #312: the chart-wide frontier cannot pick one protocol subgroup."""
+    path = write_scores(
+        tmp_path,
+        minimal_scores(
+            results=[
+                result(model="A", reported_at="2025-01-01", value=50.0),
+                result(
+                    model="B",
+                    reported_at="2025-02-01",
+                    value=90.0,
+                    protocol="8-shot",
+                ),
+                result(model="C", reported_at="2025-03-01", value=60.0),
+            ]
+        ),
+    )
+
+    record = score_progression(load_scores(path))["benchmarks"]["alpha"]
+    frontier = record["historical_best_frontier"]
+
+    assert frontier["definition"] == "running_best_of_all_rendered_observations"
+    assert frontier["tie_policy"] == "strict_improvement"
+    assert [(point["reported_at"], point["value"]) for point in frontier["points"]] == [
+        ("2025-01-01", 50.0),
+        ("2025-02-01", 90.0),
+    ]
+    assert frontier["points"][-1]["value"] == record["saturation"]["best_value"]
+
+
+def test_historical_best_frontier_collapses_dates_and_ignores_later_ties(tmp_path):
+    path = write_scores(
+        tmp_path,
+        minimal_scores(
+            results=[
+                result(model="Weak", reported_at="2025-01-01", value=40.0),
+                result(model="Strong", reported_at="2025-01-01", value=60.0),
+                result(model="Tie", reported_at="2025-02-01", value=60.0),
+                result(model="Lower", reported_at="2025-03-01", value=20.0),
+            ]
+        ),
+    )
+
+    points = score_progression(load_scores(path))["benchmarks"]["alpha"][
+        "historical_best_frontier"
+    ]["points"]
+
+    assert [(point["reported_at"], point["value"], point["model"]) for point in points] == [
+        ("2025-01-01", 60.0, "Strong")
+    ]
+
+
+def test_historical_best_frontier_respects_lower_is_better(tmp_path):
+    document = minimal_scores(
+        results=[
+            result(model="A", reported_at="2025-01-01", value=30.0),
+            result(model="B", reported_at="2025-02-01", value=40.0),
+            result(model="C", reported_at="2025-03-01", value=10.0),
+        ]
+    )
+    document["benchmarks"][0]["direction"] = "lower_is_better"
+
+    points = score_progression(load_scores(write_scores(tmp_path, document)))["benchmarks"][
+        "alpha"
+    ]["historical_best_frontier"]["points"]
+
+    assert [point["value"] for point in points] == [30.0, 10.0]
+
+
+def test_gpqa_diamond_frontier_reaches_the_visible_94_3_record():
+    progression = build_score_progression(DEFAULT_SCORES_PATH, load_registry(DEFAULT_REGISTRY_PATH))
+    record = progression["benchmarks"]["gpqa_diamond"]
+
+    assert [point["value"] for point in record["historical_best_frontier"]["points"]] == [
+        59.1,
+        71.5,
+        79.6,
+        86.4,
+        94.3,
+    ]
+    assert (
+        record["historical_best_frontier"]["points"][-1]["value"]
+        == record["saturation"]["best_value"]
+    )
+
+
+def test_every_shipped_point_is_on_or_below_its_historical_best():
+    progression = build_score_progression(DEFAULT_SCORES_PATH, load_registry(DEFAULT_REGISTRY_PATH))
+    for record in progression["benchmarks"].values():
+        frontier = record["historical_best_frontier"]
+        points = frontier["points"]
+        assert points
+        assert points[-1]["value"] == record["saturation"]["best_value"]
+
+        for observation in record["observations"]:
+            available = [
+                point for point in points if point["reported_at"] <= observation["reported_at"]
+            ]
+            assert available
+            historical_best = available[-1]["value"]
+            if record["direction"] == "higher_is_better":
+                assert observation["value"] <= historical_best
+            else:
+                assert observation["value"] >= historical_best
+
+
 def test_headroom_is_omitted_when_the_metric_has_no_defensible_bound(tmp_path):
     # An Elo or a raw F1 has no ceiling this module is entitled to invent.
     document = minimal_scores()

@@ -15,14 +15,17 @@
          shows the current top rows rather than a static logo. -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Benchmark Radar">
-    <meta property="og:title" content="Which benchmarks do frontier labs actually report?">
+    <meta
+      property="og:title"
+      content="Benchmark Radar"
+    >
     <meta
       property="og:description"
       content="A live ranking of the benchmarks reported in frontier model cards, system cards, and technical reports. Measures vendor reporting convention, not benchmark quality."
     >
-    <meta property="og:url" content="https://ktwu01.github.io/benchmark-radar/">
+    <meta property="og:url" content="https://koutian.is-a.dev/benchmark-radar/">
     <!-- Absolute, because Open Graph consumers do not resolve relative URLs. -->
-    <meta property="og:image" content="https://ktwu01.github.io/benchmark-radar/assets/og-card.png">
+    <meta property="og:image" content="https://koutian.is-a.dev/benchmark-radar/assets/og-card.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta
@@ -30,6 +33,72 @@
       content="Benchmark Radar: the most-reported benchmarks across frontier model cards, led by GPQA Diamond, SWE-bench Verified, and LiveCodeBench."
     >
     <meta name="twitter:card" content="summary_large_image">
+    <!-- Mirrors og:image for consumers that read the Twitter namespace only
+         and do not fall back to the Open Graph tags. -->
+    <meta name="twitter:image" content="https://koutian.is-a.dev/benchmark-radar/assets/og-card.png">
+
+    <!-- Issue #236. Every view is a query-string variant of this one path, so
+         each view restates its own canonical (VIEW_SEO in assets/app.js) and
+         filter permutations consolidate into these four clean URLs rather
+         than fragmenting ranking signals across every ?view=...&lq=... state.
+         The static default below is what crawlers fetch before any script
+         runs; app.js rewrites it per view on navigation. -->
+    <link rel="canonical" href="https://koutian.is-a.dev/benchmark-radar/">
+
+    <!-- Structured data for the two things this project actually is: a
+         searchable site and a dataset. The SearchAction target is the real
+         search endpoint (the leaderboard's lq filter), not a pretend one, so
+         a search result lands on a page that answers it. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Benchmark Radar",
+        "url": "https://koutian.is-a.dev/benchmark-radar/",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://koutian.is-a.dev/benchmark-radar/?view=leaderboard&lq={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Dataset",
+        "name": "Benchmark Radar cumulative corpus",
+        "description": "A daily-updated machine-readable corpus of AI benchmark, evaluation, and dataset signals collected from arXiv, GitHub, Hugging Face, OpenAlex, OpenReview, Semantic Scholar, Hacker News, and first-party lab feeds.",
+        "url": "https://koutian.is-a.dev/benchmark-radar/data/radar.json",
+        "license": "https://opensource.org/licenses/MIT",
+        "isAccessibleForFree": true,
+        "creator": {
+          "@type": "Person",
+          "name": "Koutian Wu",
+          "url": "https://github.com/ktwu01"
+        },
+        "sameAs": "https://github.com/ktwu01/benchmark-radar",
+        "distribution": [
+          {
+            "@type": "DataDownload",
+            "encodingFormat": "application/json",
+            "contentUrl": "https://koutian.is-a.dev/benchmark-radar/data/radar.json"
+          }
+        ]
+      }
+    </script>
+
+    <!-- Machine-readable citation hints: Highwire tags are the convention
+         academic indexers and reference managers look for; cite-as points at
+         the canonical thing to cite (the repo, which carries CITATION.cff
+         and the BibTeX entry in both READMEs). -->
+    <meta name="citation_title" content="Benchmark Radar">
+    <meta name="citation_author" content="Wu, Koutian">
+    <meta name="citation_publication_date" content="2026">
+    <meta name="citation_dataset_url" content="https://koutian.is-a.dev/benchmark-radar/data/radar.json">
+    <link rel="cite-as" href="https://github.com/ktwu01/benchmark-radar">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <link rel="alternate" type="application/rss+xml" title="Benchmark Radar RSS" href="feed.xml">
@@ -78,27 +147,12 @@
           <span class="repo-badge-glyph" id="lang-toggle-label">中</span>
         </button>
         <!--
-          These two open dialogs rather than linking out: exporting a dataset
-          needs a moment of explanation about what is being handed over, and the
-          contact button (issue #213) opens one sheet that keeps email, WeChat,
-          and Discord in a single place. Reachable without navigating away from
-          the current view.
+          The contact button (issue #213) opens one sheet that keeps email,
+          WeChat, and Discord in a single place, reachable without navigating
+          away from the current view. Dataset access (issue #311) travels with
+          it: the header carries no export button any more, and the contact
+          sheet plus the footer note say how to get the data.
         -->
-        <button
-          type="button"
-          class="repo-badge"
-          id="badge-export"
-          aria-haspopup="dialog"
-          title="Export the dataset"
-          data-i18n-title="Export the dataset"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3v12"></path>
-            <path d="m7 8 5 5 5-5"></path>
-            <path d="M4 21h16"></path>
-          </svg>
-          <span class="repo-badge-label" data-i18n="Data">Data</span>
-        </button>
         <button
           type="button"
           class="repo-badge"
@@ -186,11 +240,15 @@
 
     <nav class="view-nav" aria-label="Dashboard views" data-i18n-aria="Dashboard views">
       <button type="button" data-view="today" aria-controls="today-view" data-i18n="Today">Today</button>
-      <button type="button" data-view="leaderboard" aria-controls="leaderboard-view" data-i18n="Leaderboard">
+      <!-- The three non-default views are real anchors, not buttons: crawlers
+         do not follow buttons, and without hrefs the site reported zero
+         internal links. app.js intercepts the click so navigation stays
+         client-side; the href is the same canonical URL the view writes. -->
+      <a href="?view=leaderboard" data-view="leaderboard" aria-controls="leaderboard-view" data-i18n="Leaderboard">
         Leaderboard
-      </button>
-      <button type="button" data-view="trends" aria-controls="trends-view" data-i18n="Trends">Trends</button>
-      <button type="button" data-view="map" aria-controls="map-view" data-i18n="Explore">Explore</button>
+      </a>
+      <a href="?view=trends" data-view="trends" aria-controls="trends-view" data-i18n="Trends">Trends</a>
+      <a href="?view=map" data-view="map" aria-controls="map-view" data-i18n="Explore">Explore</a>
       <button type="button" id="rubric-nav" aria-haspopup="dialog" data-i18n="Rubric">Rubric</button>
     </nav>
 
@@ -275,9 +333,8 @@
         <div class="content-grid">
           <div>
             <div class="section-title">
-              <h2 data-i18n="Today's radar">Today's radar</h2>
+              <h1 class="today-heading" data-i18n="Today's radar">Today's radar</h1>
               <div class="results-meta" aria-live="polite">
-                <span id="today-count"></span>
                 <span id="today-breakdown"></span>
                 <span id="today-sort"></span>
               </div>
@@ -288,9 +345,35 @@
               <div id="today-benchmarks-results"></div>
             </section>
             <div class="signal-list" id="today-list"></div>
-            <button class="secondary-link today-show-more" id="today-show-more" type="button" hidden data-i18n="Show more results">
-              Show more results
-            </button>
+            <nav class="today-pagination" aria-label="Result pages">
+              <button type="button" id="today-page-prev" data-i18n="Previous">Previous</button>
+              <p id="today-page-status" role="status"></p>
+              <button type="button" id="today-page-next" data-i18n="Next">Next</button>
+            </nav>
+            <aside class="adoption-cta" aria-label="Support Benchmark Radar">
+              <p data-i18n="If this saved you research time, cite the work, star the repo and help other eval builders find it.">
+                If this saved you research time, cite the work, star the repo and help other eval builders find it.
+              </p>
+              <span class="adoption-actions">
+                <a
+                  class="primary-link"
+                  href="https://github.com/ktwu01/benchmark-radar/blob/main/CITATION.cff"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-i18n="Cite"
+                >Cite</a>
+                <a
+                  class="primary-link"
+                  href="https://github.com/ktwu01/benchmark-radar"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-i18n="Star the repository"
+                >Star the repository</a>
+                <button type="button" class="secondary-link" id="share-radar" data-i18n="Share">
+                  Share
+                </button>
+              </span>
+            </aside>
           </div>
           <div>
             <!-- The day's narrative and Q&A describe the whole scan date
@@ -345,14 +428,19 @@
              name, and the (i) beside it carries the caveat. -->
         <section class="leaderboard-top" aria-labelledby="leaderboard-heading">
           <div class="leaderboard-top-heading">
-            <h1 id="leaderboard-heading" data-i18n="Most reported benchmarks in model cards">Most reported benchmarks in model cards</h1>
+            <h2 id="leaderboard-heading" data-i18n="Most reported benchmarks in model cards">Most reported benchmarks in model cards</h2>
             <span id="leaderboard-top-info"></span>
             <!-- Written but not shown: the visible copy is in the (i). A screen
                  reader announces it with the heading. -->
             <p class="leaderboard-deck visually-hidden" id="leaderboard-measures"></p>
           </div>
+          <div class="leaderboard-top-columns" aria-hidden="true">
+            <span class="leaderboard-top-columns-rank" data-i18n="Rank">Rank</span>
+            <span class="leaderboard-top-columns-name" data-i18n="Benchmark">Benchmark</span>
+            <span class="leaderboard-top-columns-count" data-i18n="leaderboard.column.model_cards">Model cards</span>
+          </div>
           <ol class="leaderboard-top-list" id="leaderboard-top-list"></ol>
-          <button class="secondary-link leaderboard-top-more" id="leaderboard-top-more" type="button"></button>
+          <button class="leaderboard-top-more" id="leaderboard-top-more" type="button"></button>
         </section>
 
         <div class="benchmark-workbench">
@@ -401,11 +489,12 @@
                     <summary data-i18n="How to read this chart">How to read this chart</summary>
                     <p class="section-note" data-i18n="frontier.explainer.sub">
                       Every value that could be read verbatim from a cited document, placed at the date
-                      that document was published rather than at any evaluation date, and connected only
-                      where the test variant and run conditions are identical. The stepped line is the best reached so far within one identical run, not a path between readings. A flat tail usually means no newer
-                      number could be read, which is why the gap is marked rather than drawn through.
-                      Whether a curve has saturated stays a reading you make, not a score this panel
-                      prints.
+                      that document was published rather than at any evaluation date. The line directly
+                      links actual observations that set a new reported record among the values shown; it
+                      neither holds a score between reports nor extends past the final record. Test versions
+                      and run conditions can differ, so this is a reported-record path, not a like-for-like
+                      trend. When no newer number could be read, the gap is marked rather than drawn through.
+                      Whether a benchmark has saturated stays a reading you make, not a score this panel prints.
                     </p>
                   </details>
                 </div>
@@ -540,7 +629,7 @@
         <header class="view-heading">
           <div>
             <p class="eyebrow" data-i18n="Big picture">Big picture</p>
-            <h1 id="map-heading" data-i18n="What we found">What we found</h1>
+            <h2 id="map-heading" data-i18n="What we found">What we found</h2>
           </div>
           <p class="heading-note" data-i18n="map.heading.note">
             See what shows up most often and where it came from. Open the connections view
@@ -584,7 +673,7 @@
         <header class="view-heading">
           <div>
             <p class="eyebrow" data-i18n="Recent activity">Recent activity</p>
-            <h1 id="trends-heading" data-i18n="Signals over time">Signals over time</h1>
+            <h2 id="trends-heading" data-i18n="Signals over time">Signals over time</h2>
           </div>
           <p class="heading-note" data-i18n="trends.heading.note">Counts describe discovery volume, not scientific quality.</p>
         </header>
@@ -657,7 +746,7 @@
 
       <section class="error-state" id="error-state" hidden>
         <p class="eyebrow" data-i18n="Dashboard unavailable">Dashboard unavailable</p>
-        <h1 data-i18n="The validated data file could not be loaded.">The validated data file could not be loaded.</h1>
+        <h2 data-i18n="The validated data file could not be loaded.">The validated data file could not be loaded.</h2>
         <p data-i18n="error.note">Try refreshing, or inspect the latest daily Issue while the dashboard rebuilds.</p>
         <a href="https://github.com/ktwu01/benchmark-radar/issues?q=is%3Aissue+label%3Adaily-radar" data-i18n="Open daily Issues">Open daily Issues ↗</a>
       </section>
@@ -673,16 +762,6 @@
       <div id="rubric-content"></div>
     </dialog>
 
-    <dialog id="export-dialog" aria-labelledby="export-title">
-      <button
-        class="dialog-close"
-        id="export-close"
-        type="button"
-        aria-label="Close data export"
-      >×</button>
-      <div id="export-content"></div>
-    </dialog>
-
     <dialog id="contact-dialog" aria-labelledby="contact-title">
       <button
         class="dialog-close"
@@ -695,6 +774,24 @@
 
     <footer>
       <p id="build-meta">Updated —</p>
+      <div class="footer-dataset">
+        <strong data-i18n="Free dataset. No crawler needed.">Free dataset. No crawler needed.</strong>
+        <span class="footer-dataset-actions">
+          <a href="data/radar.json" data-i18n="Download">Download</a>
+          <a
+            href="https://github.com/ktwu01/benchmark-radar"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-i18n="Star the repository"
+          >Star the repository</a>
+          <button
+            type="button"
+            class="footer-contact-link"
+            id="footer-contact"
+            data-i18n="Contact"
+          >Contact</button>
+        </span>
+      </div>
     </footer>
   </body>
 </html>

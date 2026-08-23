@@ -31,6 +31,7 @@ from .rubric import (
     v2_rubric_reference,
     v3_rubric_reference,
 )
+from .site_seo import write_sitemap
 
 SCHEMA_VERSION = 2
 SUPPORTED_SCHEMA_VERSIONS = {1, SCHEMA_VERSION}
@@ -1038,6 +1039,29 @@ def records_badge(dashboard: dict[str, Any]) -> str:
     )
 
 
+def dashboard_bootstrap(dashboard: dict[str, Any]) -> dict[str, Any]:
+    """Return the small payload needed for the first useful dashboard paint.
+
+    The full bundle contains every historical observation and every corpus
+    entity.  Today and the model-card leaderboard need neither: they use the
+    latest day, the curated leaderboard, its score progression, and corpus
+    aggregate counts.  Keep the public ``radar.json`` export intact for
+    researchers, while giving the browser a much smaller default document and
+    letting history-heavy views fetch the full bundle only when opened.
+
+    The score progression stays in this payload.  It is what the leaderboard's
+    score panel reads, and no view upgrades to the full bundle on the reader's
+    way to that panel, so dropping it left the panel permanently empty.
+    """
+    corpus = dashboard.get("corpus") or {}
+    return {
+        **dashboard,
+        "bootstrap": True,
+        "days": (dashboard.get("days") or [])[-1:],
+        "corpus": {"aggregates": corpus.get("aggregates") or {}},
+    }
+
+
 def rebuild_dashboard(
     snapshot_dir: Path,
     output: Path,
@@ -1055,6 +1079,10 @@ def rebuild_dashboard(
         kw_bench_store_path=kw_bench_store_path,
     )
     _write_json(output, value)
+    # The browser starts here.  Historical views lazily upgrade to radar.json;
+    # the full file remains the stable, one-click public dataset.
+    bootstrap_path = output.with_name(f"{output.stem}-bootstrap{output.suffix}")
+    _write_json(bootstrap_path, dashboard_bootstrap(value))
     # The record-count badge lives beside radar.json so it deploys with the same
     # dashboard build and can never report a corpus newer than the page it sits
     # on. It is the single self-describing "how much have we collected" signal
@@ -1062,6 +1090,16 @@ def rebuild_dashboard(
     badge_path = output.parent / "records-badge.json"
     badge_path.parent.mkdir(parents=True, exist_ok=True)
     badge_path.write_text(records_badge(value), encoding="utf-8")
+    # The sitemap is a site-level discovery document, not dashboard data. When
+    # this build also publishes the site-level feed, put the sitemap beside it
+    # so robots.txt's /sitemap.xml URL resolves in the Pages artifact. Custom
+    # data-only builds retain the local beside-output behavior.
+    sitemap_output = (
+        feed_output.with_name("sitemap.xml")
+        if feed_output is not None
+        else output.parent / "sitemap.xml"
+    )
+    write_sitemap(snapshots, sitemap_output)
     if feed_output is not None:
         write_feed(snapshots, feed_output)
     return value

@@ -117,6 +117,7 @@ footer {
 .brand small,
 .eyebrow,
 .section-title span,
+#today-view .section-title h1,
 #today-view .section-title h2,
 .heading-note,
 .date-control,
@@ -170,7 +171,8 @@ th {
 
 .masthead-end {
   display: grid;
-  grid-template-columns: repeat(7, 2.6rem);
+  /* RSS, language, contact, then the three-square star/fork/issues group. */
+  grid-template-columns: repeat(6, 2.6rem);
   gap: 0.7rem;
   align-items: center;
   justify-content: flex-end;
@@ -244,10 +246,10 @@ th {
   visibility: visible;
 }
 
-/* The export and contact controls are <button>s, not <a>s, because they open
-   dialogs instead of navigating. Without these resets a button renders with
-   the user agent's default chrome (grey background, distinct font) over the
-   repo-badge styling shared with the links beside it. */
+/* The language and contact controls are <button>s, not <a>s, because they
+   open dialogs and toggle state instead of navigating. Without these resets a
+   button renders with the user agent's default chrome (grey background,
+   distinct font) over the repo-badge styling shared with the links beside it. */
 button.repo-badge {
   appearance: none;
   background: transparent;
@@ -392,6 +394,16 @@ main {
   padding-top: clamp(1.25rem, 2vw, 1.75rem);
 }
 
+/* View headings are h2s under the page's single h1, and they share the
+   quiet leaderboard-heading scale rather than the display scale the old
+   per-view h1s used. */
+.view-heading h2 {
+  margin: 0;
+  max-width: none;
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  line-height: 1.2;
+}
+
 .view-heading {
   display: flex;
   gap: 2rem;
@@ -496,12 +508,17 @@ input {
   border-bottom: 1px solid var(--ink);
 }
 
+.section-title h1,
 .section-title h2 {
   margin-bottom: 0;
 }
 
 /* The results heading reads as a caption for the list beneath it, so it
-   carries the regular weight rather than the display h2 weight (issue #248). */
+   carries the regular weight rather than the display h2 weight (issue #248).
+   The heading is semantically an h1, but it renders exactly like the counts
+   caption beside it: same utility face, same 0.72rem size, inherited from
+   the shared small-caps group above. */
+#today-view .section-title h1,
 #today-view .section-title h2 {
   color: var(--muted);
   font-weight: 400;
@@ -520,6 +537,13 @@ input {
   align-items: baseline;
   justify-content: flex-end;
   text-align: right;
+  /* Counts read as plain data, not a label; the small-caps transform the
+     section-title group applies to these spans directly is dropped here. */
+  text-transform: none;
+}
+
+.results-meta span {
+  text-transform: none;
 }
 
 #today-sort {
@@ -2311,15 +2335,45 @@ td a {
 
 .leaderboard-top-heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
   margin-bottom: 0.35rem;
 }
 
+/* Half the global h1 scale (issue #313). The old 48px uppercase line was the
+   largest object on the page and compressed the ranking it names; and because
+   the wrapped title filled its whole max-width box, the (i) beside it landed
+   hundreds of pixels away in empty space with no anchor. At this size the
+   heading fits one line, so the toggle sits immediately after its last
+   glyph, and wrap keeps that true on narrow screens by stacking instead. */
+.leaderboard-top-heading h1,
 .leaderboard-top-heading h2 {
-  font-family: var(--display);
-  font-size: 1.35rem;
   margin: 0;
+  max-width: none;
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  line-height: 1.2;
+}
+
+/* Named columns, not a wall of whitespace between the name and the count
+   (issue #314): a fixed rank marker, a name column capped so a short benchmark
+   name doesn't force the reader's eye across the full row width, a bar that
+   makes the gap between ranks visible at a glance, and a fixed count. */
+.leaderboard-top-columns {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 16rem) minmax(0, 1fr) 6.5rem;
+  gap: 0.75rem;
+  padding: 0 0.85rem 0.3rem;
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.leaderboard-top-columns-count {
+  grid-column: 4;
+  text-align: right;
 }
 
 .leaderboard-top-list {
@@ -2332,10 +2386,10 @@ td a {
 
 .leaderboard-top-row {
   display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  grid-template-columns: 2rem minmax(0, 16rem) minmax(0, 1fr) 6.5rem;
   gap: 0.75rem;
-  align-items: baseline;
-  padding: 0.22rem 0.85rem;
+  align-items: center;
+  padding: 0.3rem 0.85rem;
   border-bottom: 1px solid var(--line);
 }
 
@@ -2356,11 +2410,45 @@ td a {
   overflow-wrap: anywhere;
 }
 
+.leaderboard-top-bar {
+  display: block;
+  height: 0.55rem;
+  background: var(--canvas);
+}
+
+.leaderboard-top-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--blue);
+}
+
 .leaderboard-top-count {
   font-variant-numeric: tabular-nums;
   font-size: 0.82rem;
   color: var(--muted);
+  text-align: right;
   white-space: nowrap;
+}
+
+/* A disclosure toggle for the rest of the ranking, not an action button
+   (issue #314): the heavy bordered all-caps control it replaces read as a
+   destructive or system command for what is really "show more of this list". */
+.leaderboard-top-more {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--blue-deep);
+  font-family: var(--body);
+  font-size: 0.85rem;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.leaderboard-top-more:hover,
+.leaderboard-top-more:focus-visible {
+  color: var(--blue);
 }
 
 /* The title and its (i) sit on one line, with the source and score count on a
@@ -2572,6 +2660,29 @@ td a {
 
 .score-point {
   cursor: pointer;
+}
+
+/* Entrance (issue #312): points fade up one by one, ordered by their date,
+   while the running-best line draws itself across the axis. The whole block
+   is gated on .score-chart-enter, which a render adds only when the reader
+   arrived at a new selection -- incidental redraws of the same chart repaint
+   it finished, not from zero. Point delays arrive as a custom property set
+   per point, so the drawing code places each mark on the timeline without
+   knowing anything about the CSS. */
+.score-chart-enter .score-point {
+  opacity: 0;
+  animation: score-point-reveal 360ms ease-out forwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+@keyframes score-point-reveal {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .frontier-tick,
@@ -2825,15 +2936,83 @@ td a {
   r: 13px;
 }
 
-/* The running best (issue #288). Solid and stepped, deliberately unlike any
-   point-to-point join: the steps are horizontal and vertical only, so the eye
-   reads "held, then rose" rather than "moved continuously between these two
-   reports", which is the interpolation this corpus cannot support. */
+/* The reported-record path (issues #288 and #312). It links only actual strict
+   record setters, directly from one observed point to the next; it never holds
+   a score across an unobserved interval or extends past the final record. */
 .score-frontier-line {
   stroke: #4c948b;
   stroke-width: 1.75;
-  stroke-linejoin: miter;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   opacity: 0.85;
+}
+
+/* Entrance (issue #312): a full-width clip rectangle scales across the x axis
+   in exactly the same 3.6s interval used to schedule points by date. Unlike a
+   stroke dash, the sweep is independent of each segment's slope and length, so
+   the line reaches every record when its point brightens. */
+.score-frontier-clip {
+  transform-box: fill-box;
+  transform-origin: left center;
+}
+
+.score-chart-enter .score-frontier-clip {
+  animation: score-frontier-sweep 3600ms linear 180ms both;
+}
+
+@keyframes score-frontier-sweep {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* "其他的点可以淡化" (issue #312): readings off the saturation line recede
+   behind it instead of competing with it for the eye. The de-emphasis sits on
+   the marks inside the group rather than the group's own opacity, which the
+   entrance animation owns. Reading one still works: hover and focus bring a
+   receded point back to full strength. */
+.score-point-dim .score-point-face {
+  fill-opacity: 0.6;
+  stroke-opacity: 0.45;
+}
+
+.score-point-dim .score-point-citation-ring,
+.score-point-dim .score-point-glyph {
+  opacity: 0.5;
+}
+
+.score-point-dim:hover .score-point-face,
+.score-point-dim:focus .score-point-face,
+.score-point-dim.is-selected .score-point-face {
+  fill-opacity: 1;
+  stroke-opacity: 1;
+}
+
+.score-point-dim:hover .score-point-citation-ring,
+.score-point-dim:focus .score-point-citation-ring,
+.score-point-dim.is-selected .score-point-citation-ring,
+.score-point-dim:hover .score-point-glyph,
+.score-point-dim:focus .score-point-glyph,
+.score-point-dim.is-selected .score-point-glyph {
+  opacity: 1;
+}
+
+/* The entrance is presentation, not information: readers who ask for reduced
+   motion get the finished chart immediately. */
+@media (prefers-reduced-motion: reduce) {
+  .score-chart-enter .score-point {
+    animation: none;
+    opacity: 1;
+  }
+
+  .score-chart-enter .score-frontier-clip {
+    animation: none;
+    transform: none;
+  }
 }
 
 .score-best-line {
@@ -3413,7 +3592,10 @@ dialog::backdrop {
 
 .detail-title {
   padding-right: 2rem;
-  font-size: clamp(2rem, 5vw, 3.4rem);
+  /* Same quiet scale as the view headings; the old display-scale title
+     outweighed the detail content it named. */
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  line-height: 1.2;
 }
 
 .detail-summary {
@@ -3473,51 +3655,17 @@ dialog::backdrop {
   font-size: 0.85rem;
 }
 
-.export-actions {
+/* The dataset note inside the contact sheet (issue #311): the ask's terms sit
+   under the channels, with the star action one click away. */
+.contact-dataset {
   display: grid;
-  gap: 0.6rem;
-  margin: 1.5rem 0;
+  gap: 0.75rem;
+  justify-items: start;
+  margin-top: 1.5rem;
 }
 
-.export-actions .primary-link,
-.export-actions .secondary-link {
-  display: block;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--line);
-  font-family: var(--utility);
-  font-size: 0.72rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.export-actions .primary-link {
-  border-color: var(--blue);
-  color: var(--blue);
-}
-
-.export-actions .primary-link:hover {
-  background: var(--blue);
-  color: var(--panel);
-}
-
-.export-actions button.secondary-link {
-  width: 100%;
-  appearance: none;
-  background: transparent;
-  cursor: pointer;
-  font: inherit;
-  letter-spacing: 0.05em;
-  text-align: left;
-  text-transform: uppercase;
-}
-
-.export-actions .secondary-link:hover {
-  border-color: var(--ink);
-  color: var(--ink);
-}
-
-.export-title {
-  font-size: clamp(1.8rem, 4vw, 2.8rem);
+.contact-dataset .detail-summary {
+  margin: 0;
 }
 
 .contact-list {
@@ -3625,9 +3773,99 @@ dialog::backdrop {
   text-transform: uppercase;
 }
 
-.today-show-more {
+/* Explicit pages keep a long day bounded without turning the footer into an
+   invisible scroll trigger. */
+.today-pagination {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.8rem;
+  align-items: center;
+  margin: 1.25rem 0 0;
+}
+
+.today-pagination p {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.today-pagination button {
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font-family: var(--utility);
+  font-size: 0.7rem;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.today-pagination button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.adoption-cta {
+  display: grid;
+  gap: 0.9rem;
   margin-top: 1.5rem;
+  padding: 1.1rem;
+  border: 1px solid var(--ink);
+  background: #fff4d6;
+}
+
+.adoption-cta p {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.05rem;
+}
+
+.adoption-actions,
+.footer-dataset-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.adoption-actions button {
   background: transparent;
+  cursor: pointer;
+}
+
+.footer-dataset {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.7rem 0 0;
+  padding: 0.9rem;
+  border-left: 3px solid var(--orange);
+  background: #fff4d6;
+  color: var(--ink);
+  font-family: var(--utility);
+  font-size: 0.75rem;
+}
+
+.footer-dataset a,
+.footer-contact-link {
+  color: var(--ink);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.footer-contact-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .stale-banner {
@@ -3693,14 +3931,23 @@ button.stale-banner-action {
   padding: 7rem 0;
 }
 
-.error-state h1 {
+.error-state h1,
+.error-state h2 {
   margin-bottom: 2rem;
+  /* Restates the global h1 treatment the heading carried as an h1. */
   font-size: clamp(2.5rem, 7vw, 5.5rem);
+  line-height: 1;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
 }
 
 footer {
+  /* One left-aligned column: updated stamp, view links, then the dataset
+     card underneath them. */
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.9rem;
   padding: 1.5rem 0 3rem;
   border-top: 1px solid var(--ink);
   color: var(--muted);
@@ -3762,9 +4009,9 @@ footer {
   }
 
   .masthead-end {
-    /* 7 * 2.1rem + 6 * 0.5rem gaps = 283px, so the full row still fits a
+    /* 6 * 2.1rem + 5 * 0.5rem gaps = 241px, so the full row still fits a
        320px-wide phone once it wraps below the brand (issue #213 squares). */
-    grid-template-columns: repeat(7, 2.1rem);
+    grid-template-columns: repeat(6, 2.1rem);
     gap: 0.5rem;
   }
 
@@ -3918,6 +4165,24 @@ footer {
 
   footer {
     display: grid;
+  }
+}
+
+@media (max-width: 560px) {
+  /* The bar's job is comparing rows at a glance; on a narrow screen there is
+     no spare width left for it once rank, name and count are legible, so it
+     drops rather than squeezing everything past readable. */
+  .leaderboard-top-columns,
+  .leaderboard-top-row {
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
+  }
+
+  .leaderboard-top-columns-count {
+    grid-column: 3;
+  }
+
+  .leaderboard-top-bar {
+    display: none;
   }
 }
 
@@ -4268,6 +4533,19 @@ footer {
   margin: 0 0 0.8rem;
   color: #d6e0e3;
   font-size: 0.85rem;
+}
+
+/* The #262 inheritance note: a borrowed identity is flagged, never silent. A
+   left rule and muted panel set it apart from the record's own description. */
+.external-inherited {
+  max-width: 75ch;
+  margin: 0 0 0.8rem;
+  padding: 0.5rem 0.7rem;
+  border-left: 3px solid #4a6b73;
+  background: rgba(74, 107, 115, 0.12);
+  border-radius: 0 4px 4px 0;
+  color: #cdd9dc;
+  font-size: 0.8rem;
 }
 
 .external-openness-chip {

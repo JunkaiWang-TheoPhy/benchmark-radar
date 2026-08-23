@@ -30,6 +30,25 @@ class SiteParser(HTMLParser):
             self.local_refs.append(reference)
 
 
+def test_readmes_offer_free_data_and_an_earned_star_request():
+    english = Path("README.md").read_text(encoding="utf-8")
+    chinese = Path("README.zh-CN.md").read_text(encoding="utf-8")
+
+    # Language switch sits top-left above the title with a plain label.
+    assert '<div align="left">' in english.split("# Benchmark Radar")[0]
+    assert "[中文](README.zh-CN.md)" in english
+    assert "[README.zh-CN.md](README.zh-CN.md)" not in english
+    assert '<div align="left">' in chinese.split("# Benchmark Radar")[0]
+    assert "[English](README.md)" in chinese
+    assert "Click the image" in english
+    assert "点击图片" in chinese
+    assert "data/radar.json" in english and "no crawler or contact required" in english
+    assert "data/radar.json" in chinese and "无需爬虫或联系作者" in chinese
+    assert "star the repository" in english
+    assert "给仓库点个 Star" in chinese
+    assert Path("CITATION.cff").exists()
+
+
 def test_site_has_accessible_landmarks_and_views():
     parser = SiteParser()
     parser.feed(Path("site/index.html").read_text(encoding="utf-8"))
@@ -93,10 +112,15 @@ def test_scan_date_can_be_reset_to_all_dates():
     assert 'state.todayDate === "all" || item.snapshot_date === state.todayDate' in script
     assert 'state.todayDate = "all";' in script
     assert 'params.set("date", "all")' in script
-    assert 'id="today-show-more"' in html
-    assert 'id="source-health-panel"' in html
-    assert "observations.slice(0, state.todayResultsLimit)" in script
-    assert "state.todayResultsLimit += ALL_DATES_PAGE_SIZE" in script
+    # The list is bounded by explicit pages (issue #322), so reaching the
+    # footer never silently appends the rest of the archive.
+    assert "observations.slice(pageStart, pageEnd)" in script
+    assert "state.todayPage += 1" in script
+    assert "const TODAY_PAGE_SIZE = 20;" in script
+    assert 'id="today-page-status"' in html
+    assert 'id="today-page-prev"' in html
+    assert 'id="today-page-next"' in html
+    assert "IntersectionObserver" not in script
     assert 'byId("daily-briefing").hidden = showingAllDates' in script
     assert 'byId("source-health-panel").hidden = showingAllDates' in script
 
@@ -107,7 +131,7 @@ def test_dashboard_bounds_work_before_and_during_filtering():
 
     assert "state.observations = [...evidence, ...attention].sort" in script
     assert "if (state.observations) return state.observations" in script
-    assert "const visibleObservations = observations.slice(0, state.todayResultsLimit)" in script
+    assert "const visibleObservations = observations.slice(pageStart, pageEnd)" in script
     assert "renderToday({ resultsOnly: true })" in script
     assert 'if (state.view === "today") renderToday()' in script
     assert 'if (state.view === "leaderboard") renderLeaderboard()' in script
@@ -160,17 +184,21 @@ def test_top_right_utilities_use_shared_icon_geometry_and_contact_control():
     styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
 
     assert 'id="badge-contact"' in html
+    # The export badge is gone (issue #311): dataset requests go through the
+    # contact sheet and the footer note, not a header button.
+    assert 'id="badge-export"' not in html
+    assert 'id="export-dialog"' not in html
     assert 'id="badge-wechat"' not in html
     assert 'id="badge-discord"' not in html
     assert 'id="lang-toggle"' in html
     assert 'class="repo-badge"' in html
-    assert "grid-template-columns: repeat(7, 2.6rem)" in styles
+    assert "grid-template-columns: repeat(6, 2.6rem)" in styles
     assert "width: 2.6rem" in styles
     assert "height: 2.6rem" in styles
     assert "grid-column: span 3" in styles
     assert 'class="repo-badge-glyph" id="lang-toggle-label">中<' in html
     assert 'class="brand-icon github-icon"' in html
-    assert "grid-template-columns: repeat(7, 2.1rem)" in styles
+    assert "grid-template-columns: repeat(6, 2.1rem)" in styles
     assert "flex: 0 0 1.5rem" in styles
     assert ".repo-badge svg," in styles
 
@@ -203,6 +231,52 @@ def test_language_toggle_and_contact_labels_are_translated():
         assert key in script
 
 
+def test_issue_316_benchmark_detail_labels_are_translated():
+    # The crawled benchmark detail panel (identity / openness / size) rendered
+    # its headings, field labels and "not established" placeholders through t(),
+    # but only "Released" had a zh entry -- so under Chinese the whole panel
+    # except that one line fell back to English. Every label the panel draws
+    # must have a zh translation.
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    for key in (
+        'Identity: "基本信息"',
+        'Publisher: "发布方"',
+        'Modality: "模态"',
+        'Openness: "开放性"',
+        'Size: "规模"',
+        '"Code licence": "代码许可证"',
+        '"Data licence": "数据许可证"',
+        '"not established": "尚未确定"',
+        '"description not established": "简介尚未确定"',
+        '"publisher not established": "发布方尚未确定"',
+        '"release date not established": "发布日期尚未确定"',
+        '"modality not established": "模态尚未确定"',
+        '"openness not established": "开放性尚未确定"',
+        '"size not established": "规模尚未确定"',
+        '"No openness evidence recorded.": "未记录开放性证据。"',
+        'open: "开放"',
+        'restricted: "受限"',
+        'Paper: "论文"',
+        '"Code repository": "代码仓库"',
+        'Dataset: "数据集"',
+        '"Project site": "项目站点"',
+        'maintainer: "维护者"',
+        '"published the hub card": "发布了 Hub 卡片"',
+        '"organization behind the paper": "论文背后的机构"',
+        '"counts the": "统计的是"',
+        '"what it counts is unclear": "统计对象不明"',
+        '"evidence ↗": "证据 ↗"',
+    ):
+        assert key in script, f"missing zh translation for {key!r}"
+
+    # The longest placeholder wraps onto its own line in the source, so assert
+    # the value rather than a single-line "key": "value" pair.
+    assert "尚未确定论文、代码仓库、数据集或站点链接。" in script
+    # The #262 inheritance note also wraps onto its own line.
+    assert "中经人工核对为同一基准的记录" in script
+
+
 def test_language_toggle_click_handler_is_wired():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
@@ -217,9 +291,33 @@ def test_rubric_dialog_is_linkable_by_url_hash():
     # Issue #41: opening the rubric must be shareable as a hashtag link, and
     # loading that link must reopen the same rubric version.
     assert "state.rubric" in script
-    assert 'window.location.hash.slice(1)).get("rubric")' in script
-    assert 'hashParams.set("rubric", state.rubric)' in script
-    assert "openRubric(null, state.rubric)" in script
+    assert 'rawHash === "rubric"' in script
+    assert 'hash = "rubric"' in script
+    assert 'state.rubric === "current" ? null : state.rubric' in script
+
+
+def test_contact_dialog_and_current_rubric_have_clean_hash_links():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    assert 'rawHash === "contact"' in script
+    assert 'hash = "contact"' in script
+    assert "state.contact = true;" in script
+    assert "openContact(false)" in script
+    assert 'else if (state.rubric === "current") hash = "rubric";' in script
+    # Historical records remain linkable to the rubric that scored them.
+    assert "hash = `rubric=${encodeURIComponent(state.rubric)}`" in script
+
+
+def test_initial_page_uses_small_bootstrap_and_lazy_loads_history():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    initialize = script.split("async function initialize()", 1)[1]
+    assert 'fetch("data/radar-bootstrap.json")' in initialize
+    assert "await ensureDataForState();" in initialize
+    loader = script.split("async function ensureFullData(", 1)[1].split("\nasync function ", 1)[0]
+    assert 'fetch("data/radar.json", { cache })' in loader
+    assert '["trends", "map"].includes(state.view)' in script
+    assert 'state.todayDate === "all"' in script
 
 
 def test_rubric_is_read_from_published_data_not_restated_in_the_browser():
@@ -258,7 +356,10 @@ def test_today_view_has_one_filterable_observation_list_and_one_source_status():
     assert 'id="today-list"' in html
     assert 'id="filters"' in html
     assert 'id="kind-filter"' in html
-    assert "visibleObservations.map(observationCard)" in script
+    assert (
+        "visibleObservations.map((item, offset) => observationCard(item, pageStart + offset))"
+        in script
+    )
     assert "Daily field note" not in html
     assert "What entered the field?" not in html
     assert "today-overview" not in html
@@ -288,7 +389,8 @@ def test_today_toolbar_keeps_secondary_filters_in_a_popover():
     assert "function updateFiltersCount()" in script
     assert "function closeFiltersDrawer()" in script
     assert "function refreshData()" in script
-    assert 'fetch("data/radar.json", { cache: "reload" })' in script
+    assert 'state.fullDataLoaded ? "data/radar.json" : "data/radar-bootstrap.json"' in script
+    assert 'const response = await fetch(path, { cache: "reload" });' in script
     assert "drawer.hidden = true" in script
 
 
@@ -347,10 +449,11 @@ def test_records_expand_inline_without_an_exclusive_accordion_or_record_modal():
     assert "detail-dialog" not in script
     # A shared details[name] would force one row closed when another opens.
     assert "attrs: { name:" not in script
-    # The three dialogs on the page are non-record chrome: the scoring rubric,
-    # the data export, and the contact sheet. Record detail must stay inline,
-    # so any fourth showModal() is a regression to a record modal.
-    assert script.count(".showModal()") == 3
+    # The two dialogs on the page are non-record chrome: the scoring rubric and
+    # the contact sheet (the export dialog went with the export button,
+    # issue #311). Record detail must stay inline, so any third showModal()
+    # is a regression to a record modal.
+    assert script.count(".showModal()") == 2
 
 
 def test_hugging_face_expansion_links_to_the_full_card():
@@ -391,9 +494,11 @@ def test_dashboard_links_are_validated_escaped_and_non_swallowing():
     # Regression guards for the browser-side hardening: every external href is
     # produced by safeHttpUrl; the interactive map is role="group" (ARIA makes
     # descendants of role="img" presentational, hiding its focusable markers);
-    # CSV export quotes cells that would run as spreadsheet formulas; Escape
-    # yields to an open dialog instead of swallowing the first press; and
-    # clearing the adoption frontier also clears its org color key.
+    # Escape yields to an open dialog instead of swallowing the first press;
+    # and clearing the adoption frontier also clears its org color key.
+    #
+    # The CSV formula-quoting guard retired with the client-side export
+    # (issue #311 removed the export dialog and its CSV builder).
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     assert "function safeHttpUrl(" in script
@@ -405,7 +510,6 @@ def test_dashboard_links_are_validated_escaped_and_non_swallowing():
     # tooltip, not role="img", because it is a focusable, clickable marker.
     assert 'role: "group"' in script
     assert script.count('role: "img"') == 1
-    assert "/^[=+\\-@]/" in script
     assert 'document.querySelector("dialog[open]")' in script
     assert "Do not swallow Escape" in script
     assert 'replaceChildren(byId("frontier-org-key"), [])' in script
@@ -416,7 +520,7 @@ def test_corpus_view_progressively_discloses_the_complete_relationship_map():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     assert 'data-view="map"' in html
-    assert 'data-i18n="Explore">Explore</button>' in html
+    assert 'data-i18n="Explore">Explore</a>' in html
     assert 'id="map-insights"' in html
     assert '<details class="relationship-explorer" id="relationship-explorer">' in html
     assert "renderMapInsights(corpus)" in script
@@ -470,7 +574,10 @@ def test_static_html_references_existing_local_assets():
     # Pages generates these from validated source data before upload. Their
     # generators and rendered structure have dedicated tests, while this check
     # remains about static assets that must exist in a clean checkout.
-    generated_assets = {"feed.xml"}
+    # radar.json is the dashboard bundle the "Download the dataset" link points
+    # at. Pages writes it during the build, before the artifact upload, so the
+    # published link resolves; it is absent from a clean checkout by design.
+    generated_assets = {"feed.xml", "data/radar.json"}
     missing = []
     for reference in parser.local_refs:
         path = urlsplit(reference).path
@@ -561,7 +668,7 @@ def test_leaderboard_view_is_a_first_class_dashboard_view():
     assert "leaderboard-view" in parser.ids
     assert 'data-view="leaderboard"' in html
     assert '"map", "leaderboard"' in script
-    assert 'if (button.dataset.view === "leaderboard") renderLeaderboard();' in script
+    assert 'if (view === "leaderboard") renderLeaderboard();' in script
     assert "state.data?.model_card_leaderboard" in script
 
 
@@ -798,7 +905,7 @@ def test_share_card_is_declared_with_an_absolute_url():
     # og:image silently yields the same blank grey card as no tag at all
     # (issue #88). The failure is invisible from inside the site.
     assert 'property="og:image"' in html
-    assert "https://ktwu01.github.io/benchmark-radar/assets/og-card.png" in html
+    assert "https://koutian.is-a.dev/benchmark-radar/assets/og-card.png" in html
     assert 'name="twitter:card" content="summary_large_image"' in html
     # Declared dimensions let a consumer reserve the large-image layout before
     # the file is fetched; without them some fall back to a small thumbnail.
@@ -1269,7 +1376,7 @@ def test_rendered_stale_banner_translates_copy_under_zh():
     link = next(n for n in nodes if n["tag"] == "a")
     button = next(n for n in nodes if n["tag"] == "button")
     assert link["text"] == "哪里出了问题？"
-    assert button["text"] == "联系"
+    assert button["text"] == "联系作者"
     assert "那之后的自动更新一直没有成功。" in banner["children"][0]["text"]
     assert "The automatic update has not succeeded" not in banner["children"][0]["text"]
 
@@ -1834,3 +1941,114 @@ def test_issue_286_navigation_is_backable_but_typing_is_not():
 
     # Pushing the URL already shown would make Back a no-op that looks broken.
     assert 'if (mode === "push" && url !== current)' in script
+
+
+def test_issue_311_the_today_list_loads_one_page_at_a_time():
+    """A busy day carded 100+ results before the reader could scroll.
+
+    The first paint now carries 20 cards, the legend is two readings instead
+    of three, and explicit previous/next controls move through stable pages.
+    """
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # One named page size, with a URL-backed current page.
+    assert "const TODAY_PAGE_SIZE = 20;" in script
+    assert "todayPage: 1," in script
+    assert 'params.get("page")' in script
+    assert 'params.set("page", state.todayPage)' in script
+    renderer = script.split("function renderToday({ resultsOnly = false } = {})", 1)[1].split(
+        "\nfunction ", 1
+    )[0]
+    assert "Math.ceil(observations.length / TODAY_PAGE_SIZE)" in renderer
+    assert "const visibleObservations = observations.slice(pageStart, pageEnd);" in renderer
+    assert 'byId("today-page-prev").disabled' in renderer
+    assert 'byId("today-page-next").disabled' in renderer
+    assert 'id="today-page-prev"' in html
+    assert 'id="today-page-next"' in html
+    assert 'id="today-page-status"' in html
+    assert "IntersectionObserver" not in script
+
+    # The legend keeps the class breakdown and the order; the raw total and
+    # its duplicated noun are gone, and "need attention" lost its verb.
+    assert 'id="today-count"' not in html
+    assert 'byId("today-breakdown").textContent =' in renderer
+    assert '${attentionCount} ${t("attention")}' in renderer
+    assert '"need attention"' not in script
+
+    # Dataset access remains free; starring is an earned request, not a gate.
+    assert 'id="badge-export"' not in html
+    assert 'id="export-dialog"' not in html
+    assert "function openExport(" not in script
+    assert "function observationsToCsv(" not in script
+    assert "function downloadText(" not in script
+    footer = html.split('<div class="footer-dataset">', 1)[1].split("</div>", 1)[0]
+    assert "Free dataset. No crawler needed." in footer
+    assert 'href="data/radar.json"' in footer
+    assert 'id="footer-contact"' in footer
+    contact = script.split("function openContact(", 1)[1].split("dialog.showModal();", 1)[0]
+    assert "The complete dataset is free to download" in contact
+    assert 'href: "data/radar.json"' in contact
+    assert 'className: "contact-dataset"' in contact
+
+
+def _css_rule(styles: str, selector: str) -> str:
+    """Return the body of the first rule whose selector matches exactly."""
+    assert selector in styles, f"missing selector: {selector}"
+    return styles.split(selector, 1)[1].split("}", 1)[0]
+
+
+def test_heading_outline_and_scale_stay_quiet():
+    """Regression guard for the single-h1 retagging and its typography.
+
+    The page keeps one document h1 ("Today's radar"), rendered as the muted
+    caption it always was; every other view heading is an h2 at the compact
+    leaderboard scale. Before this rule existed the per-view headings carried
+    the display-scale h1 treatment (3rem uppercase), which drowned the content
+    they named.
+    """
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    # One h1 in the static document, and it is the today view's caption.
+    assert html.count("<h1") == 1
+    assert '<h1 class="today-heading" data-i18n="Today\'s radar">' in html
+    for old_h1_id in ("leaderboard-heading", "map-heading", "trends-heading"):
+        assert f'<h2 id="{old_h1_id}"' in html
+
+    # The h1 renders exactly like the counts caption beside it: the shared
+    # small-caps utility group supplies face/size/case, and this rule only
+    # mutes color and weight. No font-size override may reappear here.
+    marker = "#today-view .section-title h1,"
+    today_rule = styles.split(marker)[-1].split("}", 1)[0]
+    assert "color: var(--muted);" in today_rule
+    assert "font-weight: 400;" in today_rule
+    assert "font-size" not in today_rule
+
+    # The counts line reads as plain data: no small-caps transform, including
+    # on the child spans the shared section-title group targets directly.
+    meta_rule = _css_rule(styles, ".results-meta {")
+    assert "text-transform: none;" in meta_rule
+    span_rule = _css_rule(styles, ".results-meta span {")
+    assert "text-transform: none;" in span_rule
+
+    # Footer is one left-aligned column: updated stamp, view links, dataset
+    # card last (bottom).
+    footer_block = styles.split("\nfooter {")[-1].split("}", 1)[0]
+    assert "flex-direction: column;" in footer_block
+    assert "align-items: flex-start;" in footer_block
+
+    # View and detail headings share the compact leaderboard scale; none of
+    # them may reintroduce the uppercase display treatment.
+    compact = "clamp(1.25rem, 2vw, 1.5rem);"
+    view_rule = _css_rule(styles, ".view-heading h2 {")
+    assert f"font-size: {compact}" in view_rule
+    assert "line-height: 1.2;" in view_rule
+    assert "text-transform" not in view_rule
+    detail_rule = _css_rule(styles, ".detail-title {")
+    assert f"font-size: {compact}" in detail_rule
+    assert "line-height: 1.2;" in detail_rule
+
+    # The mobile h1 clamp must not reach the quiet h2 headings.
+    mobile_block = styles.split("@media (max-width: 760px)", 1)[1]
+    assert ".view-heading h2," not in mobile_block.split("}", 1)[0]
