@@ -20,6 +20,7 @@ from benchmark_radar.models_registry import (
     build_registry,
     model_key,
     summarize,
+    write_model_registry,
 )
 
 RADAR = Path("site/data/radar.json")
@@ -160,3 +161,48 @@ def test_a_retired_id_is_never_handed_to_a_different_model():
         assert high_water[prefix] >= max(issued), prefix
     # M's high-water mark exceeds its live count, which is what retirement looks like.
     assert high_water["M"] >= len(logos["models"])
+
+
+def test_a_missing_shard_directory_refuses_to_write_a_curated_only_registry(tmp_path):
+    """The 321-model drop this module opens on, reachable again since the
+    shards stopped being committed.
+
+    They are derived and untracked, so a fresh checkout has none until
+    `normalize-external` writes them, and `_crawled_models()` reaches them with
+    a glob, which answers "nothing" for a missing directory instead of failing.
+    `benchmark-radar classify` would then rewrite models.json with the 34
+    curated models and exit 0, and the registry test above skips itself when
+    the shards are absent, so nothing anywhere would have gone red.
+
+    Writing that file is worse than not writing it: 34 models is a plausible
+    number, not an obviously broken one.
+    """
+    radar = tmp_path / "radar.json"
+    radar.write_text(json.dumps({"model_card_leaderboard": {"model_cards": []}}), encoding="utf-8")
+    output = tmp_path / "models.json"
+
+    with pytest.raises(FileNotFoundError, match="normalize-external"):
+        write_model_registry(radar, tmp_path / "absent-shards", output)
+
+    # Refusing means refusing: a stale models.json is not overwritten with a
+    # shorter one on the way out.
+    assert not output.exists()
+
+
+def test_an_empty_shard_directory_refuses_to_write_a_curated_only_registry(tmp_path):
+    """Same short registry, reached a different way.
+
+    An interrupted `normalize-external` leaves the directory behind with
+    nothing in it, and a directory that exists is not the same as a directory
+    that has shards: the glob answers "nothing" either way.
+    """
+    radar = tmp_path / "radar.json"
+    radar.write_text(json.dumps({"model_card_leaderboard": {"model_cards": []}}), encoding="utf-8")
+    output = tmp_path / "models.json"
+    shard_dir = tmp_path / "empty-shards"
+    shard_dir.mkdir()
+
+    with pytest.raises(FileNotFoundError, match="normalize-external"):
+        write_model_registry(radar, shard_dir, output)
+
+    assert not output.exists()
