@@ -101,10 +101,11 @@ def test_observations_carry_the_models_own_announcement_date(normalized: dict) -
     assert all(row["date_precision"] == "model_announcement" for row in dated)
 
 
-def test_metric_and_direction_are_never_guessed(normalized: dict) -> None:
+def test_metric_stays_unknown_but_llm_stats_direction_is_normalized(normalized: dict) -> None:
     for row in normalized["score_series"]:
         assert row["metric"] is None
-        assert row["direction"] is None
+        assert row["direction"] == "higher_is_better"
+        assert row["direction_basis"] == "source_rank_descending"
         assert row["bounds"]["basis"] == "aggregator_declared"
 
 

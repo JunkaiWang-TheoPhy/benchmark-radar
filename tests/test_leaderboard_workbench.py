@@ -12,8 +12,11 @@ def test_external_aime_2025_has_a_source_ranked_record_sequence():
         Path("site/data/benchmarks/llm-stats-aime-2025.json").read_text(encoding="utf-8")
     )
     rows = shard["scores_by_source"]["llm_stats"]["rows"]
+    series = shard["scores_by_source"]["llm_stats"]["series"]
 
     assert len(rows) == 115
+    assert series["direction"] == "higher_is_better"
+    assert series["direction_basis"] == "source_rank_descending"
     ranked = sorted(rows, key=lambda row: row["rank_in_source_response"])
     assert [row["value"] for row in ranked] == sorted(
         (row["value"] for row in ranked), reverse=True
@@ -488,16 +491,19 @@ def test_the_crawled_chart_axis_is_release_date_and_says_so():
     assert "not when the score was measured" in script
 
     # `plotted` is in date order, so the last element is the newest model, not
-    # the source's best. Best follows the rank the source actually published;
-    # it is not inferred from recency or a blanket higher-is-better rule.
-    assert "row.rank_in_source_response < best.rank_in_source_response" in chart
+    # the best score. Best follows the normalized higher-is-better contract;
+    # source rank is only the deterministic tie break.
+    assert 'source === "llm_stats" ? "higher_is_better" : null' in chart
+    assert 'const descends = recordDirection === "lower_is_better";' in chart
+    assert "row.value > best.value" in chart
+    assert "row.rank_in_source_response ?? Number.MAX_SAFE_INTEGER" in chart
     assert "plotted[plotted.length - 1].model_name" not in chart
     assert "const values = plotted.map((row) => row.value).sort((a, b) => a - b);" in chart
 
     # The record path is explicitly a sequence by model release date, not an
-    # evaluation-time trend. It is withheld if rank does not establish one
-    # monotonic numeric direction.
-    assert "const recordDirection = sourceRankDirection(plotted);" in chart
+    # evaluation-time trend. Its direction comes from the normalized series
+    # contract rather than being reverse-engineered in the renderer.
+    assert "payload.series?.direction ||" in chart
     assert "const recordSetters = externalRecordSetters(plotted, recordDirection);" in chart
     assert "if (hasRecordPath)" in chart
     assert 'class: "score-frontier-line"' in chart
@@ -969,13 +975,14 @@ def test_issue_288_the_charts_draw_a_running_best_not_an_invented_cost_axis():
     assert "frontierMarks.has(observation.observation_id)" in curated
     assert "observation.protocol" in curated
 
-    # The crawled layer now draws the source's own successive records. It does
-    # not guess direction: rank/value monotonicity establishes it, and mixed or
-    # all-tied payloads return no direction and no path.
+    # The crawled layer now draws successive reported highs. Direction is a
+    # normalized LLM Stats property, not a browser inference.
     crawled = script.split("function externalScoreChart(source, payload)", 1)[1].split(
         "\nfunction externalSourceTable", 1
     )[0]
-    assert "sourceRankDirection(plotted)" in crawled
+    assert "payload.series?.direction" in crawled
+    assert 'source === "llm_stats" ? "higher_is_better" : null' in crawled
+    assert "sourceRankDirection" not in script
     assert "externalRecordSetters(plotted, recordDirection)" in crawled
     assert "score-frontier-line" in crawled
     assert "runningBestSteps" not in crawled

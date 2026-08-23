@@ -4007,9 +4007,9 @@ const EXTERNAL_SOURCE_META = {
       // "No date is recorded" was false and was the complaint in issue #269:
       // every one of the 5,544 rows carries one. What is missing is a date for
       // the measurement -- the date recorded is the model's own release -- and
-      // that is the distinction worth stating. The source's own rank establishes
-      // the record direction, while the x axis remains the model release date.
-      "Self-reported scores collected by LLM Stats. No evaluation protocol is recorded, and the only date is each model's own release, not when the score was measured. When the source's rank establishes a consistent numeric direction, the line links successive reported records by model release; it is not an evaluation-time trend.",
+      // that is the distinction worth stating. Higher values are better within
+      // each LLM Stats benchmark; the x axis remains the model release date.
+      "Self-reported scores collected by LLM Stats. Higher values are better. No evaluation protocol is recorded, and the only date is each model's own release, not when the score was measured. The line links successive reported highs by model release; it is not an evaluation-time trend.",
     emptyKey: "LLM Stats recorded no scores for this benchmark.",
   },
   opencompass_hub: {
@@ -4306,17 +4306,22 @@ function externalScoreChart(source, payload) {
   const values = plotted.map((row) => row.value).sort((a, b) => a - b);
   const low = values[0];
   const high = values[values.length - 1];
-  // "Best" follows the source's own rank, not an assumed numeric direction.
-  // Every current LLM Stats row carries a rank; the value fallback keeps a
-  // malformed future payload drawable while withholding its record path.
-  const ranked = plotted.filter((row) => Number.isInteger(row.rank_in_source_response));
-  const bestRow = ranked.length
-    ? ranked.reduce((best, row) =>
-        row.rank_in_source_response < best.rank_in_source_response ? row : best,
-      )
-    : plotted.reduce((best, row) => (row.value > best.value ? row : best), plotted[0]);
+  // Direction belongs to the normalized series contract. LLM Stats is
+  // higher-is-better; keeping the branch makes this renderer honest if another
+  // source later supplies a lower-is-better series.
+  const recordDirection =
+    payload.series?.direction || (source === "llm_stats" ? "higher_is_better" : null);
+  const descends = recordDirection === "lower_is_better";
+  const bestRow = plotted.reduce((best, row) => {
+    const improves = descends ? row.value < best.value : row.value > best.value;
+    if (improves) return row;
+    if (row.value !== best.value) return best;
+    return (row.rank_in_source_response ?? Number.MAX_SAFE_INTEGER) <
+      (best.rank_in_source_response ?? Number.MAX_SAFE_INTEGER)
+      ? row
+      : best;
+  }, plotted[0]);
   const bestValue = bestRow.value;
-  const recordDirection = sourceRankDirection(plotted);
   const recordSetters = externalRecordSetters(plotted, recordDirection);
   const hasRecordPath = recordSetters.length >= 2;
   const recordMarks = new Set(recordSetters.map((row) => row.obs_id));
@@ -4350,7 +4355,7 @@ function externalScoreChart(source, payload) {
     viewBox: `0 0 ${width} ${height}`,
     role: "group",
     "aria-label": t(
-      "{count} scores reported to {source}, placed at each model's release date, which is the only date recorded and is not when the score was measured. Source-ranked best {best} by {model}, lowest observed {low}.",
+      "{count} scores reported to {source}, placed at each model's release date, which is the only date recorded and is not when the score was measured. Best reported {best} by {model}, lowest observed {low}.",
       {
         count: plotted.length.toLocaleString(),
         source: meta.name,
@@ -4402,11 +4407,11 @@ function externalScoreChart(source, payload) {
     );
   }
 
-  // The source already ranks these rows; the old chart used that ranking to
-  // label one value "best" while refusing to draw the successive source-ranked
-  // records. That is why AIME 2025 showed 115 dots and no line. The path uses
-  // only rank-monotone payloads and links the actual record dots directly. It
-  // remains a sequence by model release date, not an evaluation-time trend.
+  // The old chart labeled one value "best" while refusing to draw successive
+  // records. That is why AIME 2025 showed 115 dots and no line. Direction now
+  // comes from the normalized series, and the path links the actual strict
+  // record dots directly. It remains a sequence by model release date, not an
+  // evaluation-time trend.
   if (hasRecordPath) {
     const clipId = `external-record-clip-${String(payload.series?.series_id || source).replace(
       /[^a-z0-9_-]+/gi,
@@ -5085,24 +5090,6 @@ function recordSetterPath(points, xValue, yValue) {
   return points
     .map((point, index) => `${index ? "L" : "M"} ${xValue(point)} ${yValue(point)}`)
     .join(" ");
-}
-
-// LLM Stats does not name a metric direction, but it does rank every row. The
-// checked-in snapshot orders all 679 scored series monotonically by value. We
-// can therefore recover the direction the source itself used without assuming
-// that every benchmark is higher-is-better. A mixed or all-tied ranking yields
-// no direction and therefore no record path.
-function sourceRankDirection(rows) {
-  const ranked = rows
-    .filter((row) => Number.isInteger(row.rank_in_source_response))
-    .slice()
-    .sort((a, b) => a.rank_in_source_response - b.rank_in_source_response);
-  if (ranked.length < 2) return null;
-  const nonIncreasing = ranked.every((row, index) => !index || ranked[index - 1].value >= row.value);
-  const nonDecreasing = ranked.every((row, index) => !index || ranked[index - 1].value <= row.value);
-  if (nonIncreasing && !nonDecreasing) return "higher_is_better";
-  if (nonDecreasing && !nonIncreasing) return "lower_is_better";
-  return null;
 }
 
 // External rows have release dates rather than evaluation dates, so this is a

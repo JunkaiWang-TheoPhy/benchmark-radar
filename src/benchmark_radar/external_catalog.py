@@ -31,12 +31,13 @@ this layer inherits: an unstated condition is never treated as equal to
 another unstated condition. So every observation still carries
 `comparable_group: None`, and null is not a group. Two nulls do not join,
 which makes "no like-for-like trend and no cross-source ranking" a property of
-the data rather than a request to the renderer. LLM Stats does publish a rank
-for every row, so the site may link successive records under that source's own
-ordering. That reported-record path is explicitly placed by model release and
-is not a comparison series: `date_precision` on each observation exists
-precisely so a date this loosely tied to the score is never silently promoted
-into "when this was measured."
+the data rather than a request to the renderer. Within each LLM Stats benchmark,
+higher values are better: the source ranks every scored series in descending
+numeric order, an invariant validated below. The site can therefore link
+successive reported highs. That record path is explicitly placed by model
+release and is not a comparison series: `date_precision` on each observation
+exists precisely so a date this loosely tied to the score is never silently
+promoted into "when this was measured."
 
 For the same reason `display_scale` is always `None`. The aggregator's declared
 `max_score` is not a ceiling: `vending-bench-2` declares 1.0 and carries a
@@ -265,10 +266,12 @@ def _series(
     return {
         "series_id": f"{LLM_STATS_SOURCE}:{row['benchmark_id'].strip()}:default",
         "key": key,
-        # The API states neither. Reading "accuracy" off a 0-1 range is a guess,
-        # and a guessed metric is indistinguishable downstream from a read one.
+        # The API does not name the metric, so it stays null. Direction is not
+        # guessed from the scale: every scored series is source-ranked in
+        # descending numeric order, pinned by the snapshot invariant tests.
         "metric": None,
-        "direction": None,
+        "direction": "higher_is_better",
+        "direction_basis": "source_rank_descending",
         "bounds": {"min": None, "max": declared_max, "basis": "aggregator_declared"},
         "declared_max": declared_max,
         "observed_max": observed_max,
