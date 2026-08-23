@@ -760,16 +760,16 @@ const I18N = {
     Discord: "Discord",
     "The complete dataset is free to download. If it saves you research time, star the repository so other eval builders can find it.":
       "完整数据集可以免费下载。如果它帮你节省了研究时间，请给仓库点个 Star，让更多评测开发者找到它。",
-    "Download the dataset": "下载数据集",
+    Download: "下载",
     "Star the repository": "给仓库点 Star",
     "Free dataset. No crawler needed.": "免费数据集，无需爬虫。",
     "If this saved you research time, cite the work, star the repo and help other eval builders find it.":
       "如果它帮你节省了研究时间，请引用这项工作、给仓库点 Star，让更多评测开发者找到它。",
     Cite: "引用",
     "Share Benchmark Radar": "分享 Benchmark Radar",
-    "Copy link": "复制链接",
+    Share: "分享",
     Copied: "已复制",
-    "contact the author": "联系作者",
+    Contact: "联系作者",
     "for a one-click export.": "即可一键导出。",
     // --- Remaining dynamic strings ------------------------------------------
     " on a": " 以",
@@ -916,6 +916,37 @@ const I18N = {
     datasets: "数据集",
     evaluations: "评测",
     "times found": "次发现",
+    // --- Coverage for dynamic t() call sites ---------------------------------
+    "or above marks the item as recommended; it does not control inclusion. Watchlisted artifacts are also retained.":
+      "及以上分数表示该条目被推荐；该分数不决定是否收录。观察名单中的工件同样会保留。",
+    "not scored": "未评分",
+    "data quality": "数据质量",
+    "no scores collected": "未采集到分数",
+    "{shown} of {total} matches": "共 {total} 条匹配，已显示 {shown} 条",
+    "No benchmark matches that name": "没有匹配该名称的基准",
+    "Benchmark search is unavailable right now": "基准搜索暂时不可用",
+    "not recorded": "未记录",
+    "The source declares a maximum of {max} but carries values above it, so that bound is not a scale.":
+      "来源声明的满分是 {max}，但存在超过它的数值，因此这个上限并不是一个统一的量表。",
+    "same benchmark, other source": "同一基准，其他来源",
+    "related split": "相关子集",
+    "same framework": "同一框架",
+    "introduced in the same paper": "出自同一篇论文",
+    "has a related variant": "存在相关变体",
+    "Related records": "相关记录",
+    "External benchmark": "外部基准",
+    "Loading benchmark details…": "正在加载基准详情…",
+    "Could not load details for this benchmark.": "无法加载该基准的详情。",
+    "Ranked by how many curated model cards report each benchmark, which measures vendor reporting convention rather than benchmark quality. A crawled score count answers a different question: AIME 2025 carries 115 crawled scores and GPQA Diamond 26 model cards, and those are different measures rather than competing ones.":
+      "排名依据是每个基准被多少张精选模型卡报告，衡量的是厂商的报告惯例而非基准质量。爬取到的分数数量回答的是另一个问题：AIME 2025 有 115 个爬取到的分数，GPQA Diamond 有 26 张模型卡，两者是不同的度量而不是互相竞争的指标。",
+    "points to the {bound}-point bound of this metric": "指向该指标 {bound} 分的上限",
+    "across {domains}{listed}.": "覆盖 {domains}{listed}。",
+    " · {count} released in the newest 18-month window already appear across three or more dated organizations. Follow their trajectories before reading the raw rank.":
+      " · 最近 18 个月窗口内发布的 {count} 项已经出现在三家及以上有明确日期的机构中。在解读原始排名之前，先看它们的轨迹变化。",
+    "Show all {count} benchmarks": "显示全部 {count} 个基准",
+    "Star this repository on GitHub. {count} stars": "在 GitHub 上给这个仓库点 Star。{count} 个 star",
+    "Fork this repository on GitHub. {count} forks": "在 GitHub 上 fork 这个仓库。{count} 个 fork",
+    "Open a new issue on GitHub. {count} issues open": "在 GitHub 上提交新 issue。当前有 {count} 个 open issue",
   },
 };
 
@@ -7193,7 +7224,7 @@ function openContact(updateUrl = true) {
       }),
       element("a", {
         className: "primary-link",
-        text: t("Download the dataset"),
+        text: t("Download"),
         attrs: { href: "data/radar.json" },
       }),
       element("a", {
@@ -7229,7 +7260,10 @@ function bindEvents() {
   const langToggle = byId("lang-toggle");
   if (langToggle) langToggle.addEventListener("click", toggleLang);
   document.querySelectorAll("[data-view]").forEach((button) => {
-    button.addEventListener("click", async () => {
+    button.addEventListener("click", async (event) => {
+      // View nav entries are anchors so crawlers can follow them; keep the
+      // navigation client-side instead of a full page reload.
+      if (event.target.closest("a")) event.preventDefault();
       const view = button.dataset.view;
       try {
         if (["trends", "map"].includes(view)) await ensureFullData();
@@ -7411,7 +7445,7 @@ function bindEvents() {
   // before they trust any single row.
   byId("rubric-nav").addEventListener("click", () => openRubric());
   byId("badge-contact").addEventListener("click", openContact);
-  // The footer's "contact the author" opens the same sheet as the header
+  // The footer's "Contact" button opens the same sheet as the header
   // badge (issue #311): one contact surface, two doors.
   byId("footer-contact").addEventListener("click", openContact);
   byId("contact-close").addEventListener("click", () => byId("contact-dialog").close());
@@ -7433,7 +7467,7 @@ function bindEvents() {
       if (navigator.share) await navigator.share(shareData);
       else await navigator.clipboard.writeText(shareData.url);
       button.textContent = t("Copied");
-      setTimeout(() => { button.textContent = t("Copy link"); }, 1600);
+      setTimeout(() => { button.textContent = t("Share"); }, 1600);
     } catch (error) {
       if (error?.name !== "AbortError") console.error(error);
     }

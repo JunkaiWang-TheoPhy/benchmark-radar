@@ -15,7 +15,10 @@
          shows the current top rows rather than a static logo. -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Benchmark Radar">
-    <meta property="og:title" content="Which benchmarks do frontier labs actually report?">
+    <meta
+      property="og:title"
+      content="Benchmark Radar"
+    >
     <meta
       property="og:description"
       content="A live ranking of the benchmarks reported in frontier model cards, system cards, and technical reports. Measures vendor reporting convention, not benchmark quality."
@@ -70,6 +73,7 @@
         "description": "A daily-updated machine-readable corpus of AI benchmark, evaluation, and dataset signals collected from arXiv, GitHub, Hugging Face, OpenAlex, OpenReview, Semantic Scholar, Hacker News, and first-party lab feeds.",
         "url": "https://koutian.is-a.dev/benchmark-radar/data/radar.json",
         "license": "https://opensource.org/licenses/MIT",
+        "isAccessibleForFree": true,
         "creator": {
           "@type": "Person",
           "name": "Koutian Wu",
@@ -85,6 +89,16 @@
         ]
       }
     </script>
+
+    <!-- Machine-readable citation hints: Highwire tags are the convention
+         academic indexers and reference managers look for; cite-as points at
+         the canonical thing to cite (the repo, which carries CITATION.cff
+         and the BibTeX entry in both READMEs). -->
+    <meta name="citation_title" content="Benchmark Radar">
+    <meta name="citation_author" content="Wu, Koutian">
+    <meta name="citation_publication_date" content="2026">
+    <meta name="citation_dataset_url" content="https://koutian.is-a.dev/benchmark-radar/data/radar.json">
+    <link rel="cite-as" href="https://github.com/ktwu01/benchmark-radar">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <link rel="alternate" type="application/rss+xml" title="Benchmark Radar RSS" href="feed.xml">
@@ -226,11 +240,15 @@
 
     <nav class="view-nav" aria-label="Dashboard views" data-i18n-aria="Dashboard views">
       <button type="button" data-view="today" aria-controls="today-view" data-i18n="Today">Today</button>
-      <button type="button" data-view="leaderboard" aria-controls="leaderboard-view" data-i18n="Leaderboard">
+      <!-- The three non-default views are real anchors, not buttons: crawlers
+         do not follow buttons, and without hrefs the site reported zero
+         internal links. app.js intercepts the click so navigation stays
+         client-side; the href is the same canonical URL the view writes. -->
+      <a href="?view=leaderboard" data-view="leaderboard" aria-controls="leaderboard-view" data-i18n="Leaderboard">
         Leaderboard
-      </button>
-      <button type="button" data-view="trends" aria-controls="trends-view" data-i18n="Trends">Trends</button>
-      <button type="button" data-view="map" aria-controls="map-view" data-i18n="Explore">Explore</button>
+      </a>
+      <a href="?view=trends" data-view="trends" aria-controls="trends-view" data-i18n="Trends">Trends</a>
+      <a href="?view=map" data-view="map" aria-controls="map-view" data-i18n="Explore">Explore</a>
       <button type="button" id="rubric-nav" aria-haspopup="dialog" data-i18n="Rubric">Rubric</button>
     </nav>
 
@@ -315,7 +333,7 @@
         <div class="content-grid">
           <div>
             <div class="section-title">
-              <h2 data-i18n="Today's radar">Today's radar</h2>
+              <h1 class="today-heading" data-i18n="Today's radar">Today's radar</h1>
               <div class="results-meta" aria-live="polite">
                 <span id="today-breakdown"></span>
                 <span id="today-sort"></span>
@@ -351,8 +369,8 @@
                   rel="noopener noreferrer"
                   data-i18n="Star the repository"
                 >Star the repository</a>
-                <button type="button" class="secondary-link" id="share-radar" data-i18n="Copy link">
-                  Copy link
+                <button type="button" class="secondary-link" id="share-radar" data-i18n="Share">
+                  Share
                 </button>
               </span>
             </aside>
@@ -410,7 +428,7 @@
              name, and the (i) beside it carries the caveat. -->
         <section class="leaderboard-top" aria-labelledby="leaderboard-heading">
           <div class="leaderboard-top-heading">
-            <h1 id="leaderboard-heading" data-i18n="Most reported benchmarks in model cards">Most reported benchmarks in model cards</h1>
+            <h2 id="leaderboard-heading" data-i18n="Most reported benchmarks in model cards">Most reported benchmarks in model cards</h2>
             <span id="leaderboard-top-info"></span>
             <!-- Written but not shown: the visible copy is in the (i). A screen
                  reader announces it with the heading. -->
@@ -610,7 +628,7 @@
         <header class="view-heading">
           <div>
             <p class="eyebrow" data-i18n="Big picture">Big picture</p>
-            <h1 id="map-heading" data-i18n="What we found">What we found</h1>
+            <h2 id="map-heading" data-i18n="What we found">What we found</h2>
           </div>
           <p class="heading-note" data-i18n="map.heading.note">
             See what shows up most often and where it came from. Open the connections view
@@ -654,7 +672,7 @@
         <header class="view-heading">
           <div>
             <p class="eyebrow" data-i18n="Recent activity">Recent activity</p>
-            <h1 id="trends-heading" data-i18n="Signals over time">Signals over time</h1>
+            <h2 id="trends-heading" data-i18n="Signals over time">Signals over time</h2>
           </div>
           <p class="heading-note" data-i18n="trends.heading.note">Counts describe discovery volume, not scientific quality.</p>
         </header>
@@ -727,7 +745,7 @@
 
       <section class="error-state" id="error-state" hidden>
         <p class="eyebrow" data-i18n="Dashboard unavailable">Dashboard unavailable</p>
-        <h1 data-i18n="The validated data file could not be loaded.">The validated data file could not be loaded.</h1>
+        <h2 data-i18n="The validated data file could not be loaded.">The validated data file could not be loaded.</h2>
         <p data-i18n="error.note">Try refreshing, or inspect the latest daily Issue while the dashboard rebuilds.</p>
         <a href="https://github.com/ktwu01/benchmark-radar/issues?q=is%3Aissue+label%3Adaily-radar" data-i18n="Open daily Issues">Open daily Issues ↗</a>
       </section>
@@ -758,7 +776,7 @@
       <div class="footer-dataset">
         <strong data-i18n="Free dataset. No crawler needed.">Free dataset. No crawler needed.</strong>
         <span class="footer-dataset-actions">
-          <a href="data/radar.json" data-i18n="Download the dataset">Download the dataset</a>
+          <a href="data/radar.json" data-i18n="Download">Download</a>
           <a
             href="https://github.com/ktwu01/benchmark-radar"
             target="_blank"
@@ -769,8 +787,8 @@
             type="button"
             class="footer-contact-link"
             id="footer-contact"
-            data-i18n="contact the author"
-          >contact the author</button>
+            data-i18n="Contact"
+          >Contact</button>
         </span>
       </div>
     </footer>

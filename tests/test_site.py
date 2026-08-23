@@ -520,7 +520,7 @@ def test_corpus_view_progressively_discloses_the_complete_relationship_map():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     assert 'data-view="map"' in html
-    assert 'data-i18n="Explore">Explore</button>' in html
+    assert 'data-i18n="Explore">Explore</a>' in html
     assert 'id="map-insights"' in html
     assert '<details class="relationship-explorer" id="relationship-explorer">' in html
     assert "renderMapInsights(corpus)" in script
@@ -1376,7 +1376,7 @@ def test_rendered_stale_banner_translates_copy_under_zh():
     link = next(n for n in nodes if n["tag"] == "a")
     button = next(n for n in nodes if n["tag"] == "button")
     assert link["text"] == "哪里出了问题？"
-    assert button["text"] == "联系"
+    assert button["text"] == "联系作者"
     assert "那之后的自动更新一直没有成功。" in banner["children"][0]["text"]
     assert "The automatic update has not succeeded" not in banner["children"][0]["text"]
 
@@ -1990,3 +1990,65 @@ def test_issue_311_the_today_list_loads_one_page_at_a_time():
     assert "The complete dataset is free to download" in contact
     assert 'href: "data/radar.json"' in contact
     assert 'className: "contact-dataset"' in contact
+
+
+def _css_rule(styles: str, selector: str) -> str:
+    """Return the body of the first rule whose selector matches exactly."""
+    assert selector in styles, f"missing selector: {selector}"
+    return styles.split(selector, 1)[1].split("}", 1)[0]
+
+
+def test_heading_outline_and_scale_stay_quiet():
+    """Regression guard for the single-h1 retagging and its typography.
+
+    The page keeps one document h1 ("Today's radar"), rendered as the muted
+    caption it always was; every other view heading is an h2 at the compact
+    leaderboard scale. Before this rule existed the per-view headings carried
+    the display-scale h1 treatment (3rem uppercase), which drowned the content
+    they named.
+    """
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    # One h1 in the static document, and it is the today view's caption.
+    assert html.count("<h1") == 1
+    assert '<h1 class="today-heading" data-i18n="Today\'s radar">' in html
+    for old_h1_id in ("leaderboard-heading", "map-heading", "trends-heading"):
+        assert f'<h2 id="{old_h1_id}"' in html
+
+    # The h1 renders exactly like the counts caption beside it: the shared
+    # small-caps utility group supplies face/size/case, and this rule only
+    # mutes color and weight. No font-size override may reappear here.
+    marker = "#today-view .section-title h1,"
+    today_rule = styles.split(marker)[-1].split("}", 1)[0]
+    assert "color: var(--muted);" in today_rule
+    assert "font-weight: 400;" in today_rule
+    assert "font-size" not in today_rule
+
+    # The counts line reads as plain data: no small-caps transform, including
+    # on the child spans the shared section-title group targets directly.
+    meta_rule = _css_rule(styles, ".results-meta {")
+    assert "text-transform: none;" in meta_rule
+    span_rule = _css_rule(styles, ".results-meta span {")
+    assert "text-transform: none;" in span_rule
+
+    # Footer is one left-aligned column: updated stamp, view links, dataset
+    # card last (bottom).
+    footer_block = styles.split("\nfooter {")[-1].split("}", 1)[0]
+    assert "flex-direction: column;" in footer_block
+    assert "align-items: flex-start;" in footer_block
+
+    # View and detail headings share the compact leaderboard scale; none of
+    # them may reintroduce the uppercase display treatment.
+    compact = "clamp(1.25rem, 2vw, 1.5rem);"
+    view_rule = _css_rule(styles, ".view-heading h2 {")
+    assert f"font-size: {compact}" in view_rule
+    assert "line-height: 1.2;" in view_rule
+    assert "text-transform" not in view_rule
+    detail_rule = _css_rule(styles, ".detail-title {")
+    assert f"font-size: {compact}" in detail_rule
+    assert "line-height: 1.2;" in detail_rule
+
+    # The mobile h1 clamp must not reach the quiet h2 headings.
+    mobile_block = styles.split("@media (max-width: 760px)", 1)[1]
+    assert ".view-heading h2," not in mobile_block.split("}", 1)[0]

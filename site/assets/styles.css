@@ -117,6 +117,7 @@ footer {
 .brand small,
 .eyebrow,
 .section-title span,
+#today-view .section-title h1,
 #today-view .section-title h2,
 .heading-note,
 .date-control,
@@ -393,6 +394,16 @@ main {
   padding-top: clamp(1.25rem, 2vw, 1.75rem);
 }
 
+/* View headings are h2s under the page's single h1, and they share the
+   quiet leaderboard-heading scale rather than the display scale the old
+   per-view h1s used. */
+.view-heading h2 {
+  margin: 0;
+  max-width: none;
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  line-height: 1.2;
+}
+
 .view-heading {
   display: flex;
   gap: 2rem;
@@ -497,12 +508,17 @@ input {
   border-bottom: 1px solid var(--ink);
 }
 
+.section-title h1,
 .section-title h2 {
   margin-bottom: 0;
 }
 
 /* The results heading reads as a caption for the list beneath it, so it
-   carries the regular weight rather than the display h2 weight (issue #248). */
+   carries the regular weight rather than the display h2 weight (issue #248).
+   The heading is semantically an h1, but it renders exactly like the counts
+   caption beside it: same utility face, same 0.72rem size, inherited from
+   the shared small-caps group above. */
+#today-view .section-title h1,
 #today-view .section-title h2 {
   color: var(--muted);
   font-weight: 400;
@@ -521,6 +537,13 @@ input {
   align-items: baseline;
   justify-content: flex-end;
   text-align: right;
+  /* Counts read as plain data, not a label; the small-caps transform the
+     section-title group applies to these spans directly is dropped here. */
+  text-transform: none;
+}
+
+.results-meta span {
+  text-transform: none;
 }
 
 #today-sort {
@@ -2324,7 +2347,8 @@ td a {
    hundreds of pixels away in empty space with no anchor. At this size the
    heading fits one line, so the toggle sits immediately after its last
    glyph, and wrap keeps that true on narrow screens by stacking instead. */
-.leaderboard-top-heading h1 {
+.leaderboard-top-heading h1,
+.leaderboard-top-heading h2 {
   margin: 0;
   max-width: none;
   font-size: clamp(1.25rem, 2vw, 1.5rem);
@@ -3562,7 +3586,10 @@ dialog::backdrop {
 
 .detail-title {
   padding-right: 2rem;
-  font-size: clamp(2rem, 5vw, 3.4rem);
+  /* Same quiet scale as the view headings; the old display-scale title
+     outweighed the detail content it named. */
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  line-height: 1.2;
 }
 
 .detail-summary {
@@ -3898,14 +3925,23 @@ button.stale-banner-action {
   padding: 7rem 0;
 }
 
-.error-state h1 {
+.error-state h1,
+.error-state h2 {
   margin-bottom: 2rem;
+  /* Restates the global h1 treatment the heading carried as an h1. */
   font-size: clamp(2.5rem, 7vw, 5.5rem);
+  line-height: 1;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
 }
 
 footer {
+  /* One left-aligned column: updated stamp, view links, then the dataset
+     card underneath them. */
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.9rem;
   padding: 1.5rem 0 3rem;
   border-top: 1px solid var(--ink);
   color: var(--muted);
