@@ -438,7 +438,7 @@ const I18N = {
     "All dates": "所有日期",
     "How to read this chart": "如何解读这张图",
     "frontier.explainer.sub":
-      "每个能从引文文档中逐字读到的数值,按该文档的发布日期放置(而非任何评测日期),只在测试变体与运行条件完全一致时才相连。末端趋于平直通常意味着没有更新的数字可读,因此缺口被标出而不是用线穿过。一条曲线是否已经饱和,由你来判读,本面板不会给出饱和分数。",
+      "每个能从引文文档中逐字读到的数值,都按该文档的发布日期放置,而不是按评测日期。折线只直接连接在所显示数值中创下新报告纪录的实际观测点;它不会在两次报告之间维持某个分数,也不会延伸到最后一个纪录之后。测试版本和运行条件可能不同,因此这是一条报告纪录路径,而不是同条件趋势。没有更新数字可读时,缺口会被标出而不是用线穿过。基准是否已经饱和,仍由你来判断,本面板不会给出饱和结论。",
     "leaderboard.filters.note":
       "每张模型卡对同一基准只计一次。一张在四个配置中报告 AIME 的卡,与只报告一次的卡计数相同,因此冗长的附录不能压过不同的供应商。机构可以打破平局:六个供应商报告同一计数是共同标准,只有一个供应商报告则是自家风格。",
     "leaderboard.ledger.note":
@@ -4007,10 +4007,9 @@ const EXTERNAL_SOURCE_META = {
       // "No date is recorded" was false and was the complaint in issue #269:
       // every one of the 5,544 rows carries one. What is missing is a date for
       // the measurement -- the date recorded is the model's own release -- and
-      // that is the distinction worth stating, since it is why these rows are
-      // ordered by score rather than drawn on a time axis. The axis label was
-      // corrected then; this note was not.
-      "Self-reported scores collected by LLM Stats. No evaluation protocol is recorded, and the only date is each model's own release, not when the score was measured, so rows are listed in the source's own order.",
+      // that is the distinction worth stating. The source's own rank establishes
+      // the record direction, while the x axis remains the model release date.
+      "Self-reported scores collected by LLM Stats. No evaluation protocol is recorded, and the only date is each model's own release, not when the score was measured. When the source's rank establishes a consistent numeric direction, the line links successive reported records by model release; it is not an evaluation-time trend.",
     emptyKey: "LLM Stats recorded no scores for this benchmark.",
   },
   opencompass_hub: {
@@ -4307,8 +4306,20 @@ function externalScoreChart(source, payload) {
   const values = plotted.map((row) => row.value).sort((a, b) => a - b);
   const low = values[0];
   const high = values[values.length - 1];
-  const bestRow = plotted.reduce((best, row) => (row.value > best.value ? row : best), plotted[0]);
-  const bestValue = high;
+  // "Best" follows the source's own rank, not an assumed numeric direction.
+  // Every current LLM Stats row carries a rank; the value fallback keeps a
+  // malformed future payload drawable while withholding its record path.
+  const ranked = plotted.filter((row) => Number.isInteger(row.rank_in_source_response));
+  const bestRow = ranked.length
+    ? ranked.reduce((best, row) =>
+        row.rank_in_source_response < best.rank_in_source_response ? row : best,
+      )
+    : plotted.reduce((best, row) => (row.value > best.value ? row : best), plotted[0]);
+  const bestValue = bestRow.value;
+  const recordDirection = sourceRankDirection(plotted);
+  const recordSetters = externalRecordSetters(plotted, recordDirection);
+  const hasRecordPath = recordSetters.length >= 2;
+  const recordMarks = new Set(recordSetters.map((row) => row.obs_id));
   const pad = Math.max((high - low) * 0.18, Math.abs(high) * 0.05, Number.EPSILON);
   const band = { low: low - pad, high: high + pad };
 
@@ -4339,7 +4350,7 @@ function externalScoreChart(source, payload) {
     viewBox: `0 0 ${width} ${height}`,
     role: "group",
     "aria-label": t(
-      "{count} scores reported to {source}, placed at each model's release date, which is the only date recorded and is not when the score was measured. Highest {best} by {model}, lowest {low}.",
+      "{count} scores reported to {source}, placed at each model's release date, which is the only date recorded and is not when the score was measured. Source-ranked best {best} by {model}, lowest observed {low}.",
       {
         count: plotted.length.toLocaleString(),
         source: meta.name,
@@ -4391,19 +4402,44 @@ function externalScoreChart(source, payload) {
     );
   }
 
+  // The source already ranks these rows; the old chart used that ranking to
+  // label one value "best" while refusing to draw the successive source-ranked
+  // records. That is why AIME 2025 showed 115 dots and no line. The path uses
+  // only rank-monotone payloads and links the actual record dots directly. It
+  // remains a sequence by model release date, not an evaluation-time trend.
+  if (hasRecordPath) {
+    const clipId = `external-record-clip-${String(payload.series?.series_id || source).replace(
+      /[^a-z0-9_-]+/gi,
+      "-",
+    )}`;
+    const definitions = svgElement("defs");
+    const clip = svgElement("clipPath", { id: clipId });
+    clip.append(
+      svgElement("rect", {
+        x: margin.left,
+        y: scoreTop - 4,
+        width: plotWidth,
+        height: scoreHeight + 8,
+        class: "score-frontier-clip",
+      }),
+    );
+    definitions.append(clip);
+    svg.append(definitions);
+    svg.append(
+      svgElement("path", {
+        d: recordSetterPath(
+          recordSetters,
+          (row) => x(dateValue(row.reported_date)),
+          (row) => scoreY(row.value),
+        ),
+        class: "score-frontier-line",
+        fill: "none",
+        "clip-path": `url(#${clipId})`,
+      }),
+    );
+  }
+
   const bestY = scoreY(bestValue);
-  // No running-best line on this layer, deliberately (issue #288 review).
-  //
-  // A maximum is a comparability claim: it says these numbers can be ranked
-  // against each other. This layer cannot support that. The normalizer records
-  // `direction: None` because the source states no metric direction, and
-  // `comparability_class: none` because it records no protocol -- see
-  // external_catalog.py, "the only honest comparability class is none". Taking
-  // a max over those rows would assume larger-is-better and assume the rows are
-  // measuring the same thing, and neither is in evidence.
-  //
-  // The flat best-on-record rule stays: it labels one row's own value, which is
-  // a fact about that row rather than a ranking across rows.
   svg.append(
     svgElement("line", {
       x1: margin.left,
@@ -4428,10 +4464,13 @@ function externalScoreChart(source, payload) {
     const pointX = x(dateValue(row.reported_date));
     const pointY = scoreY(row.value);
     const thirdParty = row.reported_by === "third_party";
+    const offTheLine = hasRecordPath && !recordMarks.has(row.obs_id);
     // Same left-to-right reveal as the curated chart (issue #312): one kind
     // of mark, one entrance, on both layers.
     const group = svgElement("g", {
-      class: `score-point${thirdParty ? " score-point-third-party" : ""}`,
+      class: `score-point${offTheLine ? " score-point-dim" : ""}${
+        thirdParty ? " score-point-third-party" : ""
+      }`,
       tabindex: "0",
       role: "button",
       "aria-pressed": "false",
@@ -4697,6 +4736,19 @@ function setCanonicalFrontierChrome(visible) {
     // tab order and in every document-wide query behind a `hidden` attribute
     // that only affects painting (issue #261).
     if (visible) replaceChildren(external, []);
+  }
+  // External records replace the eyebrow with a source subline. Restore both
+  // pieces of title chrome when the picker returns to curated data; otherwise
+  // AIME kept saying "115 reported scores · LLM Stats" and "Scores over time"
+  // stayed hidden even though the chart and heading had switched layers.
+  if (visible) {
+    const eyebrow = byId("frontier-eyebrow");
+    if (eyebrow) eyebrow.hidden = false;
+    const subline = byId("frontier-subline");
+    if (subline) {
+      subline.textContent = "";
+      subline.hidden = true;
+    }
   }
 }
 
@@ -5023,19 +5075,71 @@ function spansTime(record) {
 // the interesting movement into a sliver. The band is padded around the observed
 // range instead, and the axis is labelled with its real bounds so a reader
 // cannot mistake a zoomed axis for a full one.
-// The backend normalizes every rendered observation into one benchmark-wide
-// historical-best frontier. This function owns geometry only; it must never
-// recalculate membership or select a protocol subgroup in the browser.
-// Horizontal holds followed by vertical jumps avoid inventing continuous
-// movement between two publication dates.
-function historicalBestPath(points, x, y, endX) {
-  const parts = [`M ${x(points[0].reported_at)} ${y(points[0].value)}`];
-  for (const point of points.slice(1)) {
-    parts.push(`H ${x(point.reported_at)}`);
-    parts.push(`V ${y(point.value)}`);
+// Link actual record-setting observations, and only those observations. A
+// staircase says the score continuously held between reports; extending it to
+// the chart edge says it still held after the last report. Neither statement is
+// in the data. A direct segment says only what this mark is meant to say:
+// reported record A was followed by reported record B.
+function recordSetterPath(points, xValue, yValue) {
+  if (points.length < 2) return "";
+  return points
+    .map((point, index) => `${index ? "L" : "M"} ${xValue(point)} ${yValue(point)}`)
+    .join(" ");
+}
+
+// LLM Stats does not name a metric direction, but it does rank every row. The
+// checked-in snapshot orders all 679 scored series monotonically by value. We
+// can therefore recover the direction the source itself used without assuming
+// that every benchmark is higher-is-better. A mixed or all-tied ranking yields
+// no direction and therefore no record path.
+function sourceRankDirection(rows) {
+  const ranked = rows
+    .filter((row) => Number.isInteger(row.rank_in_source_response))
+    .slice()
+    .sort((a, b) => a.rank_in_source_response - b.rank_in_source_response);
+  if (ranked.length < 2) return null;
+  const nonIncreasing = ranked.every((row, index) => !index || ranked[index - 1].value >= row.value);
+  const nonDecreasing = ranked.every((row, index) => !index || ranked[index - 1].value <= row.value);
+  if (nonIncreasing && !nonDecreasing) return "higher_is_better";
+  if (nonDecreasing && !nonIncreasing) return "lower_is_better";
+  return null;
+}
+
+// External rows have release dates rather than evaluation dates, so this is a
+// reported-record sequence by model release, not a measurement trend. Collapse
+// one date to its directional best, then retain strict record setters. Exact
+// ties prefer the source's better rank and finally its stable observation id.
+function externalRecordSetters(rows, direction) {
+  if (!direction) return [];
+  const descends = direction === "lower_is_better";
+  const bestByDate = new Map();
+  for (const row of rows) {
+    const time = dateValue(row.reported_date);
+    const current = bestByDate.get(time);
+    const improves =
+      !current || (descends ? row.value < current.value : row.value > current.value);
+    const winsTie =
+      current &&
+      row.value === current.value &&
+      ((row.rank_in_source_response ?? Number.MAX_SAFE_INTEGER) <
+        (current.rank_in_source_response ?? Number.MAX_SAFE_INTEGER) ||
+        ((row.rank_in_source_response ?? Number.MAX_SAFE_INTEGER) ===
+          (current.rank_in_source_response ?? Number.MAX_SAFE_INTEGER) &&
+          String(row.obs_id || "") < String(current.obs_id || "")));
+    if (improves || winsTie) bestByDate.set(time, row);
   }
-  parts.push(`H ${endX}`);
-  return parts.join(" ");
+
+  const setters = [];
+  let best = null;
+  for (const row of [...bestByDate.values()].sort(
+    (a, b) => dateValue(a.reported_date) - dateValue(b.reported_date),
+  )) {
+    if (best === null || (descends ? row.value < best : row.value > best)) {
+      best = row.value;
+      setters.push(row);
+    }
+  }
+  return setters;
 }
 
 function scoreBand(record) {
@@ -5719,11 +5823,12 @@ function scoreTrackChart(entry, board) {
     // visible 94.3 disappear from a benchmark-wide historical-best line.
     const frontierPoints = record.historical_best_frontier?.points || [];
     const frontierMarks = new Set(frontierPoints.map((point) => point.observation_id));
-    if (frontierPoints.length) {
-      // Reveal by x position, not SVG path length. A dash animation spends time
-      // traversing vertical jumps and therefore reaches a record later than the
-      // point whose delay is based on date. A rectangular clip is one literal
-      // left-to-right time sweep, shared by both marks.
+    const hasRecordPath = frontierPoints.length >= 2;
+    if (hasRecordPath) {
+      // Reveal by x position, not SVG path length. Path distance changes with
+      // the size of each score jump, while point timing is based on date. A
+      // rectangular clip is one literal left-to-right time sweep shared by
+      // both marks.
       const clipId = `historical-best-clip-${entry.benchmark_id.replace(/[^a-z0-9_-]+/gi, "-")}`;
       const definitions = svgElement("defs");
       const clip = svgElement("clipPath", { id: clipId });
@@ -5740,7 +5845,11 @@ function scoreTrackChart(entry, board) {
       svg.append(definitions);
       svg.append(
         svgElement("path", {
-          d: historicalBestPath(frontierPoints, x, scoreY, margin.left + plotWidth),
+          d: recordSetterPath(
+            frontierPoints,
+            (point) => x(point.reported_at),
+            (point) => scoreY(point.value),
+          ),
           class: "score-frontier-line",
           fill: "none",
           "clip-path": `url(#${clipId})`,
@@ -5789,7 +5898,7 @@ function scoreTrackChart(entry, board) {
       // legibility. Membership uses the stable normalized observation id; no
       // protocol key or floating-point reconstruction exists on this path.
       const onFrontier = frontierMarks.has(observation.observation_id);
-      const offTheLine = Boolean(frontierPoints.length) && !onFrontier;
+      const offTheLine = hasRecordPath && !onFrontier;
       // Entrance order follows the axis (issue #312): each point brightens
       // while the drawing front crosses its date, so the reveal reads left to
       // right the way the data does. The timing is shared with the crawled

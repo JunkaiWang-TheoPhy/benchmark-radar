@@ -36,15 +36,11 @@ def test_the_score_track_occupies_the_whole_plot():
     assert "x(observation.reported_at)" in chart
 
 
-def test_the_score_layer_draws_no_connecting_line_at_all():
-    # A shared instrument and protocol makes two numbers comparable; it does not
-    # make them a series, and a segment asserts the second. On shipped GPQA
-    # Diamond the old join rule connected DeepSeek-V4-Pro (90.1) to
-    # DeepSeek-V4-Flash (88.1) and drew a decline out of a smaller model, and
-    # connected two vendors' unrelated models into an apparent trajectory.
-    # Restricting which pairs may join does not fix that: the defect is in the
-    # segment. Comparability is still computed, and still stated in prose by the
-    # paired comparison readout.
+def test_the_score_layer_links_only_successive_record_setters():
+    # The old comparison join connected ordinary adjacent observations and
+    # manufactured model trajectories. The replacement is narrower: a direct
+    # path receives only strict record setters and never reads comparable
+    # protocol series as a time series.
     script = source("site/assets/app.js")
     styles = source("site/assets/styles.css")
     chart = script.split("function scoreTrackChart(", 1)[1].split(
@@ -52,16 +48,12 @@ def test_the_score_layer_draws_no_connecting_line_at_all():
     )[0]
 
     assert "polyline" not in chart
-    # A <path> draws the same segment a <polyline> would, so the ban names the
-    # shape rather than one element. The running-best line is stepped (H/V
-    # only): "nothing had beaten this yet", not a trajectory between points.
-    for command in (" L ", "`L ${"):
-        assert command not in chart, "a diagonal path segment is a trajectory claim"
+    assert "recordSetterPath(" in chart
+    assert "const hasRecordPath = frontierPoints.length >= 2;" in chart
     assert "if (!series.connectable) continue;" not in chart
     assert "score-line" not in script
     assert "score-line" not in styles
-    # The one horizontal rule that remains is the best-on-record reference,
-    # which is a fact about the corpus to date rather than a join between points.
+    # The horizontal rule remains a separate best-on-record reference.
     assert "const historicalBest = frontierPoints.at(-1);" in chart
     assert "const bestY = scoreY(bestValue);" in chart
 
@@ -743,7 +735,9 @@ def test_the_explainer_leaves_saturation_as_the_readers_judgement():
     assert "no newer number could be read" in html
     assert "the gap is marked rather than drawn through" in html
     assert "stays a reading you make, not a score this panel prints" in html
-    assert "connected only where the test variant and run conditions" in html
+    assert "directly links actual observations that set a new reported record" in html
+    assert "neither holds a score between reports nor extends past the final record" in html
+    assert "reported-record path, not a like-for-like trend" in html
     # And it names the date the x axis carries, rather than leaving "time" to be
     # read as an evaluation date.
     dateline = "placed at the date that document was published rather than at any evaluation date"
@@ -794,7 +788,7 @@ def test_issue_312_the_saturation_view_reveals_left_to_right():
     assert "frontierPointRevealDelay" in external
 
     # The line is exposed by an x-axis clip, not by path distance. A dash takes
-    # extra time on vertical jumps and falls out of sync with date-based points.
+    # extra time on steep segments and falls out of sync with date-based points.
     assert 'svgElement("clipPath", { id: clipId })' in chart
     assert 'class: "score-frontier-clip"' in chart
     assert '"clip-path": `url(#${clipId})`' in chart
@@ -806,10 +800,11 @@ def test_issue_312_the_saturation_view_reveals_left_to_right():
     assert "drawnFrontierEntranceKey = null;" in shell
     clear_fn = script.split("function clearAdoptionFrontier(message)", 1)[1].split("\n}", 1)[0]
     assert "drawnFrontierEntranceKey = null;" in clear_fn
-    # Dimming itself is gated on a line being drawn: with no normalized
-    # frontier there is no reference, and every point keeps full emphasis
-    # rather than all of them receding together.
-    assert "const offTheLine = Boolean(frontierPoints.length) && !onFrontier;" in chart
+    # Dimming itself is gated on a real link: zero or one record setter draws no
+    # path, so every point keeps full emphasis rather than receding behind a
+    # reference that does not exist.
+    assert "const hasRecordPath = frontierPoints.length >= 2;" in chart
+    assert "const offTheLine = hasRecordPath && !onFrontier;" in chart
     assert 'offTheLine ? " score-point-dim" : ""' in chart
     dim = styles.split(".score-point-dim .score-point-face {", 1)[1][:200]
     assert "fill-opacity: 0.6;" in dim

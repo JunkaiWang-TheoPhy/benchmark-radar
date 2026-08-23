@@ -20,7 +20,7 @@ site answer "who made this?" with "not established" instead of with a guess.
 Filling them in would require inferring identity from a benchmark name, which
 is where confident wrong attributions come from.
 
-WHY SCORES CANNOT BE COMPARED HERE
+WHY SCORES CANNOT BE JOINED AS A COMPARABLE SERIES
 
 No llm-stats row records shots, harness, tool access, or attempts, and none
 records *when the score was measured*. `announcement_date` is real and present
@@ -30,10 +30,13 @@ after the model it names first shipped. `benchmark_scores.yml` states the rule
 this layer inherits: an unstated condition is never treated as equal to
 another unstated condition. So every observation still carries
 `comparable_group: None`, and null is not a group. Two nulls do not join,
-which makes "no trend lines, no cross-source ranking" a property of the data
-rather than a request to the renderer -- `date_precision` on each observation
-exists precisely so a date this loosely tied to the score is never silently
-promoted into "when this was measured."
+which makes "no like-for-like trend and no cross-source ranking" a property of
+the data rather than a request to the renderer. LLM Stats does publish a rank
+for every row, so the site may link successive records under that source's own
+ordering. That reported-record path is explicitly placed by model release and
+is not a comparison series: `date_precision` on each observation exists
+precisely so a date this loosely tied to the score is never silently promoted
+into "when this was measured."
 
 For the same reason `display_scale` is always `None`. The aggregator's declared
 `max_score` is not a ceiling: `vending-bench-2` declares 1.0 and carries a

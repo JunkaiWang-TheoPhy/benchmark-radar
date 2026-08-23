@@ -2936,21 +2936,21 @@ td a {
   r: 13px;
 }
 
-/* The running best (issue #288). Solid and stepped, deliberately unlike any
-   point-to-point join: the steps are horizontal and vertical only, so the eye
-   reads "held, then rose" rather than "moved continuously between these two
-   reports", which is the interpolation this corpus cannot support. */
+/* The reported-record path (issues #288 and #312). It links only actual strict
+   record setters, directly from one observed point to the next; it never holds
+   a score across an unobserved interval or extends past the final record. */
 .score-frontier-line {
   stroke: #4c948b;
   stroke-width: 1.75;
-  stroke-linejoin: miter;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   opacity: 0.85;
 }
 
 /* Entrance (issue #312): a full-width clip rectangle scales across the x axis
    in exactly the same 3.6s interval used to schedule points by date. Unlike a
-   stroke dash, the sweep does not slow down while traversing a vertical jump,
-   so the line reaches every record when its point brightens. */
+   stroke dash, the sweep is independent of each segment's slope and length, so
+   the line reaches every record when its point brightens. */
 .score-frontier-clip {
   transform-box: fill-box;
   transform-origin: left center;
