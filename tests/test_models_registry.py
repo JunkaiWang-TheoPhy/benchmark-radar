@@ -187,3 +187,22 @@ def test_a_missing_shard_directory_refuses_to_write_a_curated_only_registry(tmp_
     # Refusing means refusing: a stale models.json is not overwritten with a
     # shorter one on the way out.
     assert not output.exists()
+
+
+def test_an_empty_shard_directory_refuses_to_write_a_curated_only_registry(tmp_path):
+    """Same short registry, reached a different way.
+
+    An interrupted `normalize-external` leaves the directory behind with
+    nothing in it, and a directory that exists is not the same as a directory
+    that has shards: the glob answers "nothing" either way.
+    """
+    radar = tmp_path / "radar.json"
+    radar.write_text(json.dumps({"model_card_leaderboard": {"model_cards": []}}), encoding="utf-8")
+    output = tmp_path / "models.json"
+    shard_dir = tmp_path / "empty-shards"
+    shard_dir.mkdir()
+
+    with pytest.raises(FileNotFoundError, match="normalize-external"):
+        write_model_registry(radar, shard_dir, output)
+
+    assert not output.exists()

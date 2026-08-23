@@ -169,21 +169,24 @@ def summarize(registry: dict[str, ModelRecord]) -> dict[str, Any]:
 def write_model_registry(radar_path: Path, shard_dir: Path, output: Path) -> dict[str, Any]:
     """Build the registry and write it beside the rest of the site's data.
 
-    Raises when the shard directory is absent. The shards are derived and
+    Raises when the shard directory holds no shards. They are derived and
     untracked, so a fresh checkout has none until `benchmark-radar
     normalize-external` writes them, and `_crawled_models()` reaches them with a
-    glob: a missing directory yields nothing rather than failing. Without this
-    check the crawled half of the registry silently disappears and the file is
-    rewritten with the 34 curated models in place of all 355, which is the kind
-    of wrong answer that reads as a real one. Refusing to write is the honest
-    outcome, and the message names the command that fixes it.
+    glob: both a missing directory and an empty one yield nothing rather than
+    failing. Without this check the crawled half of the registry silently
+    disappears and the file is rewritten with the 34 curated models in place of
+    all 355, which is the kind of wrong answer that reads as a real one. An
+    empty directory is checked as well as a missing one because an interrupted
+    generator leaves exactly that, and it produces the same short registry.
+    Refusing to write is the honest outcome, and the message names the command
+    that fixes it.
     """
     shard_dir = Path(shard_dir)
-    if not shard_dir.is_dir():
+    if not shard_dir.is_dir() or next(shard_dir.glob("*.json"), None) is None:
         raise FileNotFoundError(
-            f"{shard_dir} does not exist, so the crawled half of the model registry "
-            "would be silently dropped and models.json rewritten with the curated "
-            "models alone. Run `benchmark-radar normalize-external` first."
+            f"{shard_dir} holds no benchmark shards, so the crawled half of the model "
+            "registry would be silently dropped and models.json rewritten with the "
+            "curated models alone. Run `benchmark-radar normalize-external` first."
         )
     radar = json.loads(Path(radar_path).read_text(encoding="utf-8"))
     registry = build_registry(radar, shard_dir)
