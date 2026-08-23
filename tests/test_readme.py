@@ -91,7 +91,7 @@ def test_chinese_readme_mirrors_the_english_one():
     quoted = quote(url, safe="")
     assert f"https://img.shields.io/endpoint?url={quoted}" in zh
     assert "[English](README.md)" in zh
-    # The language switch sits at the top-right, above the title, with a plain
+    # The language switch sits at the top-left, above the title, with a plain
     # language label rather than a filename.
-    assert '<div align="right">' in zh.split("# Benchmark Radar")[0]
+    assert '<div align="left">' in zh.split("# Benchmark Radar")[0]
     assert "[README.md](README.md)" not in zh
