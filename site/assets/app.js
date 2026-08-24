@@ -929,6 +929,8 @@ const I18N = {
     "not recorded": "未记录",
     "The source declares a maximum of {max} but carries values above it, so that bound is not a scale.":
       "来源声明的满分是 {max}，但存在超过它的数值，因此这个上限并不是一个统一的量表。",
+    "Every score in this series falls between 0 and 1, so the chart multiplies them by 100 to read as 0 to 100. That is a change of units only: it asserts no maximum, and each point's pinned card shows the number the source published.":
+      "该序列的每个分数都落在 0 到 1 之间，因此图表将它们乘以 100，按 0 到 100 显示。这只是单位换算：它不声明任何满分，每个点的详情卡仍显示来源发布的原始数值。",
     "same benchmark, other source": "同一基准，其他来源",
     "related split": "相关子集",
     "same framework": "同一框架",
@@ -4328,6 +4330,43 @@ function externalScoresBlock(shard) {
 // Ordering by score, which is what this chart did before, threw the dates away
 // entirely and produced a monotonic ramp that looks like progress and is really
 // just a sorted list.
+// Axis readability for series recorded as fractions (issue #341).
+//
+// Terminal-Bench 2.0 crawls in as 0.83, 0.62, 0.41, and every write-up a reader
+// arrives from quotes those same numbers as percentages. Reading the axis meant
+// multiplying by 100 on every tick.
+//
+// So the axis multiplies by 100 -- and nothing else. A series is only rescaled
+// when every value it plots already sits inside [0, 1] and the source did not
+// declare a maximum above 1. Multiplying an entire series by a constant
+// preserves every ordering and every ratio in it and asserts nothing about a
+// ceiling, which is the distinction that matters here: `external_catalog.py`
+// refuses to emit a `display_scale` because a declared maximum is not a bound
+// (vending-bench-2 declares 1.0 and carries 8017.59), and that refusal still
+// holds. This draws no bar, no percentage sign and no "out of 100" -- an Elo
+// series stays in Elo, a contradicted bound disqualifies the series outright,
+// and the factor is stated in the source's (i) note so a tick reading "83" is
+// never mistaken for the number the source published. The pinned card's
+// "Score as reported" row keeps that raw number either way.
+// The rows the chart can place: a value that is not a number has no honest
+// height, and a row with no parseable release date has no honest x once the
+// axis is time. Shared with the (i) note so the note describes the axis the
+// reader is actually looking at rather than a differently filtered set.
+function externalPlottedRows(payload) {
+  return (payload.rows || [])
+    .filter((row) => typeof row.value === "number" && Number.isFinite(row.value))
+    .filter((row) => Number.isFinite(dateValue(row.reported_date)))
+    .sort((a, b) => dateValue(a.reported_date) - dateValue(b.reported_date) || a.value - b.value);
+}
+
+function externalDisplayFactor(values, series) {
+  if (!values.length) return 1;
+  if (series?.max_score_contradicted) return 1;
+  const declaredMax = Number(series?.declared_max);
+  if (Number.isFinite(declaredMax) && declaredMax > 1) return 1;
+  return values.every((value) => value >= 0 && value <= 1) ? 100 : 1;
+}
+
 function externalScoreChart(source, payload) {
   const meta = externalSourceMeta(source);
   // A row whose value did not parse is in the table verbatim and out of the
@@ -4336,18 +4375,10 @@ function externalScoreChart(source, payload) {
   // date is out for the same reason once the axis is time: there is no honest
   // x for it. Both exclusions are declared in the source's (i) note rather than
   // left to be inferred from a count that does not add up.
-  const numeric = (payload.rows || []).filter(
-    (row) => typeof row.value === "number" && Number.isFinite(row.value),
-  );
-  const dated = numeric.filter((row) => Number.isFinite(dateValue(row.reported_date)));
   // Sorted by date so the axis reads left to right in time. Ties broken by
   // score so same-day releases land in a stable order rather than whatever
   // order the crawl happened to return.
-  const plotted = dated
-    .slice()
-    .sort(
-      (a, b) => dateValue(a.reported_date) - dateValue(b.reported_date) || a.value - b.value,
-    );
+  const plotted = externalPlottedRows(payload);
   if (!plotted.length) return null;
 
   // Sorted for the band and the tick labels. `plotted` is in date order now, so
@@ -4373,6 +4404,10 @@ function externalScoreChart(source, payload) {
       : best;
   }, plotted[0]);
   const bestValue = bestRow.value;
+  // Display only: `scoreY` and every geometry below still take raw values, so
+  // the plotted shape is identical whether or not the factor applies.
+  const factor = externalDisplayFactor(values, payload.series);
+  const shown = (value) => Number((value * factor).toFixed(2));
   const recordSetters = externalRecordSetters(plotted, recordDirection);
   const hasRecordPath = recordSetters.length >= 2;
   const recordMarks = new Set(recordSetters.map((row) => row.obs_id));
@@ -4410,9 +4445,9 @@ function externalScoreChart(source, payload) {
       {
         count: plotted.length.toLocaleString(),
         source: meta.name,
-        best: bestValue,
+        best: shown(bestValue),
         model: bestRow.model_name || t("not recorded"),
-        low: values[0],
+        low: shown(values[0]),
       },
     ),
   });
@@ -4453,7 +4488,7 @@ function externalScoreChart(source, payload) {
       svgElement(
         "text",
         { x: margin.left - 12, y: gridY + 4, "text-anchor": "end", class: "frontier-tick" },
-        Number(value.toFixed(2)),
+        shown(value),
       ),
     );
   }
@@ -4512,7 +4547,7 @@ function externalScoreChart(source, payload) {
     svgElement(
       "text",
       { x: margin.left + 6, y: bestY - 6, "text-anchor": "start", class: "score-best-label" },
-      `${t("Best reported score:")} ${bestValue.toFixed(2)}`,
+      `${t("Best reported score:")} ${shown(bestValue)}`,
     ),
   );
 
@@ -4689,6 +4724,16 @@ function externalSourceTable(source, payload) {
       t("{n} row(s) have no release date, so they carry no position on this axis and are not drawn.").replace(
         "{n}",
         undated.toLocaleString(),
+      ),
+    );
+  }
+  // Stated, not assumed. A reader comparing a tick against the source's own
+  // page has to be told the axis was multiplied, and by what (issue #341).
+  const plottedValues = externalPlottedRows(payload).map((row) => row.value);
+  if (externalDisplayFactor(plottedValues, series) !== 1) {
+    notes.push(
+      t(
+        "Every score in this series falls between 0 and 1, so the chart multiplies them by 100 to read as 0 to 100. That is a change of units only: it asserts no maximum, and each point's pinned card shows the number the source published.",
       ),
     );
   }
