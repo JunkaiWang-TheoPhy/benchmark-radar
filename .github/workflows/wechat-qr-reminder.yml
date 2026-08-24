@@ -1,0 +1,29 @@
+name: WeChat QR Reminder
+
+on:
+  schedule:
+    # The QR code expires every seven days. Day-of-month */6 keeps the gap at
+    # seven days or less, including across month boundaries.
+    - cron: "0 1 */6 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remind:
+    permissions:
+      issues: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Create QR replacement reminder
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          gh issue create \
+            --title "Update WeChat group QR code — $(date -u +%Y-%m-%d)" \
+            --label automated \
+            --body $'Replace `assets/wechat-group-qr.jpg` with the latest WeChat group QR code.\n\n- [ ] Update the QR image\n- [ ] Verify it scans successfully'
