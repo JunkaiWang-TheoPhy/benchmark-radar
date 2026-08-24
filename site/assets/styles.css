@@ -400,14 +400,14 @@ button.repo-badge svg {
   text-decoration: none;
 }
 
-.view-nav button[aria-current="page"] {
+.view-nav .nav-active {
   background: var(--ink);
   color: white;
 }
 
-/* Opens a dialog rather than switching views, so it never carries the
-   aria-current treatment the view tabs use. */
-#rubric-nav {
+/* Rubric is a dialog trigger rather than a page link, so its inactive blue is
+   kept separate from the shared active treatment above. */
+#rubric-nav:not(.nav-active) {
   color: var(--blue-deep);
 }
 
@@ -415,7 +415,7 @@ button.repo-badge svg {
   content: " ⓘ";
 }
 
-#rubric-nav:hover {
+#rubric-nav:not(.nav-active):hover {
   background: var(--panel);
 }
 
@@ -4837,11 +4837,11 @@ footer {
   border-radius: var(--radius-sm);
 }
 
-/* The selected view tab is the only solid dark block on the page, so leaving it
-   square made it the one hard-cornered shape among rounded ones. Rounded at the
-   top only: it sits on the nav's bottom rule and reads as a tab attached to the
-   page below it, not as a floating chip. */
-.view-nav button[aria-current="page"] {
+/* The selected navigation item is the only solid dark block on the page, so
+   leaving it square made it the one hard-cornered shape among rounded ones.
+   Rounded at the top only: it sits on the nav's bottom rule and reads as a tab
+   attached to the page below it, not as a floating chip. */
+.view-nav .nav-active {
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }
 

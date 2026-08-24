@@ -1278,6 +1278,26 @@ function applyViewSeo(view) {
   }
 }
 
+// Every navigation item uses one visual active state, even though the four
+// views use aria-current while Rubric is a dialog trigger with aria-expanded.
+// Keeping that distinction in ARIA and normalizing it here prevents element
+// type (button versus anchor) from deciding which item looks selected.
+function syncNavState() {
+  const rubricActive = Boolean(state.rubric);
+  document.querySelectorAll("[data-view]").forEach((item) => {
+    const active = !rubricActive && item.dataset.view === state.view;
+    item.classList.toggle("nav-active", active);
+    if (active) {
+      item.setAttribute("aria-current", "page");
+    } else {
+      item.removeAttribute("aria-current");
+    }
+  });
+  const rubricNav = byId("rubric-nav");
+  rubricNav.classList.toggle("nav-active", rubricActive);
+  rubricNav.setAttribute("aria-expanded", String(rubricActive));
+}
+
 // `update` false is for restoring a view that is already in the URL (boot and
 // popstate), where writing history again would either duplicate the entry or
 // fight the entry being restored.
@@ -1290,13 +1310,7 @@ function setView(view, update = true, mode = "push") {
   document.querySelectorAll(".view").forEach((section) => {
     section.hidden = section.id !== `${view}-view`;
   });
-  document.querySelectorAll("[data-view]").forEach((button) => {
-    if (button.dataset.view === view) {
-      button.setAttribute("aria-current", "page");
-    } else {
-      button.removeAttribute("aria-current");
-    }
-  });
+  syncNavState();
   if (update) writeUrl(mode);
 }
 
@@ -2993,6 +3007,7 @@ function openRubric(item = null, versionOverride = null) {
   const isLegacy = version !== current;
   state.contact = false;
   state.rubric = isLegacy ? String(version) : "current";
+  syncNavState();
   writeUrl();
   const header = [
     element("p", {
@@ -7650,6 +7665,7 @@ function bindEvents() {
   // cleared from the URL no matter how the reader dismisses the dialog.
   byId("rubric-dialog").addEventListener("close", () => {
     state.rubric = "";
+    syncNavState();
     writeUrl();
   });
   // Reachable without a record in hand, for a reader who wants the method
