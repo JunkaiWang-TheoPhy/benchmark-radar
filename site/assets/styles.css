@@ -2932,16 +2932,32 @@ td a {
   user-select: none;
 }
 
+/* Hover grows a point by one step from whatever size it is drawn at. A record
+   setter is drawn at 1.5x (issue #345), so a single shared radius here would
+   have shrunk the very points the chart is built around the moment a reader
+   pointed at one. */
 .score-point:focus .score-point-face,
 .score-point:hover .score-point-face,
 .score-point.is-selected .score-point-face {
-  r: 10px;
+  r: 15px;
   stroke-width: 4;
 }
 
 .score-point:focus .score-point-citation-ring,
 .score-point:hover .score-point-citation-ring,
 .score-point.is-selected .score-point-citation-ring {
+  r: 19.5px;
+}
+
+.score-point-dim:focus .score-point-face,
+.score-point-dim:hover .score-point-face,
+.score-point-dim.is-selected .score-point-face {
+  r: 10px;
+}
+
+.score-point-dim:focus .score-point-citation-ring,
+.score-point-dim:hover .score-point-citation-ring,
+.score-point-dim.is-selected .score-point-citation-ring {
   r: 13px;
 }
 
@@ -2983,20 +2999,42 @@ td a {
    behind it instead of competing with it for the eye. The de-emphasis sits on
    the marks inside the group rather than the group's own opacity, which the
    entrance animation owns. Reading one still works: hover and focus bring a
-   receded point back to full strength. */
+   receded point back to full strength.
+
+   Recede by weight, never by dissolving the mark (issue #345). The first
+   version faded the face to `fill-opacity: 0.6`, and on a near-black panel a
+   translucent cream disc is not a quieter disc -- it is a muddy blob the panel
+   shows through. That took away the background the brand glyph is drawn on, so
+   a glyph already at half opacity had nothing left to sit on, and dropping the
+   stroke to 0.45 removed the edge that would still have defined the mark. All
+   fifteen off-line points on Terminal-Bench 2.0 came out as identical smudges:
+   you could not tell which model any of them was without hovering it.
+
+   So the disc keeps a near-opaque face and keeps its edge, and the fading here
+   is gentle. Most of the separation is carried by size instead: a record setter
+   is drawn at 1.5x, which lets these points stay readable without competing.
+   Colour helps too -- the bright blue ring belongs to the line, and goes
+   neutral here. */
 .score-point-dim .score-point-face {
-  fill-opacity: 0.6;
-  stroke-opacity: 0.45;
+  fill-opacity: 0.92;
+  stroke: #7b8f9b;
+  stroke-opacity: 0.7;
 }
 
-.score-point-dim .score-point-citation-ring,
+.score-point-dim .score-point-citation-ring {
+  opacity: 0.6;
+}
+
+/* This is the mark's whole payload -- which model reported this score -- so it
+   is the last thing that should fade, and it never fades below readable. */
 .score-point-dim .score-point-glyph {
-  opacity: 0.5;
+  opacity: 0.72;
 }
 
 .score-point-dim:hover .score-point-face,
 .score-point-dim:focus .score-point-face,
 .score-point-dim.is-selected .score-point-face {
+  stroke: #6ea8dc;
   fill-opacity: 1;
   stroke-opacity: 1;
 }

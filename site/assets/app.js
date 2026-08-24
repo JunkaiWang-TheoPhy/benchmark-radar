@@ -4605,14 +4605,22 @@ function externalScoreChart(source, payload) {
         (thirdParty ? `, ${t("cited by")} ${meta.name}` : "") +
         `. ${t("Click to pin record details")}.`,
     });
-    group.append(svgElement("circle", { cx: pointX, cy: pointY, r: 9, class: "score-point-face" }));
+    const size = frontierPointSizes(offTheLine);
+    group.append(
+      svgElement("circle", { cx: pointX, cy: pointY, r: size.face, class: "score-point-face" }),
+    );
     if (thirdParty) {
       group.append(
-        svgElement("circle", { cx: pointX, cy: pointY, r: 12, class: "score-point-citation-ring" }),
+        svgElement("circle", {
+          cx: pointX,
+          cy: pointY,
+          r: size.citationRing,
+          class: "score-point-citation-ring",
+        }),
       );
     }
     group.append(
-      modelGlyph(row.model_name, row.organization, pointX, pointY, 14, "score-point-glyph"),
+      modelGlyph(row.model_name, row.organization, pointX, pointY, size.glyph, "score-point-glyph"),
     );
     // The same pinned-card system the curated chart uses (makeFrontierPointInteractive
     // + #frontier-tooltip), not a native <title>. Only the rows this source
@@ -5778,6 +5786,24 @@ function frontierPointRevealDelay(pointX, margin, plotWidth) {
   return Math.round(FRONTIER_SWEEP_DELAY_MS + fraction * FRONTIER_SWEEP_MS);
 }
 
+// Point sizes for both score charts (issue #345). A record setter is drawn at
+// 1.5x, which is what carries the emphasis now: the readings off the line keep
+// their size and stay legible, and the line's own points step forward instead.
+// De-emphasis by fading alone had made the off-line points unreadable, and
+// making them smaller instead would have cost the same legibility a different
+// way -- a 14px brand glyph does not survive being shrunk.
+//
+// Shared by the curated and crawled charts so a reader who compares the two
+// figures is comparing marks of the same size.
+const FRONTIER_POINT_SIZES = {
+  record: { face: 13.5, citationRing: 18, glyph: 21 },
+  offTheLine: { face: 9, citationRing: 12, glyph: 14 },
+};
+
+function frontierPointSizes(offTheLine) {
+  return offTheLine ? FRONTIER_POINT_SIZES.offTheLine : FRONTIER_POINT_SIZES.record;
+}
+
 // The entrance plays when the reader arrives at a benchmark and runs to
 // completion before it is spent. The crawled catalog settling mid-reveal
 // re-renders this panel, and a key spent on first paint would cancel the very
@@ -6037,11 +6063,12 @@ function scoreTrackChart(entry, board) {
           (observation.reported_by ? `, ${t("cited by")} ${observation.reported_by}` : "") +
           `. ${t("Click to pin record details")}.`,
       });
+      const size = frontierPointSizes(offTheLine);
       group.append(
         svgElement("circle", {
           cx: pointX,
           cy: pointY,
-          r: 9,
+          r: size.face,
           class: "score-point-face",
         }),
       );
@@ -6050,7 +6077,7 @@ function scoreTrackChart(entry, board) {
           svgElement("circle", {
             cx: pointX,
             cy: pointY,
-            r: 12,
+            r: size.citationRing,
             class: "score-point-citation-ring",
           }),
         );
@@ -6061,7 +6088,7 @@ function scoreTrackChart(entry, board) {
           observation.organization,
           pointX,
           pointY,
-          14,
+          size.glyph,
           "score-point-glyph",
         ),
       );

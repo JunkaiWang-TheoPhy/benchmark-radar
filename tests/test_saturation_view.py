@@ -110,7 +110,10 @@ def test_score_points_carry_recognizable_model_family_marks():
         assert f"{family}: [" in glyphs
     assert "modelGlyph(" in chart
     assert "observation.model" in chart
-    assert 'r: 9,\n          class: "score-point-face"' in chart
+    # The radius comes from the shared size table now (issue #345): a record
+    # setter is drawn at 1.5x and a reading off the line keeps the original 9.
+    assert 'r: size.face,\n          class: "score-point-face"' in chart
+    assert "const size = frontierPointSizes(offTheLine);" in chart
     assert ".score-point-glyph" in styles
     assert "stroke: #6ea8dc" in styles.split(".score-point-face", 1)[1][:120]
 
@@ -806,8 +809,11 @@ def test_issue_312_the_saturation_view_reveals_left_to_right():
     assert "const hasRecordPath = frontierPoints.length >= 2;" in chart
     assert "const offTheLine = hasRecordPath && !onFrontier;" in chart
     assert 'offTheLine ? " score-point-dim" : ""' in chart
+    # The face keeps a near-opaque fill (issue #345). It is the background the
+    # brand glyph sits on, and on a near-black panel a translucent disc lets the
+    # panel through and takes that background away.
     dim = styles.split(".score-point-dim .score-point-face {", 1)[1][:200]
-    assert "fill-opacity: 0.6;" in dim
+    assert "fill-opacity: 0.92;" in dim
     assert ".score-point-dim:hover .score-point-face" in styles
     assert ".score-point-dim.is-selected .score-point-glyph" in styles
 
@@ -856,3 +862,74 @@ def test_issue_312_the_saturation_view_reveals_left_to_right():
     assert ".score-chart-enter .score-point" in guard
     assert ".score-chart-enter .score-frontier-clip" in guard
     assert "transform: none;" in guard
+
+
+def test_issue_345_a_reading_off_the_line_stays_legible():
+    """The points off the saturation line were faded until you could not read them.
+
+    Issue #312 asked for them to recede. The first version did it by fading the
+    face to `fill-opacity: 0.6`, and on a near-black panel a translucent cream
+    disc is not a quieter disc: the panel shows through it, which takes away the
+    background the brand glyph is drawn on. With the glyph already at 0.5 and
+    the stroke at 0.45 there was no edge left either, so all fifteen off-line
+    points on Terminal-Bench 2.0 rendered as the same smudge and no reader could
+    tell which model any of them was.
+
+    The emphasis now comes from size instead, so the fading can stay gentle.
+    """
+    script = source("site/assets/app.js")
+    styles = source("site/assets/styles.css")
+
+    # A record setter is drawn at 1.5x on every mark it carries.
+    sizes = script.split("const FRONTIER_POINT_SIZES = {", 1)[1].split("};", 1)[0]
+    record = {"face": 13.5, "citationRing": 18, "glyph": 21}
+    off = {"face": 9, "citationRing": 12, "glyph": 14}
+    for key, value in record.items():
+        assert f"{key}: {value}" in sizes.split("offTheLine:", 1)[0]
+    for key, value in off.items():
+        assert f"{key}: {value}" in sizes.split("offTheLine:", 1)[1]
+    for key in record:
+        assert record[key] == off[key] * 1.5, f"{key} is not 1.5x"
+
+    # A reading off the line keeps the size it always had. Shrinking it would
+    # have cost the same legibility that fading it did.
+    picker = script.split("function frontierPointSizes(offTheLine)", 1)[1].split("}", 1)[0]
+    assert "offTheLine ? FRONTIER_POINT_SIZES.offTheLine : FRONTIER_POINT_SIZES.record" in picker
+
+    # Both charts read the same table, so a reader comparing the curated figure
+    # against the crawled one is comparing marks of the same size.
+    assert script.count("const size = frontierPointSizes(offTheLine);") == 2
+
+    # The disc stays a disc: near-opaque face, and an edge that survives.
+    dim = _css_rule(styles, ".score-point-dim .score-point-face {")
+    assert "fill-opacity: 0.92;" in dim
+    assert "stroke-opacity: 0.7;" in dim
+    # The bright blue ring belongs to the line; off it, the edge goes neutral.
+    assert "stroke: #7b8f9b;" in dim
+    # The glyph carries the mark's whole payload, so it never fades below
+    # readable. Anything at or under the old 0.5 is the bug coming back.
+    glyph = _css_rule(styles, ".score-point-dim .score-point-glyph {")
+    opacity = float(glyph.split("opacity:", 1)[1].split(";", 1)[0])
+    assert opacity >= 0.7, "a brand glyph this faint cannot be identified"
+
+    # Hover grows a point from whatever size it is drawn at. One shared radius
+    # would have shrunk a record setter the moment a reader pointed at it.
+    hover = _css_rule(styles, ".score-point.is-selected .score-point-face {")
+    assert "r: 15px;" in hover
+    dim_hover = _css_rule(styles, ".score-point-dim.is-selected .score-point-face {")
+    assert "r: 10px;" in dim_hover
+    # And it comes back to the line's own colour while it is held.
+    restore = _css_rule(
+        styles,
+        """.score-point-dim:hover .score-point-face,
+.score-point-dim:focus .score-point-face,
+.score-point-dim.is-selected .score-point-face {""",
+    )
+    assert "stroke: #6ea8dc;" in restore
+    assert "stroke-opacity: 1;" in restore
+
+
+def _css_rule(styles: str, selector: str) -> str:
+    """Return the body of the first rule whose selector matches exactly."""
+    assert selector in styles, f"missing selector: {selector}"
+    return styles.split(selector, 1)[1].split("}", 1)[0]
