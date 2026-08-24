@@ -74,6 +74,25 @@ def test_priority_score_is_reachably_explained():
     assert "How is this scored?" in script
 
 
+def test_every_navigation_item_uses_the_same_active_state():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    # Today is a button, the three routed views are anchors, and Rubric opens a
+    # dialog. Their element types and ARIA semantics must not change the visual
+    # selected state.
+    assert 'aria-controls="rubric-dialog"' in html
+    assert 'aria-expanded="false"' in html
+    assert "function syncNavState()" in script
+    assert 'item.classList.toggle("nav-active", active);' in script
+    assert 'rubricNav.classList.toggle("nav-active", rubricActive);' in script
+    assert 'rubricNav.setAttribute("aria-expanded", String(rubricActive));' in script
+    assert script.count("syncNavState();") >= 3
+    assert ".view-nav .nav-active {" in styles
+    assert '.view-nav button[aria-current="page"]' not in styles
+
+
 def test_recommendation_threshold_does_not_gate_inclusion_and_rows_carry_no_badge():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
