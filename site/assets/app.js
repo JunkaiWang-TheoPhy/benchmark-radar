@@ -392,6 +392,8 @@ const I18N = {
     "normal": "正常",
     "Sort: Priority ↓": "排序:优先度 ↓",
     "Sort: Date, then Priority ↓": "排序:日期,再按优先度 ↓",
+    "Sort: New releases first, then Priority ↓": "排序:新发布优先,再按优先度 ↓",
+    "Sort: Date, then new releases, then Priority ↓": "排序:日期,再新发布优先,再按优先度 ↓",
     "Sort: Date ↓": "排序:日期 ↓",
     // --- Leaderboard ---------------------------------------------------------
     "Which benchmarks do model cards report?": "模型卡报告了哪些基准?",
@@ -929,6 +931,8 @@ const I18N = {
     "not recorded": "未记录",
     "The source declares a maximum of {max} but carries values above it, so that bound is not a scale.":
       "来源声明的满分是 {max}，但存在超过它的数值，因此这个上限并不是一个统一的量表。",
+    "Every score in this series falls between 0 and 1, so the chart multiplies them by 100 to read as 0 to 100. That is a change of units only: it asserts no maximum, and each point's pinned card shows the number the source published.":
+      "该序列的每个分数都落在 0 到 1 之间，因此图表将它们乘以 100，按 0 到 100 显示。这只是单位换算：它不声明任何满分，每个点的详情卡仍显示来源发布的原始数值。",
     "same benchmark, other source": "同一基准，其他来源",
     "related split": "相关子集",
     "same framework": "同一框架",
@@ -2057,12 +2061,33 @@ function renderToday({ resultsOnly = false } = {}) {
   // so a kind-filtered attention set falls back to date order, and in All
   // dates mode the archive is ordered by date first and priority second
   // (issue #248).
+  //
+  // Releases lead each day ahead of priority (issue #332), so the caption says
+  // that too whenever the result set actually mixes releases with anything
+  // else. A set that is all releases, or has none, is ordered by priority
+  // alone, and naming a tie-break that changed nothing would misdescribe it.
+  // Read off the whole result set rather than the current page: the caption
+  // describes the ordering the reader is paging through, and page one of a
+  // release-led day is all releases even when later pages are not.
+  //
+  // The caption stops at "new releases first" and does not promise a recency
+  // order. Releases are grouped into age tiers and ordered by priority inside
+  // each one, so the strongest true statement is that releases lead. Saying
+  // "newest first" would read as a strict sort and the rows would contradict
+  // it: the freshest tier opens with an 11.9-hour-old row above a 2.4-hour-old
+  // one, because priority separates them.
   const priorityScored = visibleObservations.some((item) => Number(item.total_score) > 0);
+  const releases = observations.filter(isRelease).length;
+  const releasesLead = releases > 0 && releases < observations.length;
   byId("today-sort").textContent = !priorityScored
     ? t("Sort: Date ↓")
     : showingAllDates
-      ? t("Sort: Date, then Priority ↓")
-      : t("Sort: Priority ↓");
+      ? releasesLead
+        ? t("Sort: Date, then new releases, then Priority ↓")
+        : t("Sort: Date, then Priority ↓")
+      : releasesLead
+        ? t("Sort: New releases first, then Priority ↓")
+        : t("Sort: Priority ↓");
   const listHost = byId("today-list");
   replaceChildren(
     listHost,
@@ -2755,6 +2780,53 @@ function healthSummary(entries) {
   return empty ? `${base} · ${empty} ${t("empty")}` : base;
 }
 
+// How old a release was when the scan that found it ran, in hours.
+//
+// `published_at` is the release moment and every crawled release carries one.
+// `discovered_at` is deliberately NOT a fallback: it is the crawl timestamp, so
+// reading age from it would report every release as zero hours old and hand the
+// freshest tier to rows whose real date is unknown. A release we cannot date is
+// not treated as fresh.
+//
+// Measured against the snapshot's own `generated_at` rather than the reader's
+// clock. A reader opening an older date wants that day ranked as it stood, and
+// the wall clock would collapse every past day into one undifferentiated tier.
+// It also keeps the sort deterministic, which matters because the result is
+// cached in `state.observations` and reused across every re-render.
+function releaseAgeHours(item) {
+  const released = item.published_at || item.updated_at;
+  const reference = item.snapshot_generated_at;
+  if (!released || !reference) return Number.POSITIVE_INFINITY;
+  const hours = (new Date(reference).getTime() - new Date(released).getTime()) / 3_600_000;
+  return Number.isFinite(hours) ? Math.max(0, hours) : Number.POSITIVE_INFINITY;
+}
+
+const RELEASE_FRESH_HOURS = 24;
+const RELEASE_RECENT_HOURS = 72;
+
+// Ascending rank, so a plain subtraction orders the day: releases from the last
+// day, then the last three days, then older releases, then everything that is
+// not a release at all. `event_kind` is set by the pipeline to "released" /
+// "updated" on evidence rows and "discussed" on attention rows.
+//
+// The tiers exist because a flat release group is ordered by priority, and
+// priority knows nothing about time: a release 2.4 hours old sat below one 11.9
+// hours old, and a 39.8-hour-old row still made page one. Crawl lag already
+// spreads a single day's releases across roughly 72 hours of real time, so
+// "today's releases" was never one moment -- these tiers make that spread
+// visible instead of leaving it to the priority score to scramble.
+function releaseRank(item) {
+  if (item.event_kind !== "released") return 3;
+  const hours = releaseAgeHours(item);
+  if (hours < RELEASE_FRESH_HOURS) return 0;
+  if (hours < RELEASE_RECENT_HOURS) return 1;
+  return 2;
+}
+
+function isRelease(item) {
+  return item.event_kind === "released";
+}
+
 function allObservations() {
   if (state.observations) return state.observations;
   const evidence = state.data.days.flatMap((day) =>
@@ -2770,6 +2842,9 @@ function allObservations() {
       recommendation_score: day.selection?.recommendation_score,
       minimum_score: day.selection?.minimum_score,
       snapshot_date: day.date,
+      // The moment this day's scan ran, which is what a release's age is
+      // measured against (issue #332).
+      snapshot_generated_at: day.generated_at,
       observation_kind: "evidence",
     })),
   );
@@ -2777,6 +2852,7 @@ function allObservations() {
     day.attention.observations.map((item) => ({
       ...item,
       snapshot_date: day.date,
+      snapshot_generated_at: day.generated_at,
       artifact_urls: item.primary_artifact_url ? [item.primary_artifact_url] : [],
       organizations: item.producer ? [item.producer] : [],
       observation_kind: "attention",
@@ -2785,6 +2861,18 @@ function allObservations() {
   state.observations = [...evidence, ...attention].sort((a, b) => {
     const dateOrder = String(b.snapshot_date).localeCompare(String(a.snapshot_date));
     if (dateOrder) return dateOrder;
+    // A release outranks every non-release from the same day, whatever the
+    // priority score says, and a fresher release outranks an older one.
+    // Priority measures how well a benchmark is documented -- artifacts,
+    // openness, size -- and a benchmark published today has had no time to
+    // accumulate any of it, while a repository that merely took a commit has
+    // had months. Ranking the day purely by score therefore buries the one
+    // thing a reader opens this page to find: on 2026-08-24 the top eight rows
+    // were all `updated` and the highest-scoring actual release sat at rank
+    // nine (issue #332). Priority still orders within each tier -- it is a
+    // real quality signal, just not a substitute for recency.
+    const releaseOrder = releaseRank(a) - releaseRank(b);
+    if (releaseOrder) return releaseOrder;
     const scoreOrder = Number(b.total_score || 0) - Number(a.total_score || 0);
     if (scoreOrder) return scoreOrder;
     // Attention rows carry no priority, so within a day they order by the
@@ -4328,6 +4416,43 @@ function externalScoresBlock(shard) {
 // Ordering by score, which is what this chart did before, threw the dates away
 // entirely and produced a monotonic ramp that looks like progress and is really
 // just a sorted list.
+// Axis readability for series recorded as fractions (issue #341).
+//
+// Terminal-Bench 2.0 crawls in as 0.83, 0.62, 0.41, and every write-up a reader
+// arrives from quotes those same numbers as percentages. Reading the axis meant
+// multiplying by 100 on every tick.
+//
+// So the axis multiplies by 100 -- and nothing else. A series is only rescaled
+// when every value it plots already sits inside [0, 1] and the source did not
+// declare a maximum above 1. Multiplying an entire series by a constant
+// preserves every ordering and every ratio in it and asserts nothing about a
+// ceiling, which is the distinction that matters here: `external_catalog.py`
+// refuses to emit a `display_scale` because a declared maximum is not a bound
+// (vending-bench-2 declares 1.0 and carries 8017.59), and that refusal still
+// holds. This draws no bar, no percentage sign and no "out of 100" -- an Elo
+// series stays in Elo, a contradicted bound disqualifies the series outright,
+// and the factor is stated in the source's (i) note so a tick reading "83" is
+// never mistaken for the number the source published. The pinned card's
+// "Score as reported" row keeps that raw number either way.
+// The rows the chart can place: a value that is not a number has no honest
+// height, and a row with no parseable release date has no honest x once the
+// axis is time. Shared with the (i) note so the note describes the axis the
+// reader is actually looking at rather than a differently filtered set.
+function externalPlottedRows(payload) {
+  return (payload.rows || [])
+    .filter((row) => typeof row.value === "number" && Number.isFinite(row.value))
+    .filter((row) => Number.isFinite(dateValue(row.reported_date)))
+    .sort((a, b) => dateValue(a.reported_date) - dateValue(b.reported_date) || a.value - b.value);
+}
+
+function externalDisplayFactor(values, series) {
+  if (!values.length) return 1;
+  if (series?.max_score_contradicted) return 1;
+  const declaredMax = Number(series?.declared_max);
+  if (Number.isFinite(declaredMax) && declaredMax > 1) return 1;
+  return values.every((value) => value >= 0 && value <= 1) ? 100 : 1;
+}
+
 function externalScoreChart(source, payload) {
   const meta = externalSourceMeta(source);
   // A row whose value did not parse is in the table verbatim and out of the
@@ -4336,18 +4461,10 @@ function externalScoreChart(source, payload) {
   // date is out for the same reason once the axis is time: there is no honest
   // x for it. Both exclusions are declared in the source's (i) note rather than
   // left to be inferred from a count that does not add up.
-  const numeric = (payload.rows || []).filter(
-    (row) => typeof row.value === "number" && Number.isFinite(row.value),
-  );
-  const dated = numeric.filter((row) => Number.isFinite(dateValue(row.reported_date)));
   // Sorted by date so the axis reads left to right in time. Ties broken by
   // score so same-day releases land in a stable order rather than whatever
   // order the crawl happened to return.
-  const plotted = dated
-    .slice()
-    .sort(
-      (a, b) => dateValue(a.reported_date) - dateValue(b.reported_date) || a.value - b.value,
-    );
+  const plotted = externalPlottedRows(payload);
   if (!plotted.length) return null;
 
   // Sorted for the band and the tick labels. `plotted` is in date order now, so
@@ -4373,6 +4490,10 @@ function externalScoreChart(source, payload) {
       : best;
   }, plotted[0]);
   const bestValue = bestRow.value;
+  // Display only: `scoreY` and every geometry below still take raw values, so
+  // the plotted shape is identical whether or not the factor applies.
+  const factor = externalDisplayFactor(values, payload.series);
+  const shown = (value) => Number((value * factor).toFixed(2));
   const recordSetters = externalRecordSetters(plotted, recordDirection);
   const hasRecordPath = recordSetters.length >= 2;
   const recordMarks = new Set(recordSetters.map((row) => row.obs_id));
@@ -4410,9 +4531,9 @@ function externalScoreChart(source, payload) {
       {
         count: plotted.length.toLocaleString(),
         source: meta.name,
-        best: bestValue,
+        best: shown(bestValue),
         model: bestRow.model_name || t("not recorded"),
-        low: values[0],
+        low: shown(values[0]),
       },
     ),
   });
@@ -4453,7 +4574,7 @@ function externalScoreChart(source, payload) {
       svgElement(
         "text",
         { x: margin.left - 12, y: gridY + 4, "text-anchor": "end", class: "frontier-tick" },
-        Number(value.toFixed(2)),
+        shown(value),
       ),
     );
   }
@@ -4512,7 +4633,7 @@ function externalScoreChart(source, payload) {
     svgElement(
       "text",
       { x: margin.left + 6, y: bestY - 6, "text-anchor": "start", class: "score-best-label" },
-      `${t("Best reported score:")} ${bestValue.toFixed(2)}`,
+      `${t("Best reported score:")} ${shown(bestValue)}`,
     ),
   );
 
@@ -4537,14 +4658,22 @@ function externalScoreChart(source, payload) {
         (thirdParty ? `, ${t("cited by")} ${meta.name}` : "") +
         `. ${t("Click to pin record details")}.`,
     });
-    group.append(svgElement("circle", { cx: pointX, cy: pointY, r: 9, class: "score-point-face" }));
+    const size = frontierPointSizes(offTheLine);
+    group.append(
+      svgElement("circle", { cx: pointX, cy: pointY, r: size.face, class: "score-point-face" }),
+    );
     if (thirdParty) {
       group.append(
-        svgElement("circle", { cx: pointX, cy: pointY, r: 12, class: "score-point-citation-ring" }),
+        svgElement("circle", {
+          cx: pointX,
+          cy: pointY,
+          r: size.citationRing,
+          class: "score-point-citation-ring",
+        }),
       );
     }
     group.append(
-      modelGlyph(row.model_name, row.organization, pointX, pointY, 14, "score-point-glyph"),
+      modelGlyph(row.model_name, row.organization, pointX, pointY, size.glyph, "score-point-glyph"),
     );
     // The same pinned-card system the curated chart uses (makeFrontierPointInteractive
     // + #frontier-tooltip), not a native <title>. Only the rows this source
@@ -4689,6 +4818,16 @@ function externalSourceTable(source, payload) {
       t("{n} row(s) have no release date, so they carry no position on this axis and are not drawn.").replace(
         "{n}",
         undated.toLocaleString(),
+      ),
+    );
+  }
+  // Stated, not assumed. A reader comparing a tick against the source's own
+  // page has to be told the axis was multiplied, and by what (issue #341).
+  const plottedValues = externalPlottedRows(payload).map((row) => row.value);
+  if (externalDisplayFactor(plottedValues, series) !== 1) {
+    notes.push(
+      t(
+        "Every score in this series falls between 0 and 1, so the chart multiplies them by 100 to read as 0 to 100. That is a change of units only: it asserts no maximum, and each point's pinned card shows the number the source published.",
       ),
     );
   }
@@ -5700,6 +5839,24 @@ function frontierPointRevealDelay(pointX, margin, plotWidth) {
   return Math.round(FRONTIER_SWEEP_DELAY_MS + fraction * FRONTIER_SWEEP_MS);
 }
 
+// Point sizes for both score charts (issue #345). A record setter is drawn at
+// 1.5x, which is what carries the emphasis now: the readings off the line keep
+// their size and stay legible, and the line's own points step forward instead.
+// De-emphasis by fading alone had made the off-line points unreadable, and
+// making them smaller instead would have cost the same legibility a different
+// way -- a 14px brand glyph does not survive being shrunk.
+//
+// Shared by the curated and crawled charts so a reader who compares the two
+// figures is comparing marks of the same size.
+const FRONTIER_POINT_SIZES = {
+  record: { face: 13.5, citationRing: 18, glyph: 21 },
+  offTheLine: { face: 9, citationRing: 12, glyph: 14 },
+};
+
+function frontierPointSizes(offTheLine) {
+  return offTheLine ? FRONTIER_POINT_SIZES.offTheLine : FRONTIER_POINT_SIZES.record;
+}
+
 // The entrance plays when the reader arrives at a benchmark and runs to
 // completion before it is spent. The crawled catalog settling mid-reveal
 // re-renders this panel, and a key spent on first paint would cancel the very
@@ -5959,11 +6116,12 @@ function scoreTrackChart(entry, board) {
           (observation.reported_by ? `, ${t("cited by")} ${observation.reported_by}` : "") +
           `. ${t("Click to pin record details")}.`,
       });
+      const size = frontierPointSizes(offTheLine);
       group.append(
         svgElement("circle", {
           cx: pointX,
           cy: pointY,
-          r: 9,
+          r: size.face,
           class: "score-point-face",
         }),
       );
@@ -5972,7 +6130,7 @@ function scoreTrackChart(entry, board) {
           svgElement("circle", {
             cx: pointX,
             cy: pointY,
-            r: 12,
+            r: size.citationRing,
             class: "score-point-citation-ring",
           }),
         );
@@ -5983,7 +6141,7 @@ function scoreTrackChart(entry, board) {
           observation.organization,
           pointX,
           pointY,
-          14,
+          size.glyph,
           "score-point-glyph",
         ),
       );

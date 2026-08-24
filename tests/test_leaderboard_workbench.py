@@ -381,7 +381,7 @@ def test_crawled_scores_never_render_a_percentage_or_scale():
     # is printed as a claim about the source, never used as a denominator.
     script = source("site/assets/app.js")
 
-    section = script.split("function externalScoreChart(source, payload)", 1)[1].split(
+    section = script.split("function externalPlottedRows(payload)", 1)[1].split(
         "// Identity siblings", 1
     )[0]
     assert "row.raw_value" in section
@@ -401,7 +401,7 @@ def test_every_crawled_score_is_a_plotted_point():
     # table added nothing the chart's point titles did not already say.
     script = source("site/assets/app.js")
 
-    chart = script.split("function externalScoreChart(source, payload)", 1)[1].split(
+    chart = script.split("function externalPlottedRows(payload)", 1)[1].split(
         "\nfunction externalSourceTable", 1
     )[0]
     table = script.split("function externalSourceTable(source, payload)", 1)[1].split(
@@ -414,15 +414,17 @@ def test_every_crawled_score_is_a_plotted_point():
     # A value that did not parse into a number has no position on an axis, so it
     # is dropped, and it is dropped by testing the value rather than by a cap.
     assert 'typeof row.value === "number" && Number.isFinite(row.value)' in chart
-    # No cap. The bare .slice() copies before sorting so the source array is
-    # not mutated; every .slice(0, N) is ISO-date truncation, not a row limit.
-    # A truncating slice over the rows would silently hide scores.
+    # No cap. The rows reach .sort() through .filter(), which already returns a
+    # fresh array, so the sort cannot mutate the caller's rows and no copying
+    # slice is needed to protect them. Every .slice(0, N) here is ISO-date
+    # truncation, not a row limit; a truncating slice over the rows would
+    # silently hide scores.
     #
     # Counting instances is not the guarantee -- issue #298 added a second
     # date truncation for the quarterly axis ticks, which drops nothing. The
     # guarantee is that each one slices a date string to 10 chars, so any
     # slice with a different length, or one applied to the rows, fails here.
-    assert ".slice()" in chart
+    assert ".filter((row) =>" in chart
     assert chart.count(".slice(0,") == chart.count(".slice(0, 10)")
     assert ".slice(0, 10)" in chart
     for cap in ("plotted.slice(0,", "numeric.slice(0,", "dated.slice(0,", "rows.slice(0,"):
@@ -462,7 +464,7 @@ def test_the_crawled_chart_axis_is_release_date_and_says_so():
     # into being presented as one.
     script = source("site/assets/app.js")
 
-    chart = script.split("function externalScoreChart(source, payload)", 1)[1].split(
+    chart = script.split("function externalPlottedRows(payload)", 1)[1].split(
         "\nfunction externalSourceTable", 1
     )[0]
 
@@ -517,7 +519,7 @@ def test_the_crawled_chart_reuses_the_curated_chart_classes():
     # chart style for a second kind of evidence.
     script = source("site/assets/app.js")
 
-    chart = script.split("function externalScoreChart(source, payload)", 1)[1].split(
+    chart = script.split("function externalPlottedRows(payload)", 1)[1].split(
         "\nfunction externalSourceTable", 1
     )[0]
 
@@ -560,7 +562,7 @@ def test_every_crawled_score_has_the_curated_charts_pinned_tooltip():
     # render (external records hide the curated #frontier-chart entirely).
     script = source("site/assets/app.js")
 
-    chart = script.split("function externalScoreChart(source, payload)", 1)[1].split(
+    chart = script.split("function externalPlottedRows(payload)", 1)[1].split(
         "\nfunction externalSourceTable", 1
     )[0]
     assert "makeFrontierPointInteractive(group" in chart
@@ -685,7 +687,7 @@ def test_the_crawled_chart_ticks_label_real_values_not_padded_bounds():
     are not in the data and cannot be.
     """
     script = source("site/assets/app.js")
-    chart = script.split("function externalScoreChart(source, payload)", 1)[1].split(
+    chart = script.split("function externalPlottedRows(payload)", 1)[1].split(
         "\nfunction externalSourceTable", 1
     )[0]
 
@@ -888,7 +890,7 @@ def test_issue_298_a_crawled_record_names_itself_once():
 def test_issue_298_the_crawled_axes_can_be_read_rather_than_inferred():
     """Two y ticks and two x ticks made the reader interpolate every position."""
     script = source("site/assets/app.js")
-    chart = script.split("function externalScoreChart(source, payload)", 1)[1].split(
+    chart = script.split("function externalPlottedRows(payload)", 1)[1].split(
         "\nfunction externalSourceTable", 1
     )[0]
 
@@ -903,7 +905,10 @@ def test_issue_298_the_crawled_axes_can_be_read_rather_than_inferred():
 
     # The best-on-record annotation reads as a sentence and sits on its line.
     assert 't("Best reported score:")' in chart
-    assert "bestValue.toFixed(2)" in chart
+    # Rounded to two decimals via `shown`, which also applies the axis's display
+    # factor so the annotation cannot disagree with the ticks beside it.
+    assert "shown(bestValue)" in chart
+    assert "const shown = (value) => Number((value * factor).toFixed(2));" in chart
     assert '"text-anchor": "start", class: "score-best-label"' in chart
 
 
@@ -977,7 +982,7 @@ def test_issue_288_the_charts_draw_a_running_best_not_an_invented_cost_axis():
 
     # The crawled layer now draws successive reported highs. Direction is a
     # normalized LLM Stats property, not a browser inference.
-    crawled = script.split("function externalScoreChart(source, payload)", 1)[1].split(
+    crawled = script.split("function externalPlottedRows(payload)", 1)[1].split(
         "\nfunction externalSourceTable", 1
     )[0]
     assert "payload.series?.direction" in crawled
@@ -1101,3 +1106,77 @@ def test_issue_313_the_title_is_half_size_and_its_info_is_anchored():
     # The toggle stays a sibling of the heading inside one flex row.
     row = html.split('class="leaderboard-top-heading"', 1)[1].split("</div>", 1)[0]
     assert row.index('id="leaderboard-heading"') < row.index('id="leaderboard-top-info"')
+
+
+def test_issue_341_a_fractional_series_is_drawn_on_a_zero_to_hundred_axis():
+    """Terminal-Bench 2.0 announced its best model as "0.83".
+
+    Every write-up a reader arrives from quotes that same result as a
+    percentage, so reading the axis meant multiplying by 100 on every tick.
+
+    The remedy is a change of units and nothing more. Multiplying a whole
+    series by a constant preserves every ordering and every ratio in it and
+    asserts nothing about a ceiling, which is the distinction `external_catalog`
+    cares about: it refuses to emit a `display_scale` because a declared maximum
+    is not a bound, and that refusal still stands. So there is no bar, no `%`
+    and no "out of 100" here -- an Elo series stays in Elo.
+    """
+    script = source("site/assets/app.js")
+    helper = script.split("function externalDisplayFactor(values, series)", 1)[1].split(
+        "\nfunction ", 1
+    )[0]
+
+    # A source that carries values above its own declared maximum has told us
+    # its bound is not a bound, which disqualifies the series outright.
+    assert "if (series?.max_score_contradicted) return 1;" in helper
+    # A declared ceiling above 1 means the series is not on a 0-1 scale, so a
+    # crawl that happens to hold only small values is left alone.
+    assert "if (Number.isFinite(declaredMax) && declaredMax > 1) return 1;" in helper
+    assert "values.every((value) => value >= 0 && value <= 1) ? 100 : 1" in helper
+
+    chart = script.split("function externalPlottedRows(payload)", 1)[1].split(
+        "\nfunction externalSourceTable", 1
+    )[0]
+    # Display only. Geometry still takes raw values, so applying the factor
+    # cannot move a single point.
+    assert "const factor = externalDisplayFactor(values, payload.series);" in chart
+    assert "const scoreY = (value) => {" in chart
+    assert "scoreY(shown(" not in chart
+    assert "shown(bestValue)" in chart
+    # No claim of a maximum anywhere on the figure.
+    for claim in ('"%"', "out of 100", "percent"):
+        assert claim not in chart
+
+    table = script.split("function externalSourceTable(source, payload)", 1)[1].split(
+        "\nfunction ", 1
+    )[0]
+    # Stated where the reader can see it, beside the other provenance notes.
+    assert "externalDisplayFactor(plottedValues, series) !== 1" in table
+    assert "multiplies them by 100" in table
+    # And the number the source actually published stays one click away.
+    assert 't("Score as reported"), value: String(row.raw_value ?? row.value)' in chart
+
+
+def test_issue_341_terminal_bench_2_qualifies_and_an_elo_board_does_not():
+    """The rule has to hold against the real crawled shards, not just in the abstract."""
+
+    def factor(slug: str) -> int:
+        shard = json.loads(Path(f"site/data/benchmarks/{slug}.json").read_text(encoding="utf-8"))
+        payload = shard["scores_by_source"]["llm_stats"]
+        series = payload["series"]
+        values = [
+            row["value"]
+            for row in payload["rows"]
+            if isinstance(row["value"], (int, float)) and row["reported_date"]
+        ]
+        if not values or series["max_score_contradicted"]:
+            return 1
+        declared = series["declared_max"]
+        if declared is not None and declared > 1:
+            return 1
+        return 100 if all(0 <= value <= 1 for value in values) else 1
+
+    # The benchmark from the report: every score between 0 and 1.
+    assert factor("llm-stats-terminal-bench-2") == 100
+    # An Elo board declares 3000 and carries four-figure values. Untouched.
+    assert factor("llm-stats-aa-briefcase") == 1

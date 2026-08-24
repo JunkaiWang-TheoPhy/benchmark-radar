@@ -179,9 +179,11 @@ def _packet_for(
         packet["attention_signals"] = base.get("attention_signals")
         packet["daily_series"] = base.get("daily_series")
     else:
-        # The reading group needs a little of everything, and the deterministic
-        # guardrails most of all: they state what the data already refuses to claim.
-        packet["deterministic_guardrails"] = base.get("deterministic_guardrails")
+        # The reading group needs a little of everything, including the narrow
+        # deterministic category-share check. Its scope travels with its result
+        # so a negative composition finding cannot be mistaken for a verdict on
+        # today's individual releases.
+        packet["category_composition_check"] = base.get("category_composition_check")
         packet["first_observed_evidence"] = (base.get("first_observed_evidence") or [])[:20]
         packet["tracked_artifacts"] = (registry.get("tracked_artifacts") or [])[:12]
         packet["attention_signals"] = base.get("attention_signals")

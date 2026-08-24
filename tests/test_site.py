@@ -1161,7 +1161,7 @@ def test_daily_questions_render_in_the_sidebar_column():
     assert "max-width: calc(100% - 22rem)" not in questions
     assert "max-width: 72ch" in body
     # The section carries the same box treatment as the cards beside it.
-    assert "border: 1px solid var(--ink)" in questions
+    assert "border: 1px solid var(--edge)" in questions
     assert "background: var(--panel)" in questions
 
 
@@ -2025,12 +2025,12 @@ def test_heading_outline_and_scale_stay_quiet():
     assert "font-weight: 400;" in today_rule
     assert "font-size" not in today_rule
 
-    # The counts line reads as plain data: no small-caps transform, including
-    # on the child spans the shared section-title group targets directly.
-    meta_rule = _css_rule(styles, ".results-meta {")
-    assert "text-transform: none;" in meta_rule
-    span_rule = _css_rule(styles, ".results-meta span {")
-    assert "text-transform: none;" in span_rule
+    # The counts line reads as plain data, not a small-caps label. It used to
+    # need an explicit `text-transform: none` to cancel an inherited uppercase;
+    # issue #333 removed uppercase from the stylesheet outright, so the guard is
+    # now that no rule anywhere can put it back.
+    assert "text-transform: uppercase" not in styles
+    assert "text-transform: none;" not in styles
 
     # Footer is one left-aligned column: updated stamp, view links, dataset
     # card last (bottom).
@@ -2052,3 +2052,205 @@ def test_heading_outline_and_scale_stay_quiet():
     # The mobile h1 clamp must not reach the quiet h2 headings.
     mobile_block = styles.split("@media (max-width: 760px)", 1)[1]
     assert ".view-heading h2," not in mobile_block.split("}", 1)[0]
+
+
+def test_issue_332_a_release_outranks_a_same_day_update():
+    """Every benchmark published today was buried under repositories that only took a commit.
+
+    Priority measures how well a benchmark is documented -- artifacts,
+    openness, size -- and a benchmark released this morning has had no time to
+    accumulate any of it, while a repository that has existed for months has.
+    Ranking a day purely by that score therefore sorts against the one question
+    the page exists to answer. On 2026-08-24 the top eight rows were all
+    `updated` and the best-scoring actual release sat at rank nine.
+    """
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    rank = script.split("function releaseRank(item)", 1)[1].split("\n}", 1)[0]
+    assert 'if (item.event_kind !== "released") return 3;' in rank
+    # Releases are graded by how old they were when the scan ran, so a fresher
+    # one leads an older one and priority only breaks ties inside a tier.
+    assert "if (hours < RELEASE_FRESH_HOURS) return 0;" in rank
+    assert "if (hours < RELEASE_RECENT_HOURS) return 1;" in rank
+    assert "const RELEASE_FRESH_HOURS = 24;" in script
+    assert "const RELEASE_RECENT_HOURS = 72;" in script
+
+    age = script.split("function releaseAgeHours(item)", 1)[1].split("\n}", 1)[0]
+    # `published_at` is the release moment. `discovered_at` is the crawl
+    # timestamp, so using it would report every release as zero hours old and
+    # hand the freshest tier to rows whose real date is unknown.
+    assert "item.published_at || item.updated_at" in age
+    assert "discovered_at" not in age
+    # An undatable release is not treated as fresh.
+    assert "return Number.POSITIVE_INFINITY;" in age
+    # Measured against the snapshot's own scan time, not the reader's clock: an
+    # older date has to rank as it stood, and a wall clock would collapse every
+    # past day into one tier. It also keeps the cached sort deterministic.
+    assert "item.snapshot_generated_at" in age
+    assert "Date.now()" not in age
+    assert script.count("snapshot_generated_at: day.generated_at,") == 2
+
+    sort_body = script.split("state.observations = [...evidence, ...attention].sort(", 1)[1].split(
+        "\n  });", 1
+    )[0]
+    # Date still leads: the archive is a chronology before it is a ranking.
+    assert sort_body.index("const dateOrder") < sort_body.index("const releaseOrder")
+    # Then releases, and only then priority.
+    assert sort_body.index("const releaseOrder") < sort_body.index("const scoreOrder")
+    assert "releaseRank(a) - releaseRank(b)" in sort_body
+
+    # The caption names the order the reader is looking at, and only claims the
+    # release tie-break when the result set actually contains both kinds.
+    assert 't("Sort: New releases first, then Priority ↓")' in script
+    assert 't("Sort: Date, then new releases, then Priority ↓")' in script
+    # "Is a release" is its own predicate now that releaseRank grades by age:
+    # reading it as `=== 0` would have counted only the freshest tier.
+    assert "const releases = observations.filter(isRelease).length;" in script
+    assert 'return item.event_kind === "released";' in script
+    assert "releases > 0 && releases < observations.length" in script
+    # The caption stops at "new releases first". Releases are ordered by
+    # priority inside each age tier, so promising a recency sort would be
+    # contradicted by the rows underneath it.
+    assert "Sort: Newest releases first" not in script
+
+    # Both captions are translated; an untranslated string would render as
+    # English inside an otherwise Chinese page.
+    assert "排序:新发布优先,再按优先度 ↓" in script
+    assert "排序:日期,再新发布优先,再按优先度 ↓" in script
+
+
+def test_issue_333_the_page_never_scrolls_sideways():
+    """The page slid left and right by ~19px at every width above 760.
+
+    Nothing here is meant to be reached by scrolling sideways: every wide table
+    and chart carries its own scroll container. Two separate causes had to go.
+    """
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    # 1. A hover label centred under the last masthead badge. `visibility:
+    #    hidden` does not take a box out of layout, so it widened the document
+    #    even while it was invisible.
+    anchored = _css_rule(styles, ".repo-badges > .repo-badge:last-child::after {")
+    assert "right: 0;" in anchored
+    assert "left: auto;" in anchored
+
+    # 2. Crawled README banners made of box-drawing characters are a single
+    #    unbreakable run, and one of them pushed a 720px column to 1349px.
+    wrap = _css_rule(styles, ".record-card,\n.map-detail,\n.external-block {")
+    assert "overflow-wrap: anywhere;" in wrap
+
+    # And a structural backstop so the next decorative overhang cannot bring it
+    # back. `clip`, never `hidden`: `hidden` would make the body a scroll
+    # container and break every sticky header inside it.
+    body_rule = _css_rule(styles, "\nbody {\n  overflow-x:")
+    assert "clip" in body_rule
+    assert "overflow-x: hidden" not in styles
+
+
+def test_issue_333_the_page_is_two_typefaces_not_three():
+    """Headings, body copy and labels were set in three unrelated faces at once."""
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    root = _css_rule(styles, ":root {")
+    assert "--display: var(--body);" in root
+    # The mono stays: it is the one face doing a job the sans cannot, holding
+    # figures in columns that line up down the page.
+    assert '--utility: "SFMono-Regular"' in root
+    # The condensed face is gone, and so is the axis that selected it.
+    assert "Condensed" not in styles
+    assert "font-stretch" not in styles
+
+
+def test_issue_333_dividers_are_grey_and_surfaces_are_rounded():
+    """Every card edge and row rule was drawn in the text colour, on square corners."""
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    root = _css_rule(styles, ":root {")
+    assert "--edge: " in root
+    assert "--radius: " in root
+
+    # No border anywhere is drawn in the ink again.
+    assert "solid var(--ink)" not in styles.split(".repo-badge::after {", 1)[0]
+
+    # The two deliberate exceptions, each of which is not a divider: the dark
+    # tooltip chip, whose border IS its background, and the search field, whose
+    # heavy border is the affordance telling a reader to type in it.
+    tooltip = _css_rule(styles, ".repo-badge::after {")
+    assert "border: 1px solid var(--ink);" in tooltip
+    assert "background: var(--ink);" in tooltip
+    field = _css_rule(styles, ".benchmark-search-input {")
+    assert "border: 2px solid var(--ink);" in field
+
+    # Elements that draw a single rule rather than a box stay square: rounding
+    # one border of a four-sided box curls the ends of the line away from the
+    # content it separates.
+    radius_rule = styles.split("\n.daily-briefing,\n.daily-questions,", 1)[1].split("}", 1)[0]
+    for rule_only in (".masthead", ".section-title", "footer", ".stale-banner"):
+        assert f"{rule_only},\n" not in radius_rule
+
+
+def test_issue_333_nothing_on_the_page_shouts():
+    """58 rules set their text in capitals; the source strings are already cased."""
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+    html = Path("site/index.html").read_text(encoding="utf-8")
+
+    assert "text-transform: uppercase" not in styles
+    # The labels the rules used to capitalise are written properly in the
+    # markup, so removing the transform leaves readable sentence case rather
+    # than lowercase fragments.
+    assert '<span class="leaderboard-top-columns-rank" data-i18n="Rank">Rank</span>' in html
+
+
+def test_issue_332_the_freshest_releases_reach_page_one():
+    """Priority knows nothing about time, so a flat release group scrambles age.
+
+    Crawl lag already spreads one snapshot's releases across roughly 72 hours of
+    real release time -- "today's releases" was never one moment. Ordering that
+    group by priority alone put a 39.8-hour-old row on page one above releases
+    a few hours old. The age tiers fix that; priority still orders inside each.
+    """
+    import datetime as dt
+    import json
+
+    radar = Path("site/data/radar.json")
+    if not radar.exists():
+        import pytest
+
+        pytest.skip("radar.json is generated; run the pipeline first")
+
+    data = json.loads(radar.read_text(encoding="utf-8"))
+    day = next(d for d in data["days"] if d["date"] == data["latest_date"])
+    scanned_at = dt.datetime.fromisoformat(day["generated_at"])
+
+    def age_hours(item: dict) -> float:
+        stamp = item.get("published_at") or item.get("updated_at")
+        if not stamp:
+            return float("inf")
+        return max(0.0, (scanned_at - dt.datetime.fromisoformat(stamp)).total_seconds() / 3600)
+
+    def rank(item: dict) -> int:
+        if item.get("event_kind") != "released":
+            return 3
+        hours = age_hours(item)
+        return 0 if hours < 24 else 1 if hours < 72 else 2
+
+    items = sorted(
+        day["evidence_items"], key=lambda i: (rank(i), -float(i.get("total_score") or 0))
+    )
+    page_one = items[:20]
+
+    # Every row a reader sees first is a release from the last 24 hours.
+    assert all(rank(item) == 0 for item in page_one)
+    # And the tiers are not vacuous: this day genuinely holds older releases
+    # that the old flat ordering would have mixed in.
+    assert any(rank(item) == 1 for item in items), "no 24-72h release to separate"
+    assert any(rank(item) == 3 for item in items), "no non-release to outrank"
+
+    # The specific regression: under priority-only ordering the 39.8-hour-old
+    # rows made page one. They must not now.
+    flat = sorted(
+        (i for i in day["evidence_items"] if i.get("event_kind") == "released"),
+        key=lambda i: -float(i.get("total_score") or 0),
+    )
+    assert max(age_hours(i) for i in flat[:20]) > 24, "fixture no longer shows the old bug"
+    assert max(age_hours(i) for i in page_one) <= 24
