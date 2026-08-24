@@ -1,0 +1,39 @@
+name: Update star history chart
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/star-history.yml"
+      - "scripts/generate_star_history.py"
+  watch:
+    types: [started]
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Generate charts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/generate_star_history.py \
+            --repo "$GITHUB_REPOSITORY" \
+            --token "$GITHUB_TOKEN"
+      - name: Publish chart assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan __star_history_publish
+          git reset -q
+          git add -f assets/star-history.svg assets/star-history-dark.svg
+          git commit -q -m "chore: update star history chart"
+          git push -f origin HEAD:refs/heads/star-history
