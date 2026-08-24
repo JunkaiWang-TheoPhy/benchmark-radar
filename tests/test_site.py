@@ -1161,7 +1161,7 @@ def test_daily_questions_render_in_the_sidebar_column():
     assert "max-width: calc(100% - 22rem)" not in questions
     assert "max-width: 72ch" in body
     # The section carries the same box treatment as the cards beside it.
-    assert "border: 1px solid var(--ink)" in questions
+    assert "border: 1px solid var(--edge)" in questions
     assert "background: var(--panel)" in questions
 
 
@@ -2025,12 +2025,12 @@ def test_heading_outline_and_scale_stay_quiet():
     assert "font-weight: 400;" in today_rule
     assert "font-size" not in today_rule
 
-    # The counts line reads as plain data: no small-caps transform, including
-    # on the child spans the shared section-title group targets directly.
-    meta_rule = _css_rule(styles, ".results-meta {")
-    assert "text-transform: none;" in meta_rule
-    span_rule = _css_rule(styles, ".results-meta span {")
-    assert "text-transform: none;" in span_rule
+    # The counts line reads as plain data, not a small-caps label. It used to
+    # need an explicit `text-transform: none` to cancel an inherited uppercase;
+    # issue #333 removed uppercase from the stylesheet outright, so the guard is
+    # now that no rule anywhere can put it back.
+    assert "text-transform: uppercase" not in styles
+    assert "text-transform: none;" not in styles
 
     # Footer is one left-aligned column: updated stamp, view links, dataset
     # card last (bottom).
@@ -2091,3 +2091,85 @@ def test_issue_332_a_release_outranks_a_same_day_update():
     # English inside an otherwise Chinese page.
     assert "排序:新发布优先,再按优先度 ↓" in script
     assert "排序:日期,再新发布优先,再按优先度 ↓" in script
+
+
+def test_issue_333_the_page_never_scrolls_sideways():
+    """The page slid left and right by ~19px at every width above 760.
+
+    Nothing here is meant to be reached by scrolling sideways: every wide table
+    and chart carries its own scroll container. Two separate causes had to go.
+    """
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    # 1. A hover label centred under the last masthead badge. `visibility:
+    #    hidden` does not take a box out of layout, so it widened the document
+    #    even while it was invisible.
+    anchored = _css_rule(styles, ".repo-badges > .repo-badge:last-child::after {")
+    assert "right: 0;" in anchored
+    assert "left: auto;" in anchored
+
+    # 2. Crawled README banners made of box-drawing characters are a single
+    #    unbreakable run, and one of them pushed a 720px column to 1349px.
+    wrap = _css_rule(styles, ".record-card,\n.map-detail,\n.external-block {")
+    assert "overflow-wrap: anywhere;" in wrap
+
+    # And a structural backstop so the next decorative overhang cannot bring it
+    # back. `clip`, never `hidden`: `hidden` would make the body a scroll
+    # container and break every sticky header inside it.
+    body_rule = _css_rule(styles, "\nbody {\n  overflow-x:")
+    assert "clip" in body_rule
+    assert "overflow-x: hidden" not in styles
+
+
+def test_issue_333_the_page_is_two_typefaces_not_three():
+    """Headings, body copy and labels were set in three unrelated faces at once."""
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    root = _css_rule(styles, ":root {")
+    assert "--display: var(--body);" in root
+    # The mono stays: it is the one face doing a job the sans cannot, holding
+    # figures in columns that line up down the page.
+    assert '--utility: "SFMono-Regular"' in root
+    # The condensed face is gone, and so is the axis that selected it.
+    assert "Condensed" not in styles
+    assert "font-stretch" not in styles
+
+
+def test_issue_333_dividers_are_grey_and_surfaces_are_rounded():
+    """Every card edge and row rule was drawn in the text colour, on square corners."""
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    root = _css_rule(styles, ":root {")
+    assert "--edge: " in root
+    assert "--radius: " in root
+
+    # No border anywhere is drawn in the ink again.
+    assert "solid var(--ink)" not in styles.split(".repo-badge::after {", 1)[0]
+
+    # The two deliberate exceptions, each of which is not a divider: the dark
+    # tooltip chip, whose border IS its background, and the search field, whose
+    # heavy border is the affordance telling a reader to type in it.
+    tooltip = _css_rule(styles, ".repo-badge::after {")
+    assert "border: 1px solid var(--ink);" in tooltip
+    assert "background: var(--ink);" in tooltip
+    field = _css_rule(styles, ".benchmark-search-input {")
+    assert "border: 2px solid var(--ink);" in field
+
+    # Elements that draw a single rule rather than a box stay square: rounding
+    # one border of a four-sided box curls the ends of the line away from the
+    # content it separates.
+    radius_rule = styles.split("\n.daily-briefing,\n.daily-questions,", 1)[1].split("}", 1)[0]
+    for rule_only in (".masthead", ".section-title", "footer", ".stale-banner"):
+        assert f"{rule_only},\n" not in radius_rule
+
+
+def test_issue_333_nothing_on_the_page_shouts():
+    """58 rules set their text in capitals; the source strings are already cased."""
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+    html = Path("site/index.html").read_text(encoding="utf-8")
+
+    assert "text-transform: uppercase" not in styles
+    # The labels the rules used to capitalise are written properly in the
+    # markup, so removing the transform leaves readable sentence case rather
+    # than lowercase fragments.
+    assert '<span class="leaderboard-top-columns-rank" data-i18n="Rank">Rank</span>' in html

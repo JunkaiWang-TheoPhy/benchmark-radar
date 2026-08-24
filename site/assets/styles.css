@@ -5,6 +5,15 @@
   --ink: #15242a;
   --muted: #5f7078;
   --line: #bdc9ce;
+  /* Borders and dividers, deliberately not `--ink`. The page used the text
+     colour to draw every card edge and row separator, so a screen of data read
+     as a grid of hard near-black boxes and the rules competed with the words
+     inside them (issue #333). One step darker than `--line` so a card edge
+     still reads as an edge against `--panel`, nowhere near the ink. */
+  --edge: #aebbc1;
+  /* One corner radius for every panel, card, table and control. */
+  --radius: 10px;
+  --radius-sm: 6px;
   --blue: #255ea8;
   --blue-deep: #173e71;
   --orange: #dc633f;
@@ -12,8 +21,16 @@
   --gold: #c99327;
   --violet: #756aa8;
   --danger: #ae3e32;
-  --display: "Avenir Next Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  /* Two faces, not three. The page was setting headings in a condensed sans,
+     body copy in a normal sans and every label and figure in a mono, so three
+     unrelated typefaces were visible in a single screenshot and the layout read
+     as two designs stitched together (issue #333). `--display` now names the
+     same family as `--body`; headings separate themselves by size, weight and
+     letter-spacing, which is the difference a reader actually registers. The
+     mono stays -- it is the one face doing a job the sans cannot, holding
+     figures in tabular columns that line up down the page. */
   --body: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  --display: var(--body);
   --utility: "SFMono-Regular", "Cascadia Code", "Roboto Mono", monospace;
   --shadow: 0 16px 50px rgb(27 48 56 / 8%);
 }
@@ -28,6 +45,16 @@
 
 html {
   scroll-behavior: smooth;
+}
+
+/* Nothing on this page is meant to be reached by scrolling sideways: every
+   wide table and chart carries its own `overflow-x: auto` container. So a
+   decorative overhang -- a hover label, a focus ring, a glyph drawn past its
+   box -- must never become a page-level scrollbar (issue #333). `clip` rather
+   than `hidden` because `hidden` would make the body a scroll container and
+   break every `position: sticky` header inside it. */
+body {
+  overflow-x: clip;
 }
 
 body {
@@ -93,7 +120,7 @@ footer {
   align-items: center;
   justify-content: space-between;
   min-height: 72px;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: 1px solid var(--edge);
 }
 
 .brand {
@@ -108,7 +135,6 @@ footer {
   display: block;
   font-family: var(--display);
   font-size: clamp(1.25rem, 3vw, 1.75rem);
-  font-stretch: condensed;
   font-weight: 400;
   letter-spacing: 0.025em;
   line-height: 1;
@@ -126,7 +152,6 @@ th {
   font-family: var(--utility);
   font-size: 0.72rem;
   letter-spacing: 0.07em;
-  text-transform: uppercase;
 }
 
 .brand small {
@@ -138,7 +163,7 @@ th {
   width: 42px;
   height: 42px;
   overflow: hidden;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   border-radius: 50%;
 }
 
@@ -201,7 +226,6 @@ th {
   font-size: 0.7rem;
   letter-spacing: 0.06em;
   text-decoration: none;
-  text-transform: uppercase;
   transition: border-color 60ms ease, background 60ms ease, color 60ms ease,
     transform 60ms ease;
 }
@@ -222,7 +246,10 @@ th {
   top: calc(100% + 0.55rem);
   left: 50%;
   padding: 0.38rem 0.52rem;
+  /* Ink on ink: this box is the dark chip itself, not a divider, so it keeps
+     the text colour its background uses rather than picking up `--edge`. */
   border: 1px solid var(--ink);
+  border-radius: var(--radius-sm);
   background: var(--ink);
   color: var(--panel);
   content: attr(data-tooltip);
@@ -232,7 +259,6 @@ th {
   line-height: 1.2;
   opacity: 0;
   pointer-events: none;
-  text-transform: none;
   transform: translate(-50%, -0.2rem);
   transition: opacity 60ms ease, transform 60ms ease;
   visibility: hidden;
@@ -244,6 +270,23 @@ th {
   opacity: 1;
   transform: translate(-50%, 0);
   visibility: visible;
+}
+
+/* The last badge sits flush against the right edge of the page, so a label
+   centred under a 2.6rem button hangs ~19px past it. `visibility: hidden` does
+   not remove a box from layout, so that overhang widened the whole document at
+   every viewport above the 760px breakpoint and the page slid left and right
+   with nothing to show for it (issue #333). Anchored to the badge's right edge
+   the label stays on the page whether it is showing or not. */
+.repo-badges > .repo-badge:last-child::after {
+  right: 0;
+  left: auto;
+  transform: translate(0, -0.2rem);
+}
+
+.repo-badges > .repo-badge:last-child:hover::after,
+.repo-badges > .repo-badge:last-child:focus-visible::after {
+  transform: translate(0, 0);
 }
 
 /* The language and contact controls are <button>s, not <a>s, because they
@@ -355,7 +398,6 @@ button.repo-badge svg {
   letter-spacing: 0.05em;
   text-align: center;
   text-decoration: none;
-  text-transform: uppercase;
 }
 
 .view-nav button[aria-current="page"] {
@@ -436,7 +478,6 @@ h1 {
   font-size: clamp(1.9rem, 4vw, 3rem);
   line-height: 1;
   letter-spacing: -0.015em;
-  text-transform: uppercase;
 }
 
 #today-view {
@@ -473,7 +514,6 @@ h2 {
   font-family: var(--body);
   font-size: 0.8rem;
   letter-spacing: normal;
-  text-transform: none;
 }
 
 select,
@@ -487,7 +527,6 @@ input {
   font-family: var(--body);
   font-size: 0.9rem;
   letter-spacing: normal;
-  text-transform: none;
 }
 
 .content-grid {
@@ -501,11 +540,15 @@ input {
 
 .section-title {
   display: flex;
+  /* Wraps rather than crushes. On a 390px phone the row squeezed the heading
+     into a 29px column and "Today's radar" came out as four stacked fragments,
+     "Tod / ay' / s rad / ar". The counts drop to their own line instead. */
+  flex-wrap: wrap;
   gap: 1rem;
   align-items: baseline;
   justify-content: space-between;
   padding-bottom: 0.9rem;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: 1px solid var(--edge);
 }
 
 .section-title h1,
@@ -537,13 +580,12 @@ input {
   align-items: baseline;
   justify-content: flex-end;
   text-align: right;
-  /* Counts read as plain data, not a label; the small-caps transform the
-     section-title group applies to these spans directly is dropped here. */
-  text-transform: none;
+  /* Right-aligned when it shares the heading's line, and pushed to the right
+     edge rather than left-aligned when `.section-title` wraps it onto its own. */
+  margin-left: auto;
 }
 
 .results-meta span {
-  text-transform: none;
 }
 
 #today-sort {
@@ -556,14 +598,14 @@ input {
 .daily-briefing {
   margin-bottom: 1.25rem;
   padding: 1rem 1.4rem;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   background: var(--panel);
 }
 
 .daily-briefing-title {
   margin-bottom: 1rem;
   padding-bottom: 0.6rem;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: 1px solid var(--edge);
   font-size: 1rem;
 }
 
@@ -606,7 +648,6 @@ input {
   font-family: var(--utility);
   font-size: 0.66rem;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .briefing-chip-high {
@@ -698,7 +739,7 @@ input {
 .daily-questions {
   margin-bottom: 1.25rem;
   padding: 1rem 1.4rem;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   background: var(--panel);
 }
 
@@ -709,7 +750,7 @@ input {
 .daily-questions-title {
   margin-bottom: 1rem;
   padding-bottom: 0.6rem;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: 1px solid var(--edge);
   font-size: 1rem;
 }
 
@@ -732,7 +773,6 @@ input {
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--muted);
 }
 
@@ -772,7 +812,6 @@ input {
   font-family: var(--utility);
   font-size: 0.7rem;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .answer-plain {
@@ -817,7 +856,6 @@ input {
   font-family: var(--utility);
   font-size: 0.6rem;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .pill-confidence {
@@ -863,7 +901,6 @@ input {
   font-size: 0.72rem;
   letter-spacing: 0.05em;
   list-style: none;
-  text-transform: uppercase;
 }
 
 .answer-disclosure-summary::-webkit-details-marker {
@@ -1006,7 +1043,6 @@ input {
   font-family: var(--utility);
   font-size: 0.68rem;
   text-align: right;
-  text-transform: uppercase;
 }
 
 .signal-rank {
@@ -1041,7 +1077,6 @@ input {
   font-family: var(--body);
   font-size: 0.82rem;
   letter-spacing: normal;
-  text-transform: none;
 }
 
 /* The collapsed row's provenance line: source, event time, and at most two
@@ -1156,7 +1191,6 @@ input {
   font-family: var(--body);
   font-size: 0.7rem;
   letter-spacing: normal;
-  text-transform: none;
 }
 
 /* The label is a button, but it keeps the label's typography: the affordance
@@ -1198,7 +1232,6 @@ input {
   font-family: var(--display);
   font-size: 0.62rem;
   line-height: 1;
-  text-transform: none;
 }
 
 .rubric-link {
@@ -1213,7 +1246,6 @@ input {
   font-family: var(--utility);
   font-size: 0.68rem;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
   cursor: pointer;
 }
 
@@ -1241,7 +1273,6 @@ input {
   font-family: var(--utility);
   font-size: 0.7rem;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .rubric-worked p {
@@ -1257,7 +1288,7 @@ input {
 }
 
 .rubric-component:first-of-type {
-  border-top: 1px solid var(--ink);
+  border-top: 1px solid var(--edge);
   margin-top: 2rem;
 }
 
@@ -1278,7 +1309,6 @@ input {
   font-family: var(--utility);
   font-size: 0.68rem;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .rubric-component p {
@@ -1315,7 +1345,6 @@ input {
   font-family: var(--utility);
   font-size: 0.72rem;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .rubric-limits ul {
@@ -1332,7 +1361,7 @@ input {
 .health-panel {
   align-self: start;
   padding: 0.9rem 1.4rem;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   background: var(--panel);
 }
 
@@ -1347,9 +1376,7 @@ input {
 .health-panel-title {
   font-family: var(--display);
   font-size: 1rem;
-  font-stretch: condensed;
   letter-spacing: 0.03em;
-  text-transform: uppercase;
 }
 
 .health-panel-status {
@@ -1357,7 +1384,6 @@ input {
   font-family: var(--utility);
   font-size: 0.68rem;
   letter-spacing: 0.07em;
-  text-transform: uppercase;
 }
 
 .health-panel-status.has-failure {
@@ -1434,7 +1460,7 @@ input {
 .domain-panel,
 .ledger,
 .filter-panel {
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   background: var(--panel);
   box-shadow: var(--shadow);
 }
@@ -1482,7 +1508,6 @@ input {
   font-family: var(--utility);
   font-size: 0.72rem;
   letter-spacing: 0.07em;
-  text-transform: uppercase;
 }
 
 .domain-count {
@@ -1505,7 +1530,6 @@ input {
   font-family: var(--utility);
   font-size: 0.62rem;
   letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .domain-stats dd {
@@ -1530,7 +1554,6 @@ input {
   color: var(--muted);
   font-family: var(--utility);
   font-size: 0.63rem;
-  text-transform: uppercase;
 }
 
 .legend-swatch {
@@ -1631,7 +1654,7 @@ input {
   align-items: end;
   justify-content: center;
   height: 260px;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: 1px solid var(--edge);
 }
 
 .attention-volume,
@@ -1676,7 +1699,7 @@ input {
   width: max-content;
   max-width: 260px;
   padding: 0.7rem 0.8rem;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   background: var(--panel);
   box-shadow: var(--shadow);
   pointer-events: none;
@@ -1826,12 +1849,11 @@ td a {
   align-items: baseline;
   min-height: 44px;
   padding: 0.6rem 1rem;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   background: transparent;
   font-family: var(--utility);
   font-size: 0.68rem;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .today-filters .filters-toggle:hover {
@@ -1860,7 +1882,7 @@ td a {
   min-width: 44px;
   min-height: 44px;
   padding: 0.6rem;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   background: transparent;
   color: var(--ink);
 }
@@ -1892,7 +1914,7 @@ td a {
   gap: 0.9rem 1rem;
   width: clamp(300px, 46vw, 560px);
   padding: 1.25rem;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   background: var(--panel);
   box-shadow: var(--shadow);
 }
@@ -1920,11 +1942,10 @@ td a {
 .clear-button {
   min-height: 44px;
   padding: 0.6rem 1rem;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   background: transparent;
   font-family: var(--utility);
   font-size: 0.68rem;
-  text-transform: uppercase;
 }
 
 .clear-button:hover {
@@ -1954,12 +1975,11 @@ td a {
   font-family: var(--utility);
   font-size: 0.75rem;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .relationship-explorer {
   margin-top: 1.5rem;
-  border-top: 1px solid var(--ink);
+  border-top: 1px solid var(--edge);
   border-bottom: 1px solid var(--line);
 }
 
@@ -2023,7 +2043,6 @@ td a {
   font-family: var(--utility);
   font-size: 0.72rem;
   letter-spacing: 0.07em;
-  text-transform: uppercase;
 }
 
 .map-insight-card ul {
@@ -2141,8 +2160,8 @@ td a {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 1.5rem 0;
-  border-top: 1px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
+  border-top: 1px solid var(--edge);
+  border-bottom: 1px solid var(--edge);
 }
 
 .evidence-stat {
@@ -2165,7 +2184,6 @@ td a {
   font-family: var(--utility);
   font-size: 0.68rem;
   letter-spacing: 0.07em;
-  text-transform: uppercase;
 }
 
 .evidence-stat-summary small {
@@ -2368,7 +2386,6 @@ td a {
   font-family: var(--utility);
   font-size: 0.66rem;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .leaderboard-top-columns-count {
@@ -2496,7 +2513,7 @@ td a {
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
   padding: 1.25rem;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   /* A real grey, not the page background. At --canvas the panel was the exact
      colour of the page behind it, so beside the near-black figure it read as
      something floating on the page rather than part of it. The search field
@@ -2534,7 +2551,7 @@ td a {
 
 .frontier-panel {
   padding: clamp(1rem, 2vw, 1.35rem) clamp(1.25rem, 3vw, 2rem) clamp(1.25rem, 3vw, 2rem);
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   background: #0d1519;
   color: #f3f6f7;
   box-shadow: var(--shadow);
@@ -2550,7 +2567,6 @@ td a {
 .frontier-heading-row h2 {
   margin-bottom: 0;
   font-size: clamp(1.55rem, 3vw, 2.35rem);
-  text-transform: uppercase;
 }
 
 .frontier-stage {
@@ -2563,7 +2579,6 @@ td a {
   font-size: 0.64rem;
   letter-spacing: 0.06em;
   text-align: right;
-  text-transform: uppercase;
 }
 
 .frontier-controls {
@@ -2589,7 +2604,6 @@ td a {
   font-family: var(--utility);
   font-size: 0.68rem;
   letter-spacing: 0.07em;
-  text-transform: uppercase;
 }
 
 .frontier-picker select {
@@ -2654,7 +2668,6 @@ td a {
   color: #aebcc1;
   font-family: var(--utility);
   font-size: 0.68rem;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
@@ -2691,7 +2704,6 @@ td a {
   font-family: var(--utility);
   font-size: 11px;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 /* Legend, keyed to the marks on the chart and sitting directly above it rather
@@ -2769,7 +2781,6 @@ td a {
   font-family: var(--utility);
   font-size: 0.66rem;
   letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .frontier-tooltip-title {
@@ -2800,7 +2811,7 @@ td a {
 .findings-panel {
   margin: 1.5rem 0;
   padding: clamp(1.25rem, 3vw, 1.75rem);
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   background: var(--panel);
   box-shadow: var(--shadow);
 }
@@ -2829,12 +2840,11 @@ td a {
 .finding-kind {
   justify-self: start;
   padding: 0.2rem 0.5rem;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   color: var(--ink);
   font-family: var(--utility);
   font-size: 0.64rem;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .finding-kind-stale_scores {
@@ -2888,7 +2898,6 @@ td a {
   color: var(--muted);
   font-size: 0.64rem;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .finding-jump {
@@ -3040,7 +3049,6 @@ td a {
   font-family: var(--utility);
   font-size: 10px;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .score-readout {
@@ -3071,7 +3079,6 @@ td a {
   font-family: var(--utility);
   font-size: 0.68rem;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .score-readout-figure strong {
@@ -3132,7 +3139,6 @@ td a {
   font-family: var(--utility);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: #d6e0e3;
 }
 
@@ -3197,7 +3203,6 @@ td a {
   font-family: var(--utility);
   font-size: 0.61rem;
   letter-spacing: 0.07em;
-  text-transform: uppercase;
 }
 
 .task-shape p {
@@ -3233,7 +3238,6 @@ td a {
   font-family: var(--utility);
   font-size: 0.64rem;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .frontier-source-link {
@@ -3243,7 +3247,6 @@ td a {
   color: #9edbd1;
   font-family: var(--utility);
   font-size: 0.67rem;
-  text-transform: uppercase;
 }
 
 .pareto-readiness {
@@ -3260,7 +3263,6 @@ td a {
   cursor: pointer;
   font-family: var(--utility);
   font-size: 0.65rem;
-  text-transform: uppercase;
 }
 
 /* Collapsed by default: the full reading rule runs several sentences, and a
@@ -3281,7 +3283,6 @@ td a {
   cursor: pointer;
   font-family: var(--utility);
   font-size: 0.65rem;
-  text-transform: uppercase;
   list-style: none;
 }
 
@@ -3354,11 +3355,10 @@ td a {
   color: var(--muted);
   font-family: var(--utility);
   font-size: 0.7rem;
-  text-transform: uppercase;
 }
 
 .ledger[open] .ledger-summary {
-  border-bottom: 1px solid var(--ink);
+  border-bottom: 1px solid var(--edge);
 }
 
 .ledger-body {
@@ -3420,7 +3420,6 @@ td a {
   font-family: var(--utility);
   font-size: 0.68rem;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 /* Domain groups inside an expanded model card. The heading is deliberately
@@ -3434,7 +3433,6 @@ td a {
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 /* The four registry cards hold lists of very different lengths, and a stretched
@@ -3477,7 +3475,6 @@ td a {
   font-family: var(--utility);
   font-size: 12px;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .map-node {
@@ -3520,7 +3517,7 @@ td a {
   position: sticky;
   top: 1rem;
   padding: 1.5rem;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   background: var(--panel);
 }
 
@@ -3537,7 +3534,6 @@ td a {
   color: var(--muted);
   font-family: var(--utility);
   font-size: 0.65rem;
-  text-transform: uppercase;
 }
 
 .map-detail dd {
@@ -3559,7 +3555,7 @@ dialog {
   max-height: calc(100vh - 48px);
   padding: clamp(1.5rem, 5vw, 3rem);
   overflow-y: auto;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   border-radius: 0;
   background: var(--panel);
   color: var(--ink);
@@ -3587,7 +3583,6 @@ dialog::backdrop {
   color: var(--blue);
   font-family: var(--utility);
   font-size: 0.7rem;
-  text-transform: uppercase;
 }
 
 .detail-title {
@@ -3621,7 +3616,6 @@ dialog::backdrop {
   color: var(--muted);
   font-family: var(--utility);
   font-size: 0.62rem;
-  text-transform: uppercase;
 }
 
 .detail-grid dd {
@@ -3645,7 +3639,6 @@ dialog::backdrop {
   color: #51477f;
   font-family: var(--utility);
   font-size: 0.72rem;
-  text-transform: uppercase;
 }
 
 .attention-notice p,
@@ -3701,7 +3694,6 @@ dialog::backdrop {
   font-family: var(--utility);
   font-size: 0.7rem;
   letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .contact-value {
@@ -3759,18 +3751,16 @@ dialog::backdrop {
   font-family: var(--utility);
   font-size: 0.7rem;
   text-decoration: none;
-  text-transform: uppercase;
 }
 
 .secondary-link {
   display: inline-block;
   padding: 0.7rem 0.95rem;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   color: var(--ink);
   font-family: var(--utility);
   font-size: 0.7rem;
   text-decoration: none;
-  text-transform: uppercase;
 }
 
 /* Explicit pages keep a long day bounded without turning the footer into an
@@ -3790,7 +3780,6 @@ dialog::backdrop {
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-align: center;
-  text-transform: uppercase;
 }
 
 .today-pagination button {
@@ -3801,7 +3790,6 @@ dialog::backdrop {
   font-family: var(--utility);
   font-size: 0.7rem;
   cursor: pointer;
-  text-transform: uppercase;
 }
 
 .today-pagination button:disabled {
@@ -3814,7 +3802,7 @@ dialog::backdrop {
   gap: 0.9rem;
   margin-top: 1.5rem;
   padding: 1.1rem;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--edge);
   background: #fff4d6;
 }
 
@@ -3871,10 +3859,9 @@ dialog::backdrop {
 .stale-banner {
   margin: 0;
   padding: 0.6rem 0;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: 1px solid var(--edge);
   font-family: var(--utility);
   font-size: 0.75rem;
-  text-transform: uppercase;
   color: var(--ink);
   background: #fff4d6;
 }
@@ -3938,7 +3925,6 @@ button.stale-banner-action {
   font-size: clamp(2.5rem, 7vw, 5.5rem);
   line-height: 1;
   letter-spacing: -0.015em;
-  text-transform: uppercase;
 }
 
 footer {
@@ -3949,7 +3935,7 @@ footer {
   align-items: flex-start;
   gap: 0.9rem;
   padding: 1.5rem 0 3rem;
-  border-top: 1px solid var(--ink);
+  border-top: 1px solid var(--edge);
   color: var(--muted);
 }
 
@@ -4269,7 +4255,6 @@ footer {
   margin: 0.9rem 0 0.35rem;
   font-size: 0.7rem;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--muted);
   opacity: 0.75;
 }
@@ -4330,7 +4315,6 @@ footer {
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 0.4rem;
 }
@@ -4338,8 +4322,11 @@ footer {
 .benchmark-search-input {
   width: 100%;
   padding: 0.6rem 0.7rem;
+  /* Ink, not `--edge`. This border is the affordance that tells a reader the
+     panel's whole point is to be typed into -- it is not a divider, so the
+     softening the rest of the page got would read here as "disabled". */
   border: 2px solid var(--ink);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: white;
   color: inherit;
   font: inherit;
@@ -4769,4 +4756,85 @@ footer {
     opacity: 1;
     pointer-events: auto;
   }
+}
+
+/* --- Rounded surfaces (issue #333) ------------------------------------------
+ *
+ * Every panel, card, drawer and control was drawn as a hard-cornered box, and
+ * a page made of dozens of them reads as a spreadsheet printout rather than
+ * something to sit and read. One radius token for the large surfaces and one
+ * for the small controls, applied here in a single place so a new panel picks
+ * the shape up by naming itself rather than by restating a pixel value.
+ *
+ * Circles (`.brand-mark`, score points), pills (`.repo-badge`) and the search
+ * input keep the radii they already declare -- those are shapes, not corners.
+ * Elements that draw a single rule rather than a box -- the masthead's bottom
+ * edge, a section title's underline, the footer's top rule -- are absent on
+ * purpose: rounding one border of a four-sided box curls the ends of the line
+ * up away from the content it is supposed to separate.
+ */
+.daily-briefing,
+.daily-questions,
+.health-panel,
+.trend-panel,
+.domain-panel,
+.ledger,
+.filter-panel,
+.filters-drawer,
+.benchmark-navigator,
+.frontier-panel,
+.findings-panel,
+.map-detail,
+.adoption-cta {
+  border-radius: var(--radius);
+}
+
+.day-tooltip,
+.finding-kind,
+.secondary-link,
+.clear-button,
+.today-filters .filters-toggle,
+.today-filters .refresh-button,
+.rubric-component:first-of-type {
+  border-radius: var(--radius-sm);
+}
+
+/* The selected view tab is the only solid dark block on the page, so leaving it
+   square made it the one hard-cornered shape among rounded ones. Rounded at the
+   top only: it sits on the nav's bottom rule and reads as a tab attached to the
+   page below it, not as a floating chip. */
+.view-nav button[aria-current="page"] {
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+dialog {
+  border-radius: var(--radius);
+}
+
+/* A row separator inside a rounded card should stop before the corner, or the
+   hairline runs out past the curve. The last row drops its rule entirely: the
+   card's own bottom edge already closes the list. */
+.record-card:last-child {
+  border-bottom: 0;
+}
+
+/* Crawled prose is not typeset prose. A README banner made of box-drawing
+   characters ("═══════...") or a bare URL is one unbroken run with no break
+   opportunity in it, so it pushed the Today list to 1349px inside a 720px
+   column and the whole page slid sideways (issue #333). `anywhere` rather than
+   `break-word` because it also lets the run stop counting toward the column's
+   minimum width, which is what was widening the grid track. Scoped to the
+   surfaces that show crawled text; the site's own copy never needs it. */
+.record-card,
+.map-detail,
+.external-block {
+  overflow-wrap: anywhere;
+}
+
+/* Cards whose accent is a thick top rule, rounded so they match the panels
+   they sit inside. Bottom corners only would leave the accent squared off
+   against a curved body, so the accent curves with them. */
+.map-insight-card,
+.domain-card {
+  border-radius: var(--radius);
 }
