@@ -59,6 +59,27 @@ def _fixture():
     return _group(), stat_index(registry), {"E001", "E002"}
 
 
+def test_reading_packet_keeps_the_category_check_narrowly_scoped():
+    group = {"id": "reading", "title": "What it means", "questions": ("Q1?",)}
+    base = {
+        "date": "2026-08-24",
+        "scope": "captured feed",
+        "coverage": {},
+        "category_composition_check": {
+            "scope": "Multi-day category-share shifts only.",
+            "result": ["No material pattern detected."],
+        },
+        "first_observed_evidence": [],
+        "attention_signals": [],
+    }
+    registry = {"comparable": True, "comparability_note": "", "stats": []}
+
+    packet = questions._packet_for(group, registry, base)
+
+    assert packet["category_composition_check"] == base["category_composition_check"]
+    assert "deterministic_guardrails" not in packet
+
+
 def test_an_answer_citing_an_unknown_statistic_is_rejected():
     # The registry is the only source of numbers. A model that invents one must
     # not be able to publish it.

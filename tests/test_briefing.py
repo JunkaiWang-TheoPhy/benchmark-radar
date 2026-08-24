@@ -174,7 +174,38 @@ def test_gpt_input_includes_descriptions_history_health_and_stable_evidence_ids(
     ]
     assert [signal["observed_today"] for signal in value["attention_signals"]] == [True, False]
     assert value["attention_signals"][1]["observed_at"].startswith("2026-08-03")
-    assert value["deterministic_guardrails"] == ["Insufficient comparable history."]
+    assert value["category_composition_check"] == {
+        "scope": (
+            "Multi-day category-share shifts only. This check does not assess whether "
+            "an individual new release or a group of today's releases is decision-useful."
+        ),
+        "result": ["Insufficient comparable history."],
+    }
+
+
+def test_gpt_input_ranks_releases_ahead_of_higher_scored_updates():
+    updated = _item(1, title="Established benchmark update")
+    updated.event_kind = "updated"
+    updated.summary = "Adds another result to an established benchmark."
+    updated.total_score = 99
+    updated.recommended = True
+    stronger_release = _item(2, title="Higher-priority new benchmark")
+    stronger_release.event_kind = "released"
+    stronger_release.summary = "Introduces a new evaluation protocol."
+    stronger_release.total_score = 60
+    weaker_release = _item(3, title="Lower-priority new benchmark")
+    weaker_release.event_kind = "released"
+    weaker_release.summary = "Introduces another new evaluation protocol."
+    weaker_release.total_score = 20
+    current = snapshot_for_run(_run([updated, weaker_release, stronger_release]))
+
+    evidence = briefing_input([current], current, ["guardrail"])["first_observed_evidence"]
+
+    assert [item["title"] for item in evidence] == [
+        "Higher-priority new benchmark",
+        "Lower-priority new benchmark",
+        "Established benchmark update",
+    ]
 
 
 def test_gpt_input_excludes_summaryless_keyword_false_positives():
@@ -322,6 +353,11 @@ def test_generate_daily_briefing_uses_real_responses_contract_and_records_usage(
     assert "between one and six evidence IDs" in captured["payload"]["instructions"]
     assert "identical collection_signature" in captured["payload"]["instructions"]
     assert "only when observed_today is true" in captured["payload"]["instructions"]
+    assert "begin with first_observed_evidence" in captured["payload"]["instructions"]
+    assert (
+        "A negative category_composition_check alone is not sufficient"
+        in captured["payload"]["instructions"]
+    )
     assert captured["payload"]["text"]["format"]["strict"] is True
     assert captured["payload"]["max_output_tokens"] == 4_000
     assert captured["payload"]["store"] is False
