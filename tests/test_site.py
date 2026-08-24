@@ -2052,3 +2052,42 @@ def test_heading_outline_and_scale_stay_quiet():
     # The mobile h1 clamp must not reach the quiet h2 headings.
     mobile_block = styles.split("@media (max-width: 760px)", 1)[1]
     assert ".view-heading h2," not in mobile_block.split("}", 1)[0]
+
+
+def test_issue_332_a_release_outranks_a_same_day_update():
+    """Every benchmark published today was buried under repositories that only took a commit.
+
+    Priority measures how well a benchmark is documented -- artifacts,
+    openness, size -- and a benchmark released this morning has had no time to
+    accumulate any of it, while a repository that has existed for months has.
+    Ranking a day purely by that score therefore sorts against the one question
+    the page exists to answer. On 2026-08-24 the top eight rows were all
+    `updated` and the best-scoring actual release sat at rank nine.
+    """
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    rank = script.split("function releaseRank(item)", 1)[1].split("}", 1)[0]
+    assert 'item.event_kind === "released" ? 0 : 1' in rank
+
+    sort_body = script.split("state.observations = [...evidence, ...attention].sort(", 1)[1].split(
+        "\n  });", 1
+    )[0]
+    # Date still leads: the archive is a chronology before it is a ranking.
+    assert sort_body.index("const dateOrder") < sort_body.index("const releaseOrder")
+    # Then releases, and only then priority.
+    assert sort_body.index("const releaseOrder") < sort_body.index("const scoreOrder")
+    assert "releaseRank(a) - releaseRank(b)" in sort_body
+
+    # The caption names the order the reader is looking at, and only claims the
+    # release tie-break when the result set actually contains both kinds.
+    assert 't("Sort: New releases first, then Priority ↓")' in script
+    assert 't("Sort: Date, then new releases, then Priority ↓")' in script
+    assert (
+        "const releases = observations.filter((item) => releaseRank(item) === 0).length;" in script
+    )
+    assert "releases > 0 && releases < observations.length" in script
+
+    # Both captions are translated; an untranslated string would render as
+    # English inside an otherwise Chinese page.
+    assert "排序:新发布优先,再按优先度 ↓" in script
+    assert "排序:日期,再新发布优先,再按优先度 ↓" in script

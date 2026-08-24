@@ -392,6 +392,8 @@ const I18N = {
     "normal": "正常",
     "Sort: Priority ↓": "排序:优先度 ↓",
     "Sort: Date, then Priority ↓": "排序:日期,再按优先度 ↓",
+    "Sort: New releases first, then Priority ↓": "排序:新发布优先,再按优先度 ↓",
+    "Sort: Date, then new releases, then Priority ↓": "排序:日期,再新发布优先,再按优先度 ↓",
     "Sort: Date ↓": "排序:日期 ↓",
     // --- Leaderboard ---------------------------------------------------------
     "Which benchmarks do model cards report?": "模型卡报告了哪些基准?",
@@ -2059,12 +2061,26 @@ function renderToday({ resultsOnly = false } = {}) {
   // so a kind-filtered attention set falls back to date order, and in All
   // dates mode the archive is ordered by date first and priority second
   // (issue #248).
+  //
+  // Releases lead each day ahead of priority (issue #332), so the caption says
+  // that too whenever the result set actually mixes releases with anything
+  // else. A set that is all releases, or has none, is ordered by priority
+  // alone, and naming a tie-break that changed nothing would misdescribe it.
+  // Read off the whole result set rather than the current page: the caption
+  // describes the ordering the reader is paging through, and page one of a
+  // release-led day is all releases even when later pages are not.
   const priorityScored = visibleObservations.some((item) => Number(item.total_score) > 0);
+  const releases = observations.filter((item) => releaseRank(item) === 0).length;
+  const releasesLead = releases > 0 && releases < observations.length;
   byId("today-sort").textContent = !priorityScored
     ? t("Sort: Date ↓")
     : showingAllDates
-      ? t("Sort: Date, then Priority ↓")
-      : t("Sort: Priority ↓");
+      ? releasesLead
+        ? t("Sort: Date, then new releases, then Priority ↓")
+        : t("Sort: Date, then Priority ↓")
+      : releasesLead
+        ? t("Sort: New releases first, then Priority ↓")
+        : t("Sort: Priority ↓");
   const listHost = byId("today-list");
   replaceChildren(
     listHost,
@@ -2757,6 +2773,13 @@ function healthSummary(entries) {
   return empty ? `${base} · ${empty} ${t("empty")}` : base;
 }
 
+// 0 for a release, 1 for anything else, so a plain ascending compare puts
+// releases first. Read off `event_kind`, which the pipeline already sets to
+// "released" / "updated" on evidence rows and "discussed" on attention rows.
+function releaseRank(item) {
+  return item.event_kind === "released" ? 0 : 1;
+}
+
 function allObservations() {
   if (state.observations) return state.observations;
   const evidence = state.data.days.flatMap((day) =>
@@ -2787,6 +2810,16 @@ function allObservations() {
   state.observations = [...evidence, ...attention].sort((a, b) => {
     const dateOrder = String(b.snapshot_date).localeCompare(String(a.snapshot_date));
     if (dateOrder) return dateOrder;
+    // A release outranks every non-release from the same day, whatever the
+    // priority score says. Priority measures how well a benchmark is
+    // documented -- artifacts, openness, size -- and a benchmark published
+    // today has had no time to accumulate any of it, while a repository that
+    // merely took a commit has had months. Ranking the day purely by score
+    // therefore buries the one thing a reader opens this page to find: on
+    // 2026-08-24 the top eight rows were all `updated` and the
+    // highest-scoring actual release sat at rank nine (issue #332).
+    const releaseOrder = releaseRank(a) - releaseRank(b);
+    if (releaseOrder) return releaseOrder;
     const scoreOrder = Number(b.total_score || 0) - Number(a.total_score || 0);
     if (scoreOrder) return scoreOrder;
     // Attention rows carry no priority, so within a day they order by the
