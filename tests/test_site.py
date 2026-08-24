@@ -2066,8 +2066,29 @@ def test_issue_332_a_release_outranks_a_same_day_update():
     """
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
-    rank = script.split("function releaseRank(item)", 1)[1].split("}", 1)[0]
-    assert 'item.event_kind === "released" ? 0 : 1' in rank
+    rank = script.split("function releaseRank(item)", 1)[1].split("\n}", 1)[0]
+    assert 'if (item.event_kind !== "released") return 3;' in rank
+    # Releases are graded by how old they were when the scan ran, so a fresher
+    # one leads an older one and priority only breaks ties inside a tier.
+    assert "if (hours < RELEASE_FRESH_HOURS) return 0;" in rank
+    assert "if (hours < RELEASE_RECENT_HOURS) return 1;" in rank
+    assert "const RELEASE_FRESH_HOURS = 24;" in script
+    assert "const RELEASE_RECENT_HOURS = 72;" in script
+
+    age = script.split("function releaseAgeHours(item)", 1)[1].split("\n}", 1)[0]
+    # `published_at` is the release moment. `discovered_at` is the crawl
+    # timestamp, so using it would report every release as zero hours old and
+    # hand the freshest tier to rows whose real date is unknown.
+    assert "item.published_at || item.updated_at" in age
+    assert "discovered_at" not in age
+    # An undatable release is not treated as fresh.
+    assert "return Number.POSITIVE_INFINITY;" in age
+    # Measured against the snapshot's own scan time, not the reader's clock: an
+    # older date has to rank as it stood, and a wall clock would collapse every
+    # past day into one tier. It also keeps the cached sort deterministic.
+    assert "item.snapshot_generated_at" in age
+    assert "Date.now()" not in age
+    assert script.count("snapshot_generated_at: day.generated_at,") == 2
 
     sort_body = script.split("state.observations = [...evidence, ...attention].sort(", 1)[1].split(
         "\n  });", 1
@@ -2082,10 +2103,15 @@ def test_issue_332_a_release_outranks_a_same_day_update():
     # release tie-break when the result set actually contains both kinds.
     assert 't("Sort: New releases first, then Priority ↓")' in script
     assert 't("Sort: Date, then new releases, then Priority ↓")' in script
-    assert (
-        "const releases = observations.filter((item) => releaseRank(item) === 0).length;" in script
-    )
+    # "Is a release" is its own predicate now that releaseRank grades by age:
+    # reading it as `=== 0` would have counted only the freshest tier.
+    assert "const releases = observations.filter(isRelease).length;" in script
+    assert 'return item.event_kind === "released";' in script
     assert "releases > 0 && releases < observations.length" in script
+    # The caption stops at "new releases first". Releases are ordered by
+    # priority inside each age tier, so promising a recency sort would be
+    # contradicted by the rows underneath it.
+    assert "Sort: Newest releases first" not in script
 
     # Both captions are translated; an untranslated string would render as
     # English inside an otherwise Chinese page.
@@ -2173,3 +2199,58 @@ def test_issue_333_nothing_on_the_page_shouts():
     # markup, so removing the transform leaves readable sentence case rather
     # than lowercase fragments.
     assert '<span class="leaderboard-top-columns-rank" data-i18n="Rank">Rank</span>' in html
+
+
+def test_issue_332_the_freshest_releases_reach_page_one():
+    """Priority knows nothing about time, so a flat release group scrambles age.
+
+    Crawl lag already spreads one snapshot's releases across roughly 72 hours of
+    real release time -- "today's releases" was never one moment. Ordering that
+    group by priority alone put a 39.8-hour-old row on page one above releases
+    a few hours old. The age tiers fix that; priority still orders inside each.
+    """
+    import datetime as dt
+    import json
+
+    radar = Path("site/data/radar.json")
+    if not radar.exists():
+        import pytest
+
+        pytest.skip("radar.json is generated; run the pipeline first")
+
+    data = json.loads(radar.read_text(encoding="utf-8"))
+    day = next(d for d in data["days"] if d["date"] == data["latest_date"])
+    scanned_at = dt.datetime.fromisoformat(day["generated_at"])
+
+    def age_hours(item: dict) -> float:
+        stamp = item.get("published_at") or item.get("updated_at")
+        if not stamp:
+            return float("inf")
+        return max(0.0, (scanned_at - dt.datetime.fromisoformat(stamp)).total_seconds() / 3600)
+
+    def rank(item: dict) -> int:
+        if item.get("event_kind") != "released":
+            return 3
+        hours = age_hours(item)
+        return 0 if hours < 24 else 1 if hours < 72 else 2
+
+    items = sorted(
+        day["evidence_items"], key=lambda i: (rank(i), -float(i.get("total_score") or 0))
+    )
+    page_one = items[:20]
+
+    # Every row a reader sees first is a release from the last 24 hours.
+    assert all(rank(item) == 0 for item in page_one)
+    # And the tiers are not vacuous: this day genuinely holds older releases
+    # that the old flat ordering would have mixed in.
+    assert any(rank(item) == 1 for item in items), "no 24-72h release to separate"
+    assert any(rank(item) == 3 for item in items), "no non-release to outrank"
+
+    # The specific regression: under priority-only ordering the 39.8-hour-old
+    # rows made page one. They must not now.
+    flat = sorted(
+        (i for i in day["evidence_items"] if i.get("event_kind") == "released"),
+        key=lambda i: -float(i.get("total_score") or 0),
+    )
+    assert max(age_hours(i) for i in flat[:20]) > 24, "fixture no longer shows the old bug"
+    assert max(age_hours(i) for i in page_one) <= 24

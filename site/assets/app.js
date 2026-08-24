@@ -2069,8 +2069,15 @@ function renderToday({ resultsOnly = false } = {}) {
   // Read off the whole result set rather than the current page: the caption
   // describes the ordering the reader is paging through, and page one of a
   // release-led day is all releases even when later pages are not.
+  //
+  // The caption stops at "new releases first" and does not promise a recency
+  // order. Releases are grouped into age tiers and ordered by priority inside
+  // each one, so the strongest true statement is that releases lead. Saying
+  // "newest first" would read as a strict sort and the rows would contradict
+  // it: the freshest tier opens with an 11.9-hour-old row above a 2.4-hour-old
+  // one, because priority separates them.
   const priorityScored = visibleObservations.some((item) => Number(item.total_score) > 0);
-  const releases = observations.filter((item) => releaseRank(item) === 0).length;
+  const releases = observations.filter(isRelease).length;
   const releasesLead = releases > 0 && releases < observations.length;
   byId("today-sort").textContent = !priorityScored
     ? t("Sort: Date ↓")
@@ -2773,11 +2780,51 @@ function healthSummary(entries) {
   return empty ? `${base} · ${empty} ${t("empty")}` : base;
 }
 
-// 0 for a release, 1 for anything else, so a plain ascending compare puts
-// releases first. Read off `event_kind`, which the pipeline already sets to
-// "released" / "updated" on evidence rows and "discussed" on attention rows.
+// How old a release was when the scan that found it ran, in hours.
+//
+// `published_at` is the release moment and every crawled release carries one.
+// `discovered_at` is deliberately NOT a fallback: it is the crawl timestamp, so
+// reading age from it would report every release as zero hours old and hand the
+// freshest tier to rows whose real date is unknown. A release we cannot date is
+// not treated as fresh.
+//
+// Measured against the snapshot's own `generated_at` rather than the reader's
+// clock. A reader opening an older date wants that day ranked as it stood, and
+// the wall clock would collapse every past day into one undifferentiated tier.
+// It also keeps the sort deterministic, which matters because the result is
+// cached in `state.observations` and reused across every re-render.
+function releaseAgeHours(item) {
+  const released = item.published_at || item.updated_at;
+  const reference = item.snapshot_generated_at;
+  if (!released || !reference) return Number.POSITIVE_INFINITY;
+  const hours = (new Date(reference).getTime() - new Date(released).getTime()) / 3_600_000;
+  return Number.isFinite(hours) ? Math.max(0, hours) : Number.POSITIVE_INFINITY;
+}
+
+const RELEASE_FRESH_HOURS = 24;
+const RELEASE_RECENT_HOURS = 72;
+
+// Ascending rank, so a plain subtraction orders the day: releases from the last
+// day, then the last three days, then older releases, then everything that is
+// not a release at all. `event_kind` is set by the pipeline to "released" /
+// "updated" on evidence rows and "discussed" on attention rows.
+//
+// The tiers exist because a flat release group is ordered by priority, and
+// priority knows nothing about time: a release 2.4 hours old sat below one 11.9
+// hours old, and a 39.8-hour-old row still made page one. Crawl lag already
+// spreads a single day's releases across roughly 72 hours of real time, so
+// "today's releases" was never one moment -- these tiers make that spread
+// visible instead of leaving it to the priority score to scramble.
 function releaseRank(item) {
-  return item.event_kind === "released" ? 0 : 1;
+  if (item.event_kind !== "released") return 3;
+  const hours = releaseAgeHours(item);
+  if (hours < RELEASE_FRESH_HOURS) return 0;
+  if (hours < RELEASE_RECENT_HOURS) return 1;
+  return 2;
+}
+
+function isRelease(item) {
+  return item.event_kind === "released";
 }
 
 function allObservations() {
@@ -2795,6 +2842,9 @@ function allObservations() {
       recommendation_score: day.selection?.recommendation_score,
       minimum_score: day.selection?.minimum_score,
       snapshot_date: day.date,
+      // The moment this day's scan ran, which is what a release's age is
+      // measured against (issue #332).
+      snapshot_generated_at: day.generated_at,
       observation_kind: "evidence",
     })),
   );
@@ -2802,6 +2852,7 @@ function allObservations() {
     day.attention.observations.map((item) => ({
       ...item,
       snapshot_date: day.date,
+      snapshot_generated_at: day.generated_at,
       artifact_urls: item.primary_artifact_url ? [item.primary_artifact_url] : [],
       organizations: item.producer ? [item.producer] : [],
       observation_kind: "attention",
@@ -2811,13 +2862,15 @@ function allObservations() {
     const dateOrder = String(b.snapshot_date).localeCompare(String(a.snapshot_date));
     if (dateOrder) return dateOrder;
     // A release outranks every non-release from the same day, whatever the
-    // priority score says. Priority measures how well a benchmark is
-    // documented -- artifacts, openness, size -- and a benchmark published
-    // today has had no time to accumulate any of it, while a repository that
-    // merely took a commit has had months. Ranking the day purely by score
-    // therefore buries the one thing a reader opens this page to find: on
-    // 2026-08-24 the top eight rows were all `updated` and the
-    // highest-scoring actual release sat at rank nine (issue #332).
+    // priority score says, and a fresher release outranks an older one.
+    // Priority measures how well a benchmark is documented -- artifacts,
+    // openness, size -- and a benchmark published today has had no time to
+    // accumulate any of it, while a repository that merely took a commit has
+    // had months. Ranking the day purely by score therefore buries the one
+    // thing a reader opens this page to find: on 2026-08-24 the top eight rows
+    // were all `updated` and the highest-scoring actual release sat at rank
+    // nine (issue #332). Priority still orders within each tier -- it is a
+    // real quality signal, just not a substitute for recency.
     const releaseOrder = releaseRank(a) - releaseRank(b);
     if (releaseOrder) return releaseOrder;
     const scoreOrder = Number(b.total_score || 0) - Number(a.total_score || 0);
