@@ -4694,16 +4694,6 @@ function externalScoreChart(source, payload) {
     group.append(
       svgElement("circle", { cx: pointX, cy: pointY, r: size.face, class: "score-point-face" }),
     );
-    if (thirdParty) {
-      group.append(
-        svgElement("circle", {
-          cx: pointX,
-          cy: pointY,
-          r: size.citationRing,
-          class: "score-point-citation-ring",
-        }),
-      );
-    }
     group.append(
       modelGlyph(row.model_name, row.organization, pointX, pointY, size.glyph, "score-point-glyph"),
     );
@@ -5890,8 +5880,8 @@ function frontierPointRevealDelay(pointX, margin, plotWidth) {
 // Shared by the curated and crawled charts so a reader who compares the two
 // figures is comparing marks of the same size.
 const FRONTIER_POINT_SIZES = {
-  record: { face: 13.5, citationRing: 18, glyph: 21 },
-  offTheLine: { face: 9, citationRing: 12, glyph: 14 },
+  record: { face: 13.5, glyph: 21 },
+  offTheLine: { face: 9, glyph: 14 },
 };
 
 function frontierPointSizes(offTheLine) {
@@ -6166,16 +6156,6 @@ function scoreTrackChart(entry, board) {
           class: "score-point-face",
         }),
       );
-      if (observation.reported_by) {
-        group.append(
-          svgElement("circle", {
-            cx: pointX,
-            cy: pointY,
-            r: size.citationRing,
-            class: "score-point-citation-ring",
-          }),
-        );
-      }
       group.append(
         modelGlyph(
           observation.model,

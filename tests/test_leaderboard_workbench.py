@@ -529,7 +529,6 @@ def test_the_crawled_chart_reuses_the_curated_chart_classes():
         "frontier-axis-label",
         "score-point-face",
         "score-point-glyph",
-        "score-point-citation-ring",
         "score-best-line",
         "score-best-label",
     ]:

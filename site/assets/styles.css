@@ -2917,16 +2917,6 @@ td a {
   transition: r 120ms ease;
 }
 
-/* A third-party citation is a publisher repeating a competitor's figure. The
-   ring marks it on the chart so it is not read as a first-party report. */
-.score-point-citation-ring {
-  fill: none;
-  stroke: #0d1519;
-  stroke-width: 2.5;
-  stroke-dasharray: 2 2;
-  transition: r 120ms ease;
-}
-
 .score-point-glyph {
   pointer-events: none;
   user-select: none;
@@ -2943,22 +2933,10 @@ td a {
   stroke-width: 4;
 }
 
-.score-point:focus .score-point-citation-ring,
-.score-point:hover .score-point-citation-ring,
-.score-point.is-selected .score-point-citation-ring {
-  r: 19.5px;
-}
-
 .score-point-dim:focus .score-point-face,
 .score-point-dim:hover .score-point-face,
 .score-point-dim.is-selected .score-point-face {
   r: 10px;
-}
-
-.score-point-dim:focus .score-point-citation-ring,
-.score-point-dim:hover .score-point-citation-ring,
-.score-point-dim.is-selected .score-point-citation-ring {
-  r: 13px;
 }
 
 /* The reported-record path (issues #288 and #312). It links only actual strict
@@ -3021,10 +2999,6 @@ td a {
   stroke-opacity: 0.7;
 }
 
-.score-point-dim .score-point-citation-ring {
-  opacity: 0.6;
-}
-
 /* This is the mark's whole payload -- which model reported this score -- so it
    is the last thing that should fade, and it never fades below readable. */
 .score-point-dim .score-point-glyph {
@@ -3039,9 +3013,6 @@ td a {
   stroke-opacity: 1;
 }
 
-.score-point-dim:hover .score-point-citation-ring,
-.score-point-dim:focus .score-point-citation-ring,
-.score-point-dim.is-selected .score-point-citation-ring,
 .score-point-dim:hover .score-point-glyph,
 .score-point-dim:focus .score-point-glyph,
 .score-point-dim.is-selected .score-point-glyph {
