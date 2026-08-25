@@ -1,5 +1,43 @@
 # Repository Instructions
 
+## Glob rule: showcase and UI communication
+
+Applies to `README*`, `docs/**`, `.github/ISSUE_TEMPLATE/**`, `site/**`, and
+any report, launch note, TLDR, screenshot, GIF, demo, dashboard, or UI surface.
+
+- Treat what is shown as part of the work. What was done and what is displayed
+  are both important; in many communication surfaces, what is displayed is more
+  important because it is the receiver's entry point.
+- Start from the receiver's perspective, not the implementer's. Ask what the
+  reader most wants to know, what will help them decide quickly, and what is
+  most worth remembering or sharing.
+- Do not let engineering effort bury the message. Data work and implementation
+  details often take most of the time, but reports and TLDRs should foreground
+  the result, implication, and decision-useful signal before the process.
+- Prefer strong information hierarchy, plain language, concrete examples,
+  screenshots, short GIFs, and compact summaries that make the work easy to
+  scan, review, forward, or explain upward.
+
+## Glob rule: Benchmark Radar audience
+
+Applies to `README*`, `docs/**`, `.github/ISSUE_TEMPLATE/**`, `site/**`,
+`assets/**`, and benchmark-facing generated artifacts.
+
+- Assume two audiences at once: a benchmark freshman who may be 16 and should
+  understand the point without technical jargon, and a benchmark expert who
+  expects credible signal, precise framing, and non-obvious insight.
+- Make the first screen or first paragraph an efficient entry point: what this
+  shows, why it matters, what is surprising, and where to click next.
+- Optimize for spread without sacrificing rigor. The artifact should be easy to
+  share, screenshot, and quote, while still looking professional to people who
+  know benchmarks well.
+- Show the insight before the pipeline. Crawling, normalization, scoring, and
+  data-cleaning details matter, but they should support the takeaway instead of
+  becoming the takeaway.
+- Use bilingual guidance when it helps contributors or readers provide better
+  signal. Avoid jargon-heavy summaries that only say what changed; explain why
+  the change matters to someone reading, reviewing, or sharing the project.
+
 ## Pull request merges
 
 - Do not squash-merge pull requests.
