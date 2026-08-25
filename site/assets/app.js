@@ -4172,6 +4172,16 @@ const EXTERNAL_SOURCE_META = {
       "Scores embedded in the OpenCompass hub card. Column meaning varies from card to card, and rows are listed in the source's own order.",
     emptyKey: "The OpenCompass hub card records no scores for this benchmark.",
   },
+  artificial_analysis: {
+    name: "Artificial Analysis",
+    noteKey:
+      // The one source here that ran the tests itself, so unlike the other
+      // two it can say how it measured. That is worth stating plainly: the
+      // reader is being told these numbers came from one lab's own runs, and
+      // the date is still the model's release rather than the test date.
+      "Scores measured by Artificial Analysis running the test itself, not numbers reported by the model makers. Higher values are better. Every row records which version of their method was used, so rows from the same version were measured the same way. The date shown is each model's own release date, not the day the test was run.",
+    emptyKey: "Artificial Analysis recorded no scores for this benchmark.",
+  },
 };
 
 function externalSourceMeta(source) {
@@ -4388,7 +4398,9 @@ function externalSizesBlock(detail) {
 // null, so there is no honest scale to draw one from. vending-bench-2 declares
 // max 1.0 and carries 8017.59, so the declared bound is never a denominator
 // either. comparable_group is null on every crawled row, so no row here ever
-// joins a line, a trend, or a shared ranking.
+// joins a line, a trend, or a shared ranking. Artificial Analysis states a
+// grouping of its own runs, but it arrives under source_comparable_group and
+// is read by nothing in this path.
 function externalScoresBlock(shard) {
   const bySource = shard.scores_by_source || {};
   const sources = Object.keys(bySource).sort();

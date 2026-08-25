@@ -309,6 +309,10 @@ def main() -> None:
         written = write_llm_stats_catalog(normalized)
         report = normalized["validation"]
 
+        from .external_artificial_analysis import (
+            normalize_artificial_analysis,
+            write_artificial_analysis_catalog,
+        )
         from .external_catalog import (
             DEFAULT_OUTPUT_DIR,
             build_benchmark_index,
@@ -325,8 +329,22 @@ def main() -> None:
             encoding="utf-8",
         )
 
-        series_by_key = {row["key"]: row for row in normalized["score_series"]}
-        all_records = normalized["source_records"] + opencompass["source_records"]
+        artificial_analysis = normalize_artificial_analysis()
+        write_artificial_analysis_catalog(artificial_analysis)
+
+        # Series and observations from both scored sources travel together, but
+        # they never merge: keys are namespaced per source, and the shard files
+        # them under the record's own source name.
+        all_series = normalized["score_series"] + artificial_analysis["score_series"]
+        all_observations = (
+            normalized["score_observations"] + artificial_analysis["score_observations"]
+        )
+        series_by_key = {row["key"]: row for row in all_series}
+        all_records = (
+            normalized["source_records"]
+            + opencompass["source_records"]
+            + artificial_analysis["source_records"]
+        )
 
         from .external_identity import (
             DEFAULT_CANDIDATES_PATH,
@@ -361,16 +379,20 @@ def main() -> None:
         shard_report = write_shards(
             resolved_records,
             identity=identity,
-            series=normalized["score_series"],
-            observations=normalized["score_observations"],
+            series=all_series,
+            observations=all_observations,
         )
 
         oc_report = opencompass["validation"]
+        aa_report = artificial_analysis["validation"]
         print(
             f"llm-stats: {report['source_record_count']} benchmarks, "
             f"{report['score_observation_count']} score observations\n"
             f"opencompass: {oc_report['source_record_count']} benchmarks, "
             f"openness {oc_report['openness_status_counts']}\n"
+            f"artificial-analysis: {aa_report['source_record_count']} evaluations, "
+            f"{aa_report['score_observation_count']} score observations across "
+            f"{aa_report['scored_model_count']} models\n"
             f"index: {len(index)} searchable records -> {index_path}\n"
             f"shards: {shard_report['shard_count']} files, "
             f"{shard_report['total_bytes'] / 1024:.0f} KiB -> {shard_report['output_dir']}\n"
