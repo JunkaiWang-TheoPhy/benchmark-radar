@@ -117,10 +117,38 @@ def _curated_models(radar: dict[str, Any]) -> Iterable[tuple[str, str, str, dict
             yield model, organization, card.get("model_card_id") or "", card
 
 
+# Which crawled source gets to name a model the two of them both know about.
+#
+# `model_key` folds punctuation and case, so "GPT-5 High" and "GPT-5 (high)"
+# are one model with two spellings, and the first spelling seen becomes the
+# published name. Left to the shard glob that order is alphabetical by
+# filename, which is not a decision anyone made: adding a source whose slug
+# sorts earlier silently renamed 22 already-published models and orphaned their
+# frozen logo IDs, which is exactly the churn `build_logo_registry.py` exists to
+# prevent.
+#
+# So precedence is declared. llm-stats is first because it is the incumbent:
+# its spellings are the ones already published, already reviewed, and already
+# carrying logo IDs. A source absent from this list sorts last, in its own
+# name's order, so adding one is additive and never a rename.
+_CRAWLED_SOURCE_PRECEDENCE = ("llm_stats", "artificial_analysis")
+
+
 def _crawled_models(shard_dir: Path) -> Iterable[tuple[str, str, str, dict]]:
-    for shard in sorted(shard_dir.glob("*.json")):
+    def rank(source: str) -> tuple[int, str]:
+        if source in _CRAWLED_SOURCE_PRECEDENCE:
+            return (_CRAWLED_SOURCE_PRECEDENCE.index(source), "")
+        return (len(_CRAWLED_SOURCE_PRECEDENCE), source)
+
+    shards = sorted(shard_dir.glob("*.json"))
+    by_source: dict[str, list[tuple[str, dict]]] = {}
+    for shard in shards:
         payloads = json.loads(shard.read_text(encoding="utf-8")).get("scores_by_source") or {}
         for source, payload in payloads.items():
+            by_source.setdefault(source, []).append((shard.name, payload))
+
+    for source in sorted(by_source, key=rank):
+        for _, payload in by_source[source]:
             for row in payload.get("rows") or []:
                 model = row.get("model_name")
                 organization = row.get("organization")

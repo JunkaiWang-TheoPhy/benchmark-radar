@@ -62,6 +62,19 @@ LLM_STATS_SNAPSHOT_ID = "llm_stats_2026-08-17"
 LLM_STATS_SOURCE = "llm_stats"
 LLM_STATS_KEY_PREFIX = "llm-stats"
 
+ARTIFICIAL_ANALYSIS_SNAPSHOT_ID = "artificial_analysis_2026-08-25"
+ARTIFICIAL_ANALYSIS_SOURCE = "artificial_analysis"
+ARTIFICIAL_ANALYSIS_KEY_PREFIX = "artificial-analysis"
+
+# Every crawled snapshot in the registry is the same two CSVs with the same
+# header vocabulary, so one normalizer reads all of them and a source is three
+# strings rather than a module. A second shape would mean a second loader, a
+# second normalizer, and two sets of invariants drifting apart.
+SOURCES = {
+    LLM_STATS_SNAPSHOT_ID: (LLM_STATS_SOURCE, LLM_STATS_KEY_PREFIX),
+    ARTIFICIAL_ANALYSIS_SNAPSHOT_ID: (ARTIFICIAL_ANALYSIS_SOURCE, ARTIFICIAL_ANALYSIS_KEY_PREFIX),
+}
+
 _SLUG_STRIP = re.compile(r"[^a-z0-9]+")
 
 # One organization, one name, across both layers.
@@ -90,6 +103,16 @@ CANONICAL_ORGANIZATIONS = {
     "Alibaba Cloud / Qwen Team": "Qwen",
     "Mistral AI": "Mistral",
     "Zhipu AI": "Z.ai",
+    # Artificial Analysis spells the same four vendors its own way. Each pair
+    # below was confirmed the same way as the three above, by reading the model
+    # lines on both sides rather than by name similarity: the `Alibaba` rows are
+    # 14 Qwen models, `Kimi` publishes the Kimi K2 line Moonshot AI publishes,
+    # `SpaceXAI` publishes Grok, and `Z AI` publishes GLM. Left unmapped these
+    # were 20 duplicate models on the site, one under each spelling.
+    "Alibaba": "Qwen",
+    "Kimi": "Moonshot AI",
+    "SpaceXAI": "xAI",
+    "Z AI": "Z.ai",
 }
 
 
@@ -127,7 +150,7 @@ def slugify(key: str) -> str:
     return slug
 
 
-def _assign_slugs(keys: list[str]) -> dict[str, str]:
+def assign_slugs(keys: list[str]) -> dict[str, str]:
     """Slugs for every key, with deterministic suffixes when two collide.
 
     Collisions are resolved in sorted key order rather than input order so the
@@ -144,7 +167,7 @@ def _assign_slugs(keys: list[str]) -> dict[str, str]:
     return assigned
 
 
-def _finite(value: str) -> float | None:
+def finite_float(value: str) -> float | None:
     text = (value or "").strip()
     if not text:
         return None
@@ -155,7 +178,7 @@ def _finite(value: str) -> float | None:
     return parsed if math.isfinite(parsed) else None
 
 
-def _json_list(value: str) -> list[str]:
+def json_list(value: str) -> list[str]:
     text = (value or "").strip()
     if not text:
         return []
@@ -166,20 +189,28 @@ def _json_list(value: str) -> list[str]:
     return [str(item) for item in parsed] if isinstance(parsed, list) else []
 
 
-def _value_kind(raw: str, parsed: float | None) -> str:
+def value_kind(raw: str, parsed: float | None) -> str:
     if not (raw or "").strip():
         return "missing"
     return "number" if parsed is not None else "text"
 
 
-def _source_record(row: dict[str, str], slug: str, crawled_at: str) -> dict[str, Any]:
+def _source_record(
+    row: dict[str, str],
+    slug: str,
+    crawled_at: str,
+    *,
+    source: str,
+    key_prefix: str,
+    snapshot_id: str,
+) -> dict[str, Any]:
     source_id = row["benchmark_id"].strip()
     description = (row.get("description") or "").strip()
     return {
-        "key": f"{LLM_STATS_KEY_PREFIX}:{source_id}",
+        "key": f"{key_prefix}:{source_id}",
         "slug": slug,
         "schema_version": CATALOG_SCHEMA_VERSION,
-        "source": LLM_STATS_SOURCE,
+        "source": source,
         "source_benchmark_id": source_id,
         "name": (row.get("name") or "").strip() or source_id,
         "description": {"en": description} if description else {},
@@ -196,11 +227,11 @@ def _source_record(row: dict[str, str], slug: str, crawled_at: str) -> dict[str,
         "sizes": [],
         "released": None,
         "modality": (row.get("modality") or "").strip() or None,
-        "categories": _json_list(row.get("categories", "")),
+        "categories": json_list(row.get("categories", "")),
         "provenance": {
             "source_url": (row.get("detail_source_url") or "").strip() or None,
             "crawled_at": crawled_at,
-            "crawl_bundle": LLM_STATS_SNAPSHOT_ID,
+            "crawl_bundle": snapshot_id,
         },
     }
 
@@ -211,15 +242,16 @@ def _observation(
     key: str,
     series_id: str,
     crawled_at: str,
+    source: str,
 ) -> dict[str, Any]:
     raw_value = (row.get("benchmark_score") or "").strip()
-    parsed = _finite(raw_value)
+    parsed = finite_float(raw_value)
     rank = (row.get("rank") or "").strip()
     # Identity is (benchmark, model_id): distinct dated checkpoints can share a
     # display name, so the name is vocabulary and the id is what a row is.
     model_id = (row.get("model_id") or "").strip() or (row.get("model_name") or "").strip()
     return {
-        "obs_id": f"{LLM_STATS_SOURCE}:{row['benchmark_id'].strip()}:{model_id}",
+        "obs_id": f"{source}:{row['benchmark_id'].strip()}:{model_id}",
         "key": key,
         "series_id": series_id,
         "model_name": (row.get("model_name") or "").strip(),
@@ -227,7 +259,7 @@ def _observation(
         "organization": canonical_organization(row.get("organization_name")),
         "raw_value": raw_value,
         "value": parsed,
-        "value_kind": _value_kind(raw_value, parsed),
+        "value_kind": value_kind(raw_value, parsed),
         # The source flags self-reporting but never records a protocol, so the
         # only honest comparability class is "none". Null never joins to null.
         "reported_by": (
@@ -256,15 +288,16 @@ def _series(
     *,
     key: str,
     observations: list[dict[str, Any]],
+    source: str,
 ) -> dict[str, Any]:
-    declared_max = _finite(row.get("max_score", ""))
+    declared_max = finite_float(row.get("max_score", ""))
     values = [obs["value"] for obs in observations if obs["value"] is not None]
     observed_max = max(values) if values else None
     contradicted = (
         declared_max is not None and observed_max is not None and observed_max > declared_max
     )
     return {
-        "series_id": f"{LLM_STATS_SOURCE}:{row['benchmark_id'].strip()}:default",
+        "series_id": f"{source}:{row['benchmark_id'].strip()}:default",
         "key": key,
         # The API does not name the metric, so it stays null. Direction is not
         # guessed from the scale: every scored series is source-ranked in
@@ -282,18 +315,26 @@ def _series(
     }
 
 
-def normalize_llm_stats(snapshot: dict[str, Any]) -> dict[str, Any]:
-    """Turn one validated llm-stats snapshot into catalog records.
+def normalize_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
+    """Turn one validated crawl snapshot into catalog records.
 
-    Returns source records, score series and observations, plus the validation
-    counts that let a reviewer check the result without rereading the CSVs.
+    Source-agnostic: every snapshot in the registry is the same two CSVs with
+    the same header vocabulary, so the only thing that varies between them is
+    the three strings in `SOURCES`. Returns source records, score series and
+    observations, plus the validation counts that let a reviewer check the
+    result without rereading the CSVs.
     """
+    snapshot_id = snapshot["id"]
+    if snapshot_id not in SOURCES:
+        raise ExternalCatalogError(f"snapshot {snapshot_id!r} has no source descriptor")
+    source, key_prefix = SOURCES[snapshot_id]
+
     benchmark_rows = snapshot["benchmark_rows"]
     score_rows = snapshot["score_rows"] or []
     crawled_at = snapshot["crawled_at"]
 
-    keys = [f"{LLM_STATS_KEY_PREFIX}:{row['benchmark_id'].strip()}" for row in benchmark_rows]
-    slugs = _assign_slugs(keys)
+    keys = [f"{key_prefix}:{row['benchmark_id'].strip()}" for row in benchmark_rows]
+    slugs = assign_slugs(keys)
 
     by_benchmark: dict[str, list[dict[str, str]]] = {}
     for row in score_rows:
@@ -305,16 +346,27 @@ def normalize_llm_stats(snapshot: dict[str, Any]) -> dict[str, Any]:
 
     for row in benchmark_rows:
         source_id = row["benchmark_id"].strip()
-        key = f"{LLM_STATS_KEY_PREFIX}:{source_id}"
-        records.append(_source_record(row, slugs[key], crawled_at))
-        series_id = f"{LLM_STATS_SOURCE}:{source_id}:default"
+        key = f"{key_prefix}:{source_id}"
+        records.append(
+            _source_record(
+                row,
+                slugs[key],
+                crawled_at,
+                source=source,
+                key_prefix=key_prefix,
+                snapshot_id=snapshot_id,
+            )
+        )
+        series_id = f"{source}:{source_id}:default"
         rows = by_benchmark.get(source_id, [])
         observed = [
-            _observation(score_row, key=key, series_id=series_id, crawled_at=crawled_at)
+            _observation(
+                score_row, key=key, series_id=series_id, crawled_at=crawled_at, source=source
+            )
             for score_row in rows
         ]
         observations.extend(observed)
-        series.append(_series(row, key=key, observations=observed))
+        series.append(_series(row, key=key, observations=observed, source=source))
 
     records.sort(key=lambda item: item["key"])
     series.sort(key=lambda item: item["series_id"])
@@ -329,7 +381,9 @@ def normalize_llm_stats(snapshot: dict[str, Any]) -> dict[str, Any]:
         "source_records": records,
         "score_series": series,
         "score_observations": observations,
-        "validation": _validation(records, series, observations),
+        "validation": _validation(
+            records, series, observations, source=source, snapshot_id=snapshot_id
+        ),
     }
 
 
@@ -337,6 +391,9 @@ def _validation(
     records: list[dict[str, Any]],
     series: list[dict[str, Any]],
     observations: list[dict[str, Any]],
+    *,
+    source: str,
+    snapshot_id: str,
 ) -> dict[str, Any]:
     seen: dict[str, int] = {}
     for obs in observations:
@@ -352,8 +409,8 @@ def _validation(
     contradicted = [item["key"] for item in series if item["max_score_contradicted"]]
     return {
         "schema_version": CATALOG_SCHEMA_VERSION,
-        "source": LLM_STATS_SOURCE,
-        "snapshot": LLM_STATS_SNAPSHOT_ID,
+        "source": source,
+        "snapshot": snapshot_id,
         "source_record_count": len(records),
         "score_series_count": len(series),
         "score_observation_count": len(observations),
@@ -406,7 +463,7 @@ def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     )
 
 
-def write_llm_stats_catalog(
+def write_catalog(
     normalized: dict[str, Any],
     output_dir: Path = DEFAULT_OUTPUT_DIR,
 ) -> dict[str, Path]:
@@ -417,11 +474,14 @@ def write_llm_stats_catalog(
     diff rather than a whole-file churn.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
+    # Filenames carry the source, so a second snapshot writes beside the first
+    # rather than over it.
+    source = normalized["validation"]["source"]
     paths = {
-        "source_records": output_dir / "llm_stats_source_records.jsonl",
-        "score_series": output_dir / "llm_stats_score_series.jsonl",
-        "score_observations": output_dir / "llm_stats_score_observations.jsonl",
-        "validation": output_dir / "llm_stats_normalization_validation.json",
+        "source_records": output_dir / f"{source}_source_records.jsonl",
+        "score_series": output_dir / f"{source}_score_series.jsonl",
+        "score_observations": output_dir / f"{source}_score_observations.jsonl",
+        "validation": output_dir / f"{source}_normalization_validation.json",
     }
     _write_jsonl(paths["source_records"], normalized["source_records"])
     _write_jsonl(paths["score_series"], normalized["score_series"])

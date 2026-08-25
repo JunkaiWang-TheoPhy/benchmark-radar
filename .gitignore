@@ -69,6 +69,6 @@ graphify-out/
 # the last commit happened to carry while the CSVs beside them moved on. That is
 # the failure the radar.json rule already names: a stale derivation reviewed as
 # if it were source. The build is deterministic, so nothing is lost by dropping
-# them; `normalize-external` reproduces all 1,148 shards byte for byte.
+# them; `normalize-external` reproduces all 1,172 shards byte for byte.
 /site/data/benchmark-index.json
 /site/data/benchmarks/

@@ -1,0 +1,26 @@
+benchmark_id,name,description,categories,modality,max_score,detail_source_url
+aa-analystagent,AA-AnalystAgent,Quantitative analysis on spreadsheets & documents,"[""agentic"",""business"",""reasoning""]",,,https://artificialanalysis.ai/evaluations/aa-analyst-agent
+aa-briefcase,AA-Briefcase,"Agentic knowledge work, Elo","[""agentic"",""business""]",,,https://artificialanalysis.ai/evaluations/aa-briefcase
+aa-lcr,AA-LCR,Long context reasoning,"[""intelligence-index"",""long-context"",""reasoning""]",,,https://artificialanalysis.ai/evaluations/artificial-analysis-long-context-reasoning
+aa-omniscience-accuracy,AA-Omniscience Accuracy,Knowledge,"[""intelligence-index"",""knowledge""]",,,https://artificialanalysis.ai/evaluations/omniscience
+aa-omniscience-non-hallucination,AA-Omniscience Non-Hallucination Rate,1 - hallucination rate,"[""intelligence-index"",""knowledge"",""faithfulness""]",,,https://artificialanalysis.ai/evaluations/omniscience
+aime-2025,AIME 2025,Mathematical reasoning,"[""reasoning"",""math""]",,,https://artificialanalysis.ai/evaluations/aime-2025
+apex-agents-aa,APEX-Agents-AA,Long-horizon agentic tasks,"[""agentic"",""reasoning""]",,,https://artificialanalysis.ai/evaluations/apex-agents-aa
+automationbench-aa,AutomationBench-AA,Agentic SaaS workflows,"[""agentic"",""tool-use"",""business""]",,,https://artificialanalysis.ai/evaluations/automationbench-aa
+critpt,CritPt,Physics reasoning,"[""intelligence-index"",""reasoning"",""science""]",,,https://artificialanalysis.ai/evaluations/critpt
+enterpriseops-gym-aa,EnterpriseOps-Gym-AA,Agentic business operations,"[""agentic"",""business""]",,,https://artificialanalysis.ai/evaluations/enterprise-ops-gym-aa
+gdpval-aa-v2:normalized_score,GDPval-AA v2 (normalized score),Agentic real-world work tasks,"[""intelligence-index"",""agentic""]",,,https://artificialanalysis.ai/evaluations/gdpval-aa
+gdpval-aa-v2:raw_elo,GDPval-AA v2 (Elo),Agentic real-world work tasks,"[""intelligence-index"",""agentic""]",,,https://artificialanalysis.ai/evaluations/gdpval-aa
+gpqa-diamond,GPQA Diamond,Scientific reasoning,"[""intelligence-index"",""reasoning"",""science""]",,,https://artificialanalysis.ai/evaluations/gpqa-diamond
+harvey-lab-aa,Harvey LAB-AA,"Legal agentic work, criterion pass rate","[""agentic"",""legal""]",,,https://artificialanalysis.ai/evaluations/harvey-lab-aa
+humanitys-last-exam,Humanity’s Last Exam,Reasoning & knowledge,"[""intelligence-index"",""reasoning"",""knowledge""]",,,https://artificialanalysis.ai/evaluations/humanitys-last-exam
+ifbench,IFBench,Instruction following,"[""instruction-following""]",,,https://artificialanalysis.ai/evaluations/ifbench
+itbench-aa,ITBench-AA,Kubernetes incident root-cause analysis,"[""agentic"",""tool-use"",""engineering""]",,,https://artificialanalysis.ai/evaluations/itbench-aa
+livecodebench,LiveCodeBench,Coding,"[""coding""]",,,https://artificialanalysis.ai/evaluations/livecodebench
+mlcr-aa,MLCR-AA,MLCR-AA overall score,"[""reasoning""]",,,https://artificialanalysis.ai/evaluations/mlcr-aa
+mmmu-pro,MMMU-Pro,Visual reasoning,"[""multimodal"",""reasoning""]",,,https://artificialanalysis.ai/evaluations/mmmu-pro
+scicode,SciCode,Coding,"[""intelligence-index"",""coding""]",,,https://artificialanalysis.ai/evaluations/scicode
+tau2-bench-telecom,τ²-Bench Telecom,Agentic tool use,"[""agentic"",""tool-use""]",,,https://artificialanalysis.ai/evaluations/tau2-bench
+tau3-banking,τ³-Banking,Agentic tool use,"[""intelligence-index"",""agentic"",""tool-use""]",,,https://artificialanalysis.ai/evaluations/tau3-banking
+terminal-bench-hard,Terminal-Bench Hard,Agentic coding & terminal use,"[""coding"",""tool-use""]",,,https://artificialanalysis.ai/evaluations/terminalbench-hard
+terminal-bench-v2.1,Terminal-Bench v2.1,Agentic coding & terminal use,"[""intelligence-index"",""agentic"",""coding"",""tool-use""]",,,https://artificialanalysis.ai/evaluations/terminalbench-v2-1

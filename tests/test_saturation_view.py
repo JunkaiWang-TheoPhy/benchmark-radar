@@ -83,16 +83,19 @@ def test_comparability_is_stated_in_prose_rather_than_drawn():
     assert '"comparable run"' in readout
 
 
-def test_a_third_party_citation_is_marked_on_the_chart():
+def test_a_third_party_citation_is_named_on_the_point():
     # A publisher repeating a competitor's figure must not read as a first-party
-    # report; it is weaker evidence and the chart has to say so.
+    # report. It carries no ring of its own: a dashed circle drawn around the
+    # brand glyph read as chart noise, so the citation is named in the point's
+    # label and pinned card instead of drawn around it.
     script = source("site/assets/app.js")
     styles = source("site/assets/styles.css")
 
     assert "score-point-third-party" in script
     assert "observation.reported_by" in script
-    assert "score-point-citation-ring" in script
-    assert ".score-point-citation-ring" in styles
+    assert "cited by" in script
+    assert "citation-ring" not in script
+    assert "citation-ring" not in styles
 
 
 def test_score_points_carry_recognizable_model_family_marks():
@@ -882,8 +885,8 @@ def test_issue_345_a_reading_off_the_line_stays_legible():
 
     # A record setter is drawn at 1.5x on every mark it carries.
     sizes = script.split("const FRONTIER_POINT_SIZES = {", 1)[1].split("};", 1)[0]
-    record = {"face": 13.5, "citationRing": 18, "glyph": 21}
-    off = {"face": 9, "citationRing": 12, "glyph": 14}
+    record = {"face": 13.5, "glyph": 21}
+    off = {"face": 9, "glyph": 14}
     for key, value in record.items():
         assert f"{key}: {value}" in sizes.split("offTheLine:", 1)[0]
     for key, value in off.items():

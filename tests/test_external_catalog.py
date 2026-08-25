@@ -16,9 +16,9 @@ import yaml
 
 from benchmark_radar.external_catalog import (
     ExternalCatalogError,
-    normalize_llm_stats,
+    normalize_snapshot,
     slugify,
-    write_llm_stats_catalog,
+    write_catalog,
 )
 from benchmark_radar.leaderboard_snapshots import (
     DEFAULT_SNAPSHOTS_PATH,
@@ -47,7 +47,7 @@ CONTRADICTED_KEYS = {"llm-stats:frontier-swe-impl", "llm-stats:vending-bench-2"}
 def normalized() -> dict:
     snapshots = load_snapshots(DEFAULT_SNAPSHOTS_PATH)
     snapshot = next(item for item in snapshots["snapshots"] if item["id"] == LLM_STATS_SNAPSHOT_ID)
-    return normalize_llm_stats(snapshot)
+    return normalize_snapshot(snapshot)
 
 
 def test_counts_match_the_declared_snapshot(normalized: dict) -> None:
@@ -210,16 +210,16 @@ def test_every_recorded_score_can_be_drawn_as_a_point(normalized: dict) -> None:
 
 
 def test_output_is_byte_identical_across_runs(normalized: dict, tmp_path: Path) -> None:
-    first = write_llm_stats_catalog(normalized, tmp_path / "a")
-    second = write_llm_stats_catalog(normalize_llm_stats_again(), tmp_path / "b")
+    first = write_catalog(normalized, tmp_path / "a")
+    second = write_catalog(_normalize_llm_stats_again(), tmp_path / "b")
     for name, path in first.items():
         assert path.read_bytes() == second[name].read_bytes()
 
 
-def normalize_llm_stats_again() -> dict:
+def _normalize_llm_stats_again() -> dict:
     snapshots = load_snapshots(DEFAULT_SNAPSHOTS_PATH)
     snapshot = next(item for item in snapshots["snapshots"] if item["id"] == LLM_STATS_SNAPSHOT_ID)
-    return normalize_llm_stats(snapshot)
+    return normalize_snapshot(snapshot)
 
 
 def test_slugify_rejects_a_key_with_nothing_usable() -> None:

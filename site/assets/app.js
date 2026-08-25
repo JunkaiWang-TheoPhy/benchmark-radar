@@ -4172,6 +4172,18 @@ const EXTERNAL_SOURCE_META = {
       "Scores embedded in the OpenCompass hub card. Column meaning varies from card to card, and rows are listed in the source's own order.",
     emptyKey: "The OpenCompass hub card records no scores for this benchmark.",
   },
+  artificial_analysis: {
+    name: "Artificial Analysis",
+    noteKey:
+      // The one source here that ran the tests itself, so unlike the other
+      // two it can say how it measured. That is worth stating plainly: the
+      // reader is being told these numbers came from one lab's own runs, and
+      // the date is still the model's release rather than the test date. No
+      // sentence about the method version: the crawl records none, so the
+      // registry's silence rule applies here exactly as it does to LLM Stats.
+      "Scores measured by Artificial Analysis running the test itself, not numbers reported by the model makers. Higher values are better. The date shown is each model's own release date, not the day the test was run.",
+    emptyKey: "Artificial Analysis recorded no scores for this benchmark.",
+  },
 };
 
 function externalSourceMeta(source) {
@@ -4453,6 +4465,11 @@ function externalScoresBlock(shard) {
 // height, and a row with no parseable release date has no honest x once the
 // axis is time. Shared with the (i) note so the note describes the axis the
 // reader is actually looking at rather than a differently filtered set.
+// One chart draws one metric, and every series reaching here has exactly one.
+// An evaluation that publishes two numbers on two scales, such as GDPval-AA
+// v2's raw Elo around 1,000 to 1,800 and its normalized score between 0 and 1,
+// is split into two benchmarks by the crawl, so each gets its own chart with
+// its own axis instead of the two collapsing onto one.
 function externalPlottedRows(payload) {
   return (payload.rows || [])
     .filter((row) => typeof row.value === "number" && Number.isFinite(row.value))
@@ -4677,16 +4694,6 @@ function externalScoreChart(source, payload) {
     group.append(
       svgElement("circle", { cx: pointX, cy: pointY, r: size.face, class: "score-point-face" }),
     );
-    if (thirdParty) {
-      group.append(
-        svgElement("circle", {
-          cx: pointX,
-          cy: pointY,
-          r: size.citationRing,
-          class: "score-point-citation-ring",
-        }),
-      );
-    }
     group.append(
       modelGlyph(row.model_name, row.organization, pointX, pointY, size.glyph, "score-point-glyph"),
     );
@@ -4714,8 +4721,17 @@ function externalScoreChart(source, payload) {
               },
             ]
           : []),
-        { label: t("Reported by"), value: t("self reported") },
-        ...(thirdParty ? [{ label: t("Cited by"), value: meta.name }] : []),
+        // Who produced the number, read off the row rather than assumed. This
+        // was hardcoded to "self reported" while llm-stats was the only source
+        // drawing points here, and every llm-stats row is a vendor's own claim.
+        // Artificial Analysis ran the test itself, so the same hardcoded label
+        // would tell the reader the opposite of what the row records.
+        ...(thirdParty
+          ? [
+              { label: t("Measured by"), value: meta.name },
+              { label: t("Listed by"), value: meta.name },
+            ]
+          : [{ label: t("Reported by"), value: t("self reported") }]),
       ],
       url: row.source_url,
     });
@@ -5864,8 +5880,8 @@ function frontierPointRevealDelay(pointX, margin, plotWidth) {
 // Shared by the curated and crawled charts so a reader who compares the two
 // figures is comparing marks of the same size.
 const FRONTIER_POINT_SIZES = {
-  record: { face: 13.5, citationRing: 18, glyph: 21 },
-  offTheLine: { face: 9, citationRing: 12, glyph: 14 },
+  record: { face: 13.5, glyph: 21 },
+  offTheLine: { face: 9, glyph: 14 },
 };
 
 function frontierPointSizes(offTheLine) {
@@ -6140,16 +6156,6 @@ function scoreTrackChart(entry, board) {
           class: "score-point-face",
         }),
       );
-      if (observation.reported_by) {
-        group.append(
-          svgElement("circle", {
-            cx: pointX,
-            cy: pointY,
-            r: size.citationRing,
-            class: "score-point-citation-ring",
-          }),
-        );
-      }
       group.append(
         modelGlyph(
           observation.model,
