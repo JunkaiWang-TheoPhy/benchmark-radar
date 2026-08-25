@@ -908,7 +908,7 @@ benchmarks:
     url: https://arxiv.org/abs/2512.12772
     released: 2025-12-14
     caveat: >-
-      An ICLR 2026 submission for joint audio-visual reasoning in Omni-LLMs,
+      An ICLR 2026 poster on joint audio-visual reasoning in Omni-LLMs,
       built with strict audio-video correlation across five cognitive
       dimensions and four audio information types. Because the question set
       requires both modalities, vendors that only report vision-only or
@@ -924,23 +924,27 @@ benchmarks:
     caveat: >-
       1,000 audio-visual reasoning questions over 628 videos (seconds to 30
       minutes long), targeting synergistic audio-visual understanding in Omni
-      MLLMs, by the NJU-LINK team. Video length and audio-video correlation
+      MLLMs, by the NJU-LINK team; an ICLR 2026 poster. Video length and audio-video correlation
       vary widely, so per-model results depend heavily on which subset is
       sampled and on frame/audio chunking strategy.
 
   - id: asi_bench
     name: ASI-Bench
     aliases: ["ASI-Bench", "ASI Bench"]
-    domain: agent
-    url: https://github.com/apexin-ai/ASI-Bench
+    domain: science
+    url: https://arxiv.org/abs/2608.17271
     released: 2026-08-18
     caveat: >-
       First benchmark that jointly evaluates general intelligence, innovation,
       and autonomous execution, via 60 project-level scientific research tasks
       spanning 11 domains, progressively withdrawing human guidance. Very new
-      (arXiv 2026-08-18, seed 31415 instances public) and intended to probe
-      superintelligence-level behaviour, so high variance across seeds and
-      scaffolds should be expected before any vendor adopts it.
+      (arXiv 2608.17271, code at github.com/apexin-ai/ASI-Bench) and intended
+      to probe superintelligence-level behaviour, so high variance across seeds
+      and scaffolds should be expected before any vendor adopts it. Only the
+      seed-31415 instances are public; the seed-42 references stay private for
+      official leaderboard scoring, so a locally computed score and a
+      leaderboard score are not the same measurement. This registry's
+      maintainer is one of the benchmark's authors.
 
   - id: swe_bench_science
     name: SWE-bench Science
