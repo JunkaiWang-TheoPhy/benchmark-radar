@@ -18,6 +18,34 @@ any report, launch note, TLDR, screenshot, GIF, demo, dashboard, or UI surface.
   screenshots, short GIFs, and compact summaries that make the work easy to
   scan, review, forward, or explain upward.
 
+### Preserve visual identity during simplification
+
+- Separate redundant text from visual identity. You may remove a person's name
+  or handle when the destination already identifies that person. Keep the
+  platform logo, brand treatment, badge shape, and platform label that help a
+  reader recognize the link.
+- Preserve the component type and its established style. Do not turn a badge,
+  icon, or other visual affordance into a plain text link unless the task asks
+  for that redesign.
+- Keep destination specificity in the link target. A generic platform label
+  may link to a specific person's profile; the visible label does not need to
+  repeat the person's identity.
+- Before deleting an element, classify its role: content, visual identity,
+  interaction, or destination. Remove redundant content only. Keep the visual
+  identity, interaction, and destination intact unless the request says to
+  change them.
+
+Examples:
+
+- X: keep the original X badge and link it to `https://x.com/ktwu01`. Do not
+  replace the badge with the plain handle `@ktwu01` or the person's name.
+- LinkedIn: keep the original LinkedIn badge with the visible label `LinkedIn`
+  and link it to the specific profile. Do not put `Koutian Wu` in the badge or
+  use badge text such as `LinkedIn-Koutian%20Wu`.
+- Google Scholar: keep the badge label `Google Scholar` and link it to the
+  specific Scholar profile. Do not use badge text such as
+  `Google%20Scholar-Koutian%20Wu`.
+
 ## Glob rule: Benchmark Radar audience
 
 Applies to `README*`, `docs/**`, `.github/ISSUE_TEMPLATE/**`, `site/**`,
