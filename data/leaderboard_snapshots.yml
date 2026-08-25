@@ -32,6 +32,18 @@
 #
 # Adding a snapshot: append an entry, commit the CSV beside it, run
 # `benchmark-radar rebuild`.
+#
+# WHAT THIS FILE DOES NOT LIST
+#
+# Two committed snapshots sit in `data/leaderboard_snapshots/` without an entry
+# here, because this loader certifies one shape and theirs is a different one.
+# `opencompass_round2/` is a JSONL export read by `external_opencompass.py`, and
+# `artificial_analysis_2026-08-25/` is three normalized tables read by
+# `external_artificial_analysis.py`: its scores join to a separate models file
+# by id, and one (evaluation, model) pair can hold more than one row because an
+# evaluation can publish more than one metric. Each of those snapshots ships its
+# own manifest and is certified against it by its own module, so completeness is
+# still checked, just not here.
 
 schema_version: 1
 
