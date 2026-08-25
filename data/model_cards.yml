@@ -901,6 +901,62 @@ benchmarks:
       headline number should not be expected. Not to be confused with the
       llm-stats "RSI Index" record, which is a different instrument.
 
+  - id: jointavbench
+    name: JointAVBench
+    aliases: ["JointAVBench", "Joint AV-Bench"]
+    domain: multimodal
+    url: https://arxiv.org/abs/2512.12772
+    released: 2025-12-14
+    caveat: >-
+      An ICLR 2026 submission for joint audio-visual reasoning in Omni-LLMs,
+      built with strict audio-video correlation across five cognitive
+      dimensions and four audio information types. Because the question set
+      requires both modalities, vendors that only report vision-only or
+      audio-only figures are not comparable on this instrument. Automated
+      annotation pipeline; manual verification effort is not quantified.
+
+  - id: omnivideobench
+    name: OmniVideoBench
+    aliases: ["OmniVideoBench", "Omni Video-Bench"]
+    domain: multimodal
+    url: https://arxiv.org/abs/2510.10689
+    released: 2025-10-12
+    caveat: >-
+      1,000 audio-visual reasoning questions over 628 videos (seconds to 30
+      minutes long), targeting synergistic audio-visual understanding in Omni
+      MLLMs, by the NJU-LINK team. Video length and audio-video correlation
+      vary widely, so per-model results depend heavily on which subset is
+      sampled and on frame/audio chunking strategy.
+
+  - id: asi_bench
+    name: ASI-Bench
+    aliases: ["ASI-Bench", "ASI Bench"]
+    domain: agent
+    url: https://github.com/apexin-ai/ASI-Bench
+    released: 2026-08-18
+    caveat: >-
+      First benchmark that jointly evaluates general intelligence, innovation,
+      and autonomous execution, via 60 project-level scientific research tasks
+      spanning 11 domains, progressively withdrawing human guidance. Very new
+      (arXiv 2026-08-18, seed 31415 instances public) and intended to probe
+      superintelligence-level behaviour, so high variance across seeds and
+      scaffolds should be expected before any vendor adopts it.
+
+  - id: swe_bench_science
+    name: SWE-bench Science
+    aliases: ["SWE-bench Science", "SWE-Bench-Science", "SWE Bench Science"]
+    domain: coding_agent
+    url: https://arxiv.org/abs/2608.19799
+    released: 2026-08-20
+    caveat: >-
+      Repository-level scientific software engineering benchmark from the
+      OpenMOSS team (Fudan): 119 tasks across 98 GitHub repositories in 20
+      scientific domains, organized into Issue-driven, Expert-exploratory, and
+      Engineering-integration paradigms. Best reported pass@1 is below 50%
+      (Claude Code with Opus-5 max), and the paper identifies four recurring
+      failure mechanisms, so scores are highly sensitive to scientific-domain
+      knowledge and tool access, not only to coding ability.
+
 # Model cards, technical reports and release posts.
 #
 # `organization` is the publisher of the document. `benchmarks` is the set of
