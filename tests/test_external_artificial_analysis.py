@@ -209,3 +209,43 @@ def test_shards_file_scores_under_this_source_not_llm_stats(
     for path in (tmp_path / "benchmarks").glob("*.json"):
         shard = json.loads(path.read_text(encoding="utf-8"))
         assert set(shard["scores_by_source"]) == {ARTIFICIAL_ANALYSIS_SOURCE}
+
+
+def test_a_new_source_cannot_rename_an_existing_model(normalized: dict) -> None:
+    """`model_key` folds punctuation, so "GPT-5 High" and "GPT-5 (high)" are one
+    model with two spellings, and whoever is read first names it. Left to the
+    shard glob that was alphabetical by filename, which silently renamed 22
+    already-published models and orphaned their frozen logo IDs.
+    """
+    from benchmark_radar.models_registry import _CRAWLED_SOURCE_PRECEDENCE
+
+    # llm-stats is the incumbent: its spellings are already published and
+    # already carry logo IDs, so it names the models it shares with a newcomer.
+    assert _CRAWLED_SOURCE_PRECEDENCE.index("llm_stats") < _CRAWLED_SOURCE_PRECEDENCE.index(
+        ARTIFICIAL_ANALYSIS_SOURCE
+    )
+
+
+def test_vendor_spellings_fold_into_one_organization(normalized: dict) -> None:
+    """Confirmed by reading the model lines on both sides, not by name shape:
+    unmapped, these were 20 duplicate models, one under each spelling.
+    """
+    organizations = {obs["organization"] for obs in normalized["score_observations"]}
+    for spelling in ("Alibaba", "Kimi", "SpaceXAI", "Z AI"):
+        assert spelling not in organizations
+    for canonical in ("Qwen", "Moonshot AI", "xAI", "Z.ai"):
+        assert canonical in organizations
+
+
+def test_multi_metric_evaluations_are_flagged_for_the_chart(normalized: dict) -> None:
+    """A chart draws one metric. GDPval's Elo runs 1,000 to 1,800 and its
+    normalized score runs 0 to 1, so the series has to say there are two.
+    """
+    series = next(
+        item for item in normalized["score_series"] if item["key"].endswith(":gdpval-aa-v2")
+    )
+    assert len(series["components"]) == 2
+    # The renderer picks the component the source normalized, so exactly one of
+    # the two has to carry a normalized count for that choice to be decidable.
+    normalized_counts = sorted(item["normalized_count"] for item in series["components"])
+    assert normalized_counts == [0, 213]

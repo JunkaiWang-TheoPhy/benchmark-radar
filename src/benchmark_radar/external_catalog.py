@@ -90,6 +90,16 @@ CANONICAL_ORGANIZATIONS = {
     "Alibaba Cloud / Qwen Team": "Qwen",
     "Mistral AI": "Mistral",
     "Zhipu AI": "Z.ai",
+    # Artificial Analysis spells the same four vendors its own way. Each pair
+    # below was confirmed the same way as the three above, by reading the model
+    # lines on both sides rather than by name similarity: the `Alibaba` rows are
+    # 14 Qwen models, `Kimi` publishes the Kimi K2 line Moonshot AI publishes,
+    # `SpaceXAI` publishes Grok, and `Z AI` publishes GLM. Left unmapped these
+    # were 20 duplicate models on the site, one under each spelling.
+    "Alibaba": "Qwen",
+    "Kimi": "Moonshot AI",
+    "SpaceXAI": "xAI",
+    "Z AI": "Z.ai",
 }
 
 

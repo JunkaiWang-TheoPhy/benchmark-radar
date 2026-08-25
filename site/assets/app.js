@@ -4179,7 +4179,13 @@ const EXTERNAL_SOURCE_META = {
       // two it can say how it measured. That is worth stating plainly: the
       // reader is being told these numbers came from one lab's own runs, and
       // the date is still the model's release rather than the test date.
-      "Scores measured by Artificial Analysis running the test itself, not numbers reported by the model makers. Higher values are better. Every row records which version of their method was used, so rows from the same version were measured the same way. The date shown is each model's own release date, not the day the test was run.",
+      //
+      // The method-version sentence is deliberately not here. 2,516 of the
+      // 7,050 rows record no version, across 14 of the 24 evaluations, so
+      // "every row records a version" would be false for more than a third of
+      // what the reader is looking at. Where a version exists it is on the
+      // series, which is where a claim about it can be checked.
+      "Scores measured by Artificial Analysis running the test itself, not numbers reported by the model makers. Higher values are better. The date shown is each model's own release date, not the day the test was run.",
     emptyKey: "Artificial Analysis recorded no scores for this benchmark.",
   },
 };
@@ -4465,8 +4471,33 @@ function externalScoresBlock(shard) {
 // height, and a row with no parseable release date has no honest x once the
 // axis is time. Shared with the (i) note so the note describes the axis the
 // reader is actually looking at rather than a differently filtered set.
+// One chart draws one metric. An evaluation may publish more than one:
+// GDPval-AA v2 reports a raw Elo around 1,000 to 1,800 and a normalized score
+// between 0 and 1 for the same models. Drawn together they are not a series,
+// they are two series stacked on one axis, and the normalized half collapses
+// onto the baseline while the "best score" reads off the Elo half.
+//
+// The drawn component is the one the source itself normalized, because that is
+// the one with a stated output range and so the only one that can share an
+// axis honestly. Ties break toward the larger component, then by name, so the
+// choice is stable across rebuilds. The component that is not drawn is named
+// in the (i) note rather than silently dropped.
+function externalPrimaryComponent(payload) {
+  const components = payload.series?.components || [];
+  if (components.length < 2) return null;
+  const ranked = [...components].sort(
+    (a, b) =>
+      (b.normalized_count || 0) - (a.normalized_count || 0) ||
+      (b.observation_count || 0) - (a.observation_count || 0) ||
+      String(a.component).localeCompare(String(b.component)),
+  );
+  return ranked[0].component;
+}
+
 function externalPlottedRows(payload) {
+  const primary = externalPrimaryComponent(payload);
   return (payload.rows || [])
+    .filter((row) => primary === null || row.metric_component === primary)
     .filter((row) => typeof row.value === "number" && Number.isFinite(row.value))
     .filter((row) => Number.isFinite(dateValue(row.reported_date)))
     .sort((a, b) => dateValue(a.reported_date) - dateValue(b.reported_date) || a.value - b.value);
@@ -4726,8 +4757,21 @@ function externalScoreChart(source, payload) {
               },
             ]
           : []),
-        { label: t("Reported by"), value: t("self reported") },
-        ...(thirdParty ? [{ label: t("Cited by"), value: meta.name }] : []),
+        // Who produced the number, read off the row rather than assumed. The
+        // label was hardcoded to "self reported" while llm-stats was the only
+        // source drawing points here, and every llm-stats row is a vendor's own
+        // claim. Artificial Analysis ran the test itself and says so on the
+        // row, so the same hardcoded label would tell the reader the opposite
+        // of what the data records.
+        ...(row.measurement_owner
+          ? [
+              { label: t("Measured by"), value: row.measurement_owner },
+              { label: t("Listed by"), value: meta.name },
+            ]
+          : [
+              { label: t("Reported by"), value: t("self reported") },
+              ...(thirdParty ? [{ label: t("Cited by"), value: meta.name }] : []),
+            ]),
       ],
       url: row.source_url,
     });
@@ -4834,8 +4878,25 @@ function externalSourceTable(source, payload) {
   // Rows the chart cannot place are declared in the (i) note rather than on the
   // axis label, which names the date and nothing else (issue #298). Dropping
   // the count entirely would hide scores that exist.
+  // Naming the metric that is drawn, and the ones that are not, so a reader
+  // comparing this chart against the source's own page is never silently
+  // looking at a different number than the one they expect.
+  const primaryComponent = externalPrimaryComponent(payload);
+  if (primaryComponent) {
+    const others = (series.components || [])
+      .map((item) => item.component)
+      .filter((name) => name !== primaryComponent);
+    notes.push(
+      t(
+        "This test publishes more than one kind of number, and they use different scales. The chart draws {drawn} only. Also published, and shown in the source's own pages rather than here: {others}.",
+      )
+        .replace("{drawn}", primaryComponent)
+        .replace("{others}", others.join(", ")),
+    );
+  }
   const undated = (payload.rows || []).filter(
     (row) =>
+      (primaryComponent === null || row.metric_component === primaryComponent) &&
       typeof row.value === "number" &&
       Number.isFinite(row.value) &&
       !Number.isFinite(dateValue(row.reported_date)),

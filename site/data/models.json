@@ -1,14 +1,13 @@
 {
   "schema_version": 1,
-  "model_count": 880,
+  "model_count": 860,
   "curated_only": 15,
-  "crawled_only": 846,
+  "crawled_only": 826,
   "both_layers": 19,
   "organizations": [
     "AI21 Labs",
     "AI9Stars",
     "Ai2",
-    "Alibaba",
     "Allen Institute for AI",
     "Amazon",
     "Anthropic",
@@ -26,7 +25,6 @@
     "IBM",
     "Inception",
     "InclusionAI",
-    "Kimi",
     "Korea Telecom",
     "KwaiKAT",
     "LG AI Research",
@@ -60,7 +58,6 @@
     "Sarvam",
     "Sarvam AI",
     "ServiceNow",
-    "SpaceXAI",
     "StepFun",
     "Swiss AI Initiative",
     "TII UAE",
@@ -70,7 +67,6 @@
     "Trillion Labs",
     "Upstage",
     "Xiaomi",
-    "Z AI",
     "Z.ai",
     "xAI"
   ],
@@ -183,941 +179,6 @@
       ],
       "source_counts": {
         "crawled": 10
-      }
-    },
-    {
-      "key": "alibaba-qwen1-5-chat-110b",
-      "model": "Qwen1.5 Chat 110B",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 1
-      }
-    },
-    {
-      "key": "alibaba-qwen2-5-coder-instruct-32b",
-      "model": "Qwen2.5 Coder Instruct 32B",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 4
-      }
-    },
-    {
-      "key": "alibaba-qwen2-5-coder-instruct-7b",
-      "model": "Qwen2.5 Coder Instruct 7B",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 4
-      }
-    },
-    {
-      "key": "alibaba-qwen2-5-instruct-32b",
-      "model": "Qwen2.5 Instruct 32B",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 4
-      }
-    },
-    {
-      "key": "alibaba-qwen2-5-instruct-72b",
-      "model": "Qwen2.5 Instruct 72B",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen2-5-max",
-      "model": "Qwen2.5 Max",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 4
-      }
-    },
-    {
-      "key": "alibaba-qwen2-5-turbo",
-      "model": "Qwen2.5 Turbo",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 4
-      }
-    },
-    {
-      "key": "alibaba-qwen2-instruct-72b",
-      "model": "Qwen2 Instruct 72B",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 4
-      }
-    },
-    {
-      "key": "alibaba-qwen3-0-6b-non-reasoning",
-      "model": "Qwen3 0.6B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-0-6b-reasoning",
-      "model": "Qwen3 0.6B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-1-7b-non-reasoning",
-      "model": "Qwen3 1.7B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-1-7b-reasoning",
-      "model": "Qwen3 1.7B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-14b-non-reasoning",
-      "model": "Qwen3 14B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-14b-reasoning",
-      "model": "Qwen3 14B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 16
-      }
-    },
-    {
-      "key": "alibaba-qwen3-235b-a22b-2507-instruct",
-      "model": "Qwen3 235B A22B 2507 Instruct",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-235b-a22b-2507-reasoning",
-      "model": "Qwen3 235B A22B 2507 (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 16
-      }
-    },
-    {
-      "key": "alibaba-qwen3-235b-a22b-non-reasoning",
-      "model": "Qwen3 235B A22B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-235b-a22b-reasoning",
-      "model": "Qwen3 235B A22B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-30b-a3b-2507-instruct",
-      "model": "Qwen3 30B A3B 2507 Instruct",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-30b-a3b-2507-reasoning",
-      "model": "Qwen3 30B A3B 2507 (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 16
-      }
-    },
-    {
-      "key": "alibaba-qwen3-30b-a3b-non-reasoning",
-      "model": "Qwen3 30B A3B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-30b-a3b-reasoning",
-      "model": "Qwen3 30B A3B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-32b-non-reasoning",
-      "model": "Qwen3 32B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 7
-      }
-    },
-    {
-      "key": "alibaba-qwen3-32b-reasoning",
-      "model": "Qwen3 32B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 16
-      }
-    },
-    {
-      "key": "alibaba-qwen3-4b-2507-instruct",
-      "model": "Qwen3 4B 2507 Instruct",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-4b-2507-reasoning",
-      "model": "Qwen3 4B 2507 (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-4b-non-reasoning",
-      "model": "Qwen3 4B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 4
-      }
-    },
-    {
-      "key": "alibaba-qwen3-4b-reasoning",
-      "model": "Qwen3 4B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 8
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-0-8b-non-reasoning",
-      "model": "Qwen3.5 0.8B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 14
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-0-8b-reasoning",
-      "model": "Qwen3.5 0.8B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 14
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-122b-a10b-non-reasoning",
-      "model": "Qwen3.5 122B A10B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 15
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-122b-a10b-reasoning",
-      "model": "Qwen3.5 122B A10B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 15
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-27b-non-reasoning",
-      "model": "Qwen3.5 27B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 11
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-27b-reasoning",
-      "model": "Qwen3.5 27B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-2b-non-reasoning",
-      "model": "Qwen3.5 2B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 14
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-2b-reasoning",
-      "model": "Qwen3.5 2B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 14
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-35b-a3b-non-reasoning",
-      "model": "Qwen3.5 35B A3B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 15
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-35b-a3b-reasoning",
-      "model": "Qwen3.5 35B A3B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-397b-a17b-non-reasoning",
-      "model": "Qwen3.5 397B A17B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 11
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-397b-a17b-reasoning",
-      "model": "Qwen3.5 397B A17B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 21
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-4b-non-reasoning",
-      "model": "Qwen3.5 4B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-4b-reasoning",
-      "model": "Qwen3.5 4B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-9b-non-reasoning",
-      "model": "Qwen3.5 9B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-9b-reasoning",
-      "model": "Qwen3.5 9B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 15
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-omni-flash",
-      "model": "Qwen3.5 Omni Flash",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 11
-      }
-    },
-    {
-      "key": "alibaba-qwen3-5-omni-plus",
-      "model": "Qwen3.5 Omni Plus",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 11
-      }
-    },
-    {
-      "key": "alibaba-qwen3-6-27b-non-reasoning",
-      "model": "Qwen3.6 27B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 15
-      }
-    },
-    {
-      "key": "alibaba-qwen3-6-27b-reasoning",
-      "model": "Qwen3.6 27B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 17
-      }
-    },
-    {
-      "key": "alibaba-qwen3-6-35b-a3b-non-reasoning",
-      "model": "Qwen3.6 35B A3B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 15
-      }
-    },
-    {
-      "key": "alibaba-qwen3-6-35b-a3b-reasoning",
-      "model": "Qwen3.6 35B A3B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 15
-      }
-    },
-    {
-      "key": "alibaba-qwen3-6-max-preview",
-      "model": "Qwen3.6 Max Preview",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 10
-      }
-    },
-    {
-      "key": "alibaba-qwen3-6-plus",
-      "model": "Qwen3.6 Plus",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 16
-      }
-    },
-    {
-      "key": "alibaba-qwen3-7-max",
-      "model": "Qwen3.7 Max",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 20
-      }
-    },
-    {
-      "key": "alibaba-qwen3-7-plus",
-      "model": "Qwen3.7 Plus",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 20
-      }
-    },
-    {
-      "key": "alibaba-qwen3-8-2-4t-a95b",
-      "model": "Qwen3.8 2.4T A95B",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 11
-      }
-    },
-    {
-      "key": "alibaba-qwen3-8-27b-low",
-      "model": "Qwen3.8 27B (low)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-8-27b-medium",
-      "model": "Qwen3.8 27B (medium)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-8-27b-non-reasoning",
-      "model": "Qwen3.8 27B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-8-27b-xhigh",
-      "model": "Qwen3.8 27B (xhigh)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-8-max",
-      "model": "Qwen3.8 Max",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 14
-      }
-    },
-    {
-      "key": "alibaba-qwen3-8b-non-reasoning",
-      "model": "Qwen3 8B (Non-reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-8b-reasoning",
-      "model": "Qwen3 8B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 16
-      }
-    },
-    {
-      "key": "alibaba-qwen3-coder-30b-a3b-instruct",
-      "model": "Qwen3 Coder 30B A3B Instruct",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-coder-480b-a35b-instruct",
-      "model": "Qwen3 Coder 480B A35B Instruct",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-coder-next",
-      "model": "Qwen3 Coder Next",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 14
-      }
-    },
-    {
-      "key": "alibaba-qwen3-max",
-      "model": "Qwen3 Max",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-max-preview",
-      "model": "Qwen3 Max (Preview)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-max-thinking",
-      "model": "Qwen3 Max Thinking",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 10
-      }
-    },
-    {
-      "key": "alibaba-qwen3-max-thinking-preview",
-      "model": "Qwen3 Max Thinking (Preview)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-next-80b-a3b-instruct",
-      "model": "Qwen3 Next 80B A3B Instruct",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "alibaba-qwen3-next-80b-a3b-reasoning",
-      "model": "Qwen3 Next 80B A3B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 16
-      }
-    },
-    {
-      "key": "alibaba-qwen3-omni-30b-a3b-instruct",
-      "model": "Qwen3 Omni 30B A3B Instruct",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "alibaba-qwen3-omni-30b-a3b-reasoning",
-      "model": "Qwen3 Omni 30B A3B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "alibaba-qwen3-vl-235b-a22b-instruct",
-      "model": "Qwen3 VL 235B A22B Instruct",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "alibaba-qwen3-vl-235b-a22b-reasoning",
-      "model": "Qwen3 VL 235B A22B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "alibaba-qwen3-vl-30b-a3b-instruct",
-      "model": "Qwen3 VL 30B A3B Instruct",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "alibaba-qwen3-vl-30b-a3b-reasoning",
-      "model": "Qwen3 VL 30B A3B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "alibaba-qwen3-vl-32b-instruct",
-      "model": "Qwen3 VL 32B Instruct",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "alibaba-qwen3-vl-32b-reasoning",
-      "model": "Qwen3 VL 32B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "alibaba-qwen3-vl-4b-instruct",
-      "model": "Qwen3 VL 4B Instruct",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "alibaba-qwen3-vl-4b-reasoning",
-      "model": "Qwen3 VL 4B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "alibaba-qwen3-vl-8b-instruct",
-      "model": "Qwen3 VL 8B Instruct",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "alibaba-qwen3-vl-8b-reasoning",
-      "model": "Qwen3 VL 8B (Reasoning)",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "alibaba-qwq-32b",
-      "model": "QwQ 32B",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 7
-      }
-    },
-    {
-      "key": "alibaba-qwq-32b-preview",
-      "model": "QwQ 32B-Preview",
-      "organization": "Alibaba",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 4
       }
     },
     {
@@ -2547,7 +1608,7 @@
     },
     {
       "key": "deepseek-deepseek-v3-0324",
-      "model": "DeepSeek V3 0324",
+      "model": "DeepSeek-V3 0324",
       "organization": "DeepSeek",
       "layers": [
         "crawled"
@@ -2679,7 +1740,7 @@
     },
     {
       "key": "deepseek-deepseek-v3-2-speciale",
-      "model": "DeepSeek V3.2 Speciale",
+      "model": "DeepSeek-V3.2-Speciale",
       "organization": "DeepSeek",
       "layers": [
         "crawled"
@@ -2923,7 +1984,7 @@
     },
     {
       "key": "google-diffusiongemma-26b-a4b",
-      "model": "DiffusionGemma 26B A4B",
+      "model": "DiffusionGemma 26B-A4B",
       "organization": "Google",
       "layers": [
         "crawled"
@@ -2967,7 +2028,7 @@
     },
     {
       "key": "google-gemini-1-5-flash-8b",
-      "model": "Gemini 1.5 Flash-8B",
+      "model": "Gemini 1.5 Flash 8B",
       "organization": "Google",
       "layers": [
         "crawled"
@@ -4226,127 +3287,6 @@
       }
     },
     {
-      "key": "kimi-kimi-k2",
-      "model": "Kimi K2",
-      "organization": "Kimi",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "kimi-kimi-k2-0905",
-      "model": "Kimi K2 0905",
-      "organization": "Kimi",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "kimi-kimi-k2-5-non-reasoning",
-      "model": "Kimi K2.5 (Non-reasoning)",
-      "organization": "Kimi",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 11
-      }
-    },
-    {
-      "key": "kimi-kimi-k2-5-reasoning",
-      "model": "Kimi K2.5 (Reasoning)",
-      "organization": "Kimi",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 16
-      }
-    },
-    {
-      "key": "kimi-kimi-k2-6",
-      "model": "Kimi K2.6",
-      "organization": "Kimi",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 21
-      }
-    },
-    {
-      "key": "kimi-kimi-k2-6-non-reasoning",
-      "model": "Kimi K2.6 (Non-reasoning)",
-      "organization": "Kimi",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 10
-      }
-    },
-    {
-      "key": "kimi-kimi-k2-7-code",
-      "model": "Kimi K2.7 Code",
-      "organization": "Kimi",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 18
-      }
-    },
-    {
-      "key": "kimi-kimi-k2-thinking",
-      "model": "Kimi K2 Thinking",
-      "organization": "Kimi",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "kimi-kimi-k3-low",
-      "model": "Kimi K3 (low)",
-      "organization": "Kimi",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "kimi-kimi-k3-max",
-      "model": "Kimi K3 (max)",
-      "organization": "Kimi",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 20
-      }
-    },
-    {
-      "key": "kimi-kimi-linear-48b-a3b-instruct",
-      "model": "Kimi Linear 48B A3B Instruct",
-      "organization": "Kimi",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 9
-      }
-    },
-    {
       "key": "korea-telecom-mi-dm-k-2-5-pro",
       "model": "Mi:dm K 2.5 Pro",
       "organization": "Korea Telecom",
@@ -5140,7 +4080,7 @@
     },
     {
       "key": "microsoft-phi-4",
-      "model": "Phi-4",
+      "model": "Phi 4",
       "organization": "Microsoft",
       "layers": [
         "crawled"
@@ -5184,7 +4124,7 @@
     },
     {
       "key": "microsoft-phi-4-multimodal-instruct",
-      "model": "Phi-4 Multimodal Instruct",
+      "model": "Phi-4-multimodal-instruct",
       "organization": "Microsoft",
       "layers": [
         "crawled"
@@ -5217,7 +4157,7 @@
     },
     {
       "key": "minimax-minimax-m1-40k",
-      "model": "MiniMax M1 40k",
+      "model": "MiniMax M1 40K",
       "organization": "MiniMax",
       "layers": [
         "crawled"
@@ -5228,7 +4168,7 @@
     },
     {
       "key": "minimax-minimax-m1-80k",
-      "model": "MiniMax M1 80k",
+      "model": "MiniMax M1 80K",
       "organization": "MiniMax",
       "layers": [
         "crawled"
@@ -5239,7 +4179,7 @@
     },
     {
       "key": "minimax-minimax-m2",
-      "model": "MiniMax-M2",
+      "model": "MiniMax M2",
       "organization": "MiniMax",
       "layers": [
         "crawled"
@@ -5250,7 +4190,7 @@
     },
     {
       "key": "minimax-minimax-m2-1",
-      "model": "MiniMax-M2.1",
+      "model": "MiniMax M2.1",
       "organization": "MiniMax",
       "layers": [
         "crawled"
@@ -5261,7 +4201,7 @@
     },
     {
       "key": "minimax-minimax-m2-5",
-      "model": "MiniMax-M2.5",
+      "model": "MiniMax M2.5",
       "organization": "MiniMax",
       "layers": [
         "crawled"
@@ -5272,7 +4212,7 @@
     },
     {
       "key": "minimax-minimax-m2-7",
-      "model": "MiniMax-M2.7",
+      "model": "MiniMax M2.7",
       "organization": "MiniMax",
       "layers": [
         "crawled"
@@ -5283,7 +4223,7 @@
     },
     {
       "key": "minimax-minimax-m3",
-      "model": "MiniMax-M3",
+      "model": "MiniMax M3",
       "organization": "MiniMax",
       "layers": [
         "crawled"
@@ -5979,6 +4919,17 @@
       }
     },
     {
+      "key": "moonshot-ai-kimi-k2",
+      "model": "Kimi K2",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
       "key": "moonshot-ai-kimi-k2-0905",
       "model": "Kimi K2 0905",
       "organization": "Moonshot AI",
@@ -5986,7 +4937,7 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 6
+        "crawled": 18
       }
     },
     {
@@ -6001,6 +4952,28 @@
       }
     },
     {
+      "key": "moonshot-ai-kimi-k2-5-non-reasoning",
+      "model": "Kimi K2.5 (Non-reasoning)",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "moonshot-ai-kimi-k2-5-reasoning",
+      "model": "Kimi K2.5 (Reasoning)",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
       "key": "moonshot-ai-kimi-k2-6",
       "model": "Kimi K2.6",
       "organization": "Moonshot AI",
@@ -6008,7 +4981,18 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 28
+        "crawled": 49
+      }
+    },
+    {
+      "key": "moonshot-ai-kimi-k2-6-non-reasoning",
+      "model": "Kimi K2.6 (Non-reasoning)",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 10
       }
     },
     {
@@ -6019,7 +5003,7 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 9
+        "crawled": 27
       }
     },
     {
@@ -6056,6 +5040,17 @@
       }
     },
     {
+      "key": "moonshot-ai-kimi-k2-thinking",
+      "model": "Kimi K2 Thinking",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
       "key": "moonshot-ai-kimi-k2-thinking-0905",
       "model": "Kimi K2-Thinking-0905",
       "organization": "Moonshot AI",
@@ -6077,6 +5072,39 @@
       "source_counts": {
         "curated": 1,
         "crawled": 31
+      }
+    },
+    {
+      "key": "moonshot-ai-kimi-k3-low",
+      "model": "Kimi K3 (low)",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "moonshot-ai-kimi-k3-max",
+      "model": "Kimi K3 (max)",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 20
+      }
+    },
+    {
+      "key": "moonshot-ai-kimi-linear-48b-a3b-instruct",
+      "model": "Kimi Linear 48B A3B Instruct",
+      "organization": "Moonshot AI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 9
       }
     },
     {
@@ -6756,7 +5784,7 @@
     },
     {
       "key": "openai-gpt-5-1-codex-high",
-      "model": "GPT-5.1 Codex (high)",
+      "model": "GPT-5.1 Codex High",
       "organization": "OpenAI",
       "layers": [
         "crawled"
@@ -6789,7 +5817,7 @@
     },
     {
       "key": "openai-gpt-5-1-high",
-      "model": "GPT-5.1 (high)",
+      "model": "GPT-5.1 High",
       "organization": "OpenAI",
       "layers": [
         "crawled"
@@ -7504,7 +6532,7 @@
     },
     {
       "key": "openai-gpt-5-high",
-      "model": "GPT-5 (high)",
+      "model": "GPT-5 High",
       "organization": "OpenAI",
       "layers": [
         "crawled"
@@ -7526,7 +6554,7 @@
     },
     {
       "key": "openai-gpt-5-medium",
-      "model": "GPT-5 (medium)",
+      "model": "GPT-5 Medium",
       "organization": "OpenAI",
       "layers": [
         "crawled"
@@ -7647,7 +6675,7 @@
     },
     {
       "key": "openai-gpt-oss-120b-high",
-      "model": "gpt-oss-120b (high)",
+      "model": "GPT OSS 120B High",
       "organization": "OpenAI",
       "layers": [
         "crawled"
@@ -7680,7 +6708,7 @@
     },
     {
       "key": "openai-gpt-oss-20b-high",
-      "model": "gpt-oss-20b (high)",
+      "model": "GPT OSS 20B High",
       "organization": "OpenAI",
       "layers": [
         "crawled"
@@ -7954,6 +6982,17 @@
       }
     },
     {
+      "key": "qwen-qwen1-5-chat-110b",
+      "model": "Qwen1.5 Chat 110B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 1
+      }
+    },
+    {
       "key": "qwen-qwen2-5-14b-instruct",
       "model": "Qwen2.5 14B Instruct",
       "organization": "Qwen",
@@ -8031,6 +7070,61 @@
       }
     },
     {
+      "key": "qwen-qwen2-5-coder-instruct-32b",
+      "model": "Qwen2.5 Coder Instruct 32B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-coder-instruct-7b",
+      "model": "Qwen2.5 Coder Instruct 7B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-instruct-32b",
+      "model": "Qwen2.5 Instruct 32B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-instruct-72b",
+      "model": "Qwen2.5 Instruct 72B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-max",
+      "model": "Qwen2.5 Max",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
       "key": "qwen-qwen2-5-omni-7b",
       "model": "Qwen2.5-Omni-7B",
       "organization": "Qwen",
@@ -8039,6 +7133,17 @@
       ],
       "source_counts": {
         "crawled": 45
+      }
+    },
+    {
+      "key": "qwen-qwen2-5-turbo",
+      "model": "Qwen2.5 Turbo",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
       }
     },
     {
@@ -8097,6 +7202,17 @@
       }
     },
     {
+      "key": "qwen-qwen2-instruct-72b",
+      "model": "Qwen2 Instruct 72B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
       "key": "qwen-qwen2-vl-72b-instruct",
       "model": "Qwen2-VL-72B-Instruct",
       "organization": "Qwen",
@@ -8119,6 +7235,72 @@
       }
     },
     {
+      "key": "qwen-qwen3-0-6b-non-reasoning",
+      "model": "Qwen3 0.6B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-0-6b-reasoning",
+      "model": "Qwen3 0.6B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-1-7b-non-reasoning",
+      "model": "Qwen3 1.7B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-1-7b-reasoning",
+      "model": "Qwen3 1.7B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-14b-non-reasoning",
+      "model": "Qwen3 14B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-14b-reasoning",
+      "model": "Qwen3 14B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
       "key": "qwen-qwen3-235b-a22b",
       "model": "Qwen3 235B A22B",
       "organization": "Qwen",
@@ -8130,6 +7312,28 @@
       }
     },
     {
+      "key": "qwen-qwen3-235b-a22b-2507-instruct",
+      "model": "Qwen3 235B A22B 2507 Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-235b-a22b-2507-reasoning",
+      "model": "Qwen3 235B A22B 2507 (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
       "key": "qwen-qwen3-235b-a22b-instruct-2507",
       "model": "Qwen3-235B-A22B-Instruct-2507",
       "organization": "Qwen",
@@ -8138,6 +7342,28 @@
       ],
       "source_counts": {
         "crawled": 25
+      }
+    },
+    {
+      "key": "qwen-qwen3-235b-a22b-non-reasoning",
+      "model": "Qwen3 235B A22B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-235b-a22b-reasoning",
+      "model": "Qwen3 235B A22B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
       }
     },
     {
@@ -8163,6 +7389,50 @@
       }
     },
     {
+      "key": "qwen-qwen3-30b-a3b-2507-instruct",
+      "model": "Qwen3 30B A3B 2507 Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-30b-a3b-2507-reasoning",
+      "model": "Qwen3 30B A3B 2507 (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
+      "key": "qwen-qwen3-30b-a3b-non-reasoning",
+      "model": "Qwen3 30B A3B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-30b-a3b-reasoning",
+      "model": "Qwen3 30B A3B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
       "key": "qwen-qwen3-32b",
       "model": "Qwen3 32B",
       "organization": "Qwen",
@@ -8171,6 +7441,72 @@
       ],
       "source_counts": {
         "crawled": 9
+      }
+    },
+    {
+      "key": "qwen-qwen3-32b-non-reasoning",
+      "model": "Qwen3 32B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 7
+      }
+    },
+    {
+      "key": "qwen-qwen3-32b-reasoning",
+      "model": "Qwen3 32B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
+      "key": "qwen-qwen3-4b-2507-instruct",
+      "model": "Qwen3 4B 2507 Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-4b-2507-reasoning",
+      "model": "Qwen3 4B 2507 (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-4b-non-reasoning",
+      "model": "Qwen3 4B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "qwen-qwen3-4b-reasoning",
+      "model": "Qwen3 4B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 8
       }
     },
     {
@@ -8185,6 +7521,28 @@
       }
     },
     {
+      "key": "qwen-qwen3-5-0-8b-non-reasoning",
+      "model": "Qwen3.5 0.8B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-0-8b-reasoning",
+      "model": "Qwen3.5 0.8B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
       "key": "qwen-qwen3-5-122b-a10b",
       "model": "Qwen3.5-122B-A10B",
       "organization": "Qwen",
@@ -8193,6 +7551,28 @@
       ],
       "source_counts": {
         "crawled": 81
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-122b-a10b-non-reasoning",
+      "model": "Qwen3.5 122B A10B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-122b-a10b-reasoning",
+      "model": "Qwen3.5 122B A10B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
       }
     },
     {
@@ -8207,6 +7587,28 @@
       }
     },
     {
+      "key": "qwen-qwen3-5-27b-non-reasoning",
+      "model": "Qwen3.5 27B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-27b-reasoning",
+      "model": "Qwen3.5 27B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
       "key": "qwen-qwen3-5-2b",
       "model": "Qwen3.5-2B",
       "organization": "Qwen",
@@ -8218,6 +7620,28 @@
       }
     },
     {
+      "key": "qwen-qwen3-5-2b-non-reasoning",
+      "model": "Qwen3.5 2B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-2b-reasoning",
+      "model": "Qwen3.5 2B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
       "key": "qwen-qwen3-5-35b-a3b",
       "model": "Qwen3.5-35B-A3B",
       "organization": "Qwen",
@@ -8226,6 +7650,28 @@
       ],
       "source_counts": {
         "crawled": 81
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-35b-a3b-non-reasoning",
+      "model": "Qwen3.5 35B A3B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-35b-a3b-reasoning",
+      "model": "Qwen3.5 35B A3B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
       }
     },
     {
@@ -8242,6 +7688,28 @@
       }
     },
     {
+      "key": "qwen-qwen3-5-397b-a17b-non-reasoning",
+      "model": "Qwen3.5 397B A17B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-397b-a17b-reasoning",
+      "model": "Qwen3.5 397B A17B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 21
+      }
+    },
+    {
       "key": "qwen-qwen3-5-4b",
       "model": "Qwen3.5-4B",
       "organization": "Qwen",
@@ -8250,6 +7718,28 @@
       ],
       "source_counts": {
         "crawled": 25
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-4b-non-reasoning",
+      "model": "Qwen3.5 4B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-4b-reasoning",
+      "model": "Qwen3.5 4B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
       }
     },
     {
@@ -8264,6 +7754,50 @@
       }
     },
     {
+      "key": "qwen-qwen3-5-9b-non-reasoning",
+      "model": "Qwen3.5 9B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-9b-reasoning",
+      "model": "Qwen3.5 9B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-omni-flash",
+      "model": "Qwen3.5 Omni Flash",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "qwen-qwen3-5-omni-plus",
+      "model": "Qwen3.5 Omni Plus",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
       "key": "qwen-qwen3-6-27b",
       "model": "Qwen3.6-27B",
       "organization": "Qwen",
@@ -8272,6 +7806,28 @@
       ],
       "source_counts": {
         "crawled": 44
+      }
+    },
+    {
+      "key": "qwen-qwen3-6-27b-non-reasoning",
+      "model": "Qwen3.6 27B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "qwen-qwen3-6-27b-reasoning",
+      "model": "Qwen3.6 27B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 17
       }
     },
     {
@@ -8286,6 +7842,39 @@
       }
     },
     {
+      "key": "qwen-qwen3-6-35b-a3b-non-reasoning",
+      "model": "Qwen3.6 35B A3B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "qwen-qwen3-6-35b-a3b-reasoning",
+      "model": "Qwen3.6 35B A3B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
+      "key": "qwen-qwen3-6-max-preview",
+      "model": "Qwen3.6 Max Preview",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 10
+      }
+    },
+    {
       "key": "qwen-qwen3-6-plus",
       "model": "Qwen3.6 Plus",
       "organization": "Qwen",
@@ -8293,7 +7882,7 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 65
+        "crawled": 81
       }
     },
     {
@@ -8304,7 +7893,7 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 42
+        "crawled": 62
       }
     },
     {
@@ -8315,7 +7904,18 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 70
+        "crawled": 90
+      }
+    },
+    {
+      "key": "qwen-qwen3-8-2-4t-a95b",
+      "model": "Qwen3.8 2.4T A95B",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
       }
     },
     {
@@ -8332,6 +7932,50 @@
       }
     },
     {
+      "key": "qwen-qwen3-8-27b-low",
+      "model": "Qwen3.8 27B (low)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-8-27b-medium",
+      "model": "Qwen3.8 27B (medium)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-8-27b-non-reasoning",
+      "model": "Qwen3.8 27B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-8-27b-xhigh",
+      "model": "Qwen3.8 27B (xhigh)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
       "key": "qwen-qwen3-8-max",
       "model": "Qwen3.8 Max",
       "organization": "Qwen",
@@ -8339,7 +7983,40 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 42
+        "crawled": 56
+      }
+    },
+    {
+      "key": "qwen-qwen3-8b-non-reasoning",
+      "model": "Qwen3 8B (Non-reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-8b-reasoning",
+      "model": "Qwen3 8B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
+      }
+    },
+    {
+      "key": "qwen-qwen3-coder-30b-a3b-instruct",
+      "model": "Qwen3 Coder 30B A3B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
       }
     },
     {
@@ -8350,7 +8027,18 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 10
+        "crawled": 22
+      }
+    },
+    {
+      "key": "qwen-qwen3-coder-next",
+      "model": "Qwen3 Coder Next",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
       }
     },
     {
@@ -8361,7 +8049,40 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 6
+        "crawled": 18
+      }
+    },
+    {
+      "key": "qwen-qwen3-max-preview",
+      "model": "Qwen3 Max (Preview)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "qwen-qwen3-max-thinking",
+      "model": "Qwen3 Max Thinking",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 10
+      }
+    },
+    {
+      "key": "qwen-qwen3-max-thinking-preview",
+      "model": "Qwen3 Max Thinking (Preview)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
       }
     },
     {
@@ -8372,7 +8093,18 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 24
+        "crawled": 36
+      }
+    },
+    {
+      "key": "qwen-qwen3-next-80b-a3b-reasoning",
+      "model": "Qwen3 Next 80B A3B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 16
       }
     },
     {
@@ -8387,6 +8119,28 @@
       }
     },
     {
+      "key": "qwen-qwen3-omni-30b-a3b-instruct",
+      "model": "Qwen3 Omni 30B A3B Instruct",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
+      "key": "qwen-qwen3-omni-30b-a3b-reasoning",
+      "model": "Qwen3 Omni 30B A3B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
       "key": "qwen-qwen3-vl-235b-a22b-instruct",
       "model": "Qwen3 VL 235B A22B Instruct",
       "organization": "Qwen",
@@ -8394,7 +8148,18 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 50
+        "crawled": 63
+      }
+    },
+    {
+      "key": "qwen-qwen3-vl-235b-a22b-reasoning",
+      "model": "Qwen3 VL 235B A22B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
       }
     },
     {
@@ -8416,7 +8181,18 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 50
+        "crawled": 63
+      }
+    },
+    {
+      "key": "qwen-qwen3-vl-30b-a3b-reasoning",
+      "model": "Qwen3 VL 30B A3B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
       }
     },
     {
@@ -8438,7 +8214,18 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 45
+        "crawled": 58
+      }
+    },
+    {
+      "key": "qwen-qwen3-vl-32b-reasoning",
+      "model": "Qwen3 VL 32B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
       }
     },
     {
@@ -8460,7 +8247,18 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 45
+        "crawled": 58
+      }
+    },
+    {
+      "key": "qwen-qwen3-vl-4b-reasoning",
+      "model": "Qwen3 VL 4B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
       }
     },
     {
@@ -8482,7 +8280,18 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 46
+        "crawled": 59
+      }
+    },
+    {
+      "key": "qwen-qwen3-vl-8b-reasoning",
+      "model": "Qwen3 VL 8B (Reasoning)",
+      "organization": "Qwen",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
       }
     },
     {
@@ -8504,7 +8313,7 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 7
+        "crawled": 14
       }
     },
     {
@@ -8515,7 +8324,7 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 4
+        "crawled": 8
       }
     },
     {
@@ -8640,272 +8449,8 @@
       }
     },
     {
-      "key": "spacexai-grok-2-dec-24",
-      "model": "Grok 2 (Dec '24)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 4
-      }
-    },
-    {
-      "key": "spacexai-grok-3",
-      "model": "Grok 3",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "spacexai-grok-3-mini-reasoning-high",
-      "model": "Grok 3 mini Reasoning (high)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "spacexai-grok-4",
-      "model": "Grok 4",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "spacexai-grok-4-1-fast-non-reasoning",
-      "model": "Grok 4.1 Fast (Non-reasoning)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 14
-      }
-    },
-    {
-      "key": "spacexai-grok-4-1-fast-reasoning",
-      "model": "Grok 4.1 Fast (Reasoning)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "spacexai-grok-4-20-0309-non-reasoning",
-      "model": "Grok 4.20 0309 (Non-reasoning)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 11
-      }
-    },
-    {
-      "key": "spacexai-grok-4-20-0309-reasoning",
-      "model": "Grok 4.20 0309 (Reasoning)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "spacexai-grok-4-20-0309-v2-non-reasoning",
-      "model": "Grok 4.20 0309 v2 (Non-reasoning)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 11
-      }
-    },
-    {
-      "key": "spacexai-grok-4-20-0309-v2-reasoning",
-      "model": "Grok 4.20 0309 v2 (Reasoning)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 11
-      }
-    },
-    {
-      "key": "spacexai-grok-4-3-high",
-      "model": "Grok 4.3 (high)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 23
-      }
-    },
-    {
-      "key": "spacexai-grok-4-3-low",
-      "model": "Grok 4.3 (low)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 11
-      }
-    },
-    {
-      "key": "spacexai-grok-4-3-medium",
-      "model": "Grok 4.3 (medium)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 11
-      }
-    },
-    {
-      "key": "spacexai-grok-4-3-non-reasoning",
-      "model": "Grok 4.3 (Non-reasoning)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 15
-      }
-    },
-    {
-      "key": "spacexai-grok-4-5-high",
-      "model": "Grok 4.5 (high)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 18
-      }
-    },
-    {
-      "key": "spacexai-grok-4-6-high",
-      "model": "Grok 4.6 (high)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 14
-      }
-    },
-    {
-      "key": "spacexai-grok-4-6-low",
-      "model": "Grok 4.6 (low)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "spacexai-grok-4-6-medium",
-      "model": "Grok 4.6 (medium)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "spacexai-grok-4-6-xhigh",
-      "model": "Grok 4.6 (xhigh)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "spacexai-grok-4-fast-non-reasoning",
-      "model": "Grok 4 Fast (Non-reasoning)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "spacexai-grok-4-fast-reasoning",
-      "model": "Grok 4 Fast (Reasoning)",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
-      }
-    },
-    {
-      "key": "spacexai-grok-beta",
-      "model": "Grok Beta",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 4
-      }
-    },
-    {
-      "key": "spacexai-grok-build-0-1-0616",
-      "model": "Grok Build 0.1 0616",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
-      "key": "spacexai-grok-code-fast-1",
-      "model": "Grok Code Fast 1",
-      "organization": "SpaceXAI",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 12
-      }
-    },
-    {
       "key": "stepfun-step-3-5-flash",
-      "model": "Step 3.5 Flash",
+      "model": "Step-3.5-Flash",
       "organization": "StepFun",
       "layers": [
         "crawled"
@@ -8938,7 +8483,7 @@
     },
     {
       "key": "stepfun-step3-vl-10b",
-      "model": "Step3 VL 10B",
+      "model": "Step3-VL-10B",
       "organization": "StepFun",
       "layers": [
         "crawled"
@@ -9201,6 +8746,17 @@
       }
     },
     {
+      "key": "xai-grok-2-dec-24",
+      "model": "Grok 2 (Dec '24)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
       "key": "xai-grok-2-mini",
       "model": "Grok-2 mini",
       "organization": "xAI",
@@ -9219,7 +8775,7 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 5
+        "crawled": 17
       }
     },
     {
@@ -9234,6 +8790,17 @@
       }
     },
     {
+      "key": "xai-grok-3-mini-reasoning-high",
+      "model": "Grok 3 mini Reasoning (high)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
       "key": "xai-grok-4",
       "model": "Grok 4",
       "organization": "xAI",
@@ -9243,7 +8810,7 @@
       ],
       "source_counts": {
         "curated": 1,
-        "crawled": 7
+        "crawled": 20
       }
     },
     {
@@ -9258,8 +8825,74 @@
       }
     },
     {
+      "key": "xai-grok-4-1-fast-non-reasoning",
+      "model": "Grok 4.1 Fast (Non-reasoning)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "xai-grok-4-1-fast-reasoning",
+      "model": "Grok 4.1 Fast (Reasoning)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
       "key": "xai-grok-4-1-thinking",
       "model": "Grok-4.1 Thinking",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "xai-grok-4-20-0309-non-reasoning",
+      "model": "Grok 4.20 0309 (Non-reasoning)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "xai-grok-4-20-0309-reasoning",
+      "model": "Grok 4.20 0309 (Reasoning)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "xai-grok-4-20-0309-v2-non-reasoning",
+      "model": "Grok 4.20 0309 v2 (Non-reasoning)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "xai-grok-4-20-0309-v2-reasoning",
+      "model": "Grok 4.20 0309 v2 (Reasoning)",
       "organization": "xAI",
       "layers": [
         "crawled"
@@ -9291,6 +8924,50 @@
       }
     },
     {
+      "key": "xai-grok-4-3-high",
+      "model": "Grok 4.3 (high)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 23
+      }
+    },
+    {
+      "key": "xai-grok-4-3-low",
+      "model": "Grok 4.3 (low)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "xai-grok-4-3-medium",
+      "model": "Grok 4.3 (medium)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 11
+      }
+    },
+    {
+      "key": "xai-grok-4-3-non-reasoning",
+      "model": "Grok 4.3 (Non-reasoning)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 15
+      }
+    },
+    {
       "key": "xai-grok-4-5",
       "model": "Grok 4.5",
       "organization": "xAI",
@@ -9301,6 +8978,17 @@
       "source_counts": {
         "curated": 1,
         "crawled": 14
+      }
+    },
+    {
+      "key": "xai-grok-4-5-high",
+      "model": "Grok 4.5 (high)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 18
       }
     },
     {
@@ -9315,6 +9003,50 @@
       }
     },
     {
+      "key": "xai-grok-4-6-high",
+      "model": "Grok 4.6 (high)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 14
+      }
+    },
+    {
+      "key": "xai-grok-4-6-low",
+      "model": "Grok 4.6 (low)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "xai-grok-4-6-medium",
+      "model": "Grok 4.6 (medium)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
+      "key": "xai-grok-4-6-xhigh",
+      "model": "Grok 4.6 (xhigh)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
       "key": "xai-grok-4-fast",
       "model": "Grok 4 Fast",
       "organization": "xAI",
@@ -9323,6 +9055,28 @@
       ],
       "source_counts": {
         "crawled": 7
+      }
+    },
+    {
+      "key": "xai-grok-4-fast-non-reasoning",
+      "model": "Grok 4 Fast (Non-reasoning)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
+      }
+    },
+    {
+      "key": "xai-grok-4-fast-reasoning",
+      "model": "Grok 4 Fast (Reasoning)",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
       }
     },
     {
@@ -9337,6 +9091,28 @@
       }
     },
     {
+      "key": "xai-grok-beta",
+      "model": "Grok Beta",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 4
+      }
+    },
+    {
+      "key": "xai-grok-build-0-1-0616",
+      "model": "Grok Build 0.1 0616",
+      "organization": "xAI",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 12
+      }
+    },
+    {
       "key": "xai-grok-code-fast-1",
       "model": "Grok Code Fast 1",
       "organization": "xAI",
@@ -9344,7 +9120,7 @@
         "crawled"
       ],
       "source_counts": {
-        "crawled": 1
+        "crawled": 13
       }
     },
     {
@@ -9471,7 +9247,7 @@
     {
       "key": "z-ai-glm-4-5-air",
       "model": "GLM-4.5-Air",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9482,7 +9258,7 @@
     {
       "key": "z-ai-glm-4-5-reasoning",
       "model": "GLM-4.5 (Reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9493,7 +9269,7 @@
     {
       "key": "z-ai-glm-4-5v-non-reasoning",
       "model": "GLM-4.5V (Non-reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9504,7 +9280,7 @@
     {
       "key": "z-ai-glm-4-5v-reasoning",
       "model": "GLM-4.5V (Reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9526,7 +9302,7 @@
     {
       "key": "z-ai-glm-4-6-non-reasoning",
       "model": "GLM-4.6 (Non-reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9537,7 +9313,7 @@
     {
       "key": "z-ai-glm-4-6-reasoning",
       "model": "GLM-4.6 (Reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9548,7 +9324,7 @@
     {
       "key": "z-ai-glm-4-6v-non-reasoning",
       "model": "GLM-4.6V (Non-reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9559,7 +9335,7 @@
     {
       "key": "z-ai-glm-4-6v-reasoning",
       "model": "GLM-4.6V (Reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9592,7 +9368,7 @@
     {
       "key": "z-ai-glm-4-7-flash-non-reasoning",
       "model": "GLM-4.7-Flash (Non-reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9603,7 +9379,7 @@
     {
       "key": "z-ai-glm-4-7-flash-reasoning",
       "model": "GLM-4.7-Flash (Reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9614,7 +9390,7 @@
     {
       "key": "z-ai-glm-4-7-non-reasoning",
       "model": "GLM-4.7 (Non-reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9625,7 +9401,7 @@
     {
       "key": "z-ai-glm-4-7-reasoning",
       "model": "GLM-4.7 (Reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9662,7 +9438,7 @@
     {
       "key": "z-ai-glm-5-1-non-reasoning",
       "model": "GLM-5.1 (Non-reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9673,7 +9449,7 @@
     {
       "key": "z-ai-glm-5-1-reasoning",
       "model": "GLM-5.1 (Reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9697,7 +9473,7 @@
     {
       "key": "z-ai-glm-5-2-max",
       "model": "GLM-5.2 (max)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9708,7 +9484,7 @@
     {
       "key": "z-ai-glm-5-2-non-reasoning",
       "model": "GLM-5.2 (Non-reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9730,7 +9506,7 @@
     {
       "key": "z-ai-glm-5-3-max",
       "model": "GLM-5.3 (max)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9741,7 +9517,7 @@
     {
       "key": "z-ai-glm-5-non-reasoning",
       "model": "GLM-5 (Non-reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9752,7 +9528,7 @@
     {
       "key": "z-ai-glm-5-reasoning",
       "model": "GLM-5 (Reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9763,7 +9539,7 @@
     {
       "key": "z-ai-glm-5-turbo",
       "model": "GLM-5-Turbo",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
@@ -9785,7 +9561,7 @@
     {
       "key": "z-ai-glm-5v-turbo-reasoning",
       "model": "GLM 5V Turbo (Reasoning)",
-      "organization": "Z AI",
+      "organization": "Z.ai",
       "layers": [
         "crawled"
       ],
