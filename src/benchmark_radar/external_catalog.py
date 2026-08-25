@@ -127,7 +127,7 @@ def slugify(key: str) -> str:
     return slug
 
 
-def _assign_slugs(keys: list[str]) -> dict[str, str]:
+def assign_slugs(keys: list[str]) -> dict[str, str]:
     """Slugs for every key, with deterministic suffixes when two collide.
 
     Collisions are resolved in sorted key order rather than input order so the
@@ -144,7 +144,7 @@ def _assign_slugs(keys: list[str]) -> dict[str, str]:
     return assigned
 
 
-def _finite(value: str) -> float | None:
+def finite_float(value: str) -> float | None:
     text = (value or "").strip()
     if not text:
         return None
@@ -155,7 +155,7 @@ def _finite(value: str) -> float | None:
     return parsed if math.isfinite(parsed) else None
 
 
-def _json_list(value: str) -> list[str]:
+def json_list(value: str) -> list[str]:
     text = (value or "").strip()
     if not text:
         return []
@@ -166,7 +166,7 @@ def _json_list(value: str) -> list[str]:
     return [str(item) for item in parsed] if isinstance(parsed, list) else []
 
 
-def _value_kind(raw: str, parsed: float | None) -> str:
+def value_kind(raw: str, parsed: float | None) -> str:
     if not (raw or "").strip():
         return "missing"
     return "number" if parsed is not None else "text"
@@ -196,7 +196,7 @@ def _source_record(row: dict[str, str], slug: str, crawled_at: str) -> dict[str,
         "sizes": [],
         "released": None,
         "modality": (row.get("modality") or "").strip() or None,
-        "categories": _json_list(row.get("categories", "")),
+        "categories": json_list(row.get("categories", "")),
         "provenance": {
             "source_url": (row.get("detail_source_url") or "").strip() or None,
             "crawled_at": crawled_at,
@@ -213,7 +213,7 @@ def _observation(
     crawled_at: str,
 ) -> dict[str, Any]:
     raw_value = (row.get("benchmark_score") or "").strip()
-    parsed = _finite(raw_value)
+    parsed = finite_float(raw_value)
     rank = (row.get("rank") or "").strip()
     # Identity is (benchmark, model_id): distinct dated checkpoints can share a
     # display name, so the name is vocabulary and the id is what a row is.
@@ -227,7 +227,7 @@ def _observation(
         "organization": canonical_organization(row.get("organization_name")),
         "raw_value": raw_value,
         "value": parsed,
-        "value_kind": _value_kind(raw_value, parsed),
+        "value_kind": value_kind(raw_value, parsed),
         # The source flags self-reporting but never records a protocol, so the
         # only honest comparability class is "none". Null never joins to null.
         "reported_by": (
@@ -257,7 +257,7 @@ def _series(
     key: str,
     observations: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    declared_max = _finite(row.get("max_score", ""))
+    declared_max = finite_float(row.get("max_score", ""))
     values = [obs["value"] for obs in observations if obs["value"] is not None]
     observed_max = max(values) if values else None
     contradicted = (
@@ -293,7 +293,7 @@ def normalize_llm_stats(snapshot: dict[str, Any]) -> dict[str, Any]:
     crawled_at = snapshot["crawled_at"]
 
     keys = [f"{LLM_STATS_KEY_PREFIX}:{row['benchmark_id'].strip()}" for row in benchmark_rows]
-    slugs = _assign_slugs(keys)
+    slugs = assign_slugs(keys)
 
     by_benchmark: dict[str, list[dict[str, str]]] = {}
     for row in score_rows:
