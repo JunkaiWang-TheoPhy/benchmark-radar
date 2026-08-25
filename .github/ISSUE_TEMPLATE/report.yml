@@ -17,14 +17,14 @@ body:
     attributes:
       label: What kind of problem is it / 问题类型
       options:
-        - Something looks wrong (layout, spacing, colours)
-        - A logo is wrong, missing, or too small to read
-        - A number looks wrong
-        - Wording is confusing or too technical
-        - Something is missing that should be there
-        - A button or link does not work
-        - The page is slow or does not load
-        - Something else
+        - Something looks wrong (layout, spacing, colours) / 页面显示有问题（布局、间距、颜色）
+        - A logo is wrong, missing, or too small to read / Logo 错误、缺失或太小看不清
+        - A number looks wrong / 数字可能有误
+        - Wording is confusing or too technical / 文案难懂或过于技术化
+        - Something is missing that should be there / 缺少本应显示的内容
+        - A button or link does not work / 按钮或链接无法使用
+        - The page is slow or does not load / 页面加载缓慢或无法打开
+        - Something else / 其他问题
     validations:
       required: true
 

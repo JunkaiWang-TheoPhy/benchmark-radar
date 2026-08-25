@@ -1,0 +1,44 @@
+name: Suggest a new feature / 建议新功能
+description: Propose a capability, data source, workflow, or interface improvement. / 建议新能力、数据源、工作流或界面改进。
+labels: ["new feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        English or Chinese is fine. Describe what you want Benchmark Radar to
+        add, who would use it, and how it would improve their work.
+
+        中文也可以。请写清楚希望 Benchmark Radar 增加什么、谁会使用，
+        以及它能如何改善现有工作。
+
+  - type: textarea
+    id: feature
+    attributes:
+      label: What should Benchmark Radar add? / 希望 Benchmark Radar 增加什么
+      description: Describe the capability, data source, workflow, or interface change you want. / 描述你希望增加的能力、数据源、工作流或界面改动。
+    validations:
+      required: true
+
+  - type: textarea
+    id: users
+    attributes:
+      label: Who would use it? / 谁会使用
+      description: Name the readers, researchers, benchmark authors, or eval builders who need it. / 说明哪些读者、研究者、benchmark 作者或 eval 开发者会用到它。
+    validations:
+      required: true
+
+  - type: textarea
+    id: value
+    attributes:
+      label: Why is it worth adding? / 为什么值得加入
+      description: Name the task it would make faster, clearer, or possible. / 说明它能让哪项任务更快、更清楚，或从无法完成变为可以完成。
+    validations:
+      required: true
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Example, sketch, or link / 示例、草图或链接
+      description: Optional. Paste a screenshot, mockup, related product, paper, or dataset. / 可选：粘贴截图、草图、相关产品、论文或数据集。
+    validations:
+      required: false

@@ -1,6 +1,5 @@
 name: Tell us about a model card we missed / 补充模型卡
 description: Name a model card, system card, technical report, or release post the site has not read yet. / 提交站点尚未收录的模型卡、系统卡、技术报告或发布文章。
-title: "Add model card: "
 labels: ["model-card", "good first issue"]
 body:
   - type: markdown
@@ -48,10 +47,10 @@ body:
     attributes:
       label: What kind of document is it / 文档类型
       options:
-        - Model card
-        - System card
-        - Technical report
-        - Release post or blog
+        - Model card / 模型卡
+        - System card / 系统卡
+        - Technical report / 技术报告
+        - Release post or blog / 发布文章或博客
     validations:
       required: true
 
