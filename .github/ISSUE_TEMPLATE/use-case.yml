@@ -1,6 +1,5 @@
 name: Show how you use Benchmark Radar / 展示你的使用场景
 description: Share a project, paper, evaluation, or workflow that Benchmark Radar helped. / 分享 Benchmark Radar 帮到的项目、论文、评测或工作流。
-title: "Use case: "
 labels: ["use-case"]
 body:
   - type: markdown
@@ -16,7 +15,7 @@ body:
     id: project
     attributes:
       label: What are you building or researching? / 你在做什么
-      placeholder: An agent evaluation suite for customer-support workflows
+      placeholder: An agent evaluation suite for customer-support workflows / 面向客服工作流的 agent 评测套件
     validations:
       required: true
 

@@ -1,8 +1,8 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
-  - name: See the ranking first
+  - name: See the ranking first / 提交前先看排行榜
     url: https://ktwu01.github.io/benchmark-radar/?view=leaderboard
-    about: The live ranking. Worth a look before reporting something as missing or wrong.
-  - name: How the ranking is built
+    about: The live ranking. Check it before reporting missing or incorrect data. / 实时排行榜；提交数据缺失或错误前请先查看。
+  - name: How the ranking is built / 排名如何生成
     url: https://github.com/ktwu01/benchmark-radar/blob/main/CONTRIBUTING.md
-    about: What gets counted, what is left out on purpose, and how to add a document.
+    about: What gets counted, what is excluded, and how to add a document. / 查看统计范围、排除内容和文档添加方法。
