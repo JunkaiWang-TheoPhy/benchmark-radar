@@ -38,29 +38,29 @@ from .external_identity import IdentityIndex
 
 DEFAULT_SHARD_DIR = Path("site/data/benchmarks")
 
-# The source key under `scores_by_source`. OpenCompass supplies no score
-# observations in this pipeline, so its shards carry an empty object rather than
-# a key with no rows.
-LLM_STATS_SCORE_SOURCE = "llm_stats"
-
 
 def _scores_by_source(
-    key: str,
+    record: dict[str, Any],
     series_by_key: dict[str, dict[str, Any]],
     observations_by_key: dict[str, list[dict[str, Any]]],
 ) -> dict[str, Any]:
     """The keyed score partition for one record.
 
+    The key is the record's own `source`, never a constant: llm-stats and
+    Artificial Analysis both supply observations, and filing one under the
+    other's name would be the cross-source merge this shape exists to prevent.
+
     Only sources that actually recorded a score for this key get a key here. An
-    OpenCompass record, which has no observations, gets `{}` rather than an
-    `llm_stats` key holding an empty list, so the absence is visible as absence.
+    OpenCompass record, which has no observations, gets `{}` rather than a
+    source key holding an empty list, so the absence is visible as absence.
     """
+    key = record["key"]
     series = series_by_key.get(key)
     rows = observations_by_key.get(key)
     if not series and not rows:
         return {}
     return {
-        LLM_STATS_SCORE_SOURCE: {
+        record["source"]: {
             "series": series or {},
             "rows": rows or [],
         }
@@ -79,7 +79,7 @@ def build_shard(
         "schema_version": CATALOG_SCHEMA_VERSION,
         "record": record,
         "siblings": identity.siblings_for(record["key"]),
-        "scores_by_source": _scores_by_source(record["key"], series_by_key, observations_by_key),
+        "scores_by_source": _scores_by_source(record, series_by_key, observations_by_key),
     }
 
 
