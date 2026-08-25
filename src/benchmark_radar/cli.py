@@ -294,31 +294,28 @@ def main() -> None:
         # immutable committed files, so regenerating the catalog does not need a
         # collection pass and a collection pass must not silently reshape it.
         from .external_catalog import (
-            LLM_STATS_SNAPSHOT_ID,
-            normalize_llm_stats,
-            write_llm_stats_catalog,
+            DEFAULT_OUTPUT_DIR,
+            SOURCES,
+            build_benchmark_index,
+            normalize_snapshot,
+            write_benchmark_index,
+            write_catalog,
         )
+        from .external_opencompass import normalize_opencompass
         from .leaderboard_snapshots import DEFAULT_SNAPSHOTS_PATH
         from .leaderboard_snapshots import load_snapshots as load_crawl_snapshots
 
+        # One loop over every registered crawl, one normalizer, one output
+        # shape. Adding a source is a registry entry plus a line in SOURCES,
+        # never a second module with its own record shape to keep in step.
         crawled = load_crawl_snapshots(DEFAULT_SNAPSHOTS_PATH)
-        snapshot = next(
-            item for item in crawled["snapshots"] if item["id"] == LLM_STATS_SNAPSHOT_ID
-        )
-        normalized = normalize_llm_stats(snapshot)
-        written = write_llm_stats_catalog(normalized)
-        report = normalized["validation"]
-
-        from .external_artificial_analysis import (
-            normalize_artificial_analysis,
-            write_artificial_analysis_catalog,
-        )
-        from .external_catalog import (
-            DEFAULT_OUTPUT_DIR,
-            build_benchmark_index,
-            write_benchmark_index,
-        )
-        from .external_opencompass import normalize_opencompass
+        normalized = [
+            normalize_snapshot(snapshot)
+            for snapshot in crawled["snapshots"]
+            if snapshot["id"] in SOURCES
+        ]
+        for result in normalized:
+            write_catalog(result)
 
         opencompass = normalize_opencompass()
         (DEFAULT_OUTPUT_DIR / "opencompass_source_records.jsonl").write_text(
@@ -329,22 +326,15 @@ def main() -> None:
             encoding="utf-8",
         )
 
-        artificial_analysis = normalize_artificial_analysis()
-        write_artificial_analysis_catalog(artificial_analysis)
-
-        # Series and observations from both scored sources travel together, but
-        # they never merge: keys are namespaced per source, and the shard files
-        # them under the record's own source name.
-        all_series = normalized["score_series"] + artificial_analysis["score_series"]
-        all_observations = (
-            normalized["score_observations"] + artificial_analysis["score_observations"]
-        )
+        # Records, series and observations from every crawl travel together but
+        # never merge: keys are namespaced per source, and a shard files its
+        # rows under the record's own source name.
+        all_series = [item for result in normalized for item in result["score_series"]]
+        all_observations = [item for result in normalized for item in result["score_observations"]]
         series_by_key = {row["key"]: row for row in all_series}
-        all_records = (
-            normalized["source_records"]
-            + opencompass["source_records"]
-            + artificial_analysis["source_records"]
-        )
+        all_records = [
+            item for result in normalized for item in result["source_records"]
+        ] + opencompass["source_records"]
 
         from .external_identity import (
             DEFAULT_CANDIDATES_PATH,
@@ -370,7 +360,7 @@ def main() -> None:
         resolved_records = apply_inherited_identity(all_records, identity)
         inherited_count = sum(1 for row in resolved_records if "identity_inheritance" in row)
 
-        # One index over both sources, one row per source record. Two sources
+        # One index over every source, one row per source record. Two sources
         # describing the same benchmark stay two rows until identity.yml says
         # otherwise under human review.
         index = build_benchmark_index(resolved_records, series_by_key)
@@ -384,22 +374,22 @@ def main() -> None:
         )
 
         oc_report = opencompass["validation"]
-        aa_report = artificial_analysis["validation"]
+        for result in normalized:
+            report = result["validation"]
+            print(
+                f"{report['source']}: {report['source_record_count']} benchmarks, "
+                f"{report['score_observation_count']} score observations"
+            )
         print(
-            f"llm-stats: {report['source_record_count']} benchmarks, "
-            f"{report['score_observation_count']} score observations\n"
             f"opencompass: {oc_report['source_record_count']} benchmarks, "
             f"openness {oc_report['openness_status_counts']}\n"
-            f"artificial-analysis: {aa_report['source_record_count']} evaluations, "
-            f"{aa_report['score_observation_count']} score observations across "
-            f"{aa_report['scored_model_count']} models\n"
             f"index: {len(index)} searchable records -> {index_path}\n"
             f"shards: {shard_report['shard_count']} files, "
             f"{shard_report['total_bytes'] / 1024:.0f} KiB -> {shard_report['output_dir']}\n"
             f"identity candidates: {candidates['equivalent_candidate_count']} anchor-backed, "
             f"{candidates['name_only_count']} name-only -> {DEFAULT_CANDIDATES_PATH}\n"
             f"identity inherited: {inherited_count} records show a reviewed donor's identity\n"
-            f"catalog written to {written['source_records'].parent}"
+            f"catalog written to {DEFAULT_OUTPUT_DIR}"
         )
         return
 

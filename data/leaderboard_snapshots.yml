@@ -35,15 +35,9 @@
 #
 # WHAT THIS FILE DOES NOT LIST
 #
-# Two committed snapshots sit in `data/leaderboard_snapshots/` without an entry
-# here, because this loader certifies one shape and theirs is a different one.
-# `opencompass_round2/` is a JSONL export read by `external_opencompass.py`, and
-# `artificial_analysis_2026-08-25/` is three normalized tables read by
-# `external_artificial_analysis.py`: its scores join to a separate models file
-# by id, and one (evaluation, model) pair can hold more than one row because an
-# evaluation can publish more than one metric. Each of those snapshots ships its
-# own manifest and is certified against it by its own module, so completeness is
-# still checked, just not here.
+# `opencompass_round2/` is a JSONL enrichment pass over a snapshot already
+# listed here, not a leaderboard crawl of its own, so it has no entry and is
+# read by `external_opencompass.py`.
 
 schema_version: 1
 
@@ -99,3 +93,41 @@ snapshots:
     columns:
       benchmark_id: benchmark_id
       benchmark_name: name
+
+  - id: artificial_analysis_2026-08-25
+    source: Artificial Analysis
+    source_url: https://artificialanalysis.ai/#intelligence-breakdown
+    crawled_at: "2026-08-25T10:41:06Z"
+    description: >-
+      Point-in-time crawl of the 24 evaluations in the Artificial Analysis
+      Intelligence Index, methodology version 4.1.1. 618 models captured, 595
+      of them carrying at least one of the 7,050 score rows. Unlike the other
+      two sources this one runs the evaluations itself rather than restating
+      what vendors report, which is a fact about who measured, not a protocol:
+      no row records shots, harness or attempts, so the silence rule applies
+      here exactly as it does to LLM Stats.
+
+      Two of the 25 benchmark rows are one evaluation. GDPval-AA v2 publishes a
+      raw Elo and a source-normalized score for the same 213 models, and those
+      are two measurements on different scales rather than one series, so they
+      are two rows. The other 23 evaluations publish a single number and keep
+      their own id unchanged.
+
+      The crawl arrived as three tables joined by id and was reshaped into this
+      format by `scripts/reshape_artificial_analysis.py`, which is also where
+      the columns the registry has no place for are documented.
+    benchmark_file: leaderboard_snapshots/artificial_analysis_benchmarks_2026-08-25.csv
+    benchmark_count: 25
+    benchmark_columns:
+      benchmark_id: benchmark_id
+      benchmark_name: name
+    scores_file: leaderboard_snapshots/artificial_analysis_benchmark_scores_2026-08-25.csv
+    score_row_count: 7050
+    columns:
+      benchmark_id: benchmark_id
+      benchmark_name: benchmark_name
+      model: model_name
+      model_id: model_id
+      organization: organization_name
+      rank: rank
+      score: benchmark_score
