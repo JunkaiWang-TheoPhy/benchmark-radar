@@ -49,7 +49,7 @@ feeds:
     lang: "zh"
     category: "官方动态"
 
-  # --- AI 评测基准 & 研究组织 ---
+  # --- AI 评测 benchmark & 研究组织 ---
   - name: "ARC Prize Blog"
     url: "https://rsshub.app/twitter/user/arcprize"
     lang: "en"

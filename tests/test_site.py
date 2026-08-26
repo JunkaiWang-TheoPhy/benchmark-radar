@@ -293,7 +293,7 @@ def test_issue_316_benchmark_detail_labels_are_translated():
     # the value rather than a single-line "key": "value" pair.
     assert "尚未确定论文、代码仓库、数据集或站点链接。" in script
     # The #262 inheritance note also wraps onto its own line.
-    assert "人工核对确认它指向同一个基准" in script
+    assert "人工核对确认它指向同一个benchmark" in script
 
 
 def test_language_toggle_click_handler_is_wired():
@@ -1347,7 +1347,7 @@ def test_rendered_questions_show_chinese_prose_and_questions_under_zh():
     assert {"question-group", "answer", "answer-signal", "answer-takeaway"} <= classes
     # Group titles and the fixed question strings translate through the table.
     assert "今日新增" in text
-    assert "雷达今天首次看到了哪些基准、数据集或评估方法？" in text
+    assert "雷达今天首次看到了哪些benchmark、数据集或评估方法？" in text
     # The model prose is the snapshot's zh rendering, not the English original.
     assert "今天首次观察到的记录大多是智能体评估框架。" in text
     assert "Most of today's first-observed records" not in text
@@ -1359,7 +1359,7 @@ def test_rendered_questions_keep_english_prose_when_zh_fields_are_absent():
     nodes = list(_flatten(_rendered_questions("tests/fixtures/daily_questions.json", "zh")))
     text = next(iter(nodes))["text"]
 
-    assert "雷达今天首次看到了哪些基准、数据集或评估方法？" in text
+    assert "雷达今天首次看到了哪些benchmark、数据集或评估方法？" in text
     assert "Most of today's first-observed records are agentic evaluation harnesses." in text
     assert "今天首次观察到的记录大多是智能体评估框架。" not in text
 
