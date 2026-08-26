@@ -786,6 +786,15 @@ def test_instructions_enforce_humanized_writing_style():
     # silently drop them.
     instructions = _INSTRUCTIONS
 
+    # Assert against the Writing-style subsection only, not the whole prompt,
+    # so a banned word or phrase that happens to appear elsewhere cannot make
+    # the test pass or fail spuriously (and so a rule accidentally moved out of
+    # the style block stops holding the test green).
+    start = instructions.index("Writing style:")
+    end = instructions.index("Output: at most three")
+    style_block = instructions[start:end]
+    assert "Writing style:" in style_block
+
     # Anti-slop: no framework jargon / importance-inflation words.
     for banned in (
         "landscape",
@@ -793,31 +802,32 @@ def test_instructions_enforce_humanized_writing_style():
         "underscore",
         "showcase",
         "vibrant",
+        "robust",
         "critical role",
     ):
-        assert banned in instructions, f"style block should name {banned!r} as a word to avoid"
+        assert banned in style_block, f"style block should name {banned!r} as a word to avoid"
 
     # Evidence-first neutrality is preserved even inside the style block.
-    assert "never add an opinion" in instructions
-    assert "never paper over absence" in instructions
+    assert "never add an opinion" in style_block
+    assert "never paper over absence" in style_block
 
     # Concrete-vs-abstract: force naming a specific artifact, not a theme.
-    assert "Name the specific artifact" in instructions
+    assert "Name the specific artifact" in style_block
 
     # Reader-relative framing instead of an imperative.
-    assert "specific kind of user" in instructions
-    assert "evaluators should" in instructions  # named only to forbid it
+    assert "specific kind of user" in style_block
+    assert "evaluators should" in style_block  # named only to forbid it
 
     # First-use abbreviations must be spelled out for a no-context reader.
-    assert "Spell out the first occurrence of every" in instructions
-    assert "Application Programming Interface" in instructions
+    assert "Spell out the first occurrence of every" in style_block
+    assert "Application Programming Interface" in style_block
 
     # Domain concepts must get a plain-language anchor for a generalist, so
     # "小白不需要上下文能读懂每一句" holds even for subfield jargon.
-    assert "domain concepts a reader outside the subfield" in instructions
-    assert "plain-language anchor that a generalist can picture" in instructions
+    assert "domain concepts a reader outside the subfield" in style_block
+    assert "plain-language anchor that a generalist can picture" in style_block
     for concept in ("retrieval-", "corpus boundary", "quantization", "scaling law"):
-        assert concept in instructions
+        assert concept in style_block
 
     # The style block is part of the payload sent to the model, and it never
     # carries an internal issue reference of any number -- the model does not
