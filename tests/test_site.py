@@ -454,6 +454,36 @@ def test_main_filters_use_persisted_attention_and_snapshot_dates():
     assert "explorer-view" not in html
 
 
+def test_all_dates_keeps_only_the_latest_matching_sighting_per_source_record():
+    import json
+    import shutil
+    import subprocess
+
+    import pytest
+
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    assert 'state.todayDate === "all" ? latestObservationsByRecord(matches) : matches' in script
+
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    result = subprocess.run(
+        [node, "tests/deduplicate_observations_harness.mjs"],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=True,
+    )
+    rows = json.loads(result.stdout)
+
+    assert [(row["source"], row["source_id"], row["snapshot_date"]) for row in rows] == [
+        ("GitHub Release", "modelscope/evalscope@v1.11.0", "2026-08-26"),
+        ("GitHub", "modelscope/evalscope@v1.11.0", "2026-08-25"),
+        ("Hacker News", "123", "2026-08-26"),
+        ("arXiv", "2608.00001", "2026-08-24"),
+    ]
+
+
 def test_records_expand_inline_without_an_exclusive_accordion_or_record_modal():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
     html = Path("site/index.html").read_text(encoding="utf-8")

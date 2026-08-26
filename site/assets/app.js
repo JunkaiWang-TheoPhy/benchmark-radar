@@ -2897,6 +2897,31 @@ function allObservations() {
   return state.observations;
 }
 
+// All dates is a record finder, not a replay of every overlapping crawl
+// window. Keep the newest matching sighting for each source record there while
+// leaving individual daily scans untouched. Source stays in the key because
+// two independent providers can describe the same identifier without being
+// interchangeable evidence; attention uses its producer-assigned observation
+// ID when available for the same reason.
+function observationRecordKey(item) {
+  if (item.observation_kind === "attention") {
+    return `attention\u0000${item.observation_id || `${item.source}\u0000${item.source_id}`}`;
+  }
+  return `evidence\u0000${item.source}\u0000${item.source_id}`;
+}
+
+function latestObservationsByRecord(observations) {
+  const latest = new Map();
+  observations.forEach((item) => {
+    const key = observationRecordKey(item);
+    const current = latest.get(key);
+    if (!current || String(item.snapshot_date) > String(current.snapshot_date)) {
+      latest.set(key, item);
+    }
+  });
+  return observations.filter((item) => latest.get(observationRecordKey(item)) === item);
+}
+
 function populateSelect(target, values, label, selected) {
   replaceChildren(target, [
     option("", `All ${label}`),
@@ -2967,7 +2992,7 @@ function closeFiltersDrawer() {
 function filteredObservations() {
   const query = state.q.trim().toLowerCase();
   const sourceLower = state.source.trim().toLowerCase();
-  return allObservations().filter((item) => {
+  const matches = allObservations().filter((item) => {
     const haystack = `${item.title} ${item.summary} ${item.source}`.toLowerCase();
     return (
       (state.todayDate === "all" || item.snapshot_date === state.todayDate) &&
@@ -2979,6 +3004,7 @@ function filteredObservations() {
       (!query || haystack.includes(query))
     );
   });
+  return state.todayDate === "all" ? latestObservationsByRecord(matches) : matches;
 }
 
 // When a record is supplied, the rubric is rendered with that record's own
