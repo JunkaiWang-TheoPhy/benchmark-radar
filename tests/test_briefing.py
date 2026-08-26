@@ -778,7 +778,7 @@ def test_generate_daily_briefing_keeps_english_when_zh_translation_fails(monkeyp
 
 
 def test_instructions_enforce_humanized_writing_style():
-    # Issue #365: the daily briefing must be readable by someone with no
+    # Issue #377: the daily briefing must be readable by someone with no
     # context, grounded in evidence, and free of AI-slop tells (framework
     # jargon, all-purpose intensifiers, bundled-three-examples lists, and
     # imperative "evaluators should" directives). These rules live in the
