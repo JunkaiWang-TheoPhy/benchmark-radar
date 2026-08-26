@@ -2,13 +2,12 @@ name: Daily Benchmark Radar
 
 on:
   schedule:
-    # One run daily at 01:00 UTC = 09:00 Asia/Singapore (UTC+8, no DST), timed
-    # so the GPT briefing and Q&A read same-day insight over breakfast in
-    # Singapore. Supersedes the twice-daily Chicago-anchored schedule from
-    # issues #44/#104: that pair existed for same-day retry coverage against
-    # missed evidence, which this single run trades away for a predictable,
-    # once-a-day cadence.
-    - cron: "0 1 * * *"
+    # One run daily at 05:00 UTC = 13:00 Asia/Singapore (UTC+8, no DST).
+    # arXiv's category RSS bulletin is dated 04:00 UTC; the former 01:00 UTC
+    # run could finish before that day's feed was populated and miss a paper
+    # until the following scan (issue #379). Keep one predictable daily run,
+    # but place it after the source we promise to cover has published.
+    - cron: "0 5 * * *"
   workflow_dispatch:
     inputs:
       publish:

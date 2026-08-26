@@ -1116,6 +1116,24 @@ input {
   font-weight: 600;
 }
 
+/* Raw source facts sit on their own quiet line. They are visible before a
+   card is opened because they are the evidence behind the derived Adoption
+   score, but they stay typographically below the title and provenance. */
+.record-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.85rem;
+  margin: 0 0 0.65rem;
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.75rem;
+}
+
+.record-facts strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
 /* The one line saying why a tracked artifact matters, ahead of upstream prose. */
 .signal-tldr {
   margin-bottom: 0.35rem;

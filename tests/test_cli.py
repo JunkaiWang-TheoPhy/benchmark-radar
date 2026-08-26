@@ -409,6 +409,19 @@ def test_daily_radar_yml_enables_and_requires_questions_in_production():
     assert str(env.get("OPENAI_QUESTIONS_REQUIRED")).lower() == "true"
 
 
+def test_daily_radar_runs_after_the_arxiv_rss_bulletin():
+    """Issue #379: a 01:00 UTC run could precede arXiv's 04:00 UTC feed."""
+    workflow_path = Path(".github/workflows/daily-radar.yml")
+    workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+    trigger = workflow.get("on", workflow.get(True))
+
+    schedules = trigger["schedule"]
+    assert len(schedules) == 1
+    minute, hour, *_ = schedules[0]["cron"].split()
+    assert minute == "0"
+    assert int(hour) >= 5
+
+
 def test_pages_rebuilds_when_any_package_module_changes():
     """Dashboard output depends on transitive package imports, not snapshots.py alone."""
     workflow_path = Path(".github/workflows/pages.yml")

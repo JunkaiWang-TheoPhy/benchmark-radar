@@ -431,6 +431,15 @@ const I18N = {
     "Sort: New releases first, then Priority ↓": "排序:新发布优先,再按优先度 ↓",
     "Sort: Date, then new releases, then Priority ↓": "排序:日期,再新发布优先,再按优先度 ↓",
     "Sort: Date ↓": "排序:日期 ↓",
+    Stars: "Star 数",
+    Forks: "Fork 数",
+    Likes: "点赞数",
+    Downloads: "下载数",
+    Citations: "引用数",
+    "Influential citations": "高影响力引用数",
+    "Source metadata": "来源元数据",
+    "Activity counters": "活跃度数据",
+    "Not reported by this source": "该来源未报告",
     // --- Leaderboard ---------------------------------------------------------
     "Which benchmarks do model cards report?": "模型卡报告了哪些benchmark?",
     "What does this source record?": "这个来源记录了什么？",
@@ -1508,6 +1517,77 @@ function definition(label, value) {
     element("dt", { text: label }),
     element("dd", { text: value }),
   ]);
+}
+
+const RECORD_METRIC_LABELS = {
+  stars: "Stars",
+  forks: "Forks",
+  likes: "Likes",
+  downloads: "Downloads",
+  citations: "Citations",
+  influential_citations: "Influential citations",
+};
+
+function compactNames(values, limit = 2) {
+  const names = [...new Set((values || []).map((value) => String(value).trim()).filter(Boolean))];
+  if (!names.length) return "";
+  const shown = names.slice(0, limit).join(", ");
+  return names.length > limit ? `${shown} +${names.length - limit}` : shown;
+}
+
+// Source facts are different from score components. A counter appears only
+// when its connector supplied that field; an absent counter is labelled as
+// unreported rather than rendered as zero. This lets a reader audit Adoption 0
+// for sources that publish activity counters while making sources without
+// those counters explicit (issue #361).
+function recordFactEntries(item) {
+  const facts = [];
+  const organizations = compactNames(item.organizations);
+  const authors = compactNames(item.authors);
+  if (organizations) facts.push([t("Organizations"), organizations]);
+  if (authors) facts.push([t("Authors"), authors]);
+  const metrics = item.metrics || {};
+  let metricCount = 0;
+  Object.entries(RECORD_METRIC_LABELS).forEach(([key, label]) => {
+    if (!Object.hasOwn(metrics, key)) return;
+    const rawValue = metrics[key];
+    const value = Number(rawValue);
+    if (rawValue === null || rawValue === undefined || !Number.isFinite(value)) return;
+    const locale = getLang() === "zh" ? "zh-CN" : "en-US";
+    facts.push([t(label), value.toLocaleString(locale)]);
+    metricCount += 1;
+  });
+  if (!metricCount) facts.push([t("Activity counters"), t("Not reported by this source")]);
+  return facts;
+}
+
+function recordDateEntries(item) {
+  const entries = [];
+  if (item.published_at) {
+    entries.push([t("Published"), formatDate(item.published_at, { dateStyle: "medium" })]);
+  }
+  if (item.updated_at && item.updated_at !== item.published_at) {
+    entries.push([t("Updated"), formatDate(item.updated_at, { dateStyle: "medium" })]);
+  }
+  return entries;
+}
+
+function recordFacts(item) {
+  const facts = recordFactEntries(item);
+  if (!facts.length) return null;
+  return element(
+    "div",
+    {
+      className: "record-facts",
+      attrs: { role: "group", "aria-label": t("Source metadata") },
+    },
+    facts.map(([label, value]) =>
+      element("span", {}, [
+        element("strong", { text: label }),
+        document.createTextNode(`: ${value}`),
+      ]),
+    ),
+  );
 }
 
 function safeHttpUrl(value) {
@@ -3217,6 +3297,8 @@ function openRubric(item = null, versionOverride = null) {
 function expandedRecord(item, teaser) {
   const isAttention = item.observation_kind === "attention";
   const primaryArtifact = item.primary_artifact_url || item.artifact_urls?.[0];
+  const sourceFacts = recordFactEntries(item);
+  const sourceDates = recordDateEntries(item);
   const scoreEntries = isAttention
     ? [
         [
@@ -3235,6 +3317,8 @@ function expandedRecord(item, teaser) {
         // Adoption is weighted into the total, so hiding it here left the
         // four shown components unable to explain the priority above them.
         [t("Adoption"), Number(item.adoption_score || 0).toFixed(2)],
+        ...sourceDates,
+        ...sourceFacts,
       ];
   const rationale = element(
     "ul",
@@ -7417,6 +7501,10 @@ function observationCard(item, index) {
       // instead of classifying the item before it is named (issue #248).
       element("h3", { text: item.title }),
       metadata,
+      // Attention rows already show their source-specific points, comments,
+      // and submissions in attentionActivity; the generic facts helper does
+      // not understand those counters and would incorrectly call them absent.
+      isAttention ? null : recordFacts(item),
       ...(item.watchlist && item.watchlist_note
         ? [element("p", { className: "signal-tldr", text: item.watchlist_note })]
         : []),

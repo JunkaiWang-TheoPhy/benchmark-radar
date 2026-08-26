@@ -2,10 +2,10 @@ name: Weekly Jargon Audit
 
 on:
   schedule:
-    # Mondays 02:00 UTC = 10:00 Asia/Singapore, an hour after the daily radar
-    # so the two never contend for the same runner. Weekly rather than daily
+    # Mondays 02:00 UTC = 10:00 Asia/Singapore. Weekly rather than daily
     # because the copy changes slowly and a report nobody has had time to act
-    # on is a report that gets skimmed (issue #241).
+    # on is a report that gets skimmed (issue #241). This audit is independent
+    # of the daily collection job and intentionally runs on its own schedule.
     - cron: "0 2 * * 1"
   workflow_dispatch:
 

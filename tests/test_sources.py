@@ -1,7 +1,9 @@
 from datetime import UTC, datetime
+from pathlib import Path
 from urllib.error import HTTPError
 
 import pytest
+import yaml
 
 from benchmark_radar.http import RequestError
 from benchmark_radar.models import RadarItem
@@ -157,6 +159,24 @@ Abstract: A benchmark recovered from the official category feed.</description>
 </rss>
 """
 
+SWE_REFACTOR_RSS = """\
+<rss xmlns:arxiv="http://arxiv.org/schemas/atom"
+     xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">
+  <channel>
+    <item>
+      <title>SWE Refactor Bench: Can Coding Agents Complete a Long-Horizon Migration?</title>
+      <link>https://arxiv.org/abs/2608.23564</link>
+      <description>arXiv:2608.23564v1 Announce Type: new
+Abstract: We introduce SWE Refactor Bench, a benchmark comprising 20 migrations.</description>
+      <guid isPermaLink="false">oai:arXiv.org:2608.23564v1</guid>
+      <pubDate>Wed, 26 Aug 2026 00:00:00 -0400</pubDate>
+      <arxiv:announce_type>new</arxiv:announce_type>
+      <dc:creator>Deyao Hong, Yizhe Chi</dc:creator>
+    </item>
+  </channel>
+</rss>
+"""
+
 
 def test_arxiv_uses_overlap_and_updated_timestamp(monkeypatch):
     calls = []
@@ -233,6 +253,69 @@ def test_arxiv_can_use_official_rss_as_primary(monkeypatch):
     )
 
     assert [item.source_id for item in items] == ["2607.54321"]
+
+
+def test_arxiv_config_keeps_named_bench_releases(monkeypatch):
+    """Issue #379: `SWE Refactor Bench:` used no configured exact phrase."""
+    config = yaml.safe_load(Path("config.yml").read_text(encoding="utf-8"))["sources"]["arxiv"]
+    requested = []
+
+    def fake_get_text(url, params=None):
+        assert params is None
+        requested.append(url)
+        if url == "https://rss.arxiv.org/rss/cs.SE":
+            return SWE_REFACTOR_RSS
+        return "<rss version='2.0'><channel /></rss>"
+
+    monkeypatch.setattr("benchmark_radar.sources.get_text", fake_get_text)
+
+    items = fetch_arxiv(config, datetime(2026, 8, 26, 5, tzinfo=UTC), 10)
+
+    assert [item.source_id for item in items] == ["2608.23564"]
+    assert requested == [
+        "https://rss.arxiv.org/rss/cs.AI",
+        "https://rss.arxiv.org/rss/cs.CL",
+        "https://rss.arxiv.org/rss/cs.CV",
+        "https://rss.arxiv.org/rss/cs.SE",
+    ]
+
+
+def test_openalex_carries_author_institutions(monkeypatch):
+    monkeypatch.setenv("OPENALEX_API_KEY", "key")
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, params: {
+            "results": [
+                {
+                    "id": "https://openalex.org/W1",
+                    "display_name": "Institution-backed benchmark",
+                    "publication_date": "2026-08-26",
+                    "primary_location": {"landing_page_url": "https://example.com/w1"},
+                    "authorships": [
+                        {
+                            "author": {"display_name": "Radar Author"},
+                            "institutions": [
+                                {"display_name": "Example University"},
+                                {"display_name": "Example University"},
+                                {"display_name": "Example Lab"},
+                            ],
+                        }
+                    ],
+                    "cited_by_count": 0,
+                }
+            ]
+        },
+    )
+
+    items = fetch_openalex(
+        {"searches": ["benchmark"]},
+        datetime(2026, 8, 25, tzinfo=UTC),
+        10,
+        now=datetime(2026, 8, 26, 12, tzinfo=UTC),
+    )
+
+    assert items[0].authors == ["Radar Author"]
+    assert items[0].organizations == ["Example University", "Example Lab"]
 
 
 def test_arxiv_rejects_incompatible_empty_rss_document(monkeypatch):

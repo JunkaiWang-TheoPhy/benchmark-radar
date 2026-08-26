@@ -950,6 +950,14 @@ def fetch_openalex(
                 authorship.get("author", {}).get("display_name", "")
                 for authorship in row.get("authorships", [])
             ]
+            organizations = list(
+                dict.fromkeys(
+                    str(institution.get("display_name") or "").strip()
+                    for authorship in row.get("authorships", [])
+                    for institution in (authorship.get("institutions") or [])
+                    if str(institution.get("display_name") or "").strip()
+                )
+            )
             primary = row.get("primary_location") or {}
             url = row.get("doi") or primary.get("landing_page_url") or row["id"]
             # OpenAlex publishes a date, not a timestamp, so an exact cutoff
@@ -985,6 +993,7 @@ def fetch_openalex(
                 published_at=published,
                 event_kind="released",
                 authors=[author for author in authors if author],
+                organizations=organizations,
                 metrics={"citations": float(row.get("cited_by_count") or 0)},
                 raw=row,
                 parser_version="openalex-works/1",
