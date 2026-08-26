@@ -9416,7 +9416,7 @@
       "metrics": {
         "downloads": 10.0
       },
-      "parser_version": "github-releases/1",
+      "parser_version": "github-releases/2",
       "published_at": "2026-08-13T17:37:13+00:00",
       "rationale": [
         "Also found via GitHub Release",
@@ -9434,7 +9434,7 @@
       "source_id": "embeddings-benchmark/mteb@2.18.20",
       "summary": "2.18.20 (2026-08-13) Ci ci: Revert copilot dataset pr review (#5177) Delete .github/workflows/copilot dataset review.yml Delete .github/instructions directory (`57dbbfc`) Fix fix: cap retrieval top-k search depth to available results (#5180) (`246abdc`) Unknown dataset: add RAVENEA cultural image-to-text retrieval (#5135) dataset: add RAVENEA retrieval fix: address RAVENEA review feedback test: remove RAVENEA task tests (`68c25a0`)",
       "suppression_reasons": [],
-      "title": "2.18.20",
+      "title": "embeddings-benchmark/mteb 2.18.20",
       "total_score": 45.87,
       "updated_at": "2026-08-13T17:37:13+00:00",
       "url": "https://github.com/embeddings-benchmark/mteb/releases/tag/2.18.20",

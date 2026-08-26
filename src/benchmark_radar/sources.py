@@ -18,6 +18,7 @@ class ConnectorPayloadError(ValueError):
 
 
 FUTURE_TIMESTAMP_TOLERANCE = timedelta(minutes=5)
+GITHUB_RELEASE_PARSER_VERSION = "github-releases/2"
 
 
 def _xml_local_name(tag: str) -> str:
@@ -757,7 +758,7 @@ def fetch_semantic_scholar(
     return sorted(found.values(), key=lambda item: item.published_at, reverse=True)[:limit]
 
 
-def _release_title(repository: str, tag: str, name: str) -> str:
+def github_release_title(repository: str, tag: str, name: str) -> str:
     """Build a release title that never degrades to the bare tag.
 
     Some repositories (modelscope/evalscope among them) name each release
@@ -867,7 +868,7 @@ def fetch_github_releases(
                 found[f"{repository}@{tag}"] = RadarItem(
                     source="GitHub Release",
                     source_id=f"{repository}@{tag}",
-                    title=_release_title(repository, tag, str(row.get("name") or "")),
+                    title=github_release_title(repository, tag, str(row.get("name") or "")),
                     url=url,
                     published_at=published,
                     updated_at=published,
@@ -889,7 +890,7 @@ def fetch_github_releases(
                         )
                     },
                     raw=row,
-                    parser_version="github-releases/1",
+                    parser_version=GITHUB_RELEASE_PARSER_VERSION,
                 )
             if len(payload) < min(page_size, limit - len(found)) or (
                 oldest is not None and oldest < since

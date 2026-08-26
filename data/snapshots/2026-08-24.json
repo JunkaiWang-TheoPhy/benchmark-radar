@@ -9692,7 +9692,7 @@
       "metrics": {
         "downloads": 9.0
       },
-      "parser_version": "github-releases/1",
+      "parser_version": "github-releases/2",
       "published_at": "2026-08-23T08:33:18+00:00",
       "rationale": [
         "Matched: dataset",
@@ -9709,7 +9709,7 @@
       "source_id": "embeddings-benchmark/mteb@2.20.1",
       "summary": "2.20.1 (2026-08-23) Fix fix: repair Memotion retrieval dataset (#5266) (`75c3624`) Unknown model: Add LanguageBind video and audio model wrapper (#4557) model: add LanguageBind video, audio, and image wrappers with compatibility patches feat: HF mirror auto-download for LanguageBind + extras group for reproducibility wip: phase 1 review fixes for GPU testing refactor: trim LanguageBind compat shims to the two that are required Tested each of the five compatibility patches individually on GPU against the pinned transformers 4.45.2 / torchvision 0.20.1 / torchaudio 2.5.1: clip loss: transformers already defines it; the hasattr guard never fires -&gt; removed torchaudio.set audio backend: still present as a no-op; guard never fires -&gt; removed expand mask: LanguageBind hard-imports it from modeling clip -&gt; kept torchvision.transforms.functional tensor: pytorchvideo hard-imports it -&gt; kept tokenizer init shim: kept defensively (not triggered under the pinned versions, but guards against transformers load-path drift) Added inline comments documenting why the two retained shims are required. refactor: apply compat shims in the loader instead of at module import Move the patch compatibility() call into ensure languagebind source() so the shims only run when a LanguageBind model is actually loaded, rather than globally at module import time. refactor: move LanguageBind compat fixes into the pinned source snapshot Instead of monkey-patching transformers/torchvision/torchaudio at runtime from the MTEB wrapper, the compatibility fixes now live in the vendored LanguageBind source itself (pinned HF revision d2d0f6f): expand mask / clip loss: vendored into the modeling files (removed from transformers in the attention-mask refactor, before 4.40) tokenizer init : pass args to CLIPTokenizer.",
       "suppression_reasons": [],
-      "title": "2.20.1",
+      "title": "embeddings-benchmark/mteb 2.20.1",
       "total_score": 42.31,
       "updated_at": "2026-08-23T08:33:18+00:00",
       "url": "https://github.com/embeddings-benchmark/mteb/releases/tag/2.20.1",

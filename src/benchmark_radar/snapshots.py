@@ -32,6 +32,7 @@ from .rubric import (
     v3_rubric_reference,
 )
 from .site_seo import write_sitemap
+from .sources import GITHUB_RELEASE_PARSER_VERSION, github_release_title
 
 SCHEMA_VERSION = 2
 SUPPORTED_SCHEMA_VERSIONS = {1, SCHEMA_VERSION}
@@ -1232,7 +1233,9 @@ def migrate_snapshot_history(config: dict[str, Any], snapshot_dir: Path) -> list
     for path in paths:
         raw = json.loads(path.read_text(encoding="utf-8"))
         versions.append(int(raw.get("schema_version") or 0))
-        snapshots.append(normalize_snapshot(raw, source=str(path)))
+        snapshot = normalize_snapshot(raw, source=str(path))
+        _backfill_github_release_titles(snapshot)
+        snapshots.append(snapshot)
     if snapshots and versions[-1] == 1:
         latest = snapshots[-1]
         observed_at = _validate_time(
@@ -1258,3 +1261,25 @@ def migrate_snapshot_history(config: dict[str, Any], snapshot_dir: Path) -> list
         validate_snapshot(snapshot, source=str(path))
         _write_json(path, snapshot)
     return snapshots
+
+
+def _backfill_github_release_titles(snapshot: dict[str, Any]) -> int:
+    """Reparse persisted bare-tag release titles with the current connector."""
+    changed = 0
+    for record in snapshot.get("evidence_items") or []:
+        if record.get("source") != "GitHub Release":
+            continue
+        source_id = str(record.get("source_id") or "")
+        if "@" not in source_id:
+            continue
+        repository, tag = source_id.rsplit("@", 1)
+        if not repository or not tag:
+            continue
+        current = str(record.get("title") or "").strip()
+        corrected = github_release_title(repository, tag, current)
+        if corrected == current:
+            continue
+        record["title"] = corrected
+        record["parser_version"] = GITHUB_RELEASE_PARSER_VERSION
+        changed += 1
+    return changed
