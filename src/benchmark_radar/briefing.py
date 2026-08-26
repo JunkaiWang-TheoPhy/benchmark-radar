@@ -500,7 +500,10 @@ _INSTRUCTIONS = (
     "win: never add an opinion, prediction, or quality judgment that the evidence does not "
     "carry, and never paper over absence with a plausible-sounding sentence.\n\n"
     "Output: at most three non-overlapping insights. Keep each finding and why_it_matters "
-    "concrete, at most 80 words each, and end each with a complete sentence. Keep the caveat "
+    "concrete and end each with a complete sentence. The plain-language anchor for a "
+    "generalist is worth the words: a finding may run up to 120 words total; spend the "
+    "extra room on explaining the artifact's jargon, not on padding. Do not add filler or "
+    "restate the same point. Keep the caveat "
     "at most 100 words and end it with a complete sentence. Use the caveat "
     "for the most material coverage or measurement limitation."
 )
@@ -667,8 +670,8 @@ def generate_daily_briefing(
         ):
             raise BriefingError("OpenAI cited evidence outside the injected packet")
         cited_ids.extend(value for value in ids if value not in cited_ids)
-        finding = _output_text(insight.get("finding"), field="finding", max_chars=800)
-        why = _output_text(insight.get("why_it_matters"), field="why_it_matters", max_chars=800)
+        finding = _output_text(insight.get("finding"), field="finding", max_chars=1_000)
+        why = _output_text(insight.get("why_it_matters"), field="why_it_matters", max_chars=1_000)
         confidence = str(insight.get("confidence") or "low").capitalize()
         if not finding or not why:
             raise BriefingError("OpenAI returned an empty finding")
