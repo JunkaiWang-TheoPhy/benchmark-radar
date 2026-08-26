@@ -28,6 +28,14 @@ body:
       required: true
 
   - type: textarea
+    id: users
+    attributes:
+      label: Who would use it? / 谁会使用 (optional / 可选)
+      description: Optional. Name the readers, researchers, or eval builders who need it — you can also just mention them above. / 可选：说明哪些读者或研究者会用到，也可直接写在上一栏。
+    validations:
+      required: false
+
+  - type: textarea
     id: example
     attributes:
       label: Example, sketch, or link / 示例、草图或链接
