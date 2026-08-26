@@ -49,7 +49,8 @@ def _arxiv_id(path: str) -> str | None:
     match = re.search(r"/(?:abs|pdf)/([^/?#]+)", path, flags=re.IGNORECASE)
     if not match:
         return None
-    return re.sub(r"v\d+$", "", match.group(1), flags=re.IGNORECASE).lower()
+    identifier = re.sub(r"\.pdf$", "", match.group(1), flags=re.IGNORECASE)
+    return re.sub(r"v\d+$", "", identifier, flags=re.IGNORECASE).lower()
 
 
 def _exact_candidates(item: dict[str, Any]) -> list[tuple[int, str]]:

@@ -84,10 +84,16 @@ def fetch_first_party_feeds(config: dict[str, Any], since: datetime, limit: int)
     feeds = config.get("feeds") or []
     if not isinstance(feeds, list):
         raise ConnectorPayloadError("First-party feeds must be an array")
-    found: dict[str, RadarItem] = {}
+    validated_feeds: list[dict[str, Any]] = []
     for feed in feeds:
         if not isinstance(feed, dict) or not feed.get("name") or not feed.get("url"):
             raise ConnectorPayloadError("First-party feed is missing name or url")
+        validated_feeds.append(feed)
+
+    found: dict[str, RadarItem] = {}
+    failures: list[Exception] = []
+    healthy_feeds = 0
+    for feed in validated_feeds:
         name = str(feed["name"]).strip()
         feed_url = str(feed["url"]).strip()
         # Broad publisher feeds carry unrelated engineering posts that still hit a
@@ -96,49 +102,61 @@ def fetch_first_party_feeds(config: dict[str, Any], since: datetime, limit: int)
         require_any = [
             str(value).casefold() for value in (feed.get("require_any") or []) if str(value).strip()
         ]
-        root = ET.fromstring(get_text(feed_url, **_request_options(config)))
-        root_name = _xml_local_name(root.tag)
-        if root_name == "rss":
-            channel = _feed_child(root, "channel")
-            entries = (
-                []
-                if channel is None
-                else [child for child in channel if _xml_local_name(child.tag) == "item"]
-            )
-        elif root_name == "feed":
-            entries = [child for child in root if _xml_local_name(child.tag) == "entry"]
-        else:
-            raise ConnectorPayloadError(f"{name} returned an incompatible feed document")
-        for entry in entries:
-            title = _feed_text(entry, "title")
-            summary = clean_card_text(_feed_text(entry, "description", "summary", "content"))
-            haystack = f"{title} {summary}".casefold()
-            if not title or (keywords and not any(keyword in haystack for keyword in keywords)):
-                continue
-            if require_any and not any(keyword in haystack for keyword in require_any):
-                continue
-            url = _feed_link(entry)
-            source_id = _feed_text(entry, "id", "guid") or url
-            published = _feed_date(_feed_text(entry, "published", "pubDate", "date"))
-            updated = _feed_date(_feed_text(entry, "updated")) or published
-            activity = updated or published
-            if not url or not source_id or published is None or activity is None:
-                raise ConnectorPayloadError(f"{name} feed item is missing required fields")
-            identity = f"{name}:{source_id}"
-            if activity < since or _reject_future(config, identity, published, updated):
-                continue
-            found[identity] = RadarItem(
-                source="First-party feed",
-                source_id=identity,
-                title=title,
-                url=url,
-                published_at=published,
-                updated_at=updated,
-                summary=summary,
-                event_kind="updated" if updated > published else "released",
-                raw={"xml": ET.tostring(entry, encoding="unicode")},
-                parser_version="first-party-rss-atom/1",
-            )
+        feed_found: dict[str, RadarItem] = {}
+        try:
+            root = ET.fromstring(get_text(feed_url, **_request_options(config)))
+            root_name = _xml_local_name(root.tag)
+            if root_name == "rss":
+                channel = _feed_child(root, "channel")
+                entries = (
+                    []
+                    if channel is None
+                    else [child for child in channel if _xml_local_name(child.tag) == "item"]
+                )
+            elif root_name == "feed":
+                entries = [child for child in root if _xml_local_name(child.tag) == "entry"]
+            else:
+                raise ConnectorPayloadError(f"{name} returned an incompatible feed document")
+            for entry in entries:
+                title = _feed_text(entry, "title")
+                summary = clean_card_text(_feed_text(entry, "description", "summary", "content"))
+                haystack = f"{title} {summary}".casefold()
+                if not title or (keywords and not any(keyword in haystack for keyword in keywords)):
+                    continue
+                if require_any and not any(keyword in haystack for keyword in require_any):
+                    continue
+                url = _feed_link(entry)
+                source_id = _feed_text(entry, "id", "guid") or url
+                published = _feed_date(_feed_text(entry, "published", "pubDate", "date"))
+                updated = _feed_date(_feed_text(entry, "updated")) or published
+                activity = updated or published
+                if not url or not source_id or published is None or activity is None:
+                    raise ConnectorPayloadError(f"{name} feed item is missing required fields")
+                identity = f"{name}:{source_id}"
+                if activity < since or _reject_future(config, identity, published, updated):
+                    continue
+                feed_found[identity] = RadarItem(
+                    source="First-party feed",
+                    source_id=identity,
+                    title=title,
+                    url=url,
+                    published_at=published,
+                    updated_at=updated,
+                    summary=summary,
+                    event_kind="updated" if updated > published else "released",
+                    organizations=[name],
+                    raw={"xml": ET.tostring(entry, encoding="unicode")},
+                    parser_version="first-party-rss-atom/1",
+                )
+        except Exception as error:
+            warnings = config.setdefault("_source_warnings", [])
+            warnings.append(f"{name}: {type(error).__name__}: {error}")
+            failures.append(error)
+            continue
+        healthy_feeds += 1
+        found.update(feed_found)
+    if validated_feeds and healthy_feeds == 0:
+        raise failures[0]
     return sorted(
         found.values(),
         key=lambda item: (item.updated_at or item.published_at, item.source_id),
@@ -217,21 +235,15 @@ def _optional_date(value: str | None) -> datetime | None:
     if not value:
         return None
     try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone(UTC)
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        # Date-only API values are naive. Calling astimezone() on one otherwise
+        # interprets it in the runner's local timezone, so the same record moves
+        # by several hours between a laptop and GitHub's UTC runner.
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=UTC)
+        return parsed.astimezone(UTC)
     except (TypeError, ValueError):
         return None
-
-
-def _date(value: str | None) -> datetime:
-    """Parse a timestamp, substituting the current time when it is missing.
-
-    Callers that feed a recency score must use :func:`_optional_date` instead: a
-    missing timestamp resolved to "now" is indistinguishable from a genuinely
-    fresh record, so the substitution silently awards maximum recency to a
-    record whose age is unknown.
-    """
-    parsed = _optional_date(value)
-    return datetime.now(UTC) if parsed is None else parsed
 
 
 def _arxiv_source_id(value: str) -> str:
@@ -352,15 +364,25 @@ def fetch_arxiv(config: dict[str, Any], since: datetime, limit: int) -> list[Rad
                         "http:", "https:"
                     )
                     source_id = _arxiv_source_id(url)
-                    published = _date(entry.findtext("atom:published", namespaces=namespace))
-                    updated = _date(entry.findtext("atom:updated", namespaces=namespace))
+                    title = " ".join(
+                        (entry.findtext("atom:title", namespaces=namespace) or "").split()
+                    )
+                    published = _optional_date(
+                        entry.findtext("atom:published", namespaces=namespace)
+                    )
+                    updated = _optional_date(entry.findtext("atom:updated", namespaces=namespace))
+                    if (
+                        not url
+                        or not source_id
+                        or not title
+                        or published is None
+                        or updated is None
+                    ):
+                        raise ConnectorPayloadError("arXiv Atom item is missing required fields")
                     if max(published, updated) < overlap_since or _reject_future(
                         config, source_id, published, updated
                     ):
                         continue
-                    title = " ".join(
-                        (entry.findtext("atom:title", namespaces=namespace) or "").split()
-                    )
                     summary = " ".join(
                         (entry.findtext("atom:summary", namespaces=namespace) or "").split()
                     )
@@ -428,20 +450,21 @@ def fetch_huggingface(config: dict[str, Any], since: datetime, limit: int) -> li
                 # An undated repo is skipped rather than dated "now": the
                 # substitution both invented freshness and slipped past the
                 # `since` check below, which is what it was meant to enforce.
-                changed = _optional_date(row.get("lastModified") or row.get("createdAt"))
+                created = _optional_date(row.get("createdAt"))
+                changed = _optional_date(row.get("lastModified")) or created
                 if (
                     changed is None
                     or changed < since
-                    or _reject_future(config, str(item_id), changed)
+                    or _reject_future(config, str(item_id), created, changed)
                 ):
                     continue
-                created = _optional_date(row.get("createdAt"))
                 found[item_id] = RadarItem(
                     source="Hugging Face",
                     source_id=item_id,
                     title=item_id,
                     url=f"https://huggingface.co/{kind}/{item_id}",
-                    published_at=changed,
+                    published_at=created or changed,
+                    updated_at=changed,
                     # Never synthesize prose here: `score_item` reads `summary`,
                     # so a template would let the pipeline score itself on its
                     # own words. "" means the repo shipped no card.
@@ -460,7 +483,9 @@ def fetch_huggingface(config: dict[str, Any], since: datetime, limit: int) -> li
     # search, so the union could reach kinds x searches x limit. Trimming to the
     # most recently changed keeps the source's reported count comparable with
     # every other connector's.
-    return sorted(found.values(), key=lambda item: item.published_at, reverse=True)[:limit]
+    return sorted(
+        found.values(), key=lambda item: item.updated_at or item.published_at, reverse=True
+    )[:limit]
 
 
 def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[RadarItem]:
@@ -512,17 +537,27 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
             rows = _payload_rows(payload, "items", "GitHub Search")
             for row in rows:
                 full_name = row["full_name"]
-                changed = _date(row.get("pushed_at") or row.get("updated_at"))
-                if changed < since or _reject_future(config, full_name, changed):
+                created = _optional_date(row.get("created_at"))
+                changed = _optional_date(row.get("pushed_at")) or _optional_date(
+                    row.get("updated_at")
+                )
+                if (
+                    changed is None
+                    or changed < since
+                    or _reject_future(config, full_name, created, changed)
+                ):
                     continue
                 found[full_name] = RadarItem(
                     source="GitHub",
                     source_id=full_name,
                     title=full_name,
                     url=row["html_url"],
-                    published_at=changed,
+                    published_at=created or changed,
+                    updated_at=changed,
                     summary=github_summary(row),
-                    event_kind=("released" if _date(row.get("created_at")) >= since else "updated"),
+                    event_kind=(
+                        "released" if created is not None and created >= since else "updated"
+                    ),
                     metrics={
                         "stars": float(row.get("stargazers_count") or 0),
                         "forks": float(row.get("forks_count") or 0),
@@ -537,7 +572,9 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
     # Round-robin can overshoot the per-source cap on its final sweep, since
     # every query contributes before the total is known. Trim to the most
     # recently active repositories so `max_items_per_source` stays honest.
-    return sorted(found.values(), key=lambda item: item.published_at, reverse=True)[:limit]
+    return sorted(
+        found.values(), key=lambda item: item.updated_at or item.published_at, reverse=True
+    )[:limit]
 
 
 def fetch_openreview(
@@ -565,6 +602,8 @@ def fetch_openreview(
     venues = [str(value) for value in config.get("venues", []) if str(value).strip()]
     budget = max(1, int(config.get("max_requests", len(venues) or 1)))
     requests_made = 0
+    failures: list[Exception] = []
+    healthy_venues = 0
 
     for venue in venues:
         if requests_made >= budget or len(found) >= limit:
@@ -572,76 +611,87 @@ def fetch_openreview(
 
         # Map venue to submission invitation ID (e.g., "ICLR.cc/2026/Conference/-/Submission")
         invitation = f"{venue}/-/Submission"
-
+        venue_found: dict[str, RadarItem] = {}
+        requests_made += 1
         try:
             notes = client.get_notes(invitation=invitation, limit=min(1000, limit - len(found)))
-        except openreview.openreview.OpenReviewException as e:
-            error_data = e.args[0] if e.args else {}
+            if not isinstance(notes, list):
+                raise ConnectorPayloadError(f"{venue} returned an incompatible notes payload")
+            for note in notes:
+                content = note.content
+                if not isinstance(content, dict):
+                    continue
+
+                note_id = str(note.forum or note.id or "").strip()
+                title = str(_openreview_content(content, "title", "")).strip()
+                created = _milliseconds(note.cdate or note.pdate)
+                modified = _milliseconds(note.mdate) or created
+                activity = modified or created
+
+                if not note_id or not title or not created or not activity:
+                    continue
+                if activity < since or _reject_future(config, note_id, activity):
+                    continue
+
+                abstract = str(_openreview_content(content, "abstract", "")).strip()
+
+                authors = _openreview_content(content, "authors", [])
+                if isinstance(authors, str):
+                    authors = [authors]
+                if not isinstance(authors, list):
+                    authors = []
+
+                artifact_urls = []
+                for key in ("code", "dataset", "project", "supplementary_material"):
+                    value = _openreview_content(content, key, [])
+                    values = value if isinstance(value, list) else [value]
+                    artifact_urls.extend(
+                        str(url)
+                        for url in values
+                        if isinstance(url, str) and url.startswith(("https://", "http://"))
+                    )
+
+                venue_found[note_id] = RadarItem(
+                    source="OpenReview",
+                    source_id=note_id,
+                    title=title,
+                    url=f"https://openreview.net/forum?id={note_id}",
+                    published_at=created,
+                    updated_at=modified,
+                    summary=abstract,
+                    event_kind="updated" if modified and modified > created else "released",
+                    authors=[str(author) for author in authors if str(author).strip()],
+                    artifact_urls=sorted(set(artifact_urls)),
+                    raw={
+                        "id": note.id,
+                        "forum": note.forum,
+                        "cdate": note.cdate,
+                        "mdate": note.mdate,
+                        "content": note.content,
+                    },
+                    parser_version="openreview-api-v2/1",
+                )
+        except openreview.openreview.OpenReviewException as error:
+            error_data = error.args[0] if error.args else {}
             if isinstance(error_data, dict) and error_data.get("name") == "ChallengeRequiredError":
                 raise ConnectorPayloadError(
                     "OpenReview authentication failed: ChallengeRequiredError. "
                     "Check OPENREVIEW_USERNAME/OPENREVIEW_PASSWORD credentials."
-                ) from e
-            raise
-
-        requests_made += 1
-        if not notes:
+                ) from error
+            warnings = config.setdefault("_source_warnings", [])
+            warnings.append(f"{venue}: {type(error).__name__}: {error}")
+            failures.append(error)
             continue
+        except Exception as error:
+            warnings = config.setdefault("_source_warnings", [])
+            warnings.append(f"{venue}: {type(error).__name__}: {error}")
+            failures.append(error)
+            continue
+        healthy_venues += 1
+        found.update(venue_found)
 
-        for note in notes:
-            content = note.content
-            if not isinstance(content, dict):
-                continue
-
-            note_id = str(note.forum or note.id or "").strip()
-            title = str(_openreview_content(content, "title", "")).strip()
-            created = _milliseconds(note.cdate or note.pdate)
-            modified = _milliseconds(note.mdate) or created
-            activity = modified or created
-
-            if not note_id or not title or not created or not activity:
-                continue
-            if activity < since or _reject_future(config, note_id, activity):
-                continue
-
-            abstract = str(_openreview_content(content, "abstract", "")).strip()
-
-            authors = _openreview_content(content, "authors", [])
-            if isinstance(authors, str):
-                authors = [authors]
-            if not isinstance(authors, list):
-                authors = []
-
-            artifact_urls = []
-            for key in ("code", "dataset", "project", "supplementary_material"):
-                value = _openreview_content(content, key, [])
-                values = value if isinstance(value, list) else [value]
-                artifact_urls.extend(
-                    str(url)
-                    for url in values
-                    if isinstance(url, str) and url.startswith(("https://", "http://"))
-                )
-
-            found[note_id] = RadarItem(
-                source="OpenReview",
-                source_id=note_id,
-                title=title,
-                url=f"https://openreview.net/forum?id={note_id}",
-                published_at=created,
-                updated_at=modified,
-                summary=abstract,
-                event_kind="updated" if modified and modified > created else "released",
-                authors=[str(author) for author in authors if str(author).strip()],
-                artifact_urls=sorted(set(artifact_urls)),
-                raw={
-                    "id": note.id,
-                    "forum": note.forum,
-                    "cdate": note.cdate,
-                    "mdate": note.mdate,
-                    "content": note.content,
-                },
-                parser_version="openreview-api-v2/1",
-            )
+    if venues and healthy_venues == 0 and failures:
+        raise failures[0]
 
     return sorted(
         found.values(),
@@ -703,8 +753,10 @@ def fetch_semantic_scholar(
                 published_text = row.get("publicationDate")
                 if not paper_id or not title or not published_text:
                     continue
-                published = _date(str(published_text))
-                if published < since or _reject_future(config, paper_id, published):
+                published = _optional_date(str(published_text))
+                if published is None:
+                    continue
+                if published.date() < since.date() or _reject_future(config, paper_id, published):
                     continue
                 external = row.get("externalIds") or {}
                 if not isinstance(external, dict):
@@ -848,7 +900,9 @@ def fetch_github_releases(
                 published_text = row.get("published_at") or row.get("created_at")
                 if not published_text:
                     continue
-                published = _date(str(published_text))
+                published = _optional_date(str(published_text))
+                if published is None:
+                    continue
                 oldest = min(oldest or published, published)
                 if published < since:
                     continue
@@ -946,15 +1000,22 @@ def fetch_openalex(
         # with no matching works.
         for row in _payload_rows(payload, "results", "OpenAlex"):
             source_id = row["id"].rsplit("/", 1)[-1]
+            authorships = row.get("authorships") or []
+            if not isinstance(authorships, list) or not all(
+                isinstance(authorship, dict) for authorship in authorships
+            ):
+                raise ConnectorPayloadError("OpenAlex authorships must be an array")
             authors = [
-                authorship.get("author", {}).get("display_name", "")
-                for authorship in row.get("authorships", [])
+                (authorship.get("author") or {}).get("display_name", "")
+                for authorship in authorships
+                if isinstance(authorship.get("author") or {}, dict)
             ]
             organizations = list(
                 dict.fromkeys(
                     str(institution.get("display_name") or "").strip()
-                    for authorship in row.get("authorships", [])
+                    for authorship in authorships
                     for institution in (authorship.get("institutions") or [])
+                    if isinstance(institution, dict)
                     if str(institution.get("display_name") or "").strip()
                 )
             )

@@ -960,6 +960,52 @@ def test_dedupe_matches_on_a_weaker_shared_identifier():
     assert len(deduplicate([paper, repo])) == 1
 
 
+def test_dedupe_transitively_absorbs_clusters_joined_by_a_later_bridge():
+    paper = item(
+        source_id="2608.12345",
+        title="A Paper Record With Its Own Distinct Name",
+        url="https://arxiv.org/abs/2608.12345",
+        published_at=datetime(2026, 8, 5, 12, tzinfo=UTC),
+        authors=["Alice"],
+    )
+    repo = item(
+        source="GitHub",
+        source_id="example/eval-suite",
+        title="Example Evaluation Suite Repository",
+        url="https://github.com/example/eval-suite",
+        published_at=datetime(2026, 8, 5, 11, tzinfo=UTC),
+        organizations=["Example Lab"],
+    )
+    bridge = item(
+        source="Semantic Scholar",
+        source_id="S2-bridge",
+        title="A Third Source With Different Metadata",
+        url="https://www.semanticscholar.org/paper/S2-bridge",
+        artifact_urls=[
+            "https://arxiv.org/abs/2608.12345",
+            "https://github.com/example/eval-suite",
+        ],
+        published_at=datetime(2026, 8, 5, 10, tzinfo=UTC),
+        authors=["Bob"],
+    )
+    repo_followup = item(
+        source="Hugging Face",
+        source_id="example/eval-suite-mirror",
+        title="A Later Mirror With Yet Another Distinct Name",
+        url="https://huggingface.co/datasets/example/eval-suite-mirror",
+        artifact_urls=["https://github.com/example/eval-suite"],
+        published_at=datetime(2026, 8, 5, 9, tzinfo=UTC),
+        authors=["Carol"],
+    )
+
+    merged = deduplicate([paper, repo, bridge, repo_followup])
+
+    assert len(merged) == 1
+    assert set(merged[0].authors) == {"Alice", "Bob", "Carol"}
+    assert merged[0].organizations == ["Example Lab"]
+    assert "https://github.com/example/eval-suite" in merged[0].artifact_urls
+
+
 def test_dedupe_keeps_unrelated_records_apart():
     first = item(
         source_id="1111.2222",
@@ -1064,6 +1110,36 @@ def test_simulate_backfill_fetches_each_source_once_for_every_date(monkeypatch):
     assert all(
         item_.title.startswith("A benchmark repository") for run in runs for item_ in run.items
     )
+
+
+def test_simulate_backfill_keeps_each_days_items_independent(monkeypatch):
+    source_item = item(
+        source="GitHub",
+        source_id="org/repo",
+        title="A benchmark repository for evaluation",
+        url="https://github.com/org/repo",
+        published_at=datetime(2026, 7, 10, tzinfo=UTC),
+    )
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "github",
+        lambda config, since, limit: [source_item],
+    )
+    monkeypatch.setitem(
+        __import__("benchmark_radar.pipeline", fromlist=["SOURCE_FETCHERS"]).SOURCE_FETCHERS,
+        "huggingface",
+        lambda config, since, limit: [],
+    )
+    dates = [datetime(2026, 7, 11, tzinfo=UTC), datetime(2026, 7, 12, tzinfo=UTC)]
+
+    runs = simulate_backfill(_backfill_config(), dates)
+
+    first = runs[0].items[0]
+    second = runs[1].items[0]
+    assert first is not second
+    assert first.discovered_at == dates[0]
+    assert second.discovered_at == dates[1]
+    assert first.recency_score > second.recency_score
 
 
 def test_simulate_backfill_excludes_items_published_after_the_simulated_date(monkeypatch):
@@ -1227,6 +1303,32 @@ def test_the_eligibility_counters_sum_to_the_drop():
     assert gap == 1
 
 
+def test_the_fetch_funnel_accounts_for_merged_duplicate_observations():
+    first = _fresh(
+        source_id="paper",
+        title="The Same Benchmark Observation Across Two Sources",
+        url="https://arxiv.org/abs/2608.12345",
+    )
+    second = _fresh(
+        source="GitHub",
+        source_id="org/repo",
+        title="The Same Benchmark Observation Across Two Sources",
+        url="https://github.com/org/repo",
+    )
+
+    selection = _select([first, second])
+
+    assert selection["merged_as_duplicate"] == 1
+    assert selection["deduplicated"] == 1
+    assert selection["fetched"] == (
+        selection["suppressed_as_seen"]
+        + selection["suppressed_future_dated"]
+        + selection["suppressed_untitled"]
+        + selection["merged_as_duplicate"]
+        + selection["deduplicated"]
+    )
+
+
 def test_score_threshold_only_marks_recommendation():
     high = _fresh(source_id="high", title="A New Benchmark Dataset For Evaluation")
     low = _fresh(source_id="low", title="benchmark", summary="")
@@ -1354,6 +1456,28 @@ def test_this_repository_is_excluded_from_its_own_ranking():
     assert selection["suppressed_self_reference"] == 1
     # Billed to its own counter, not to the taxonomy's low-value deductions.
     assert selection["suppressed_low_value"] == 0
+
+
+def test_self_exclusion_takes_precedence_over_other_suppression_reasons():
+    us = _fresh(
+        source="GitHub",
+        source_id="ktwu01/benchmark-radar",
+        url="https://github.com/ktwu01/benchmark-radar",
+        title="Benchmark Radar results dump and dataset index",
+    )
+
+    retained, selection = _score_and_select(
+        [us],
+        _funnel_config(),
+        now=FUNNEL_NOW,
+        fetched_count=1,
+        suppressed_count=0,
+    )
+
+    assert retained == []
+    assert selection["suppressed_self_reference"] == 1
+    assert selection["suppressed_low_value"] == 0
+    assert selection["scored"] - selection["eligible"] == 1
 
 
 def test_self_exclusion_matches_the_repository_not_the_name():

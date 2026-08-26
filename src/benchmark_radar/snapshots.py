@@ -476,16 +476,28 @@ def merge_snapshots(existing: dict[str, Any], incoming: dict[str, Any]) -> dict[
     pass and not the other. Widening the window would not recover them; only
     unioning the passes on write does.
 
-    Item identity is `exact_artifact_key`, the same exact-identifier rule daily
+    Item identity uses every exact identifier transitively, the same rule daily
     dedup and the cumulative corpus already use. On a collision the incoming
     (newer) record wins: it observed the artifact more recently, so its metrics
     and scores are the fresher reading.
     """
+    # A delayed retry can arrive after a newer pass. All "incoming wins"
+    # decisions below must mean chronologically newer, not merely whichever
+    # value happened to be passed as the second argument.
+    existing_generated = _validate_time(
+        existing["generated_at"], source="existing snapshot", field="generated_at"
+    )
+    incoming_generated = _validate_time(
+        incoming["generated_at"], source="incoming snapshot", field="generated_at"
+    )
+    if incoming_generated < existing_generated:
+        existing, incoming = incoming, existing
+
+    all_items = [*existing["evidence_items"], *incoming["evidence_items"]]
+    aliases = artifact_alias_map(all_items)
     merged_items: dict[str, Any] = {}
-    for item in existing["evidence_items"]:
-        merged_items[exact_artifact_key(item)] = item
-    for item in incoming["evidence_items"]:
-        merged_items[exact_artifact_key(item)] = item
+    for item in all_items:
+        merged_items[aliases[exact_artifact_key(item)]] = item
     evidence_items = list(merged_items.values())
 
     # Attention collection normally carries the previous pass forward, but a
