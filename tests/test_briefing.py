@@ -8,6 +8,7 @@ from benchmark_radar.briefing import (
     MAX_INPUT_CHARS,
     MAX_REQUEST_TOKENS,
     BriefingError,
+    _INSTRUCTIONS,
     _output_text,
     _payload,
     _request_token_estimate,
@@ -773,3 +774,53 @@ def test_generate_daily_briefing_keeps_english_when_zh_translation_fails(monkeyp
     assert "Why it matters" in result.bullets[0]
     assert "bullets_zh" not in result.metadata
     assert "caveat_zh" not in result.metadata
+
+
+def test_instructions_enforce_humanized_writing_style():
+    # Issue #365: the daily briefing must be readable by someone with no
+    # context, grounded in evidence, and free of AI-slop tells (framework
+    # jargon, all-purpose intensifiers, bundled-three-examples lists, and
+    # imperative "evaluators should" directives). These rules live in the
+    # writing-style block so a future "add more constraints" edit cannot
+    # silently drop them.
+    instructions = _INSTRUCTIONS
+
+    # Anti-slop: no framework jargon / importance-inflation words.
+    for banned in (
+        "landscape",
+        "pivotal",
+        "underscore",
+        "showcase",
+        "vibrant",
+        "critical role",
+    ):
+        assert banned in instructions, f"style block should name {banned!r} as a word to avoid"
+
+    # Evidence-first neutrality is preserved even inside the style block.
+    assert "never add an opinion" in instructions
+    assert "never paper over absence" in instructions
+
+    # Concrete-vs-abstract: force naming a specific artifact, not a theme.
+    assert "Name the specific artifact" in instructions
+
+    # Reader-relative framing instead of an imperative.
+    assert "specific kind of user" in instructions
+    assert "evaluators should" in instructions  # named only to forbid it
+
+    # First-use abbreviations must be spelled out for a no-context reader.
+    assert "Spell out the first occurrence of every" in instructions
+    assert "Application Programming Interface" in instructions
+
+    # Domain concepts must get a plain-language anchor for a generalist, so
+    # "小白不需要上下文能读懂每一句" holds even for subfield jargon.
+    assert "domain concepts a reader outside the subfield" in instructions
+    assert "plain-language anchor that a generalist can picture" in instructions
+    for concept in ("retrieval-", "corpus boundary", "quantization", "scaling law"):
+        assert concept in instructions
+
+    # The style block is part of the payload sent to the model, and it never
+    # carries an internal issue number -- the model does not need to know the
+    # change was tracked under issue #365.
+    payload = _payload("gpt-5.6", "{}")
+    assert "Writing style:" in payload["instructions"]
+    assert "#365" not in payload["instructions"]
