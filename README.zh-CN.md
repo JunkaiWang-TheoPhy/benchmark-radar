@@ -26,6 +26,22 @@ SWE-bench Verified 的 saturation 过程。**
   <img src="assets/swe-bench-verified.gif" alt="搜索 SWE-bench Verified 并查看模型成绩随时间变化的动画演示" width="720" />
 </a>
 
+## 看看这个 dashboard
+
+**Today：过去 24 小时新出现的东西，全部打分排序，再配一段每日简报，说明发生了
+什么变化，并附上它引用的证据。**
+
+<a href="https://koutian.is-a.dev/benchmark-radar/">
+  <img src="assets/intro-today-page.gif" alt="Today 页面动画演示：新发现 benchmark 的排序信息流，以及附带证据引用的每日简报" width="720" />
+</a>
+
+**Leaderboard：各家模型卡到底最常报告哪些 benchmark，以及每个 benchmark 的成绩
+如何一路上涨，直到几乎没有提升空间。**
+
+<a href="https://koutian.is-a.dev/benchmark-radar/?view=leaderboard">
+  <img src="assets/intro-leaderboard-page.gif" alt="Leaderboard 页面动画演示：按模型卡采用度排序的 benchmark、成绩随时间变化的图表，以及剩余提升空间卡片" width="720" />
+</a>
+
 ## 使用方法
 
 - **[打开 dashboard](https://koutian.is-a.dev/benchmark-radar/)** — 每日洞察、趋势、热门 benchmark、模型卡采用排名等

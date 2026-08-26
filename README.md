@@ -31,6 +31,22 @@ the GIF below to watch SWE-bench Verified move toward saturation.**
   <img src="assets/swe-bench-verified.gif" alt="Animated demo of searching for SWE-bench Verified and viewing its model scores over time" width="720" />
 </a>
 
+## See the dashboard
+
+**Today: everything that showed up in the last 24 hours, scored and ranked, plus
+a short daily briefing that says what changed and links the evidence it used.**
+
+<a href="https://koutian.is-a.dev/benchmark-radar/">
+  <img src="assets/intro-today-page.gif" alt="Animated tour of the Today page: the ranked feed of newly found benchmarks and the daily briefing with its cited evidence" width="720" />
+</a>
+
+**Leaderboard: which benchmarks labs actually report in their model cards, and
+how scores on each one climb until there is almost no headroom left.**
+
+<a href="https://koutian.is-a.dev/benchmark-radar/?view=leaderboard">
+  <img src="assets/intro-leaderboard-page.gif" alt="Animated tour of the Leaderboard page: benchmarks ranked by model-card adoption, a scores-over-time chart, and remaining-headroom cards" width="720" />
+</a>
+
 ## Use it
 
 - **[Open the dashboard](https://koutian.is-a.dev/benchmark-radar/)** — today's insights, trends, popular benchmarks, model-card adoption, and more
