@@ -10308,7 +10308,7 @@
       "metrics": {
         "downloads": 16.0
       },
-      "parser_version": "github-releases/1",
+      "parser_version": "github-releases/2",
       "published_at": "2026-08-20T20:31:21+00:00",
       "rationale": [
         "Also found via GitHub Release",
@@ -10326,7 +10326,7 @@
       "source_id": "embeddings-benchmark/mteb@2.20.0",
       "summary": "2.20.0 (2026-08-20) Feature feat: Add sparse encoder (#5087) add sparse encoder make sparse models on all tasks improve tests improve max sim fix typing simplify comments Update mteb/models/sentence transformer wrapper.py Co-authored-by: Kenneth Enevoldsen &lt;kennethcenevoldsen@gmail.com&gt; Update mteb/models/sentence transformer wrapper.py Co-authored-by: Kenneth Enevoldsen &lt;kennethcenevoldsen@gmail.com&gt; Potential fix for pull request finding Co-authored-by: Copilot Autofix powered by AI &lt;175728472+Copilot@users.noreply.github.com&gt; lint Co-authored-by: Kenneth Enevoldsen &lt;kennethcenevoldsen@gmail.com&gt; Co-authored-by: Copilot Autofix powered by AI &lt;175728472+Copilot@users.noreply.github.com&gt; (`44f4bed`) Unknown dataset: add MMEdit audio editing retrieval (#5246) (`dc9ec0f`) Add UEmbed implementation. (#5200) Add UEmbed implementation. Signed-off-by: sighingsnow &lt;songtingyu220@gmail.com&gt; Fix implementation. Signed-off-by: sighingsnow &lt;songtingyu220@gmail.com&gt; Signed-off-by: sighingsnow &lt;songtingyu220@gmail.com&gt; (`82edbff`)",
       "suppression_reasons": [],
-      "title": "2.20.0",
+      "title": "embeddings-benchmark/mteb 2.20.0",
       "total_score": 38.5,
       "updated_at": "2026-08-20T20:31:21+00:00",
       "url": "https://github.com/embeddings-benchmark/mteb/releases/tag/2.20.0",

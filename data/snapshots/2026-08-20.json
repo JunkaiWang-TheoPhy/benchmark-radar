@@ -13861,7 +13861,7 @@
       "metrics": {
         "downloads": 5.0
       },
-      "parser_version": "github-releases/1",
+      "parser_version": "github-releases/2",
       "published_at": "2026-08-18T05:06:28+00:00",
       "rationale": [
         "Matched: dataset",
@@ -13878,7 +13878,7 @@
       "source_id": "embeddings-benchmark/mteb@2.19.5",
       "summary": "2.19.5 (2026-08-18) Fix fix: break p-MRR rank ties by doc id to match the other retrieval metrics (#5241) fix: break p-MRR rank ties by doc id to match the other retrieval metrics test: cover p-MRR tie-break order-independence (`00616c7`) Unknown dataset: add FSDKaggle2018 (#5235) dataset: add FSDKaggle2018 Add FSDKaggle2018 preparation script (`0adc124`)",
       "suppression_reasons": [],
-      "title": "2.19.5",
+      "title": "embeddings-benchmark/mteb 2.19.5",
       "total_score": 29.8,
       "updated_at": "2026-08-18T05:06:28+00:00",
       "url": "https://github.com/embeddings-benchmark/mteb/releases/tag/2.19.5",

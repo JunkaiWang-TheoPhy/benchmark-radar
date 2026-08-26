@@ -8384,7 +8384,7 @@
       "metrics": {
         "downloads": 0.0
       },
-      "parser_version": "github-releases/1",
+      "parser_version": "github-releases/2",
       "published_at": "2026-08-24T12:24:27+00:00",
       "rationale": [
         "Matched: agent~bench, benchmark, dataset, evaluat",
@@ -8401,7 +8401,7 @@
       "source_id": "modelscope/evalscope@v1.11.0",
       "summary": "中文版 基准测试数据集 多模态评测：新增 PerceptionBench、ScreenSpot-Pro、PMC-VQA、LogicVista、CC-OCR-V2、SLAKE、olmOCR-Bench、CountQA 等视觉、多模态与文档理解基准。 推理与专业能力评测：新增 HiPhO 高中物理奥赛、PhyX 物理推理（选择题与开放题）、PLawBench 法律实践能力评测。 多语言评测：新增 Milu、ARC-Indic、GSM8K-Indic、IndicBoolQ、TriviaQA-Indic、IndicPara、Sanskriti、Hindi HellaSwag，以及 BhashaBench / BhashaBench-Multi 的金融、法律、农业和阿育吠陀子集。 功能增强 评测版本管理：新增原生评测版本与缓存身份校验，并支持确定性的选择题选项打乱，避免语义变更后复用不兼容缓存。 Judge 评测：统一 LLM Judge 的 JSON 输出契约；格式不合法或 [ERROR] 回复将从指标统计中排除。 自定义数据集： general vmcq 统一支持图片、视频、音频输入，并支持 Parquet 和二进制媒体字段； general vqa 新增媒体占位符支持。 指标与报告：统一指标语义和评测报告展示，优化 Agent Trace 的步骤分组及工具调用与结果关联。 服务与 Web：评测界面支持 Sandbox 配置；优化报告列表元数据读取和条件请求。 文档优化 更新文本生成图像任务的指标选择说明。 修复 API 消息、工具调用和 Tau-bench pass^k 等文档说明问题。 问题修复 修复 IFBench NLTK 英文词性标注模型下载、ACEBench 官方评分协议对齐、IFEval 与 GPQA 结果可复现性等问题。 修复多选题括号答案和多答案场景下的标签提取问题。 修复 TaskConfig 未知字段被静默忽略的问题，提供相近字段建议；同时修复 reasoning effort 参数透传。 修复 CMMMU 等视觉基准的媒体输入归一化、OmniDocBench 重复加载、VQA 信息读取等问题。 修复终端评测非法 reward 与未完成运行的结果报告问题，以及 BFCL 空工具调用丢失问题。 修复性能测试中的流式 usage 统计、空 content、请求构建失败、缺失 chat template 和插件返回空数据集等问题。 修复 Web 报告中的本地媒体渲染、空 reasoning tokens 与后端空值处理问题。 English Version Benchmark Datasets Multimodal Evaluation: Added PerceptionBench, ScreenSpot-Pro, PMC-VQA, LogicVista, CC-OCR-V2, SLAKE, olmOCR-Bench, CountQA, and other vision, multimodal, and document-understanding benchmarks. Reasoning and Domain Evaluation: Added HiPhO for high-school physics Olympiad problems, PhyX for multiple-choice and open-ended physical reasoning, and PLawBench for legal practice evaluation. Multilingual Evaluation: Added Milu, ARC-Indic, GSM8K-Indic, IndicBoolQ, TriviaQA-Indic, IndicPara, Sanskriti, Hindi HellaSwag, and BhashaBench / BhashaBench-Multi finance, legal, agriculture, and Ayurveda subsets. Feature Enhancements Evaluation Versioning: Added native evaluation versioning, cache identity checks, and deterministic choice shuffling to prevent incompatible cached predictions from being reused.",
       "suppression_reasons": [],
-      "title": "v1.11.0",
+      "title": "modelscope/evalscope v1.11.0",
       "total_score": 55.15,
       "updated_at": "2026-08-24T12:24:27+00:00",
       "url": "https://github.com/modelscope/evalscope/releases/tag/v1.11.0",
@@ -12245,7 +12245,7 @@
       "metrics": {
         "downloads": 8.0
       },
-      "parser_version": "github-releases/1",
+      "parser_version": "github-releases/2",
       "published_at": "2026-08-25T13:45:10+00:00",
       "rationale": [
         "Matched: dataset",
@@ -12262,7 +12262,7 @@
       "source_id": "embeddings-benchmark/mteb@2.20.2",
       "summary": "2.20.2 (2026-08-25) Ci ci: fix dataset loading workflow hang by replacing uv sync with uv pip install (#5290) ci: isolate uv cache to diagnose dataset loading hang ci: trigger dataset loading workflow on changes to itself ci: add venv creation diagnostics and restore pre-created venv workaround ci: install Python before diagnostic step ci: add trace logging and --no-install-project isolation test ci: scope RUST LOG to uv= to reduce trace volume ci: replace uv sync with pip install to fix hang uv sync hangs indefinitely because it must parse uv.lock (54 MB, 19k lines) before doing anything else. Rust serde deserialization of this file likely exhausts the runner&#39;s available memory, causing the process to stall. The dataset-loading test only needs mteb, pytest, and pytest-rerunfailures, so we bypass the lockfile entirely with a direct pip install. ci: use uv pip install instead of uv sync to avoid lockfile parsing ci: add --system flag to uv pip install ci: create venv via python -m venv then uv pip install ci: add bibtexparser dependency ci: add gitpython dependency (`8df869d`) ci: use minimal deps and fallback venv for dataset loading workflow (#5289) (`f5f504b`) ci: use Python 3.10 in dataset loading workflow (#5286) ci: use Python 3.10 in dataset loading workflow to share uv cache with lint ci: add 30m timeout and verbose output to dataset loading install step (`526cd73`) ci: use --frozen flag in dataset loading and lint install steps (#5277) ci: use --frozen flag in dataset loading and lint install steps Bypasses dependency resolution in CI where the lockfile should always be used as-is, speeding up the install step.",
       "suppression_reasons": [],
-      "title": "2.20.2",
+      "title": "embeddings-benchmark/mteb 2.20.2",
       "total_score": 44.23,
       "updated_at": "2026-08-25T13:45:10+00:00",
       "url": "https://github.com/embeddings-benchmark/mteb/releases/tag/2.20.2",

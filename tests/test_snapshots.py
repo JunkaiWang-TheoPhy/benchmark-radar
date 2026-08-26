@@ -25,6 +25,7 @@ from benchmark_radar.snapshots import (
     validate_snapshot,
     write_snapshot,
 )
+from benchmark_radar.sources import GITHUB_RELEASE_PARSER_VERSION
 
 
 def radar_run(day: int = 27, *, title: str = "A New Evaluation Benchmark") -> RadarRun:
@@ -765,6 +766,42 @@ def test_migrate_does_not_refetch_attention_for_schema_two(tmp_path, monkeypatch
     migrated = migrate_snapshot_history({}, tmp_path)
 
     assert migrated[0]["schema_version"] == 2
+
+
+def test_migrate_backfills_bare_github_release_titles_idempotently(tmp_path):
+    snapshot_dir = tmp_path / "snapshots"
+    snapshot_dir.mkdir()
+    snapshot = snapshot_for_run(radar_run())
+    record = snapshot["evidence_items"][0]
+    record.update(
+        {
+            "source": "GitHub Release",
+            "source_id": "modelscope/evalscope@v1.11.0",
+            "title": "v1.11.0",
+            "url": "https://github.com/modelscope/evalscope/releases/tag/v1.11.0",
+            "parser_version": "github-releases/1",
+        }
+    )
+    original_hash = record["raw_payload_hash"]
+    path = snapshot_dir / "2026-07-27.json"
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+
+    migrate_snapshot_history({}, snapshot_dir)
+    first_pass = path.read_text(encoding="utf-8")
+    dashboard = rebuild_dashboard(snapshot_dir, tmp_path / "site" / "radar.json")
+
+    migrated = json.loads(first_pass)["evidence_items"][0]
+    assert migrated["title"] == "modelscope/evalscope v1.11.0"
+    assert migrated["parser_version"] == GITHUB_RELEASE_PARSER_VERSION
+    assert migrated["raw_payload_hash"] == original_hash
+    assert dashboard["days"][0]["evidence_items"][0]["title"] == ("modelscope/evalscope v1.11.0")
+    artifact = next(
+        entity for entity in dashboard["corpus"]["entities"] if entity["type"] == "artifact"
+    )
+    assert artifact["label"] == "modelscope/evalscope v1.11.0"
+
+    migrate_snapshot_history({}, snapshot_dir)
+    assert path.read_text(encoding="utf-8") == first_pass
 
 
 def test_cumulative_counts_one_artifact_reported_by_two_sources_once(tmp_path):

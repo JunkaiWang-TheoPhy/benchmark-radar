@@ -6,6 +6,7 @@ import pytest
 from benchmark_radar.http import RequestError
 from benchmark_radar.models import RadarItem
 from benchmark_radar.sources import (
+    GITHUB_RELEASE_PARSER_VERSION,
     ConnectorPayloadError,
     collection_method,
     fetch_arxiv,
@@ -17,6 +18,7 @@ from benchmark_radar.sources import (
     fetch_openalex,
     fetch_openreview,
     fetch_semantic_scholar,
+    github_release_title,
 )
 
 FIRST_PARTY_RSS = """\
@@ -564,7 +566,7 @@ def test_github_releases_success_uses_release_notes(monkeypatch):
     assert items[0].title == "Benchmark 2.0"
     assert items[0].summary == "The upstream release notes."
     assert items[0].metrics["downloads"] == 7
-    assert items[0].parser_version == "github-releases/1"
+    assert items[0].parser_version == GITHUB_RELEASE_PARSER_VERSION
 
 
 def test_github_releases_issue_362_title_never_degrades_to_the_bare_tag(
@@ -602,14 +604,14 @@ def test_github_releases_issue_362_title_never_degrades_to_the_bare_tag(
     assert [item.title for item in items] == ["modelscope/evalscope v1.11.0"]
 
     # The same guard covers an empty name and a v-prefix mismatch.
-    from benchmark_radar.sources import _release_title
-
-    assert _release_title("modelscope/evalscope", "v1.11.0", "") == ("modelscope/evalscope v1.11.0")
-    assert _release_title("modelscope/evalscope", "1.11.0", "v1.11.0") == (
+    assert github_release_title("modelscope/evalscope", "v1.11.0", "") == (
+        "modelscope/evalscope v1.11.0"
+    )
+    assert github_release_title("modelscope/evalscope", "1.11.0", "v1.11.0") == (
         "modelscope/evalscope 1.11.0"
     )
     # A real release name still wins.
-    assert _release_title("example/benchmark", "v2.0.0", "Benchmark 2.0") == "Benchmark 2.0"
+    assert github_release_title("example/benchmark", "v2.0.0", "Benchmark 2.0") == "Benchmark 2.0"
 
 
 def test_github_releases_isolates_one_repository_failure(monkeypatch):
