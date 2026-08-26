@@ -20,18 +20,10 @@ body:
       required: true
 
   - type: textarea
-    id: users
-    attributes:
-      label: Who would use it? / 谁会使用
-      description: Name the readers, researchers, benchmark authors, or eval builders who need it. / 说明哪些读者、研究者、benchmark 作者或 eval 开发者会用到它。
-    validations:
-      required: true
-
-  - type: textarea
     id: value
     attributes:
       label: Why is it worth adding? / 为什么值得加入
-      description: Name the task it would make faster, clearer, or possible. / 说明它能让哪项任务更快、更清楚，或从无法完成变为可以完成。
+      description: Who would use it and what task it makes faster or possible. / 谁会用到，它能让哪项任务更快、更清楚或从无法完成变为可以完成。
     validations:
       required: true
 

@@ -11,32 +11,20 @@ body:
         中文也可以。请尽量写清楚：你在做什么、Benchmark Radar 帮你省了
         哪一步、别人看完这个例子能学到什么。截图、链接或一句结论都很好。
 
-  - type: input
-    id: project
-    attributes:
-      label: What are you building or researching? / 你在做什么
-      placeholder: An agent evaluation suite for customer-support workflows / 面向客服工作流的 agent 评测套件
-    validations:
-      required: true
-
   - type: textarea
     id: use
     attributes:
       label: How did Benchmark Radar help? / Benchmark Radar 怎么帮到你
-      description: Name the page, dataset, benchmark, or decision that was useful. / 写具体页面、数据集、benchmark 或它帮你做出的判断。
+      description: What you are building and which page, dataset, or benchmark was useful. / 你在做什么，以及哪个页面、数据集或 benchmark 帮到了你。
+      placeholder: An agent evaluation suite for customer-support workflows — the leaderboard helped us pick ... / 面向客服工作流的 agent 评测套件，排行榜帮我们选了 ...
     validations:
       required: true
 
   - type: textarea
     id: worthy
     attributes:
-      label: Why is this worth showing? / 为什么这个例子值得展示
-      description: |
-        What should another reader notice first: saved research time, a useful
-        benchmark choice, a surprising gap, or a shareable result?
-
-        另一个读者最应该先看到什么：省下的调研时间、一个有用的 benchmark
-        选择、一个意外缺口，还是一个方便传播的结果？
+      label: Why is this worth sharing? / 为什么值得分享
+      description: What should another reader notice first. / 另一个读者最应该先看到什么。
     validations:
       required: true
 
