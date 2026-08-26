@@ -561,9 +561,55 @@ def test_github_releases_success_uses_release_notes(monkeypatch):
     )
 
     assert [item.source_id for item in items] == ["example/benchmark@v2.0.0"]
+    assert items[0].title == "Benchmark 2.0"
     assert items[0].summary == "The upstream release notes."
     assert items[0].metrics["downloads"] == 7
     assert items[0].parser_version == "github-releases/1"
+
+
+def test_github_releases_issue_362_title_never_degrades_to_the_bare_tag(
+    monkeypatch,
+):
+    """A release named after its own tag must not become the record title.
+
+    modelscope/evalscope names every release with the bare tag, so records
+    read as "v1.11.0" and the reader cannot tell which project released.
+    See https://github.com/ktwu01/benchmark-radar/issues/362.
+    """
+
+    def fake_get_json(url, **kwargs):
+        return [
+            {
+                "tag_name": "v1.11.0",
+                "name": "v1.11.0",
+                "html_url": "https://github.com/modelscope/evalscope/releases/tag/v1.11.0",
+                "published_at": "2026-07-27T12:00:00Z",
+                "created_at": "2026-07-27T11:00:00Z",
+                "body": None,
+                "draft": False,
+                "prerelease": False,
+                "author": {"login": "maintainer"},
+                "assets": [],
+            }
+        ]
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+    items = fetch_github_releases(
+        {"repositories": ["modelscope/evalscope"], "max_requests": 1},
+        datetime(2026, 7, 26, tzinfo=UTC),
+        10,
+    )
+    assert [item.title for item in items] == ["modelscope/evalscope v1.11.0"]
+
+    # The same guard covers an empty name and a v-prefix mismatch.
+    from benchmark_radar.sources import _release_title
+
+    assert _release_title("modelscope/evalscope", "v1.11.0", "") == ("modelscope/evalscope v1.11.0")
+    assert _release_title("modelscope/evalscope", "1.11.0", "v1.11.0") == (
+        "modelscope/evalscope 1.11.0"
+    )
+    # A real release name still wins.
+    assert _release_title("example/benchmark", "v2.0.0", "Benchmark 2.0") == "Benchmark 2.0"
 
 
 def test_github_releases_isolates_one_repository_failure(monkeypatch):

@@ -757,6 +757,30 @@ def fetch_semantic_scholar(
     return sorted(found.values(), key=lambda item: item.published_at, reverse=True)[:limit]
 
 
+def _release_title(repository: str, tag: str, name: str) -> str:
+    """Build a release title that never degrades to the bare tag.
+
+    Some repositories (modelscope/evalscope among them) name each release
+    after its own tag, so the raw ``name`` field carries no information and
+    the record reads as "v1.11.0" (issue #362). When the name is empty or
+    mirrors the tag modulo a leading "v", fall back to "<repository> <tag>".
+    """
+    cleaned = name.strip()
+    if not cleaned or _mirrors_tag(cleaned, tag):
+        return f"{repository} {tag}".strip()
+    return cleaned
+
+
+def _mirrors_tag(name: str, tag: str) -> bool:
+    def normalize(value: str) -> str:
+        value = value.strip().lower()
+        if value[:1] == "v":
+            value = value[1:]
+        return value
+
+    return normalize(name) == normalize(tag)
+
+
 def fetch_github_releases(
     config: dict[str, Any],
     since: datetime,
@@ -843,7 +867,7 @@ def fetch_github_releases(
                 found[f"{repository}@{tag}"] = RadarItem(
                     source="GitHub Release",
                     source_id=f"{repository}@{tag}",
-                    title=str(row.get("name") or f"{repository} {tag}").strip(),
+                    title=_release_title(repository, tag, str(row.get("name") or "")),
                     url=url,
                     published_at=published,
                     updated_at=published,
