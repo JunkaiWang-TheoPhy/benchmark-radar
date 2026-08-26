@@ -1,14 +1,15 @@
 import json
+import re
 from datetime import UTC, datetime
 
 import pytest
 
 from benchmark_radar.briefing import (
+    _INSTRUCTIONS,
     MAX_ATTENTION_ITEMS,
     MAX_INPUT_CHARS,
     MAX_REQUEST_TOKENS,
     BriefingError,
-    _INSTRUCTIONS,
     _output_text,
     _payload,
     _request_token_estimate,
@@ -819,8 +820,11 @@ def test_instructions_enforce_humanized_writing_style():
         assert concept in instructions
 
     # The style block is part of the payload sent to the model, and it never
-    # carries an internal issue number -- the model does not need to know the
-    # change was tracked under issue #365.
+    # carries an internal issue reference of any number -- the model does not
+    # need to know how the change was tracked. This asserts any "#NNN" reference
+    # is absent, so it does not go stale when the issue number changes (a prior
+    # version hard-coded "#365" and would silently pass the wrong contract once
+    # the issue was retargeted).
     payload = _payload("gpt-5.6", "{}")
     assert "Writing style:" in payload["instructions"]
-    assert "#365" not in payload["instructions"]
+    assert not re.search(r"#\d+", payload["instructions"])
