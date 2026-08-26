@@ -982,6 +982,7 @@ def test_dedupe_preserves_authors_and_summary_from_the_absorbed_copy():
         title="Same Long Title For Merge Testing Purposes",
         url="https://github.com/org/repo2",
         authors=["Alice"],
+        organizations=["Example Lab"],
         summary="A real card.",
     )
     bare = item(
@@ -990,11 +991,13 @@ def test_dedupe_preserves_authors_and_summary_from_the_absorbed_copy():
         source_id="9999.1111",
         summary="",
         authors=["Bob"],
+        organizations=["Example University"],
         published_at=datetime(2026, 7, 27, 6, tzinfo=UTC),
     )
     merged = deduplicate([described, bare])[0]
 
     assert set(merged.authors) == {"Alice", "Bob"}
+    assert set(merged.organizations) == {"Example Lab", "Example University"}
     assert merged.summary == "A real card."
 
 

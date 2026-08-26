@@ -98,6 +98,9 @@ def deduplicate(items: list[RadarItem]) -> list[RadarItem]:
             for author in item.authors:
                 if author not in existing.authors:
                     existing.authors.append(author)
+            for organization in item.organizations:
+                if organization not in existing.organizations:
+                    existing.organizations.append(organization)
             # A record with no description loses nothing by adopting one that
             # has it; a record that already has one keeps its own.
             if not existing.summary.strip() and item.summary.strip():

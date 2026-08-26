@@ -132,7 +132,10 @@ sources:
     # shared-IP quota. Use official category RSS feeds and filter locally.
     # Atom parsing remains available for deployments with a stable egress IP.
     atom_enabled: false
-    rss_categories: [cs.AI, cs.CL, cs.CV]
+    # Software-agent benchmarks can be primary cs.SE rather than cross-listed
+    # into the three general AI feeds. Include that first-party category so a
+    # named SWE benchmark is not dependent on a cross-list (issue #379).
+    rss_categories: [cs.AI, cs.CL, cs.CV, cs.SE]
     # "benchmark"/"evaluation"/"dataset" alone match most ML papers, since
     # almost every paper evaluates on some existing benchmark. cs.AI+cs.CL+cs.CV
     # publish 700+ papers a day, and the old bare-word list matched roughly two
@@ -141,6 +144,11 @@ sources:
     # merely using one, which cuts matches to about one in ten.
     rss_keywords:
       - benchmark for
+      # Named suites often end the title with "Bench:" and put the full word
+      # only after their name (for example SWE Refactor Bench). The leading
+      # space catches that form without matching compounds such as Workbench:
+      # or Test-Bench: (issue #379).
+      - " bench:"
       - new benchmark
       - novel benchmark
       - benchmark dataset

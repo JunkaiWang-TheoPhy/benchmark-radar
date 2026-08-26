@@ -443,6 +443,47 @@ def test_attention_signals_use_activity_metrics_not_quality_scores():
     assert "evidence_score: 0" not in script
 
 
+def test_evidence_cards_show_fetched_source_metadata_without_inventing_zeroes():
+    """Issue #361: raw facts must be visible beside the derived score."""
+    import json
+    import shutil
+    import subprocess
+
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    node = shutil.which("node")
+    assert node is not None, "Node.js is required for the site behavior tests"
+    result = subprocess.run(
+        [node, "tests/record_facts_harness.mjs"],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=True,
+    )
+    facts = json.loads(result.stdout)
+
+    assert facts["reported"] == [
+        ["Organizations", "OpenAI"],
+        ["Authors", "Alice, Bob +1"],
+        ["Stars", "0"],
+    ]
+    assert facts["unreported"] == [
+        ["Authors", "Deyao Hong"],
+        ["Activity counters", "Not reported by this source"],
+    ]
+    assert facts["dates"] == [
+        ["Published", "date:2026-08-24T17:59:04Z"],
+        ["Updated", "date:2026-08-25T17:59:04Z"],
+    ]
+    assert facts["rendered"] == {
+        "tag": "div",
+        "className": "record-facts",
+        "role": "group",
+        "ariaLabel": "Source metadata",
+    }
+    assert ".record-facts" in styles
+
+
 def test_main_filters_use_persisted_attention_and_snapshot_dates():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
     html = Path("site/index.html").read_text(encoding="utf-8")

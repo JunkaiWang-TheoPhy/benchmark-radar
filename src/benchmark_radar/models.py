@@ -20,6 +20,7 @@ class RadarItem:
     summary: str = ""
     event_kind: str = "discovered"
     authors: list[str] = field(default_factory=list)
+    organizations: list[str] = field(default_factory=list)
     artifact_urls: list[str] = field(default_factory=list)
     metrics: dict[str, float] = field(default_factory=dict)
     raw: dict[str, Any] = field(default_factory=dict, repr=False)
