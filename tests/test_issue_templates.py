@@ -58,6 +58,7 @@ def test_feature_request_form_has_a_small_required_core() -> None:
 
     assert form["labels"] == ["new feature"]
     assert set(fields) == {"feature", "users", "value", "example"}
-    required_ids = ("feature", "users", "value")
+    required_ids = ("feature", "value")
     assert all(fields[field_id]["validations"]["required"] for field_id in required_ids)
+    assert fields["users"]["validations"]["required"] is False
     assert fields["example"]["validations"]["required"] is False
