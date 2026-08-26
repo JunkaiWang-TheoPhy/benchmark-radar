@@ -19,10 +19,11 @@
 做 benchmark 研究的时候发现新东西太多了，所以我搞了这个持续爬虫，每天自动从全网抓新的 benchmark 相关信息。它目前每天从 arXiv、GitHub、Hugging Face、OpenAlex、OpenReview、各家实验室官方 feed、Brave Search、Semantic Scholar、Hacker News 等来源采集，并持续更新。你如果需要寻找 related work 或找到适合eval自己的agent 的 bench 或者关注最新的 eval 进展，可以看这里哈哈哈：
 github.com/ktwu01/benchmark-radar，每天更新，并支持一键导出数据
 
-**点击图片即可查看 AIME 2025 报告分数随时间逐渐饱和的过程。**
+**几秒找到一个 benchmark，再看模型成绩如何随时间变化。点击下面的动图，查看
+SWE-bench Verified 的 saturation 过程。**
 
-<a href="https://koutian.is-a.dev/benchmark-radar/?view=leaderboard&lfrontier=llm-stats-aime-2025">
-  <img src="assets/aime-2025-leaderboard.png" alt="AIME 2025 模型报告分数随发布日期变化的前沿图" width="720" />
+<a href="https://koutian.is-a.dev/benchmark-radar/?view=leaderboard&lfrontier=swe_bench_verified">
+  <img src="assets/swe-bench-verified.gif" alt="搜索 SWE-bench Verified 并查看模型成绩随时间变化的动画演示" width="720" />
 </a>
 
 ## 使用方法
@@ -54,7 +55,7 @@ github.com/ktwu01/benchmark-radar，每天更新，并支持一键导出数据
 
 ## 感谢
 
-前沿模型分数层（包括上方的 AIME 2025 图表）基于 [LLM Stats](https://llm-stats.com) 采集的 benchmark 数据构建，感谢他们把这些数据公开出来。
+前沿模型分数层（包括上方的 SWE-bench Verified 时间线）基于 [LLM Stats](https://llm-stats.com) 采集的 benchmark 数据构建，感谢他们把这些数据公开出来。
 
 ## 引用
 

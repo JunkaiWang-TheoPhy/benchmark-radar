@@ -24,10 +24,11 @@ web. It pulls evidence from arXiv, GitHub, Hugging Face, OpenAlex, OpenReview,
 first-party lab feeds, Brave Search, Semantic Scholar, Hacker News, and more
 every day, and keeps updating.
 
-**Click the image to watch how reported AIME 2025 scores saturated over time.**
+**Find a benchmark in seconds, then see how model scores change over time. Click
+the GIF below to watch SWE-bench Verified move toward saturation.**
 
-<a href="https://koutian.is-a.dev/benchmark-radar/?view=leaderboard&lfrontier=llm-stats-aime-2025">
-  <img src="assets/aime-2025-leaderboard.png" alt="AIME 2025 leaderboard frontier chart, plotting every reported score against each model's release date" width="720" />
+<a href="https://koutian.is-a.dev/benchmark-radar/?view=leaderboard&lfrontier=swe_bench_verified">
+  <img src="assets/swe-bench-verified.gif" alt="Animated demo of searching for SWE-bench Verified and viewing its model scores over time" width="720" />
 </a>
 
 ## Use it
@@ -59,9 +60,9 @@ Scan the QR code to join the WeChat group for daily benchmark updates and eval d
 
 ## Acknowledgements
 
-The frontier-model score layer (including the AIME 2025 chart above) is built on
-benchmark data collected by [LLM Stats](https://llm-stats.com). Thank you for
-keeping that data open.
+The frontier-model score layer, including the SWE-bench Verified timeline above,
+is built on benchmark data collected by [LLM Stats](https://llm-stats.com).
+Thank you for keeping that data open.
 
 ## Citation
 
