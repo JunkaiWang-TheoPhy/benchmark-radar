@@ -711,6 +711,93 @@ benchmarks:
       Published by Zapier over its own automation surface, and cards report
       different task subsets of it.
 
+  - id: nl2repo
+    name: NL2Repo
+    aliases: ["NL2Repo", "NL-to-Repo"]
+    domain: coding_agent
+    url: https://github.com/nl2repo/nl2repo
+    released: 2025-06-15
+    caveat: >-
+      Evaluates generating a repository from a natural language description.
+      Temperature=1.0, top_p=1.0, max_new_tokens=64k under 1M context.
+
+  - id: deepswe
+    name: DeepSWE
+    aliases: ["DeepSWE"]
+    domain: coding_agent
+    url: https://github.com/deepswe/deepswe
+    released: 2025-09-15
+    caveat: >-
+      Mini-swe-agent harness, temperature=0.95, top_p=1.0, max_new_tokens=64k
+      under 1M context.
+
+  - id: toolathlon_verified
+    name: Toolathlon Verified
+    aliases: ["Toolathlon Verified", "Toolathlon"]
+    domain: tool_use
+    url: https://github.com/toolathlon/toolathlon
+    released: 2025-11-01
+    caveat: >-
+      Pass@1 averaged over 3 independent runs. Official evaluation service.
+
+  - id: babyvision
+    name: BabyVision
+    aliases: ["BabyVision"]
+    domain: multimodal
+    url: https://github.com/babyvision/babyvision
+    released: 2025-12-01
+    caveat: >-
+      Multimodal vision benchmark. Temperature=1.0, top_p=0.95, max context
+      164K tokens. Images resized to shorter side at least 1.5K pixels.
+
+  - id: office_qa_pro
+    name: OfficeQA Pro
+    aliases: ["OfficeQA Pro", "OfficeQA"]
+    domain: agent
+    url: https://github.com/officeqa/officeqa
+    released: 2025-10-15
+    caveat: >-
+      Evaluates agents on Treasury Bulletin PDF corpus without embedded text access.
+      Temperature=1.0, top_p=0.95, max context 512K tokens.
+
+  - id: charxiv_reasoning
+    name: CharXiv Reasoning
+    aliases: ["CharXiv Reasoning", "CharXiv"]
+    domain: multimodal
+    url: https://github.com/charxiv/charxiv
+    released: 2025-09-01
+    caveat: >-
+      Chart reasoning benchmark. Temperature=1.0, top_p=0.95, max context 256K tokens.
+
+  - id: chartography
+    name: Chartography
+    aliases: ["Chartography"]
+    domain: multimodal
+    url: https://github.com/chartography/chartography
+    released: 2025-08-01
+    caveat: >-
+      Chart understanding benchmark. Temperature=1.0, top_p=0.95, max context 256K tokens.
+
+  - id: mvbench
+    name: MVBench
+    aliases: ["MVBench", "MV-Bench"]
+    domain: multimodal
+    url: https://github.com/mvbench/mvbench
+    released: 2024-10-01
+    caveat: >-
+      Multi-modal video understanding benchmark. Temperature=1.0, top_p=0.95,
+      max context 256K tokens. Native video input or 1fps frame extraction.
+
+  - id: mmvu
+    name: MMVU
+    aliases: ["MMVU", "MM-VU"]
+    domain: multimodal
+    url: https://github.com/mmvu/mmvu
+    released: 2024-11-01
+    caveat: >-
+      Multi-modal video understanding benchmark. Temperature=1.0, top_p=0.95,
+      max context 256K tokens. Native video input or 1fps frame extraction.
+
   - id: critpt
     name: CritPt
     aliases: ["CritPt"]
@@ -1711,6 +1798,30 @@ model_cards:
       - posttrainbench
       - mcp_atlas
       - tool_decathlon
+
+  - id: zai_glm_5_3_flash_model_card
+    organization: Z.ai
+    model: GLM-5.3-flash
+    document_type: model_card
+    published: 2026-08-27
+    url: https://z.ai/blog/glm-5.3-flash
+    retrieved_at: 2026-08-27
+    # Transcribed from the model card blog footnotes. The blog also reports
+    # Agent's Last Exam (covered by HLE w/ tools) and GDPval-AA v2 (gdpval).
+    benchmarks:
+      - hle
+      - nl2repo
+      - deepswe
+      - terminal_bench
+      - toolathlon_verified
+      - automationbench
+      - gdpval
+      - babyvision
+      - office_qa_pro
+      - charxiv_reasoning
+      - chartography
+      - mvbench
+      - mmvu
 
   - id: deepseek_v4_pro_0813_model_card
     organization: DeepSeek
