@@ -27,6 +27,7 @@ from typing import Any
 
 from .briefing import (
     DEFAULT_BRIEFING_MODEL,
+    MAX_CAVEAT_CHARS,
     RESPONSES_URL,
     BriefingError,
     _extract_response_text,
@@ -37,16 +38,16 @@ from .briefing import (
 from .http import post_json
 
 # Sizing note (issue #231): the briefing's own generation is budgeted at
-# 60,000 request tokens and 4,000 output tokens. A translation call repeats
+# 270,000 request tokens and 16,000 output tokens. A translation call repeats
 # the day's prose, not its evidence packet, so it needs far less headroom.
-MAX_ZH_REQUEST_TOKENS = 30_000
-MAX_ZH_OUTPUT_TOKENS = 4_000
-# Generation assembles a bullet from an 800-char finding and an 800-char
-# rationale plus markers (briefing.py), so an assembled bullet can reach
-# roughly 1,700 chars. The zh rendering is capped at the same ceiling rather
-# than a shorter one, or long valid briefings would silently lose their
+MAX_ZH_REQUEST_TOKENS = 40_000
+MAX_ZH_OUTPUT_TOKENS = 24_000
+# Generation assembles a bullet from a finding of up to 1,000 chars and a
+# rationale of up to 1,000 plus markers (briefing.py), so an assembled bullet
+# can reach roughly 2,090 chars. The zh rendering is capped at the same ceiling
+# rather than a shorter one, or long valid briefings would silently lose their
 # Chinese rendering every day.
-MAX_BULLET_CHARS = 1_800
+MAX_BULLET_CHARS = 2_100
 MAX_ZH_CAVEAT_CHARS = 1_400
 MAX_ZH_ANSWER_CHARS = 900
 
@@ -258,7 +259,7 @@ def translate_briefing_to_zh(
         _output_text(bullet, field="briefing bullet", max_chars=MAX_BULLET_CHARS)
         for bullet in bullets
     ]
-    en_caveat = _output_text(caveat, field="caveat", max_chars=1_000)
+    en_caveat = _output_text(caveat, field="caveat", max_chars=MAX_CAVEAT_CHARS)
     parsed, meta = _translate(
         {"bullets": en_bullets, "caveat": en_caveat},
         _BRIEFING_ZH_SCHEMA,

@@ -1,13 +1,21 @@
 import json
+import re
 from datetime import UTC, datetime
 
 import pytest
 
 from benchmark_radar.briefing import (
+    _INSTRUCTIONS,
     MAX_ATTENTION_ITEMS,
+    MAX_BULLETS,
+    MAX_FINDING_CHARS,
     MAX_INPUT_CHARS,
+    MAX_METRIC_KEYS,
+    MAX_METRIC_VALUE_CHARS,
     MAX_REQUEST_TOKENS,
+    MAX_WHY_CHARS,
     BriefingError,
+    _capped_metrics,
     _output_text,
     _payload,
     _request_token_estimate,
@@ -245,13 +253,13 @@ def test_gpt_input_prioritizes_fresh_attention_before_the_cap():
 
 
 def test_request_budget_counts_high_token_density_text():
-    payload = _payload("gpt-5.6", "界" * 190_000)
+    payload = _payload("gpt-5.6", "界" * 300_000)
 
     assert _request_token_estimate(payload, "gpt-5.6") > MAX_REQUEST_TOKENS
 
 
 def test_request_budget_also_counts_server_character_estimate():
-    payload = _payload("gpt-5.6", "a" * 260_000)
+    payload = _payload("gpt-5.6", "a" * 1_100_000)
 
     assert _request_token_estimate(payload, "gpt-5.6") > MAX_REQUEST_TOKENS
 
@@ -262,7 +270,7 @@ def test_request_budget_has_an_offline_multibyte_fallback(monkeypatch):
     )
     monkeypatch.setattr("tiktoken.get_encoding", lambda name: (_ for _ in ()).throw(OSError()))
 
-    estimate = _request_token_estimate(_payload("gpt-5.6", "界" * 80_000), "gpt-5.6")
+    estimate = _request_token_estimate(_payload("gpt-5.6", "界" * 300_000), "gpt-5.6")
 
     assert estimate > MAX_REQUEST_TOKENS
 
@@ -359,7 +367,7 @@ def test_generate_daily_briefing_uses_real_responses_contract_and_records_usage(
         in captured["payload"]["instructions"]
     )
     assert captured["payload"]["text"]["format"]["strict"] is True
-    assert captured["payload"]["max_output_tokens"] == 4_000
+    assert captured["payload"]["max_output_tokens"] == 16_000
     assert captured["payload"]["store"] is False
     assert captured["kwargs"]["headers"] == {"Authorization": "Bearer secret"}
     assert captured["kwargs"]["attempts"] == 5
@@ -773,3 +781,119 @@ def test_generate_daily_briefing_keeps_english_when_zh_translation_fails(monkeyp
     assert "Why it matters" in result.bullets[0]
     assert "bullets_zh" not in result.metadata
     assert "caveat_zh" not in result.metadata
+
+
+def test_instructions_enforce_humanized_writing_style():
+    # Issue #377: the daily briefing must be readable by someone with no
+    # context, grounded in evidence, and free of AI-slop tells (framework
+    # jargon, all-purpose intensifiers, bundled-three-examples lists, and
+    # imperative "evaluators should" directives). These rules live in the
+    # writing-style block so a future "add more constraints" edit cannot
+    # silently drop them.
+    instructions = _INSTRUCTIONS
+
+    # Assert against the Writing-style subsection only, not the whole prompt,
+    # so a banned word or phrase that happens to appear elsewhere cannot make
+    # the test pass or fail spuriously (and so a rule accidentally moved out of
+    # the style block stops holding the test green).
+    start = instructions.index("Writing style:")
+    end = instructions.index("Output: at most ten")
+    style_block = instructions[start:end]
+    assert "Writing style:" in style_block
+
+    # Anti-slop: no framework jargon / importance-inflation words.
+    for banned in (
+        "landscape",
+        "pivotal",
+        "underscore",
+        "showcase",
+        "vibrant",
+        "robust",
+        "critical role",
+    ):
+        assert banned in style_block, f"style block should name {banned!r} as a word to avoid"
+
+    # Evidence-first neutrality is preserved even inside the style block.
+    assert "never add an opinion" in style_block
+    assert "never paper over absence" in style_block
+
+    # Concrete-vs-abstract: force naming a specific artifact, not a theme.
+    assert "Name the specific artifact" in style_block
+
+    # Reader-relative framing instead of an imperative.
+    assert "specific kind of user" in style_block
+    assert "evaluators should" in style_block  # named only to forbid it
+
+    # First-use abbreviations must be spelled out for a no-context reader.
+    assert "Spell out the first occurrence of every" in style_block
+    assert "Application Programming Interface" in style_block
+
+    # Domain concepts must get a plain-language anchor for a generalist, so
+    # "小白不需要上下文能读懂每一句" holds even for subfield jargon.
+    assert "domain concepts a reader outside the subfield" in style_block
+    assert "plain-language anchor that a generalist can picture" in style_block
+    for concept in ("retrieval-", "corpus boundary", "quantization", "scaling law"):
+        assert concept in style_block
+
+    # The style block is part of the payload sent to the model, and it never
+    # carries an internal issue reference of any number -- the model does not
+    # need to know how the change was tracked. This asserts any "#NNN" reference
+    # is absent, so it does not go stale when the issue number changes (a prior
+    # version hard-coded "#365" and would silently pass the wrong contract once
+    # the issue was retargeted).
+    payload = _payload("gpt-5.6", "{}")
+    assert "Writing style:" in payload["instructions"]
+    assert not re.search(r"#\d+", payload["instructions"])
+
+
+def test_generation_caps_fit_translation_bullet_ceiling():
+    # The assembled bullet is: finding + " Why it matters: " + why + " Evidence: " +
+    # evidence IDs + ". " + confidence + " confidence."
+    marker_overhead = (
+        len(" Why it matters: ")
+        + len(" Evidence: ")
+        + len(", ".join(f"E{i:03d}" for i in range(1, 7)))
+        + len(". ")
+        + len("Medium confidence.")
+    )
+    worst_bullet = MAX_FINDING_CHARS + MAX_WHY_CHARS + marker_overhead
+    from benchmark_radar.translate_zh import MAX_BULLET_CHARS
+
+    assert worst_bullet <= MAX_BULLET_CHARS
+
+
+def test_zh_output_budget_covers_worst_case():
+    # 10 bullets at max + caveat + JSON framing must fit in MAX_ZH_OUTPUT_TOKENS.
+    # Chinese chars are ~1 token each (conservative). Framing ~200 tokens.
+    from benchmark_radar.translate_zh import (
+        MAX_BULLET_CHARS,
+        MAX_ZH_CAVEAT_CHARS,
+        MAX_ZH_OUTPUT_TOKENS,
+    )
+
+    worst_zh_chars = MAX_BULLETS * MAX_BULLET_CHARS + MAX_ZH_CAVEAT_CHARS
+    # Conservative: 1 char ≈ 1 token for CJK, plus ~200 tokens framing.
+    assert worst_zh_chars + 200 <= MAX_ZH_OUTPUT_TOKENS
+
+
+def test_per_item_caps_bound_evidence_packet():
+    # A single evidence record with huge metric values and URL gets truncated,
+    # not the whole packet.
+    huge_metrics = {
+        "m1": "x" * 10_000,  # string value
+        "m2": 42,  # numeric value
+        "m3": "y" * 5_000,
+        "m4": "z" * 3_000,
+        "m5": 99,
+        "m6": "w" * 2_000,
+        "m7": "extra" * 1_000,  # 7th key - should be dropped
+    }
+    capped = _capped_metrics(huge_metrics)
+    # Only first MAX_METRIC_KEYS kept
+    assert len(capped) == MAX_METRIC_KEYS
+    # String values truncated
+    for v in capped.values():
+        if isinstance(v, str):
+            assert len(v) <= MAX_METRIC_VALUE_CHARS
+    # Numeric values pass through
+    assert capped["m2"] == 42
