@@ -1801,7 +1801,7 @@ model_cards:
 
   - id: zai_glm_5_3_flash_model_card
     organization: Z.ai
-    model: GLM-5.3-flash
+    model: GLM-5.3-Flash
     document_type: model_card
     published: 2026-08-27
     url: https://z.ai/blog/glm-5.3-flash
