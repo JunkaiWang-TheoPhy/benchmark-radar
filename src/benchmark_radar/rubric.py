@@ -49,7 +49,14 @@ EVIDENCE_PRIMARY_SOURCES = (
     "Semantic Scholar",
 )
 EVIDENCE_PRIMARY_CREDIT = 40.0
-EVIDENCE_ARTIFACT_SOURCES = ("GitHub", "GitHub Release", "Hugging Face")
+EVIDENCE_ARTIFACT_SOURCES = (
+    "GitHub",
+    "GitHub Release",
+    "GitHub Organization",
+    "Hugging Face",
+    "Kaggle Dataset",
+    "Zenodo",
+)
 EVIDENCE_ARTIFACT_CREDIT = 30.0
 EVIDENCE_AUTHORSHIP_CREDIT = 20.0
 EVIDENCE_CROSS_LINK_CREDIT = 20.0

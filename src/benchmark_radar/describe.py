@@ -88,6 +88,12 @@ def huggingface_summary(row: dict[str, Any], title: str) -> str:
     prose = strip_title_echo(clean_card_text(row.get("description")), title)
     if prose:
         return prose
+    # Spaces expose their maintainer-written short description in cardData
+    # instead of the dataset/model description field. It remains direct upstream
+    # text, so using it preserves the no-generated-summary rule.
+    card_data = row.get("cardData") or {}
+    if isinstance(card_data, dict):
+        return strip_title_echo(clean_card_text(card_data.get("short_description")), title)
     return ""
 
 

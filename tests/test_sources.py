@@ -16,11 +16,15 @@ from benchmark_radar.sources import (
     fetch_brave,
     fetch_first_party_feeds,
     fetch_github,
+    fetch_github_organizations,
     fetch_github_releases,
     fetch_huggingface,
+    fetch_huggingface_papers,
+    fetch_kaggle_datasets,
     fetch_openalex,
     fetch_openreview,
     fetch_semantic_scholar,
+    fetch_zenodo_records,
     github_release_title,
 )
 
@@ -594,6 +598,171 @@ def test_github_preserves_creation_and_update_times(monkeypatch):
     assert items[0].published_at == datetime(2026, 6, 1, tzinfo=UTC)
     assert items[0].updated_at == datetime(2026, 7, 27, 12, tzinfo=UTC)
     assert items[0].event_kind == "updated"
+
+
+def _github_organization_row(index, *, created="2026-07-27T12:00:00Z"):
+    return {
+        "id": index,
+        "full_name": f"lab/repository-{index}",
+        "html_url": f"https://github.com/lab/repository-{index}",
+        "created_at": created,
+        "pushed_at": "2026-07-27T13:00:00Z",
+        "description": "A benchmark evaluation dataset.",
+        "stargazers_count": 5,
+        "forks_count": 1,
+        "fork": False,
+        "archived": False,
+        "disabled": False,
+    }
+
+
+def test_github_organizations_collect_only_recent_non_fork_repositories(monkeypatch):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.load_priority_github_organizations",
+        lambda path: [{"login": "first-lab", "tier": "priority", "display_name": "First Lab"}],
+    )
+    calls = []
+
+    def fake_get_json(url, **kwargs):
+        calls.append((url, kwargs["params"]))
+        row = _github_organization_row(1)
+        fork = _github_organization_row(2)
+        fork["fork"] = True
+        historical = _github_organization_row(3, created="2026-07-25T12:00:00Z")
+        return [row, fork, historical]
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+    items = fetch_github_organizations(
+        {"registry_path": "ignored.yml", "max_requests": 2, "page_size": 30},
+        datetime(2026, 7, 26, tzinfo=UTC),
+        10,
+    )
+
+    assert len(calls) == 1
+    assert calls[0][0] == "https://api.github.com/orgs/first-lab/repos"
+    assert calls[0][1]["sort"] == "created"
+    assert [item.source_id for item in items] == ["lab/repository-1"]
+    assert items[0].source == "GitHub Organization"
+    assert items[0].organizations == ["First Lab"]
+    assert items[0].event_kind == "released"
+
+
+def test_github_organizations_isolate_one_failed_organization(monkeypatch):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.load_priority_github_organizations",
+        lambda path: [
+            {"login": "broken-lab", "tier": "priority", "display_name": "Broken Lab"},
+            {"login": "healthy-lab", "tier": "standard", "display_name": "Healthy Lab"},
+        ],
+    )
+
+    def fake_get_json(url, **kwargs):
+        if "broken-lab" in url:
+            raise RequestError("HTTP 503 from https://api.github.com/orgs/broken-lab/repos")
+        return [_github_organization_row(4)]
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+    config = {"registry_path": "ignored.yml", "max_requests": 2}
+    items = fetch_github_organizations(config, datetime(2026, 7, 26, tzinfo=UTC), 10)
+
+    assert [item.source_id for item in items] == ["lab/repository-4"]
+    assert config["_source_warnings"][0].startswith("broken-lab: RequestError:")
+
+
+def test_huggingface_papers_preserves_arxiv_and_project_identifiers(monkeypatch):
+    payload = [
+        {
+            "paper": {
+                "id": "2607.99999",
+                "title": "A New Agent Benchmark",
+                "publishedAt": "2026-07-27T00:00:00Z",
+                "submittedOnDailyAt": "2026-07-27T12:00:00Z",
+                "summary": "An upstream evaluation suite.",
+                "upvotes": 9,
+                "authors": [{"name": "Paper Author"}],
+                "githubRepo": "https://github.com/lab/benchmark",
+                "projectPage": "https://lab.example/benchmark",
+            }
+        }
+    ]
+    monkeypatch.setattr("benchmark_radar.sources.get_json", lambda url, **kwargs: payload)
+
+    items = fetch_huggingface_papers({}, datetime(2026, 7, 26, tzinfo=UTC), 10)
+
+    assert [item.source_id for item in items] == ["2607.99999"]
+    assert items[0].source == "Hugging Face Papers"
+    assert items[0].published_at == datetime(2026, 7, 27, tzinfo=UTC)
+    assert items[0].artifact_urls == [
+        "https://arxiv.org/abs/2607.99999",
+        "https://github.com/lab/benchmark",
+        "https://lab.example/benchmark",
+    ]
+    assert items[0].summary == "An upstream evaluation suite."
+
+
+def test_kaggle_datasets_preserves_source_text_and_tags(monkeypatch):
+    payload = [
+        {
+            "ref": "lab/agent-benchmark",
+            "url": "https://www.kaggle.com/datasets/lab/agent-benchmark",
+            "title": "Agent Benchmark Dataset",
+            "subtitle": "A public evaluation dataset.",
+            "lastUpdated": "2026-07-27T12:00:00Z",
+            "creatorName": "Dataset Author",
+            "downloadCount": 11,
+            "voteCount": 2,
+            "viewCount": 31,
+            "tags": [{"name": "benchmark"}, {"name": "llm"}],
+        }
+    ]
+    monkeypatch.setattr("benchmark_radar.sources.get_json", lambda url, **kwargs: payload)
+
+    items = fetch_kaggle_datasets(
+        {"searches": ["agent benchmark"], "max_requests": 1},
+        datetime(2026, 7, 26, tzinfo=UTC),
+        10,
+    )
+
+    assert [item.source_id for item in items] == ["lab/agent-benchmark"]
+    assert items[0].source == "Kaggle Dataset"
+    assert items[0].summary == "A public evaluation dataset. | benchmark | llm"
+    assert items[0].metrics == {"downloads": 11.0, "votes": 2.0, "views": 31.0}
+
+
+def test_zenodo_records_preserve_doi_and_upstream_metadata(monkeypatch):
+    payload = {
+        "hits": {
+            "hits": [
+                {
+                    "recid": "12345",
+                    "doi_url": "https://doi.org/10.5281/zenodo.12345",
+                    "updated": "2026-07-27T12:00:00Z",
+                    "stats": {"downloads": 13, "views": 21},
+                    "links": {"self_html": "https://zenodo.org/records/12345"},
+                    "metadata": {
+                        "title": "A Multimodal Benchmark Dataset",
+                        "publication_date": "2026-07-27",
+                        "description": "<p>Public upstream evaluation data.</p>",
+                        "creators": [{"name": "Zenodo Author"}],
+                    },
+                }
+            ]
+        }
+    }
+    monkeypatch.setattr("benchmark_radar.sources.get_json", lambda url, **kwargs: payload)
+
+    items = fetch_zenodo_records(
+        {"searches": ["benchmark"], "max_requests": 1},
+        datetime(2026, 7, 26, tzinfo=UTC),
+        10,
+    )
+
+    assert [item.source_id for item in items] == ["12345"]
+    assert items[0].source == "Zenodo"
+    assert items[0].summary == "Public upstream evaluation data."
+    assert items[0].authors == ["Zenodo Author"]
+    assert items[0].artifact_urls == ["https://doi.org/10.5281/zenodo.12345"]
+    assert items[0].metrics == {"downloads": 13.0, "views": 21.0}
 
 
 def test_openreview_success_uses_only_upstream_abstract(monkeypatch):

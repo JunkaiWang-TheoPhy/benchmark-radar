@@ -48,6 +48,14 @@ def test_huggingface_uses_real_card_prose():
     )
 
 
+def test_huggingface_space_card_data_keeps_maintainer_description():
+    row = {
+        "description": "",
+        "cardData": {"short_description": "A public benchmark leaderboard."},
+    }
+    assert huggingface_summary(row, "lab/leaderboard") == "A public benchmark leaderboard."
+
+
 def test_huggingface_does_not_rewrite_declared_metadata_as_prose():
     row = {
         "description": "",

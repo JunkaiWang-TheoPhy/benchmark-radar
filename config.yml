@@ -183,7 +183,9 @@ sources:
   huggingface:
     enabled: true
     required: true
-    kinds: [datasets]
+    # Datasets cover released evaluation corpora; Spaces add public
+    # leaderboards and interactive benchmark explorers hosted on the Hub.
+    kinds: [datasets, spaces]
     searches:
       - benchmark
       - evaluation
@@ -202,6 +204,68 @@ sources:
       - '"data contamination" in:name,description,readme'
       - '"agent benchmark" in:name,description,readme'
       - '"agentic benchmark" in:name,description,readme'
+
+  # Reviewed public organizations are an additional discovery surface for new
+  # repositories whose names may not match generic GitHub search phrases. The
+  # registry records source evidence and review dates; organization membership
+  # never changes relevance or evidence scoring.
+  github_organizations:
+    enabled: true
+    required: false
+    registry_path: data/priority_github_organizations.yml
+    tiers: [priority, standard, probation]
+    max_organizations: 360
+    page_size: 30
+    max_pages_per_organization: 1
+    max_requests: 360
+    attempts: 2
+    timeout_seconds: 30
+
+  # A community-surfaced supplementary paper stream. Its items carry the
+  # original arXiv identifier for exact cross-source deduplication; the source
+  # is discovery evidence, not a replacement for the first-party arXiv feed.
+  huggingface_papers:
+    enabled: true
+    required: false
+    page_size: 100
+    attempts: 3
+    timeout_seconds: 30
+
+  # Public Kaggle datasets cover data releases that may not be mirrored to the
+  # Hugging Face Hub. Specific high-signal searches avoid treating every hosted
+  # table as an AI benchmark, and normal taxonomy still filters every result.
+  kaggle_datasets:
+    enabled: true
+    required: false
+    searches:
+      - AI benchmark
+      - LLM evaluation
+      - agent benchmark
+      - benchmark dataset
+      - data contamination
+      - synthetic data evaluation
+    page_size: 20
+    max_requests: 6
+    attempts: 3
+    timeout_seconds: 30
+
+  # DOI-bearing research datasets and evaluation artifacts that are often not
+  # mirrored to code hubs or model hubs. The canonical DOI is retained for
+  # cross-source identity resolution.
+  zenodo:
+    enabled: true
+    required: false
+    searches:
+      - AI benchmark
+      - LLM evaluation
+      - agent benchmark
+      - benchmark dataset
+      - data contamination
+      - synthetic data evaluation
+    page_size: 20
+    max_requests: 6
+    attempts: 3
+    timeout_seconds: 30
 
   openreview:
     enabled: true
