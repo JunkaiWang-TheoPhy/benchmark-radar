@@ -37,7 +37,11 @@ SCHEMA_VERSION = 2
 SUPPORTED_SCHEMA_VERSIONS = {1, SCHEMA_VERSION}
 # Mirrors briefing.MAX_BULLETS. Defined here rather than imported because
 # `briefing` imports this module, and a validator cannot depend on its caller.
-MAX_BRIEFING_BULLETS = 3
+MAX_BRIEFING_BULLETS = 10
+# Mirrors translate_zh.MAX_BULLET_CHARS. Defined here to validate persisted
+# briefings at the storage boundary so generation, translation, and storage
+# each enforce the same ceiling.
+MAX_BRIEFING_BULLET_CHARS = 2_100
 
 # Mirrors the `required: true` sources in config.yml: the connectors that need
 # no optional secret and whose failure `run_pipeline` already treats as fatal
@@ -200,6 +204,11 @@ def _validate_briefing(briefing: Any, *, source: str, date: str) -> None:
     for bullet in bullets:
         if not isinstance(bullet, str) or not bullet.strip():
             raise SnapshotError(f"{source}: briefing.bullets entries must be non-empty strings")
+        if len(bullet) > MAX_BRIEFING_BULLET_CHARS:
+            raise SnapshotError(
+                f"{source}: briefing.bullets entry holds {len(bullet)} characters, "
+                f"more than the {MAX_BRIEFING_BULLET_CHARS} a briefing bullet may carry"
+            )
     # Optional Chinese rendering (issue #231). Present only when the run asked
     # for it and the translation passed; when present it must mirror the
     # English, because the dashboard swaps the two arrays wholesale.
@@ -213,6 +222,11 @@ def _validate_briefing(briefing: Any, *, source: str, date: str) -> None:
             if not isinstance(bullet, str) or not bullet.strip():
                 raise SnapshotError(
                     f"{source}: briefing.bullets_zh entries must be non-empty strings"
+                )
+            if len(bullet) > MAX_BRIEFING_BULLET_CHARS:
+                raise SnapshotError(
+                    f"{source}: briefing.bullets_zh entry holds {len(bullet)} characters, "
+                    f"more than the {MAX_BRIEFING_BULLET_CHARS} a briefing bullet may carry"
                 )
     if briefing.get("caveat_zh") is not None and (
         not isinstance(briefing["caveat_zh"], str) or not briefing["caveat_zh"].strip()

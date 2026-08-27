@@ -1166,8 +1166,8 @@ def test_validate_snapshot_rejects_unusable_briefing_bullets():
     with pytest.raises(SnapshotError, match="non-empty strings"):
         validate_snapshot(snapshot)
 
-    snapshot["briefing"]["bullets"] = ["a", "b", "c", "d"]
-    with pytest.raises(SnapshotError, match="more than the 3"):
+    snapshot["briefing"]["bullets"] = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"]
+    with pytest.raises(SnapshotError, match="more than the 10"):
         validate_snapshot(snapshot)
 
 
