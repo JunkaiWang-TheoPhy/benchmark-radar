@@ -47,6 +47,14 @@ def test_exact_primary_identifier_wins_over_secondary_record_and_repo_links():
     assert exact_artifact_key(record) == "artifact:arxiv:2607.12345"
 
 
+def test_arxiv_pdf_and_abstract_urls_share_one_identity():
+    abstract = item(url="https://arxiv.org/abs/2608.12345")
+    pdf = item(url="https://arxiv.org/pdf/2608.12345v2.pdf")
+
+    assert exact_artifact_key(abstract) == "artifact:arxiv:2608.12345"
+    assert exact_artifact_key(pdf) == exact_artifact_key(abstract)
+
+
 def test_every_identifier_of_the_same_kind_is_preserved():
     record = item(
         artifact_urls=[

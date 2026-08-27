@@ -42,11 +42,13 @@ def _item_block(index: int, item: RadarItem) -> str:
         # restate the source and event line directly above.
         lines.extend(["_No description published at the source._", ""])
     details = [
-        f"Published/updated: `{item.published_at.date().isoformat()}`",
+        f"Published: `{item.published_at.date().isoformat()}`",
         f"Evidence: `{item.evidence_score:.2f}`",
         f"Relevance: `{item.relevance_score:.2f}`",
         f"Recency: `{item.recency_score:.2f}`",
     ]
+    if item.updated_at and item.updated_at != item.published_at:
+        details.insert(1, f"Updated: `{item.updated_at.date().isoformat()}`")
     if authors:
         details.append(f"Authors: {_escape(authors)}")
     if signals:
@@ -271,6 +273,7 @@ def render_markdown(
         suppressed = int(selection.get("suppressed_as_seen") or 0)
         suppressed_future = int(selection.get("suppressed_future_dated") or 0)
         suppressed_untitled = int(selection.get("suppressed_untitled") or 0)
+        merged_as_duplicate = int(selection.get("merged_as_duplicate") or 0)
         suppressed_low_value = int(selection.get("suppressed_low_value") or 0)
         # Absent from snapshots written before scoring v4, where self-records
         # were simply ranked; `or 0` keeps those funnels rendering unchanged.
@@ -301,6 +304,11 @@ def render_markdown(
                 + (
                     f"**{suppressed_untitled}** untitled records dropped → "
                     if suppressed_untitled
+                    else ""
+                )
+                + (
+                    f"**{merged_as_duplicate}** duplicate observations merged → "
+                    if merged_as_duplicate
                     else ""
                 )
                 + f"**{selection.get('deduplicated', 0)}** after dedupe → "

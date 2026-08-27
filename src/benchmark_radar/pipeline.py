@@ -72,6 +72,37 @@ def dedupe_keys(item: RadarItem) -> list[str]:
 
 
 def deduplicate(items: list[RadarItem]) -> list[RadarItem]:
+    def merge_into(target: RadarItem, duplicate: RadarItem) -> None:
+        if duplicate.url != target.url and duplicate.url not in target.artifact_urls:
+            target.artifact_urls.append(duplicate.url)
+        target.metrics.update(
+            {
+                metric: max(value, target.metrics.get(metric, 0))
+                for metric, value in duplicate.metrics.items()
+            }
+        )
+        # The merged copy is dropped, so keep the corroboration it carried:
+        # a cross-source link is exactly what the evidence component reads.
+        for url in duplicate.artifact_urls:
+            if url != target.url and url not in target.artifact_urls:
+                target.artifact_urls.append(url)
+        for author in duplicate.authors:
+            if author not in target.authors:
+                target.authors.append(author)
+        for organization in duplicate.organizations:
+            if organization not in target.organizations:
+                target.organizations.append(organization)
+        # A record with no description loses nothing by adopting one that has
+        # it; a record that already has one keeps its own.
+        if not target.summary.strip() and duplicate.summary.strip():
+            target.summary = duplicate.summary
+        for rationale in duplicate.rationale:
+            if rationale not in target.rationale:
+                target.rationale.append(rationale)
+        note = f"Also found via {duplicate.source}"
+        if note not in target.rationale:
+            target.rationale.append(note)
+
     kept: dict[str, RadarItem] = {}
     order: list[RadarItem] = []
     for item in sorted(
@@ -80,43 +111,31 @@ def deduplicate(items: list[RadarItem]) -> list[RadarItem]:
         reverse=True,
     ):
         keys = dedupe_keys(item)
-        existing = next((kept[key] for key in keys if key in kept), None)
-        if existing:
-            if item.url not in existing.artifact_urls:
-                existing.artifact_urls.append(item.url)
-            existing.metrics.update(
-                {
-                    metric: max(value, existing.metrics.get(metric, 0))
-                    for metric, value in item.metrics.items()
-                }
-            )
-            # The merged copy is dropped, so keep the corroboration it carried:
-            # a cross-source link is exactly what the evidence component reads.
-            for url in item.artifact_urls:
-                if url not in existing.artifact_urls:
-                    existing.artifact_urls.append(url)
-            for author in item.authors:
-                if author not in existing.authors:
-                    existing.authors.append(author)
-            for organization in item.organizations:
-                if organization not in existing.organizations:
-                    existing.organizations.append(organization)
-            # A record with no description loses nothing by adopting one that
-            # has it; a record that already has one keeps its own.
-            if not existing.summary.strip() and item.summary.strip():
-                existing.summary = item.summary
-            note = f"Also found via {item.source}"
-            if note not in existing.rationale:
-                existing.rationale.append(note)
-            # The absorbed record's identities now point at the survivor, so a
-            # third copy sharing only the arXiv id or only the title still lands
-            # on the same artifact.
-            target = existing
+        matches: list[RadarItem] = []
+        for key in keys:
+            match = kept.get(key)
+            if match is not None and not any(match is candidate for candidate in matches):
+                matches.append(match)
+        if matches:
+            # A bridge can connect two clusters that already exist: for example,
+            # a DOI-plus-repository record arriving after DOI-only and repo-only
+            # observations. Keep the first (newest) cluster and absorb every
+            # other match so identity remains genuinely transitive.
+            positions = {id(candidate): index for index, candidate in enumerate(order)}
+            matches.sort(key=lambda candidate: positions[id(candidate)])
+            target = matches[0]
+            merge_into(target, item)
+            for absorbed in matches[1:]:
+                merge_into(target, absorbed)
+                order = [candidate for candidate in order if candidate is not absorbed]
+                for known_key, known_target in list(kept.items()):
+                    if known_target is absorbed:
+                        kept[known_key] = target
         else:
             target = item
             order.append(item)
         for key in keys:
-            kept.setdefault(key, target)
+            kept[key] = target
     # One record is registered under several keys, so dict values repeat.
     # Insertion order is preserved to keep the output deterministic.
     return order
@@ -516,7 +535,7 @@ def _score_and_select(
     suppressed_low_value = sum(
         1
         for item in scored
-        if [reason for reason in item.suppression_reasons if reason != rubric.SELF_REFERENCE_LABEL]
+        if rubric.SELF_REFERENCE_LABEL not in item.suppression_reasons and item.suppression_reasons
     )
     uncategorized = sum(
         1
@@ -524,6 +543,7 @@ def _score_and_select(
         if not item.suppression_reasons and not item.watchlist and not item.categories
     )
     recommended = sum(1 for item in selected if item.recommended)
+    merged_as_duplicate = len(titled) - len(unique)
     selection = {
         "fetched": fetched_count,
         # arXiv records already seen in a previous run, dropped before dedupe.
@@ -535,6 +555,8 @@ def _score_and_select(
         # connector regresses, so a non-zero value here is the signal that one
         # has, rather than an unexplained gap between fetched and deduplicated.
         "suppressed_untitled": untitled_count,
+        # Multiple source observations absorbed into one surviving artifact.
+        "merged_as_duplicate": merged_as_duplicate,
         "deduplicated": len(unique),
         "scored": len(scored),
         "eligible": len(selected),
@@ -656,7 +678,7 @@ def simulate_backfill(
     for simulated_now in dates:
         since = simulated_now - timedelta(hours=lookback_hours)
         visible = [
-            item
+            deepcopy(item)
             for item in pool
             if since <= (item.updated_at or item.published_at) <= simulated_now
         ]

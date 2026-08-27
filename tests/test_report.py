@@ -31,6 +31,24 @@ def test_report_contains_evidence_and_health():
     assert "Source health" in report
 
 
+def test_report_distinguishes_release_and_update_dates():
+    record = RadarItem(
+        source="GitHub",
+        source_id="org/repo",
+        title="Updated benchmark suite",
+        url="https://github.com/org/repo",
+        published_at=datetime(2026, 6, 1, tzinfo=UTC),
+        updated_at=datetime(2026, 7, 27, tzinfo=UTC),
+        categories=["benchmark"],
+    )
+
+    report = render_markdown(_run([record]))
+
+    assert "Published: `2026-06-01`" in report
+    assert "Updated: `2026-07-27`" in report
+    assert "Published/updated" not in report
+
+
 def test_source_health_names_each_connectors_collection_method():
     # Issue #174: every row of the Source health table looked the same at a
     # glance, so a stalled RSS feed and a broken search API read as identical
@@ -166,6 +184,21 @@ def test_report_accounts_for_future_dated_quarantine_in_the_funnel():
 
     assert "**2** fetched → **1** future-dated records quarantined" in report
     assert "→ **1** after dedupe" in report
+
+
+def test_report_names_duplicate_observations_merged_by_dedupe():
+    run = _run([_record(1)])
+    run.selection = {
+        "fetched": 3,
+        "merged_as_duplicate": 2,
+        "deduplicated": 1,
+        "eligible": 1,
+        "published": 1,
+    }
+
+    report = render_markdown(run)
+
+    assert "**2** duplicate observations merged → **1** after dedupe" in report
 
 
 def test_funnel_excludes_watchlist_bypasses_from_the_threshold_count():

@@ -85,6 +85,7 @@ def test_first_party_feeds_parse_rss_and_atom_and_filter_noise(monkeypatch):
     assert items[0].event_kind == "updated"
     assert items[0].source == "First-party feed"
     assert items[0].source_id == "Lab Atom:tag:lab.example,2026:leaderboard"
+    assert items[0].organizations == ["Lab Atom"]
 
 
 def test_first_party_feeds_require_any_narrows_broad_publishers(monkeypatch):
@@ -126,6 +127,28 @@ def test_first_party_feeds_reject_non_feed_documents(monkeypatch):
             datetime(2026, 8, 8, 0, tzinfo=UTC),
             10,
         )
+
+
+def test_first_party_feeds_isolate_one_broken_feed(monkeypatch):
+    def fake_get_text(url, attempts=3, timeout=30):
+        if url.endswith("/broken"):
+            raise RequestError("HTTP 503 from https://lab.example/broken")
+        return FIRST_PARTY_RSS
+
+    monkeypatch.setattr("benchmark_radar.sources.get_text", fake_get_text)
+    config = {
+        "feeds": [
+            {"name": "Broken Lab", "url": "https://lab.example/broken"},
+            {"name": "Healthy Lab", "url": "https://lab.example/healthy"},
+        ]
+    }
+
+    items = fetch_first_party_feeds(config, datetime(2026, 8, 8, 0, tzinfo=UTC), 10)
+
+    assert [item.title for item in items] == ["A new agent evaluation benchmark"]
+    assert config["_source_warnings"] == [
+        "Broken Lab: RequestError: HTTP 503 from https://lab.example/broken"
+    ]
 
 
 ARXIV_XML = """\
@@ -233,6 +256,21 @@ def test_arxiv_falls_back_to_official_rss_when_atom_is_rate_limited(monkeypatch)
     assert items[0].event_kind == "released"
 
 
+def test_arxiv_atom_rejects_missing_dates_instead_of_inventing_now(monkeypatch):
+    malformed = ARXIV_XML.replace("<updated>2026-07-26T18:00:00Z</updated>", "")
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_text",
+        lambda url, params=None: malformed,
+    )
+
+    with pytest.raises(ConnectorPayloadError, match="arXiv Atom item is missing required fields"):
+        fetch_arxiv(
+            {"queries": ["all:benchmark"], "rss_categories": []},
+            datetime(2026, 7, 25, 12, tzinfo=UTC),
+            10,
+        )
+
+
 def test_arxiv_can_use_official_rss_as_primary(monkeypatch):
     def fake_get_text(url, params=None):
         assert url == "https://rss.arxiv.org/rss/cs.AI"
@@ -316,6 +354,35 @@ def test_openalex_carries_author_institutions(monkeypatch):
 
     assert items[0].authors == ["Radar Author"]
     assert items[0].organizations == ["Example University", "Example Lab"]
+
+
+def test_openalex_accepts_explicitly_null_authorships(monkeypatch):
+    monkeypatch.setenv("OPENALEX_API_KEY", "key")
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, params: {
+            "results": [
+                {
+                    "id": "https://openalex.org/W1",
+                    "display_name": "Benchmark without authorship metadata",
+                    "publication_date": "2026-08-26",
+                    "primary_location": {"landing_page_url": "https://example.com/w1"},
+                    "authorships": None,
+                    "cited_by_count": 0,
+                }
+            ]
+        },
+    )
+
+    items = fetch_openalex(
+        {"searches": ["benchmark"]},
+        datetime(2026, 8, 25, tzinfo=UTC),
+        10,
+        now=datetime(2026, 8, 26, 12, tzinfo=UTC),
+    )
+
+    assert items[0].authors == []
+    assert items[0].organizations == []
 
 
 def test_arxiv_rejects_incompatible_empty_rss_document(monkeypatch):
@@ -508,6 +575,26 @@ def test_github_respects_the_per_source_limit_after_round_robin(monkeypatch):
     assert len(items) == 150
 
 
+def test_github_preserves_creation_and_update_times(monkeypatch):
+    row = _github_row(1)
+    row["created_at"] = "2026-06-01T00:00:00Z"
+    row["pushed_at"] = "2026-07-27T12:00:00Z"
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, params=None, headers=None: {"items": [row]},
+    )
+
+    items = fetch_github(
+        {"queries": ["benchmark"], "request_delay_seconds": 0},
+        datetime(2026, 7, 26, tzinfo=UTC),
+        10,
+    )
+
+    assert items[0].published_at == datetime(2026, 6, 1, tzinfo=UTC)
+    assert items[0].updated_at == datetime(2026, 7, 27, 12, tzinfo=UTC)
+    assert items[0].event_kind == "updated"
+
+
 def test_openreview_success_uses_only_upstream_abstract(monkeypatch):
     timestamp = int(datetime(2026, 7, 27, 12, tzinfo=UTC).timestamp() * 1000)
 
@@ -558,6 +645,41 @@ def test_openreview_success_uses_only_upstream_abstract(monkeypatch):
     assert items[0].authors == ["Ada Radar"]
     assert items[0].parser_version == "openreview-api-v2/1"
     assert items[0].raw["forum"] == "stable-forum"
+
+
+def test_openreview_isolates_one_failed_venue(monkeypatch):
+    timestamp = int(datetime(2026, 7, 27, 12, tzinfo=UTC).timestamp() * 1000)
+
+    class MockNote:
+        id = "healthy-note"
+        forum = "healthy-forum"
+        cdate = timestamp
+        mdate = timestamp
+        content = {
+            "title": {"value": "A Healthy Venue Benchmark"},
+            "abstract": {"value": "A real benchmark abstract."},
+        }
+
+    import openreview.api
+
+    class MockClient:
+        def get_notes(self, invitation, limit):
+            if invitation.startswith("Broken.cc"):
+                raise openreview.openreview.OpenReviewException(
+                    {"name": "Error", "message": "HTTP 500", "status": 500}
+                )
+            return [MockNote()]
+
+    monkeypatch.setattr(openreview.api, "OpenReviewClient", lambda **kwargs: MockClient())
+    monkeypatch.setenv("OPENREVIEW_USERNAME", "test@example.com")
+    monkeypatch.setenv("OPENREVIEW_PASSWORD", "testpass")
+    config = {"venues": ["Broken.cc/2026/Conference", "Healthy.cc/2026/Conference"]}
+
+    items = fetch_openreview(config, datetime(2026, 7, 26, tzinfo=UTC), 10)
+
+    assert [item.source_id for item in items] == ["healthy-forum"]
+    assert len(config["_source_warnings"]) == 1
+    assert config["_source_warnings"][0].startswith("Broken.cc/2026/Conference:")
 
 
 def test_semantic_scholar_success_preserves_external_ids(monkeypatch):
@@ -957,6 +1079,93 @@ def test_new_connectors_never_synthesize_missing_summary(monkeypatch, fetcher, c
     assert items and items[0].summary == ""
 
 
+def test_semantic_scholar_skips_malformed_dates(monkeypatch):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, **kwargs: {
+            "data": [
+                {
+                    "paperId": "paper",
+                    "title": "Malformed date benchmark",
+                    "publicationDate": "not-a-date",
+                    "authors": [],
+                }
+            ]
+        },
+    )
+
+    assert (
+        fetch_semantic_scholar({"searches": ["benchmark"]}, datetime(2026, 7, 26, tzinfo=UTC), 10)
+        == []
+    )
+
+
+def test_semantic_scholar_date_only_values_are_utc_on_every_machine(monkeypatch):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, **kwargs: {
+            "data": [
+                {
+                    "paperId": "paper",
+                    "title": "Date-only benchmark",
+                    "publicationDate": "2026-07-27",
+                    "authors": [],
+                }
+            ]
+        },
+    )
+
+    items = fetch_semantic_scholar(
+        {"searches": ["benchmark"]}, datetime(2026, 7, 26, tzinfo=UTC), 10
+    )
+
+    assert items[0].published_at == datetime(2026, 7, 27, tzinfo=UTC)
+
+
+def test_semantic_scholar_keeps_the_date_granular_lookback_boundary(monkeypatch):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, **kwargs: {
+            "data": [
+                {
+                    "paperId": "boundary-paper",
+                    "title": "Boundary-day benchmark",
+                    "publicationDate": "2026-07-26",
+                    "authors": [],
+                }
+            ]
+        },
+    )
+
+    items = fetch_semantic_scholar(
+        {"searches": ["benchmark"]}, datetime(2026, 7, 26, 12, tzinfo=UTC), 10
+    )
+
+    assert [item.source_id for item in items] == ["boundary-paper"]
+
+
+def test_github_releases_skip_malformed_dates(monkeypatch):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, **kwargs: [
+            {
+                "tag_name": "v1",
+                "html_url": "https://github.com/example/benchmark/releases/tag/v1",
+                "published_at": "not-a-date",
+            }
+        ],
+    )
+
+    assert (
+        fetch_github_releases(
+            {"repositories": ["example/benchmark"]},
+            datetime(2026, 7, 26, tzinfo=UTC),
+            10,
+        )
+        == []
+    )
+
+
 def test_openalex_rejects_a_shapeless_payload(monkeypatch):
     # `payload.get("results", [])` made a `{}` reply indistinguishable from a
     # genuine zero-result day, so a broken response reported as healthy.
@@ -1157,6 +1366,29 @@ def test_huggingface_skips_undated_repositories(monkeypatch):
     assert [item.source_id for item in items] == ["org/dated"]
 
 
+def test_huggingface_preserves_creation_and_update_times(monkeypatch):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, params: [
+            {
+                "id": "org/benchmark",
+                "createdAt": "2026-06-01T00:00:00Z",
+                "lastModified": "2026-07-27T12:00:00Z",
+            }
+        ],
+    )
+
+    items = fetch_huggingface(
+        {"kinds": ["datasets"], "searches": ["benchmark"]},
+        datetime(2026, 7, 26, tzinfo=UTC),
+        10,
+    )
+
+    assert items[0].published_at == datetime(2026, 6, 1, tzinfo=UTC)
+    assert items[0].updated_at == datetime(2026, 7, 27, 12, tzinfo=UTC)
+    assert items[0].event_kind == "updated"
+
+
 def test_huggingface_filters_future_rows_before_the_local_cap(monkeypatch):
     seen_limit = []
 
@@ -1182,6 +1414,27 @@ def test_huggingface_filters_future_rows_before_the_local_cap(monkeypatch):
 
     assert seen_limit == [51, 51]
     assert [item.source_id for item in items] == ["org/current"]
+    assert config["_future_rejections"] == 1
+
+
+def test_huggingface_rejects_a_future_creation_date_even_when_modified_now(monkeypatch):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, params: [
+            {
+                "id": "org/future-created",
+                "createdAt": "2050-01-01T00:00:00Z",
+                "lastModified": "2026-07-27T12:00:00Z",
+            }
+        ],
+    )
+    config = {
+        "kinds": ["datasets"],
+        "searches": ["benchmark"],
+        "_collection_now": datetime(2026, 7, 28, tzinfo=UTC),
+    }
+
+    assert fetch_huggingface(config, datetime(2026, 7, 26, tzinfo=UTC), 10) == []
     assert config["_future_rejections"] == 1
 
 

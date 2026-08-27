@@ -180,6 +180,45 @@ def test_same_utc_day_prefers_the_newer_record_on_collision(tmp_path):
     assert merged["evidence_items"][0]["metrics"] == {"citations": 9}
 
 
+def test_same_utc_day_rejects_stale_retry_metadata_as_the_newest_pass(tmp_path):
+    newer = radar_run(title="Newer reading")
+    newer.generated_at = datetime(2026, 7, 27, 18, tzinfo=UTC)
+    newer.selection = {"fetched": 80, "published": 1}
+    newer.items[0].metrics = {"citations": 9}
+    stale_retry = radar_run(title="Stale retry")
+    stale_retry.generated_at = datetime(2026, 7, 27, 6, tzinfo=UTC)
+    stale_retry.selection = {"fetched": 40, "published": 1}
+
+    write_snapshot(newer, tmp_path)
+    write_snapshot(stale_retry, tmp_path)
+
+    merged = load_snapshots(tmp_path)[0]
+    assert merged["generated_at"] == newer.generated_at.isoformat()
+    assert merged["selection"]["fetched"] == 80
+    assert merged["evidence_items"][0]["title"] == "Newer reading"
+    assert merged["evidence_items"][0]["metrics"] == {"citations": 9}
+
+
+def test_same_utc_day_joins_records_through_any_exact_identifier(tmp_path):
+    first = radar_run(title="DOI and arXiv observation")
+    first.items[0].source = "Semantic Scholar"
+    first.items[0].source_id = "S2-bridge"
+    first.items[0].url = "https://www.semanticscholar.org/paper/S2-bridge"
+    first.items[0].artifact_urls = [
+        "https://doi.org/10.1000/radar",
+        "https://arxiv.org/abs/2607.0027",
+    ]
+    second = radar_run(title="Fresh arXiv observation")
+    second.generated_at = first.generated_at + timedelta(hours=6)
+
+    write_snapshot(first, tmp_path)
+    write_snapshot(second, tmp_path)
+
+    merged = load_snapshots(tmp_path)[0]
+    assert len(merged["evidence_items"]) == 1
+    assert merged["evidence_items"][0]["title"] == "Fresh arXiv observation"
+
+
 def test_a_pass_that_fetched_nothing_keeps_the_day_and_reports_an_honest_funnel(tmp_path):
     # A source outage can hand us a pass with no items at all. Merging it must
     # keep the day's existing records, and must not leave the file claiming it
