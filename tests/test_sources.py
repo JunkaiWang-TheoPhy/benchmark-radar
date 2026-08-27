@@ -7,6 +7,7 @@ import yaml
 
 from benchmark_radar.http import RequestError
 from benchmark_radar.models import RadarItem
+from benchmark_radar.pipeline import score_item
 from benchmark_radar.sources import (
     GITHUB_RELEASE_PARSER_VERSION,
     ConnectorPayloadError,
@@ -772,6 +773,115 @@ def test_github_releases_success_uses_release_notes(monkeypatch):
     assert items[0].summary == "The upstream release notes."
     assert items[0].metrics["downloads"] == 7
     assert items[0].parser_version == GITHUB_RELEASE_PARSER_VERSION
+
+
+def test_github_release_popularity_comes_from_repository_metadata(monkeypatch):
+    release = {
+        "tag_name": "v2.0.0",
+        "name": "Benchmark 2.0",
+        "html_url": "https://github.com/example/benchmark/releases/tag/v2.0.0",
+        "published_at": "2026-07-27T12:00:00Z",
+        "body": "A benchmark evaluation release.",
+        "draft": False,
+        "prerelease": False,
+        "assets": [],
+    }
+    repository = {"stargazers_count": 7_000, "forks_count": 420}
+    calls = []
+
+    def fake_get_json(url, **kwargs):
+        calls.append(url)
+        return [release] if url.endswith("/releases") else repository
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+    config = {
+        "repositories": ["example/benchmark"],
+        "max_requests": 1,
+        "repository_metadata_requests": 1,
+    }
+    radar_item = fetch_github_releases(
+        config,
+        datetime(2026, 7, 26, tzinfo=UTC),
+        10,
+    )[0]
+
+    assert calls == [
+        "https://api.github.com/repos/example/benchmark/releases",
+        "https://api.github.com/repos/example/benchmark",
+    ]
+    assert radar_item.metrics == {"downloads": 0.0, "stars": 7_000.0, "forks": 420.0}
+    assert radar_item.raw == {"release": release, "repository": repository}
+    score_item(
+        radar_item,
+        {"benchmark": ["benchmark"], "evaluation": ["evaluation"]},
+        radar_item.published_at,
+    )
+    assert radar_item.adoption_score > 0
+
+
+def test_github_release_repository_counters_are_covered_by_raw_hash(monkeypatch):
+    stars = 7_000
+
+    def fake_get_json(url, **kwargs):
+        if url.endswith("/releases"):
+            return [
+                {
+                    "tag_name": "v2.0.0",
+                    "html_url": "https://github.com/example/benchmark/releases/tag/v2.0.0",
+                    "published_at": "2026-07-27T12:00:00Z",
+                    "assets": [],
+                }
+            ]
+        return {"stargazers_count": stars, "forks_count": 420}
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+    config = {
+        "repositories": ["example/benchmark"],
+        "max_requests": 1,
+        "repository_metadata_requests": 1,
+    }
+    first = fetch_github_releases(config, datetime(2026, 7, 26, tzinfo=UTC), 10)[0]
+    first_hash = first.to_dict()["raw_payload_hash"]
+
+    stars += 1
+    second = fetch_github_releases(config, datetime(2026, 7, 26, tzinfo=UTC), 10)[0]
+    second_hash = second.to_dict()["raw_payload_hash"]
+
+    assert first_hash != second_hash
+
+
+def test_github_release_metadata_budget_cannot_reduce_release_coverage(monkeypatch):
+    calls = []
+
+    def fake_get_json(url, **kwargs):
+        calls.append(url)
+        repository = url.split("/repos/", 1)[1].split("/releases", 1)[0]
+        if url.endswith("/releases"):
+            return [
+                {
+                    "tag_name": "v1",
+                    "html_url": f"https://github.com/{repository}/releases/tag/v1",
+                    "published_at": "2026-07-27T12:00:00Z",
+                    "assets": [],
+                }
+            ]
+        raise RequestError("metadata unavailable")
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+    config = {
+        "repositories": ["org/first", "org/second"],
+        "max_requests": 2,
+        "repository_metadata_requests": 1,
+    }
+
+    items = fetch_github_releases(config, datetime(2026, 7, 26, tzinfo=UTC), 10)
+
+    assert [item.source_id for item in items] == ["org/first@v1", "org/second@v1"]
+    assert calls[:2] == [
+        "https://api.github.com/repos/org/first/releases",
+        "https://api.github.com/repos/org/second/releases",
+    ]
+    assert calls[2:] == ["https://api.github.com/repos/org/first"]
 
 
 def test_github_releases_issue_362_title_never_degrades_to_the_bare_tag(

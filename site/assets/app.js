@@ -426,10 +426,12 @@ const I18N = {
     Previous: "上一页",
     Next: "下一页",
     "normal": "正常",
-    "Sort: Priority ↓": "排序:优先度 ↓",
-    "Sort: Date, then Priority ↓": "排序:日期,再按优先度 ↓",
-    "Sort: New releases first, then Priority ↓": "排序:新发布优先,再按优先度 ↓",
-    "Sort: Date, then new releases, then Priority ↓": "排序:日期,再新发布优先,再按优先度 ↓",
+    "Sort: Recency ↓, then Priority ↓": "排序:新鲜度 ↓,再按优先度 ↓",
+    "Sort: Date, then Recency ↓, then Priority ↓": "排序:日期,再按新鲜度 ↓,再按优先度 ↓",
+    "Sort: New releases first, then Recency ↓, then Priority ↓":
+      "排序:新发布优先,再按新鲜度 ↓,再按优先度 ↓",
+    "Sort: Date, then new releases, then Recency ↓, then Priority ↓":
+      "排序:日期,再新发布优先,再按新鲜度 ↓,再按优先度 ↓",
     "Sort: Date ↓": "排序:日期 ↓",
     Stars: "Star 数",
     Forks: "Fork 数",
@@ -2206,12 +2208,9 @@ function renderToday({ resultsOnly = false } = {}) {
   // describes the ordering the reader is paging through, and page one of a
   // release-led day is all releases even when later pages are not.
   //
-  // The caption stops at "new releases first" and does not promise a recency
-  // order. Releases are grouped into age tiers and ordered by priority inside
-  // each one, so the strongest true statement is that releases lead. Saying
-  // "newest first" would read as a strict sort and the rows would contradict
-  // it: the freshest tier opens with an 11.9-hour-old row above a 2.4-hour-old
-  // one, because priority separates them.
+  // The caption stops at "new releases first" rather than claiming a strict
+  // timestamp order across release tiers. Inside each tier, scored recency now
+  // leads priority so v5's event-kind discount changes the visible order.
   const priorityScored = visibleObservations.some((item) => Number(item.total_score) > 0);
   const releases = observations.filter(isRelease).length;
   const releasesLead = releases > 0 && releases < observations.length;
@@ -2219,11 +2218,11 @@ function renderToday({ resultsOnly = false } = {}) {
     ? t("Sort: Date ↓")
     : showingAllDates
       ? releasesLead
-        ? t("Sort: Date, then new releases, then Priority ↓")
-        : t("Sort: Date, then Priority ↓")
+        ? t("Sort: Date, then new releases, then Recency ↓, then Priority ↓")
+        : t("Sort: Date, then Recency ↓, then Priority ↓")
       : releasesLead
-        ? t("Sort: New releases first, then Priority ↓")
-        : t("Sort: Priority ↓");
+        ? t("Sort: New releases first, then Recency ↓, then Priority ↓")
+        : t("Sort: Recency ↓, then Priority ↓");
   const listHost = byId("today-list");
   replaceChildren(
     listHost,
@@ -2940,12 +2939,10 @@ const RELEASE_RECENT_HOURS = 72;
 // not a release at all. `event_kind` is set by the pipeline to "released" /
 // "updated" on evidence rows and "discussed" on attention rows.
 //
-// The tiers exist because a flat release group is ordered by priority, and
-// priority knows nothing about time: a release 2.4 hours old sat below one 11.9
-// hours old, and a 39.8-hour-old row still made page one. Crawl lag already
-// spreads a single day's releases across roughly 72 hours of real time, so
-// "today's releases" was never one moment -- these tiers make that spread
-// visible instead of leaving it to the priority score to scramble.
+// The tiers keep a new release ahead of an update. Scored recency then orders
+// within a tier, making v5's update/prerelease discount visible before priority
+// breaks ties. Crawl lag already spreads a single day's releases across roughly
+// 72 hours of real time, so "today's releases" was never one moment.
 function releaseRank(item) {
   if (item.event_kind !== "released") return 3;
   const hours = releaseAgeHours(item);
@@ -3000,10 +2997,12 @@ function allObservations() {
     // had months. Ranking the day purely by score therefore buries the one
     // thing a reader opens this page to find: on 2026-08-24 the top eight rows
     // were all `updated` and the highest-scoring actual release sat at rank
-    // nine (issue #332). Priority still orders within each tier -- it is a
-    // real quality signal, just not a substitute for recency.
+    // nine (issue #332). Scored recency orders within each tier, then priority
+    // breaks ties; a quality signal is not a substitute for recency.
     const releaseOrder = releaseRank(a) - releaseRank(b);
     if (releaseOrder) return releaseOrder;
+    const recencyOrder = Number(b.recency_score || 0) - Number(a.recency_score || 0);
+    if (recencyOrder) return recencyOrder;
     const scoreOrder = Number(b.total_score || 0) - Number(a.total_score || 0);
     if (scoreOrder) return scoreOrder;
     // Attention rows carry no priority, so within a day they order by the

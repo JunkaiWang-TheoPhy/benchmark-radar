@@ -12,7 +12,7 @@ import hashlib
 import json
 from typing import Any
 
-SCORING_VERSION = 4
+SCORING_VERSION = 5
 SCORE_MAX = 100.0
 DEFAULT_LOOKBACK_HOURS = 48.0
 
@@ -25,6 +25,18 @@ WEIGHTS: dict[str, float] = {
     "evidence": 0.20,
     "recency": 0.20,
     "adoption": 0.25,
+}
+
+# A repository touch or paper replacement is current activity, but it is not
+# the same event as a first announcement. Prereleases retain more credit than
+# ordinary updates because they still introduce a new, if provisional, release.
+# Unknown event kinds keep full credit so a new connector is not silently
+# penalized before its semantics have been reviewed.
+RECENCY_EVENT_FACTORS: dict[str, float] = {
+    "released": 1.0,
+    "discovered": 1.0,
+    "prereleased": 0.75,
+    "updated": 0.50,
 }
 
 # Evidence is explicit and additive on a 0-100 scale.
@@ -101,6 +113,37 @@ LOW_VALUE_SIGNALS: tuple[dict[str, Any], ...] = (
     },
 )
 MAX_LOW_VALUE_DEDUCTION = 60.0
+
+# Field-only provenance checks stay separate from LOW_VALUE_SIGNALS, which are
+# regular expressions over title + summary. These rules deliberately make no
+# semantic claim about whether an artifact is a good or novel benchmark. They
+# only detect records that cannot lead a reader to their source or that arrived
+# with no supporting metadata beyond a title and URL.
+STRUCTURAL_SIGNALS: tuple[dict[str, Any], ...] = (
+    {
+        "label": "missing primary source URL",
+        "fields": ("url",),
+        "condition": "all_missing",
+        "description": "no primary source URL",
+        "deduction": 30.0,
+        "action": "suppress",
+    },
+    {
+        "label": "title-only provenance",
+        "fields": ("summary", "authors", "organizations", "artifact_urls", "metrics"),
+        "condition": "all_missing",
+        "description": ("no source description, attribution, artifact link, or public counter"),
+        "deduction": 15.0,
+        "action": "demote",
+    },
+)
+
+V5_LIMITS = (
+    "Update-driven recency is discounted from first announcements using the source's "
+    "event kind. This cannot distinguish a material GitHub release from a packaging bump.",
+    "Structural checks use only missing or populated record fields as a provenance signal. "
+    "They do not judge benchmark quality, novelty, or validity.",
+)
 
 # Adoption reaches the top of its scale at a documented, source-appropriate
 # public counter.  The strongest available counter is used because adding
@@ -205,6 +248,7 @@ def _components(*, lookback_hours: float) -> list[dict[str, Any]]:
                     + ("; suppressed" if signal["action"] == "suppress" else "")
                     for signal in LOW_VALUE_SIGNALS
                 ],
+                *_structural_bands(),
                 f"Total deductions capped at {MAX_LOW_VALUE_DEDUCTION:.0f}",
                 f"Clamped to 0-{SCORE_MAX:.0f}",
             ],
@@ -238,10 +282,12 @@ def _components(*, lookback_hours: float) -> list[dict[str, Any]]:
                 "this scan's configured collection window."
             ),
             "bands": [
-                f"{SCORE_MAX:.0f} at publication or update time",
-                f"Decays linearly across the configured {lookback_hours:g}-hour lookback",
-                f"Reaches 0 at {lookback_hours:g} hours",
-            ],
+                f"{SCORE_MAX:.0f} at release or first-discovery time",
+                f"Age-based credit decays linearly across the configured "
+                f"{lookback_hours:g}-hour lookback",
+                f"Age-based credit reaches 0 at {lookback_hours:g} hours",
+            ]
+            + _recency_event_bands(),
         },
         {
             "key": "adoption",
@@ -262,6 +308,29 @@ def _components(*, lookback_hours: float) -> list[dict[str, Any]]:
             ]
             + ["Uses the strongest available normalized counter", "Clamped to 0-100"],
         },
+    ]
+
+
+def _structural_bands() -> list[str]:
+    return [
+        f"-{signal['deduction']:.0f} for {signal['label']}: {signal['description']}"
+        + ("; suppressed" if signal["action"] == "suppress" else "")
+        for signal in STRUCTURAL_SIGNALS
+    ]
+
+
+def _recency_event_bands() -> list[str]:
+    return [
+        f"{event} events retain {factor * 100:g}% of their age-based recency"
+        for event, factor in RECENCY_EVENT_FACTORS.items()
+    ]
+
+
+def _v4_recency_bands(*, lookback_hours: float) -> list[str]:
+    return [
+        f"{SCORE_MAX:.0f} at publication or update time",
+        f"Decays linearly across the configured {lookback_hours:g}-hour lookback",
+        f"Reaches 0 at {lookback_hours:g} hours",
     ]
 
 
@@ -295,20 +364,25 @@ def rubric_reference(
             "Attention observations are shown separately and are never quality-scored.",
             "Watchlisted artifacts are retained whatever they score and sort first. Their "
             "rank reflects that request, not a higher score.",
+            *V5_LIMITS,
         ],
         "lookback_hours": float(lookback_hours),
     }
     return value
 
 
-def v2_rubric_reference(*, lookback_hours: float = DEFAULT_LOOKBACK_HOURS) -> dict[str, Any]:
-    """Describe v2 without retroactively granting its records the v3 feed tier."""
+def v4_rubric_reference(*, lookback_hours: float = DEFAULT_LOOKBACK_HOURS) -> dict[str, Any]:
+    """Describe v4 without retroactively applying v5's event and structure rules."""
     value = rubric_reference(lookback_hours=lookback_hours)
-    value["scoring_version"] = 2
+    value["scoring_version"] = 4
     for component in value["components"]:
-        if component["key"] != "evidence":
-            continue
-        component["bands"] = [band.replace(", First-party feed", "") for band in component["bands"]]
+        if component["key"] == "relevance":
+            component["bands"] = [
+                band for band in component["bands"] if band not in _structural_bands()
+            ]
+        elif component["key"] == "recency":
+            component["bands"] = _v4_recency_bands(lookback_hours=lookback_hours)
+    value["limits"] = [limit for limit in value["limits"] if limit not in V5_LIMITS]
     return value
 
 
@@ -320,7 +394,7 @@ def v3_rubric_reference(*, lookback_hours: float = DEFAULT_LOOKBACK_HOURS) -> di
     numbers with v4's bands would claim the run did something it did not, which
     is the relabelling #32 forbids.
     """
-    value = rubric_reference(lookback_hours=lookback_hours)
+    value = v4_rubric_reference(lookback_hours=lookback_hours)
     value["scoring_version"] = 3
     for component in value["components"]:
         if component["key"] != "adoption":
@@ -334,6 +408,17 @@ def v3_rubric_reference(*, lookback_hours: float = DEFAULT_LOOKBACK_HOURS) -> di
         for limit in value["limits"]
         if not limit.startswith("This project's own repository")
     ]
+    return value
+
+
+def v2_rubric_reference(*, lookback_hours: float = DEFAULT_LOOKBACK_HOURS) -> dict[str, Any]:
+    """Describe v2 without retroactively granting its records the v3 feed tier."""
+    value = v3_rubric_reference(lookback_hours=lookback_hours)
+    value["scoring_version"] = 2
+    for component in value["components"]:
+        if component["key"] != "evidence":
+            continue
+        component["bands"] = [band.replace(", First-party feed", "") for band in component["bands"]]
     return value
 
 

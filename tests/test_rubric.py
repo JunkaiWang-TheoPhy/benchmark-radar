@@ -208,3 +208,22 @@ def test_v3_reference_is_not_relabelled_with_v4_arithmetic():
     assert v3["scoring_version"] == 3
     assert not any("capped at" in band for band in adoption["bands"])
     assert not any(rubric.SELF_REPOSITORY in limit for limit in v3["limits"])
+
+
+def test_v4_reference_is_not_relabelled_with_v5_bands_or_limits():
+    current = rubric.rubric_reference()
+    v4 = rubric.v4_rubric_reference()
+    current_relevance = next(c for c in current["components"] if c["key"] == "relevance")
+    current_recency = next(c for c in current["components"] if c["key"] == "recency")
+    v4_relevance = next(c for c in v4["components"] if c["key"] == "relevance")
+    v4_recency = next(c for c in v4["components"] if c["key"] == "recency")
+
+    assert v4["scoring_version"] == 4
+    assert any("title-only provenance" in band for band in current_relevance["bands"])
+    assert not any("title-only provenance" in band for band in v4_relevance["bands"])
+    assert any("updated events retain 50%" in band for band in current_recency["bands"])
+    assert not any("updated events retain 50%" in band for band in v4_recency["bands"])
+    assert "100 at release or first-discovery time" in current_recency["bands"]
+    assert "100 at publication or update time" in v4_recency["bands"]
+    assert all(limit in current["limits"] for limit in rubric.V5_LIMITS)
+    assert all(limit not in v4["limits"] for limit in rubric.V5_LIMITS)

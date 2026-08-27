@@ -346,6 +346,47 @@ def test_sponsor_bait_resource_listing_is_suppressed():
     assert "sponsor-bait resource listing" in spam.suppression_reasons
 
 
+def test_structural_signals_demote_thin_provenance_without_semantic_guessing():
+    taxonomy = {"benchmark": ["benchmark"], "evaluation": ["evaluation"]}
+    thin = score_item(
+        item(summary="", authors=[], organizations=[], artifact_urls=[], metrics={}),
+        taxonomy,
+        datetime(2026, 7, 27, 1, tzinfo=UTC),
+    )
+    described = score_item(
+        item(summary="A source-authored benchmark description."),
+        taxonomy,
+        datetime(2026, 7, 27, 1, tzinfo=UTC),
+    )
+
+    assert described.relevance_score - thin.relevance_score == 15
+    assert thin.suppression_reasons == []
+    assert any("Structural demotion: title-only provenance" in reason for reason in thin.rationale)
+
+
+def test_structural_gate_sets_a_suppression_reason_and_is_counted_by_the_funnel():
+    no_source_url = item(url="")
+    published, selection = _score_and_select(
+        [no_source_url],
+        {
+            "radar": {
+                "lookback_hours": 48,
+                "max_items_per_source": 10,
+                "minimum_score": 0,
+            },
+            "taxonomy": {"benchmark": ["benchmark"]},
+        },
+        now=datetime(2026, 7, 27, 1, tzinfo=UTC),
+        fetched_count=1,
+        suppressed_count=0,
+    )
+
+    assert published == []
+    assert no_source_url.suppression_reasons == ["missing primary source URL"]
+    assert selection["suppressed_low_value"] == 1
+    assert selection["eligible"] == 0
+
+
 def test_recency_uses_the_configured_collection_window():
     taxonomy = {"benchmark": ["benchmark"]}
     published = datetime(2026, 7, 27, tzinfo=UTC)
@@ -365,6 +406,29 @@ def test_recency_uses_the_configured_collection_window():
 
     assert halfway.recency_score == 50
     assert expired.recency_score == 0
+
+
+def test_update_driven_recency_is_discounted_and_rescore_is_idempotent():
+    taxonomy = {"benchmark": ["benchmark"]}
+    now = datetime(2026, 7, 27, 12, tzinfo=UTC)
+    activity_at = now - timedelta(hours=12)
+    announcement = score_item(
+        item(published_at=activity_at, event_kind="released"),
+        taxonomy,
+        now,
+        lookback_hours=48,
+    )
+    replacement = item(
+        published_at=activity_at - timedelta(days=30),
+        updated_at=activity_at,
+        event_kind="updated",
+    )
+    score_item(replacement, taxonomy, now, lookback_hours=48)
+    score_item(replacement, taxonomy, now, lookback_hours=48)
+
+    assert announcement.recency_score == 75
+    assert replacement.recency_score == 37.5
+    assert replacement.rationale.count("Recency discount: updated event ×0.5") == 1
 
 
 def test_visualization_companion_is_suppressed_from_pipeline(monkeypatch):

@@ -30,6 +30,7 @@ from .rubric import (
     taxonomy_version,
     v2_rubric_reference,
     v3_rubric_reference,
+    v4_rubric_reference,
 )
 from .site_seo import write_sitemap
 from .sources import GITHUB_RELEASE_PARSER_VERSION, github_release_title
@@ -1003,6 +1004,11 @@ def dashboard_data(
                 ),
             ),
             "3": v3_rubric_reference(
+                lookback_hours=(
+                    (days[-1].get("selection") or {}).get("lookback_hours") or 48 if days else 48
+                ),
+            ),
+            "4": v4_rubric_reference(
                 lookback_hours=(
                     (days[-1].get("selection") or {}).get("lookback_hours") or 48 if days else 48
                 ),

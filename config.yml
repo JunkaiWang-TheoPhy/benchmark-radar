@@ -310,6 +310,10 @@ sources:
     # Invalid future-dated rows may consume a page slot. Replacement requests
     # use a separate cap so they cannot steal the first request from later repos.
     future_replacement_requests: 2
+    # Popularity comes from a separate repository endpoint. These requests run
+    # only after release collection and use their own cap, so they cannot reduce
+    # release coverage when the shared release-page budget is exhausted.
+    repository_metadata_requests: 8
     attempts: 3
     timeout_seconds: 30
 

@@ -18,7 +18,7 @@ class ConnectorPayloadError(ValueError):
 
 
 FUTURE_TIMESTAMP_TOLERANCE = timedelta(minutes=5)
-GITHUB_RELEASE_PARSER_VERSION = "github-releases/2"
+GITHUB_RELEASE_PARSER_VERSION = "github-releases/3"
 
 
 def _xml_local_name(tag: str) -> str:
@@ -855,6 +855,7 @@ def fetch_github_releases(
     max_pages = max(1, int(config.get("max_pages_per_repository", 2)))
     budget = max(1, int(config.get("max_requests", len(repositories) or 1)))
     replacement_budget = max(0, int(config.get("future_replacement_requests", 2)))
+    metadata_budget = max(0, int(config.get("repository_metadata_requests", 8)))
     regular_requests = 0
     replacement_requests = 0
     found: dict[str, RadarItem] = {}
@@ -958,6 +959,40 @@ def fetch_github_releases(
     warnings = config.get("_source_warnings") or []
     if repositories and len(warnings) == len(repositories):
         raise failures[0]
+
+    # Popularity lives on the repository resource, not the release resource.
+    # Enrich only after release pagination has finished and under a separate
+    # request cap, so a metadata request can never consume the budget needed to
+    # discover a later repository's releases.
+    released_repositories = {
+        item.source_id.split("@", 1)[0] for item in found.values() if "@" in item.source_id
+    }
+    metadata_requests = 0
+    for repository in repositories:
+        if repository not in released_repositories or metadata_requests >= metadata_budget:
+            continue
+        metadata_requests += 1
+        try:
+            repository_payload = get_json(
+                f"https://api.github.com/repos/{repository}",
+                params={},
+                headers=headers,
+                **_request_options(config),
+            )
+            if not isinstance(repository_payload, dict):
+                raise ConnectorPayloadError("GitHub repository metadata was not an object")
+            stars = float(repository_payload.get("stargazers_count") or 0)
+            forks = float(repository_payload.get("forks_count") or 0)
+        except Exception as error:
+            config.setdefault("_source_warnings", []).append(
+                f"{repository} metadata: {type(error).__name__}: {error}"
+            )
+            continue
+        for item in found.values():
+            if not item.source_id.startswith(f"{repository}@"):
+                continue
+            item.metrics.update({"stars": stars, "forks": forks})
+            item.raw = {"release": item.raw, "repository": repository_payload}
     return sorted(found.values(), key=lambda item: item.published_at, reverse=True)[:limit]
 
 
