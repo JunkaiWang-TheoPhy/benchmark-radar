@@ -5,6 +5,7 @@ from xml.etree import ElementTree as ET
 
 import pytest
 
+from benchmark_radar import rubric
 from benchmark_radar.feed import SITE_URL
 from benchmark_radar.model_cards import ModelCardRegistryError
 from benchmark_radar.models import (
@@ -553,6 +554,10 @@ def test_dashboard_keeps_legacy_scores_on_their_original_rubric(tmp_path):
     assert published["score_max"] == 4
     assert data["rubrics"]["1"]["score_max"] == 4
     assert data["rubrics"]["2"]["score_max"] == 100
+    assert data["rubrics"]["4"]["scoring_version"] == 4
+    assert data["rubrics"][str(rubric.SCORING_VERSION)]["scoring_version"] == (
+        rubric.SCORING_VERSION
+    )
 
 
 def test_dashboard_without_snapshots_publishes_no_cutoff(tmp_path):

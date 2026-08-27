@@ -218,6 +218,20 @@ def is_self_reference(item: RadarItem) -> bool:
     return len(parts) >= 2 and "/".join(parts[:2]) == rubric.SELF_REPOSITORY
 
 
+def _has_structural_value(value: Any) -> bool:
+    if isinstance(value, str):
+        return bool(value.strip())
+    return bool(value)
+
+
+def _matches_structural_signal(item: RadarItem, signal: dict[str, Any]) -> bool:
+    fields = tuple(str(field) for field in signal["fields"])
+    values = [_has_structural_value(getattr(item, field, None)) for field in fields]
+    if signal["condition"] == "all_missing":
+        return not any(values)
+    raise ValueError(f"unknown structural signal condition: {signal['condition']}")
+
+
 def score_item(
     item: RadarItem,
     taxonomy: dict[str, Any],
@@ -251,11 +265,15 @@ def score_item(
         rubric.RELEVANCE_PER_CATEGORY * len(categories)
         + rubric.RELEVANCE_PER_TERM * len(matched_terms),
     )
-    deductions = [
+    text_deductions = [
         signal
         for signal in rubric.LOW_VALUE_SIGNALS
         if re.search(str(signal["pattern"]), haystack, flags=re.IGNORECASE)
     ]
+    structural_deductions = [
+        signal for signal in rubric.STRUCTURAL_SIGNALS if _matches_structural_signal(item, signal)
+    ]
+    deductions = [*text_deductions, *structural_deductions]
     deduction = min(
         rubric.MAX_LOW_VALUE_DEDUCTION,
         sum(float(signal["deduction"]) for signal in deductions),
@@ -286,6 +304,8 @@ def score_item(
         0.0,
         rubric.SCORE_MAX * (1.0 - age_hours / lookback_hours),
     )
+    recency_factor = rubric.RECENCY_EVENT_FACTORS.get(item.event_kind, 1.0)
+    item.recency_score *= recency_factor
 
     # Each counter is scored on its own log curve against its own saturation
     # point, then the strongest one wins. Counters that accumulate without a
@@ -320,14 +340,30 @@ def score_item(
     item.rationale = [
         reason
         for reason in item.rationale
-        if not reason.startswith(("Matched:", "Demoted:", "Primary record:"))
+        if not reason.startswith(
+            (
+                "Matched:",
+                "Demoted:",
+                "Structural demotion:",
+                "Structural gate:",
+                "Recency discount:",
+                "Primary record:",
+            )
+        )
     ]
     if matched_terms:
         item.rationale.append(f"Matched: {', '.join(sorted(set(matched_terms)))}")
-    for signal in deductions:
+    for signal in text_deductions:
         item.rationale.append(
             f"Demoted: {signal['label']} (-{float(signal['deduction']):g} relevance)"
         )
+    for signal in structural_deductions:
+        prefix = "Structural gate" if signal["action"] == "suppress" else "Structural demotion"
+        item.rationale.append(
+            f"{prefix}: {signal['label']} (-{float(signal['deduction']):g} relevance)"
+        )
+    if recency_factor < 1.0:
+        item.rationale.append(f"Recency discount: {item.event_kind} event ×{recency_factor:g}")
     item.rationale.append(f"Primary record: {item.source}")
     return item
 
