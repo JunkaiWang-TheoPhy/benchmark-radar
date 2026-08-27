@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "model_count": 860,
+  "model_count": 861,
   "curated_only": 15,
-  "crawled_only": 826,
+  "crawled_only": 827,
   "both_layers": 19,
   "organizations": [
     "AI21 Labs",
@@ -9567,6 +9567,17 @@
       ],
       "source_counts": {
         "crawled": 11
+      }
+    },
+    {
+      "key": "z-ai-glm-5-3-flash",
+      "model": "GLM-5.3-Flash",
+      "organization": "Z.ai",
+      "layers": [
+        "crawled"
+      ],
+      "source_counts": {
+        "crawled": 13
       }
     }
   ]
