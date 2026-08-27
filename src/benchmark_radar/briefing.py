@@ -28,21 +28,38 @@ DEFAULT_BRIEFING_MODEL = "gpt-5.6"
 # double as editorial selection. The budget is now sized to carry the evidence
 # the selector actually chose, and whatever still cannot fit is reported rather
 # than dropped in silence.
-MAX_INPUT_CHARS = 260_000
-MAX_REQUEST_TOKENS = 60_000
-# The structured response can contain three 800-character findings, three
-# 800-character explanations, a 1,000-character caveat, JSON framing, and
-# reasoning tokens. 1,400 tokens truncated valid responses mid-string in
-# production before the schema-sized answer could finish.
-MAX_OUTPUT_TOKENS = 4_000
-MAX_EVIDENCE_ITEMS = 120
+# gpt-5.6-sol offers a 1.05M-token context window. The request budget sits
+# just under OpenAI's 272K-input long-context pricing cliff, above which the
+# whole request bills at 2x input / 1.5x output. On current corpus sizes the
+# day's material, not this ceiling, decides how much is injected.
+MAX_INPUT_CHARS = 1_000_000
+MAX_REQUEST_TOKENS = 270_000
+# The structured response can contain up to ten insights, each a finding of up
+# to MAX_FINDING_CHARS plus a rationale of up to MAX_WHY_CHARS, plus a caveat
+# of up to MAX_CAVEAT_CHARS, JSON framing, and medium-effort reasoning tokens.
+# 1,400 tokens truncated valid responses mid-string in production before the
+# schema-sized answer could finish; the model itself allows 128,000.
+MAX_OUTPUT_TOKENS = 16_000
+MAX_EVIDENCE_ITEMS = 400
 # Every attention observation the collector retains. The former cap of 8
 # discarded more than half of a typical day's 20 public-attention records
 # before the model ever saw them.
-MAX_ATTENTION_ITEMS = 40
-MAX_HISTORY_DAYS = 14
+MAX_ATTENTION_ITEMS = 100
+MAX_HISTORY_DAYS = 30
 MAX_SUMMARY_CHARS = 700
-MAX_BULLETS = 3
+MAX_BULLETS = 10
+# Per-item input caps. Prose fields of an evidence record were already bounded;
+# metric values and URLs were not, so one malformed record could eat an
+# outsized share of the packet. Input-side fields truncate via _plain;
+# output-side fields reject via _output_text.
+MAX_METRIC_KEYS = 6
+MAX_METRIC_VALUE_CHARS = 60
+MAX_URL_CHARS = 300
+# Output-side field caps. Named because translate_zh.MAX_BULLET_CHARS and the
+# snapshot validator derive their ceilings from these numbers.
+MAX_FINDING_CHARS = 1_000
+MAX_WHY_CHARS = 1_000
+MAX_CAVEAT_CHARS = 1_000
 # Cross-day artifacts (seen before today and observed again) carried alongside
 # the first-seen records. Without these the model cannot see that a benchmark
 # gained 10,622 downloads over twelve days, because only brand-new records were
@@ -126,6 +143,15 @@ def _counts(items: list[dict[str, Any]], field: str) -> dict[str, int]:
 
 def _plain(value: Any, limit: int) -> str:
     return " ".join(str(value or "").split())[:limit]
+
+
+def _capped_metrics(metrics: Any) -> dict[str, Any]:
+    """Bound one record's metrics: at most MAX_METRIC_KEYS entries, string values cut."""
+    return {
+        str(key): _plain(value, MAX_METRIC_VALUE_CHARS) if isinstance(value, str) else value
+        for key, value in list((metrics or {}).items())[:MAX_METRIC_KEYS]
+        if value
+    }
 
 
 def _output_text(value: Any, *, field: str, max_chars: int) -> str:
@@ -218,19 +244,26 @@ def _tracked_artifacts(
             continue
         # `build_corpus` now emits a delta only for metrics present at both
         # endpoints, so a nonzero value here is real movement.
-        deltas = {key: value for key, value in (entity.get("metric_deltas") or {}).items() if value}
+        deltas = {
+            key: value
+            for key, value in sorted(
+                ((k, v) for k, v in (entity.get("metric_deltas") or {}).items() if v),
+                key=lambda pair: abs(pair[1]),
+                reverse=True,
+            )[:MAX_METRIC_KEYS]
+        }
         tracked.append(
             {
                 "entity_id": entity["id"],
                 "title": _plain(entity.get("label"), 180),
-                "url": entity.get("url"),
+                "url": _plain(entity.get("url"), MAX_URL_CHARS),
                 "sources": list(entity.get("sources") or []),
                 "categories": list(entity.get("categories") or [])[:6],
                 "first_seen_at": entity.get("first_seen_at"),
                 "last_seen_at": entity.get("last_seen_at"),
                 "seen_days": len(seen_days),
                 "observation_count": entity.get("observation_count"),
-                "metrics": entity.get("metrics") or {},
+                "metrics": _capped_metrics(entity.get("metrics")),
                 "metric_deltas": deltas,
             }
         )
@@ -272,12 +305,8 @@ def briefing_input(
                 "categories": list(item.get("categories") or [])[:6],
                 "priority_score": round(float(item.get("total_score") or 0), 2),
                 "published_at": item.get("published_at"),
-                "url": item.get("url"),
-                "metrics": {
-                    str(key): value
-                    for key, value in list((item.get("metrics") or {}).items())[:6]
-                    if value
-                },
+                "url": _plain(item.get("url"), MAX_URL_CHARS),
+                "metrics": _capped_metrics(item.get("metrics")),
                 "why_surfaced": [_plain(reason, 180) for reason in item.get("rationale") or []][:4],
             }
         )
@@ -370,8 +399,8 @@ def briefing_input(
                 "published_at": item.get("published_at"),
                 "observed_today": str(item.get("observed_at") or "").startswith(current_date),
                 "categories": list(item.get("categories") or [])[:6],
-                "url": item.get("url"),
-                "metrics": item.get("metrics") or {},
+                "url": _plain(item.get("url"), MAX_URL_CHARS),
+                "metrics": _capped_metrics(item.get("metrics")),
             }
             for item in current_attention[:MAX_ATTENTION_ITEMS]
         ],
@@ -500,7 +529,9 @@ _INSTRUCTIONS = (
     "Neutral, specific, and grounded still "
     "win: never add an opinion, prediction, or quality judgment that the evidence does not "
     "carry, and never paper over absence with a plausible-sounding sentence.\n\n"
-    "Output: at most three non-overlapping insights. Keep each finding and why_it_matters "
+    "Output: at most ten non-overlapping insights, strongest first. Give each insight one "
+    "concrete artifact, and when fewer than ten clear the bar, return fewer rather than "
+    "padding the list. Keep each finding and why_it_matters "
     "concrete and end each with a complete sentence. The plain-language anchor for a "
     "generalist is worth the words: a finding may run up to 120 words total; spend the "
     "extra room on explaining the artifact's jargon, not on padding. Do not add filler or "
@@ -671,8 +702,10 @@ def generate_daily_briefing(
         ):
             raise BriefingError("OpenAI cited evidence outside the injected packet")
         cited_ids.extend(value for value in ids if value not in cited_ids)
-        finding = _output_text(insight.get("finding"), field="finding", max_chars=1_000)
-        why = _output_text(insight.get("why_it_matters"), field="why_it_matters", max_chars=1_000)
+        finding = _output_text(insight.get("finding"), field="finding", max_chars=MAX_FINDING_CHARS)
+        why = _output_text(
+            insight.get("why_it_matters"), field="why_it_matters", max_chars=MAX_WHY_CHARS
+        )
         confidence = str(insight.get("confidence") or "low").capitalize()
         if not finding or not why:
             raise BriefingError("OpenAI returned an empty finding")
@@ -680,7 +713,7 @@ def generate_daily_briefing(
             f"{finding} Why it matters: {why} Evidence: {', '.join(ids)}. {confidence} confidence."
         )
 
-    caveat = _output_text(parsed.get("caveat"), field="caveat", max_chars=1_000)
+    caveat = _output_text(parsed.get("caveat"), field="caveat", max_chars=MAX_CAVEAT_CHARS)
     if not bullets:
         if not caveat:
             raise BriefingError("OpenAI returned neither an insight nor a caveat")
