@@ -169,7 +169,9 @@ def _packet_for(
             "comparability_note": registry["comparability_note"],
             "stats": registry["stats"],
         },
-        "coverage": base.get("coverage"),
+        # Every question group adjusts these counts to the exact slice it sees.
+        # Copy so fitting one group never mutates the briefing or another group.
+        "coverage": dict(base.get("coverage") or {}),
     }
     if group["id"] == "arrivals":
         packet["first_observed_evidence"] = base.get("first_observed_evidence")
@@ -188,6 +190,100 @@ def _packet_for(
         packet["tracked_artifacts"] = (registry.get("tracked_artifacts") or [])[:12]
         packet["attention_signals"] = base.get("attention_signals")
     return packet
+
+
+_TRIMMABLE_PACKET_FIELDS = {
+    "arrivals": (("first_observed_evidence", False),),
+    "movement": (
+        ("attention_signals", False),
+        ("daily_series", True),
+        ("tracked_artifacts", False),
+    ),
+    "reading": (
+        ("attention_signals", False),
+        ("tracked_artifacts", False),
+        ("first_observed_evidence", False),
+    ),
+}
+
+
+def _sync_packet_coverage(packet: dict[str, Any]) -> None:
+    """Make coverage describe the group packet after any budget trimming."""
+    coverage = packet.get("coverage")
+    if not isinstance(coverage, dict):
+        return
+    if "first_observed_evidence" in packet:
+        injected = len(packet.get("first_observed_evidence") or [])
+        selected = int(coverage.get("evidence_selected") or injected)
+        coverage["evidence_injected"] = injected
+        coverage["evidence_dropped"] = max(0, selected - injected)
+    if "attention_signals" in packet:
+        coverage["attention_injected"] = len(packet.get("attention_signals") or [])
+    if "tracked_artifacts" in packet:
+        coverage["tracked_artifacts_injected"] = len(packet.get("tracked_artifacts") or [])
+    if "daily_series" in packet:
+        coverage["history_days"] = len(packet.get("daily_series") or [])
+
+
+def _qa_request(
+    group: dict[str, Any], packet: dict[str, Any], model: str
+) -> tuple[str, dict[str, Any], int]:
+    """Fit one group to its request budget while retaining the strongest prefix."""
+
+    def encoded() -> tuple[str, dict[str, Any], int]:
+        _sync_packet_coverage(packet)
+        serialized = json.dumps(packet, ensure_ascii=False, separators=(",", ":"))
+        payload = _payload(model, serialized)
+        return serialized, payload, _request_token_estimate(payload, model)
+
+    request = encoded()
+    if request[2] <= MAX_QA_REQUEST_TOKENS:
+        return request
+
+    for field, keep_newest in _TRIMMABLE_PACKET_FIELDS[group["id"]]:
+        values = list(packet.get(field) or [])
+        if not values:
+            continue
+
+        def retain(
+            count: int,
+            *,
+            field: str = field,
+            keep_newest: bool = keep_newest,
+            values: list[Any] = values,
+        ) -> None:
+            if count == 0:
+                packet[field] = []
+            elif keep_newest:
+                packet[field] = values[-count:]
+            else:
+                packet[field] = values[:count]
+
+        # If removing this field is not enough, leave it empty and continue to
+        # the next least-essential field. Otherwise retain the largest slice
+        # that fits, found in logarithmic rather than record-by-record work.
+        retain(0)
+        empty_request = encoded()
+        if empty_request[2] > MAX_QA_REQUEST_TOKENS:
+            request = empty_request
+            continue
+        low, high, best = 0, len(values), 0
+        while low <= high:
+            middle = (low + high) // 2
+            retain(middle)
+            candidate = encoded()
+            if candidate[2] <= MAX_QA_REQUEST_TOKENS:
+                best = middle
+                low = middle + 1
+            else:
+                high = middle - 1
+        retain(best)
+        return encoded()
+
+    raise BriefingError(
+        f"Question group {group['id']} needs {request[2]} tokens after trimming, "
+        f"over the {MAX_QA_REQUEST_TOKENS} budget"
+    )
 
 
 def _payload(model: str, serialized: str) -> dict[str, Any]:
@@ -404,14 +500,7 @@ def generate_daily_questions(
     usage_total: dict[str, int] = {}
     for group in QUESTION_GROUPS:
         packet = _packet_for(group, registry, base)
-        serialized = json.dumps(packet, ensure_ascii=False, separators=(",", ":"))
-        payload = _payload(model, serialized)
-        request_tokens = _request_token_estimate(payload, model)
-        if request_tokens > MAX_QA_REQUEST_TOKENS:
-            raise BriefingError(
-                f"Question group {group['id']} needs {request_tokens} tokens, "
-                f"over the {MAX_QA_REQUEST_TOKENS} budget"
-            )
+        serialized, payload, request_tokens = _qa_request(group, packet, model)
         response = post_json(
             RESPONSES_URL,
             payload,
