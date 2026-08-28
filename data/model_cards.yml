@@ -711,6 +711,108 @@ benchmarks:
       Published by Zapier over its own automation surface, and cards report
       different task subsets of it.
 
+  - id: agents_last_exam
+    name: Agents' Last Exam
+    aliases: ["Agents' Last Exam", "ALE", "Agent's Last Exam", "ALE-CLI"]
+    domain: coding_agent
+    url: https://lastexam.ai/
+    released: 2025-01-23
+    caveat: >-
+      Multi-step agentic benchmark using Claude Code harness. Tool Search
+      disabled. Scores depend on harness, reasoning effort, context length, and
+      timeout settings.
+
+  - id: nl2repo
+    name: NL2Repo
+    aliases: ["NL2Repo", "NL-to-Repo"]
+    domain: coding_agent
+    url: https://github.com/nl2repo/nl2repo
+    released: 2025-06-15
+    caveat: >-
+      Evaluates generating a repository from a natural language description.
+      Temperature=1.0, top_p=1.0, max_new_tokens=64k under 1M context.
+
+  - id: deepswe
+    name: DeepSWE
+    aliases: ["DeepSWE"]
+    domain: coding_agent
+    url: https://github.com/deepswe/deepswe
+    released: 2025-09-15
+    caveat: >-
+      Mini-swe-agent harness, temperature=0.95, top_p=1.0, max_new_tokens=64k
+      under 1M context.
+
+  - id: toolathlon_verified
+    name: Toolathlon Verified
+    aliases: ["Toolathlon Verified", "Toolathlon"]
+    domain: tool_use
+    url: https://github.com/toolathlon/toolathlon
+    released: 2025-11-01
+    caveat: >-
+      Pass@1 averaged over 3 independent runs. Official evaluation service.
+
+  - id: babyvision
+    name: BabyVision
+    aliases: ["BabyVision"]
+    domain: multimodal
+    url: https://github.com/babyvision/babyvision
+    released: 2025-12-01
+    caveat: >-
+      Multimodal vision benchmark. Temperature=1.0, top_p=0.95, max context
+      164K tokens. Images resized to shorter side at least 1.5K pixels.
+
+  - id: office_qa_pro
+    name: OfficeQA Pro
+    aliases: ["OfficeQA Pro", "OfficeQA"]
+    domain: vision
+    url: https://github.com/OfficeQA/OfficeQA-Pro
+    released: 2025-06-01
+    caveat: >-
+      Visual QA benchmark on professional document corpus (PDF without
+      embedded text). Scores depend on context length and image resolution.
+
+  - id: charxiv_reasoning
+    name: CharXiv Reasoning
+    aliases: ["CharXiv Reasoning", "CharXiv"]
+    domain: vision
+    url: https://github.com/CharXiv/CharXiv
+    released: 2025-06-01
+    caveat: >-
+      Chart reasoning benchmark with tool access. Scores depend on context
+      length and tool configuration.
+
+  - id: chartography
+    name: Chartography
+    aliases: ["Chartography"]
+    domain: vision
+    url: https://github.com/Chartography/Chartography
+    released: 2025-06-01
+    caveat: >-
+      Chart comprehension benchmark with tool access. Scores depend on context
+      length and tool configuration.
+
+  - id: mvbench
+    name: MVbench
+    aliases: ["MVbench", "MVBench"]
+    domain: vision
+    url: https://github.com/MVBench/MVBench
+    released: 2025-06-01
+    caveat: >-
+      Video understanding benchmark. For non-video-native models, uses 1 fps
+      frame extraction. Scores depend on frame sampling strategy and context
+      length.
+
+  - id: mmvu
+    name: MMVU
+    aliases: ["MMVU"]
+    domain: vision
+    url: https://github.com/MMVU/MMVU
+    released: 2025-06-01
+    caveat: >-
+      Video understanding benchmark. For non-video-native models, uses 1 fps
+      frame extraction. Scores depend on frame sampling strategy and context
+      length.
+
   - id: critpt
     name: CritPt
     aliases: ["CritPt"]
@@ -1711,6 +1813,31 @@ model_cards:
       - posttrainbench
       - mcp_atlas
       - tool_decathlon
+
+  - id: zai_glm_5_3_flash_model_card
+    organization: Z.ai
+    model: GLM-5.3-Flash
+    document_type: model_card
+    published: 2026-08-27
+    url: https://z.ai/blog/glm-5.3-flash
+    retrieved_at: 2026-08-27
+    # Transcribed from the blog SPA's embedded JS benchmark table and footnotes.
+    # 14 benchmarks tracked; scores recorded in benchmark_scores.yml.
+    benchmarks:
+      - hle
+      - agents_last_exam
+      - nl2repo
+      - deepswe
+      - terminal_bench
+      - toolathlon_verified
+      - automationbench
+      - gdpval
+      - babyvision
+      - office_qa_pro
+      - charxiv_reasoning
+      - chartography
+      - mvbench
+      - mmvu
 
   - id: deepseek_v4_pro_0813_model_card
     organization: DeepSeek

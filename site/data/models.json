@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "model_count": 860,
-  "curated_only": 15,
+  "model_count": 861,
+  "curated_only": 16,
   "crawled_only": 826,
   "both_layers": 19,
   "organizations": [
@@ -9501,6 +9501,17 @@
       ],
       "source_counts": {
         "crawled": 16
+      }
+    },
+    {
+      "key": "z-ai-glm-5-3-flash",
+      "model": "GLM-5.3-Flash",
+      "organization": "Z.ai",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
       }
     },
     {
