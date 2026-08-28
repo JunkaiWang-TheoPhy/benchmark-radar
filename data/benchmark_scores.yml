@@ -327,6 +327,46 @@ benchmarks:
     metric: accuracy
     direction: higher_is_better
     unit: percent
+  - benchmark_id: deepswe
+    metric: pass@1
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: nl2repo
+    metric: pass@1
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: toolathlon_verified
+    metric: pass@1
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: agents_last_exam
+    metric: pass@1
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: office_qa_pro
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: charxiv_reasoning
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: chartography
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: babyvision
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: mvbench
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: mmvu
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
 
 results:
   # ---------------------------------------------------------------------------
@@ -3195,6 +3235,152 @@ results:
     reported_at: 2026-07-24
     value: 1861
     read_from: pdf_text
+
+  # ---------------------------------------------------------------------------
+  # Z.ai GLM-5.3-Flash model card (z.ai/blog/glm-5.3-flash, 2026-08-27).
+  # Blog SPA rendered via React; data extracted from embedded JS bundle
+  # (benchmark table + footnotes). All 14 benchmarks reported as text values.
+  # GDPval-AA v2 is Elo, not a percent.
+
+  - benchmark_id: hle
+    instrument: hle
+    protocol: HLE w/ tools, full set, temp 1.0, top_p 0.95, max gen 163840 tokens, max context 300K with context management, GPT-5.6-luna (medium) judge
+    model: GLM-5.3-Flash
+    organization: Z.ai
+    source_id: zai_glm_5_3_flash_model_card
+    reported_at: 2026-08-27
+    value: 55.3
+    read_from: html_text
+
+  - benchmark_id: deepswe
+    instrument: deepswe_v1.1
+    protocol: DeepSWE v1.1, mini-swe-agent harness, temp 0.95, top_p 1.0, timeout 6h, 400K context
+    model: GLM-5.3-Flash
+    organization: Z.ai
+    source_id: zai_glm_5_3_flash_model_card
+    reported_at: 2026-08-27
+    value: 63.4
+    read_from: html_text
+
+  - benchmark_id: nl2repo
+    instrument: nl2repo
+    protocol: temp 1.0, top_p 1.0, max_new_tokens 64k, 1M context, rule-based + LLM judge for hacking prevention
+    model: GLM-5.3-Flash
+    organization: Z.ai
+    source_id: zai_glm_5_3_flash_model_card
+    reported_at: 2026-08-27
+    value: 56.3
+    read_from: html_text
+
+  - benchmark_id: terminal_bench
+    instrument: terminal_bench_2.1
+    protocol: Terminal-Bench 2.1, Claude Code 2.1.207, temp 1.0, top_p 1, max_new_tokens 65536, 6h timeout
+    model: GLM-5.3-Flash
+    organization: Z.ai
+    source_id: zai_glm_5_3_flash_model_card
+    reported_at: 2026-08-27
+    value: 84.3
+    read_from: html_text
+
+  - benchmark_id: toolathlon_verified
+    instrument: toolathlon_verified
+    protocol: official evaluation service, pass@1 averaged over 3 independent runs
+    model: GLM-5.3-Flash
+    organization: Z.ai
+    source_id: zai_glm_5_3_flash_model_card
+    reported_at: 2026-08-27
+    value: 78.4
+    read_from: html_text
+
+  - benchmark_id: automationbench
+    instrument: automationbench_v1.0.6
+    protocol: AutomationBench v1.0.6, with null-type handling fix (PR #13)
+    model: GLM-5.3-Flash
+    organization: Z.ai
+    source_id: zai_glm_5_3_flash_model_card
+    reported_at: 2026-08-27
+    value: 48.8
+    read_from: html_text
+
+  - benchmark_id: agents_last_exam
+    instrument: agents_last_exam
+    protocol: official evaluation protocol, Claude Code harness, reasoning effort=max, 1M context, 64K max output, Tool Search disabled, scored by official ALE evaluators
+    model: GLM-5.3-Flash
+    organization: Z.ai
+    source_id: zai_glm_5_3_flash_model_card
+    reported_at: 2026-08-27
+    value: 26.3
+    read_from: html_text
+
+  - benchmark_id: gdpval
+    instrument: gdpval_aa_v2
+    protocol: GDPval-AA v2, evaluated by Artificial Analysis
+    model: GLM-5.3-Flash
+    organization: Z.ai
+    source_id: zai_glm_5_3_flash_model_card
+    reported_at: 2026-08-27
+    value: 1773
+    read_from: html_text
+
+  - benchmark_id: office_qa_pro
+    instrument: office_qa_pro
+    protocol: Treasury Bulletin PDF corpus without embedded text access, temp 1.0, top_p 0.95, max context 512K
+    model: GLM-5.3-Flash
+    organization: Z.ai
+    source_id: zai_glm_5_3_flash_model_card
+    reported_at: 2026-08-27
+    value: 62.4
+    read_from: html_text
+
+  - benchmark_id: charxiv_reasoning
+    instrument: charxiv_reasoning
+    protocol: CharXiv Reasoning, w/ tools, temp 1.0, top_p 0.95, max context 256K
+    model: GLM-5.3-Flash
+    organization: Z.ai
+    source_id: zai_glm_5_3_flash_model_card
+    reported_at: 2026-08-27
+    value: 89.4
+    read_from: html_text
+
+  - benchmark_id: chartography
+    instrument: chartography
+    protocol: Chartography, w/ tools, temp 1.0, top_p 0.95, max context 256K
+    model: GLM-5.3-Flash
+    organization: Z.ai
+    source_id: zai_glm_5_3_flash_model_card
+    reported_at: 2026-08-27
+    value: 78.0
+    read_from: html_text
+
+  - benchmark_id: babyvision
+    instrument: babyvision
+    protocol: temp 1.0, top_p 0.95, max context 164K, images resized so shorter side >= 1.5K pixels
+    model: GLM-5.3-Flash
+    organization: Z.ai
+    source_id: zai_glm_5_3_flash_model_card
+    reported_at: 2026-08-27
+    value: 53.4
+    read_from: html_text
+
+  - benchmark_id: mvbench
+    instrument: mvbench
+    protocol: temp 1.0, top_p 0.95, max context 256K, 1 fps frame-extraction for non-video-native models
+    model: GLM-5.3-Flash
+    organization: Z.ai
+    source_id: zai_glm_5_3_flash_model_card
+    reported_at: 2026-08-27
+    value: 77.8
+    read_from: html_text
+
+  - benchmark_id: mmvu
+    instrument: mmvu
+    protocol: temp 1.0, top_p 0.95, max context 256K, 1 fps frame-extraction for non-video-native models
+    model: GLM-5.3-Flash
+    organization: Z.ai
+    source_id: zai_glm_5_3_flash_model_card
+    reported_at: 2026-08-27
+    value: 80.5
+    read_from: html_text
 
 # ---------------------------------------------------------------------------
 # UNRESOLVED: documents in the registry whose scores could not be read, and why.

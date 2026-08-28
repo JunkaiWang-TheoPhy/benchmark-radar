@@ -6,11 +6,13 @@ import time
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
+from pathlib import Path
 from typing import Any
 
 from .describe import clean_card_text, github_summary, huggingface_summary
 from .http import get_json, get_text
 from .models import RadarItem
+from .priority_organizations import load_priority_github_organizations
 
 
 class ConnectorPayloadError(ValueError):
@@ -572,6 +574,333 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
     # Round-robin can overshoot the per-source cap on its final sweep, since
     # every query contributes before the total is known. Trim to the most
     # recently active repositories so `max_items_per_source` stays honest.
+    return sorted(
+        found.values(), key=lambda item: item.updated_at or item.published_at, reverse=True
+    )[:limit]
+
+
+GITHUB_ORGANIZATIONS_PARSER_VERSION = "github-organizations/1"
+KAGGLE_DATASETS_PARSER_VERSION = "kaggle-datasets/1"
+HUGGINGFACE_PAPERS_PARSER_VERSION = "huggingface-papers/1"
+
+
+def _github_headers() -> dict[str, str]:
+    token = os.getenv("GITHUB_TOKEN")
+    return {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        **({"Authorization": f"Bearer {token}"} if token else {}),
+    }
+
+
+def fetch_github_organizations(
+    config: dict[str, Any],
+    since: datetime,
+    limit: int,
+) -> list[RadarItem]:
+    """Discover newly created repositories from a reviewed organization registry.
+
+    Organization membership only adds an explicit discovery surface. It never
+    grants relevance or evidence credit: every repository still flows through
+    the same taxonomy, suppression, scoring, and cross-source deduplication as
+    a generic GitHub result.
+    """
+    registry_path = Path(str(config.get("registry_path", "data/priority_github_organizations.yml")))
+    organizations = load_priority_github_organizations(registry_path)
+    tiers = {str(value).casefold() for value in config.get("tiers", []) if str(value).strip()}
+    if tiers:
+        organizations = [entry for entry in organizations if entry["tier"] in tiers]
+    max_organizations = max(1, int(config.get("max_organizations", len(organizations) or 1)))
+    organizations = organizations[:max_organizations]
+    page_size = min(100, max(1, int(config.get("page_size", 30))))
+    max_pages = max(1, int(config.get("max_pages_per_organization", 1)))
+    budget = max(1, int(config.get("max_requests", len(organizations) or 1)))
+    headers = _github_headers()
+    found: dict[str, RadarItem] = {}
+    failures: list[Exception] = []
+    healthy_organizations = 0
+    requests_made = 0
+
+    for organization in organizations:
+        if requests_made >= budget or len(found) >= limit:
+            break
+        login = organization["login"]
+        organization_found: dict[str, RadarItem] = {}
+        try:
+            for page in range(1, max_pages + 1):
+                if requests_made >= budget or len(found) + len(organization_found) >= limit:
+                    break
+                payload = get_json(
+                    f"https://api.github.com/orgs/{login}/repos",
+                    params={
+                        "type": "public",
+                        "sort": "created",
+                        "direction": "desc",
+                        "per_page": page_size,
+                        "page": page,
+                    },
+                    headers=headers,
+                    **_request_options(config),
+                )
+                requests_made += 1
+                if not isinstance(payload, list) or not all(
+                    isinstance(row, dict) for row in payload
+                ):
+                    raise ConnectorPayloadError(
+                        "GitHub organization repositories returned a non-array payload"
+                    )
+                if not payload:
+                    break
+                reached_history = False
+                for row in payload:
+                    full_name = str(row.get("full_name") or "").strip()
+                    url = str(row.get("html_url") or "").strip()
+                    created = _optional_date(row.get("created_at"))
+                    changed = _optional_date(row.get("pushed_at")) or _optional_date(
+                        row.get("updated_at")
+                    )
+                    if not full_name or not url or created is None:
+                        continue
+                    # The endpoint is newest-first by created date, so a past-window
+                    # row proves that all later rows and pages are in history.
+                    if created < since:
+                        reached_history = True
+                        break
+                    if _reject_future(config, full_name, created, changed):
+                        continue
+                    if row.get("fork") or row.get("archived") or row.get("disabled"):
+                        continue
+                    organization_found[full_name] = RadarItem(
+                        source="GitHub Organization",
+                        source_id=full_name,
+                        title=full_name,
+                        url=url,
+                        published_at=created,
+                        updated_at=changed or created,
+                        summary=github_summary(row),
+                        event_kind="released",
+                        organizations=[organization["display_name"]],
+                        metrics={
+                            "stars": float(row.get("stargazers_count") or 0),
+                            "forks": float(row.get("forks_count") or 0),
+                        },
+                        raw={"repository": row, "organization_tier": organization["tier"]},
+                        parser_version=GITHUB_ORGANIZATIONS_PARSER_VERSION,
+                    )
+                if reached_history or len(payload) < page_size:
+                    break
+        except Exception as error:
+            config.setdefault("_source_warnings", []).append(
+                f"{login}: {type(error).__name__}: {error}"
+            )
+            failures.append(error)
+            continue
+        healthy_organizations += 1
+        found.update(organization_found)
+
+    if organizations and healthy_organizations == 0 and failures:
+        raise failures[0]
+    return sorted(
+        found.values(),
+        key=lambda item: (item.updated_at or item.published_at, item.source_id),
+        reverse=True,
+    )[:limit]
+
+
+def _kaggle_summary(row: dict[str, Any]) -> str:
+    """Keep only source-provided prose and tag labels; never fabricate a card."""
+    tags = row.get("tags") or []
+    tag_names = [
+        str(tag.get("name") or "").strip()
+        for tag in tags
+        if isinstance(tag, dict) and str(tag.get("name") or "").strip()
+    ]
+    values = [
+        str(row.get(field) or "").strip()
+        for field in ("description", "subtitle")
+        if str(row.get(field) or "").strip()
+    ]
+    values.extend(tag_names)
+    return " | ".join(values)
+
+
+def fetch_kaggle_datasets(
+    config: dict[str, Any],
+    since: datetime,
+    limit: int,
+) -> list[RadarItem]:
+    """Collect fresh public data releases from Kaggle's public dataset search API."""
+    searches = [str(value).strip() for value in config.get("searches", []) if str(value).strip()]
+    page_size = min(20, max(1, int(config.get("page_size", 20))))
+    budget = max(1, int(config.get("max_requests", len(searches) or 1)))
+    found: dict[str, RadarItem] = {}
+    for search in searches[:budget]:
+        payload = get_json(
+            "https://www.kaggle.com/api/v1/datasets/list",
+            params={"search": search, "sortBy": "updated", "pageSize": page_size},
+            **_request_options(config),
+        )
+        if not isinstance(payload, list) or not all(isinstance(row, dict) for row in payload):
+            raise ConnectorPayloadError("Kaggle datasets returned a non-array payload")
+        for row in payload:
+            source_id = str(row.get("ref") or "").strip()
+            url = str(row.get("url") or row.get("urlNullable") or "").strip()
+            title = str(row.get("title") or row.get("titleNullable") or "").strip()
+            updated = _optional_date(row.get("lastUpdated"))
+            if not source_id or not url or not title or updated is None:
+                continue
+            if updated < since or _reject_future(config, source_id, updated):
+                continue
+            found[source_id] = RadarItem(
+                source="Kaggle Dataset",
+                source_id=source_id,
+                title=title,
+                url=url,
+                published_at=updated,
+                updated_at=updated,
+                summary=_kaggle_summary(row),
+                event_kind="discovered",
+                authors=(
+                    [str(row.get("creatorName") or "").strip()] if row.get("creatorName") else []
+                ),
+                metrics={
+                    "downloads": float(row.get("downloadCount") or 0),
+                    "votes": float(row.get("voteCount") or 0),
+                    "views": float(row.get("viewCount") or 0),
+                },
+                raw=row,
+                parser_version=KAGGLE_DATASETS_PARSER_VERSION,
+            )
+    return sorted(
+        found.values(), key=lambda item: item.updated_at or item.published_at, reverse=True
+    )[:limit]
+
+
+def fetch_huggingface_papers(
+    config: dict[str, Any],
+    since: datetime,
+    limit: int,
+) -> list[RadarItem]:
+    """Collect community-surfaced papers while retaining the original arXiv identity."""
+    payload = get_json(
+        "https://huggingface.co/api/daily_papers",
+        params={"limit": min(100, max(1, int(config.get("page_size", limit))))},
+        **_request_options(config),
+    )
+    if not isinstance(payload, list) or not all(isinstance(row, dict) for row in payload):
+        raise ConnectorPayloadError("Hugging Face Daily Papers returned a non-array payload")
+    found: dict[str, RadarItem] = {}
+    for row in payload:
+        paper = row.get("paper")
+        if not isinstance(paper, dict):
+            continue
+        paper_id = str(paper.get("id") or "").strip()
+        title = str(paper.get("title") or row.get("title") or "").strip()
+        published = _optional_date(paper.get("publishedAt") or row.get("publishedAt"))
+        surfaced = _optional_date(paper.get("submittedOnDailyAt"))
+        if not paper_id or not title or published is None or surfaced is None:
+            continue
+        if surfaced < since or _reject_future(config, paper_id, published, surfaced):
+            continue
+        artifact_urls = [f"https://arxiv.org/abs/{paper_id}"]
+        for field in ("githubRepo", "projectPage"):
+            value = str(paper.get(field) or "").strip()
+            if value.startswith(("https://", "http://")):
+                artifact_urls.append(value)
+        authors = [
+            str(author.get("name") or "").strip()
+            for author in paper.get("authors") or []
+            if isinstance(author, dict) and str(author.get("name") or "").strip()
+        ]
+        found[paper_id] = RadarItem(
+            source="Hugging Face Papers",
+            source_id=paper_id,
+            title=title,
+            url=f"https://huggingface.co/papers/{paper_id}",
+            # Preserve the paper's own publication date for scoring. The daily
+            # submission date only controls discovery eligibility above.
+            published_at=published,
+            updated_at=published,
+            summary=str(paper.get("summary") or row.get("summary") or "").strip(),
+            event_kind="discovered",
+            authors=authors,
+            artifact_urls=sorted(set(artifact_urls)),
+            metrics={"upvotes": float(paper.get("upvotes") or 0)},
+            raw=row,
+            parser_version=HUGGINGFACE_PAPERS_PARSER_VERSION,
+        )
+    return sorted(found.values(), key=lambda item: item.published_at, reverse=True)[:limit]
+
+
+def fetch_zenodo_records(
+    config: dict[str, Any],
+    since: datetime,
+    limit: int,
+) -> list[RadarItem]:
+    """Collect public DOI-bearing research artifacts from Zenodo's records API."""
+    searches = [str(value).strip() for value in config.get("searches", []) if str(value).strip()]
+    page_size = min(100, max(1, int(config.get("page_size", 20))))
+    budget = max(1, int(config.get("max_requests", len(searches) or 1)))
+    found: dict[str, RadarItem] = {}
+    for search in searches[:budget]:
+        payload = get_json(
+            "https://zenodo.org/api/records",
+            params={"q": search, "sort": "mostrecent", "page": 1, "size": page_size},
+            **_request_options(config),
+        )
+        hits = _payload_dict(payload, "Zenodo").get("hits")
+        if not isinstance(hits, dict):
+            raise ConnectorPayloadError("Zenodo response is missing hits")
+        rows = hits.get("hits")
+        if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows):
+            raise ConnectorPayloadError("Zenodo hits.hits must be an array")
+        for row in rows:
+            metadata = row.get("metadata") or {}
+            links = row.get("links") or {}
+            if not isinstance(metadata, dict) or not isinstance(links, dict):
+                raise ConnectorPayloadError("Zenodo record metadata and links must be objects")
+            source_id = str(row.get("recid") or row.get("id") or "").strip()
+            title = str(metadata.get("title") or row.get("title") or "").strip()
+            url = str(links.get("self_html") or links.get("doi") or "").strip()
+            published = _optional_date(
+                str(metadata.get("publication_date") or row.get("created") or "")
+            )
+            updated = _optional_date(str(row.get("updated") or row.get("modified") or ""))
+            activity = updated or published
+            if not source_id or not title or not url or published is None or activity is None:
+                continue
+            if activity < since or _reject_future(config, source_id, published, updated):
+                continue
+            creators = metadata.get("creators") or []
+            if not isinstance(creators, list):
+                raise ConnectorPayloadError("Zenodo metadata creators must be an array")
+            doi = str(row.get("doi_url") or links.get("doi") or "").strip()
+            artifact_urls = [doi] if doi.startswith(("https://", "http://")) else []
+            stats = row.get("stats") or {}
+            if not isinstance(stats, dict):
+                raise ConnectorPayloadError("Zenodo stats must be an object")
+            found[source_id] = RadarItem(
+                source="Zenodo",
+                source_id=source_id,
+                title=title,
+                url=url,
+                published_at=published,
+                updated_at=updated or published,
+                summary=clean_card_text(str(metadata.get("description") or "")),
+                event_kind="updated" if updated and updated > published else "released",
+                authors=[
+                    str(creator.get("name") or "").strip()
+                    for creator in creators
+                    if isinstance(creator, dict) and str(creator.get("name") or "").strip()
+                ],
+                artifact_urls=artifact_urls,
+                metrics={
+                    "downloads": float(stats.get("downloads") or 0),
+                    "views": float(stats.get("views") or 0),
+                },
+                raw=row,
+                parser_version="zenodo-records/1",
+            )
     return sorted(
         found.values(), key=lambda item: item.updated_at or item.published_at, reverse=True
     )[:limit]
@@ -1162,6 +1491,10 @@ SOURCE_FETCHERS = {
     "arxiv": fetch_arxiv,
     "huggingface": fetch_huggingface,
     "github": fetch_github,
+    "github_organizations": fetch_github_organizations,
+    "huggingface_papers": fetch_huggingface_papers,
+    "kaggle_datasets": fetch_kaggle_datasets,
+    "zenodo": fetch_zenodo_records,
     "openreview": fetch_openreview,
     "semantic_scholar": fetch_semantic_scholar,
     "github_releases": fetch_github_releases,
@@ -1179,6 +1512,10 @@ _PARSER_VERSION_METHODS = {
     "first-party-rss-atom": "RSS/Atom",
     "huggingface-hub": "API",
     "github-search": "API",
+    "github-organizations": "API",
+    "huggingface-papers": "API",
+    "kaggle-datasets": "API",
+    "zenodo-records": "API",
     "openreview-api-v2": "API",
     "semantic-scholar-graph": "API",
     "github-releases": "API",
@@ -1192,6 +1529,10 @@ SOURCE_DEFAULT_METHODS = {
     "arxiv": "RSS",
     "huggingface": "API",
     "github": "API",
+    "github_organizations": "API",
+    "huggingface_papers": "API",
+    "kaggle_datasets": "API",
+    "zenodo": "API",
     "openreview": "API",
     "semantic_scholar": "API",
     "github_releases": "API",
