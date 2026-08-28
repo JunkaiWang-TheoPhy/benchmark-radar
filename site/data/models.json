@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "model_count": 861,
-  "curated_only": 15,
-  "crawled_only": 827,
+  "curated_only": 16,
+  "crawled_only": 826,
   "both_layers": 19,
   "organizations": [
     "AI21 Labs",
@@ -9504,6 +9504,17 @@
       }
     },
     {
+      "key": "z-ai-glm-5-3-flash",
+      "model": "GLM-5.3-Flash",
+      "organization": "Z.ai",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
+      }
+    },
+    {
       "key": "z-ai-glm-5-3-max",
       "model": "GLM-5.3 (max)",
       "organization": "Z.ai",
@@ -9567,17 +9578,6 @@
       ],
       "source_counts": {
         "crawled": 11
-      }
-    },
-    {
-      "key": "z-ai-glm-5-3-flash",
-      "model": "GLM-5.3-Flash",
-      "organization": "Z.ai",
-      "layers": [
-        "crawled"
-      ],
-      "source_counts": {
-        "crawled": 13
       }
     }
   ]

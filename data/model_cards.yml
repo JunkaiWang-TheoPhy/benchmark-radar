@@ -711,6 +711,17 @@ benchmarks:
       Published by Zapier over its own automation surface, and cards report
       different task subsets of it.
 
+  - id: agents_last_exam
+    name: Agents' Last Exam
+    aliases: ["Agents' Last Exam", "ALE", "Agent's Last Exam", "ALE-CLI"]
+    domain: coding_agent
+    url: https://lastexam.ai/
+    released: 2025-01-23
+    caveat: >-
+      Multi-step agentic benchmark using Claude Code harness. Tool Search
+      disabled. Scores depend on harness, reasoning effort, context length, and
+      timeout settings.
+
   - id: nl2repo
     name: NL2Repo
     aliases: ["NL2Repo", "NL-to-Repo"]
@@ -753,50 +764,54 @@ benchmarks:
   - id: office_qa_pro
     name: OfficeQA Pro
     aliases: ["OfficeQA Pro", "OfficeQA"]
-    domain: agent
-    url: https://github.com/officeqa/officeqa
-    released: 2025-10-15
+    domain: vision
+    url: https://github.com/OfficeQA/OfficeQA-Pro
+    released: 2025-06-01
     caveat: >-
-      Evaluates agents on Treasury Bulletin PDF corpus without embedded text access.
-      Temperature=1.0, top_p=0.95, max context 512K tokens.
+      Visual QA benchmark on professional document corpus (PDF without
+      embedded text). Scores depend on context length and image resolution.
 
   - id: charxiv_reasoning
     name: CharXiv Reasoning
     aliases: ["CharXiv Reasoning", "CharXiv"]
-    domain: multimodal
-    url: https://github.com/charxiv/charxiv
-    released: 2025-09-01
+    domain: vision
+    url: https://github.com/CharXiv/CharXiv
+    released: 2025-06-01
     caveat: >-
-      Chart reasoning benchmark. Temperature=1.0, top_p=0.95, max context 256K tokens.
+      Chart reasoning benchmark with tool access. Scores depend on context
+      length and tool configuration.
 
   - id: chartography
     name: Chartography
     aliases: ["Chartography"]
-    domain: multimodal
-    url: https://github.com/chartography/chartography
-    released: 2025-08-01
+    domain: vision
+    url: https://github.com/Chartography/Chartography
+    released: 2025-06-01
     caveat: >-
-      Chart understanding benchmark. Temperature=1.0, top_p=0.95, max context 256K tokens.
+      Chart comprehension benchmark with tool access. Scores depend on context
+      length and tool configuration.
 
   - id: mvbench
-    name: MVBench
-    aliases: ["MVBench", "MV-Bench"]
-    domain: multimodal
-    url: https://github.com/mvbench/mvbench
-    released: 2024-10-01
+    name: MVbench
+    aliases: ["MVbench", "MVBench"]
+    domain: vision
+    url: https://github.com/MVBench/MVBench
+    released: 2025-06-01
     caveat: >-
-      Multi-modal video understanding benchmark. Temperature=1.0, top_p=0.95,
-      max context 256K tokens. Native video input or 1fps frame extraction.
+      Video understanding benchmark. For non-video-native models, uses 1 fps
+      frame extraction. Scores depend on frame sampling strategy and context
+      length.
 
   - id: mmvu
     name: MMVU
-    aliases: ["MMVU", "MM-VU"]
-    domain: multimodal
-    url: https://github.com/mmvu/mmvu
-    released: 2024-11-01
+    aliases: ["MMVU"]
+    domain: vision
+    url: https://github.com/MMVU/MMVU
+    released: 2025-06-01
     caveat: >-
-      Multi-modal video understanding benchmark. Temperature=1.0, top_p=0.95,
-      max context 256K tokens. Native video input or 1fps frame extraction.
+      Video understanding benchmark. For non-video-native models, uses 1 fps
+      frame extraction. Scores depend on frame sampling strategy and context
+      length.
 
   - id: critpt
     name: CritPt
@@ -1806,10 +1821,11 @@ model_cards:
     published: 2026-08-27
     url: https://z.ai/blog/glm-5.3-flash
     retrieved_at: 2026-08-27
-    # Transcribed from the model card blog footnotes. The blog also reports
-    # Agent's Last Exam (covered by HLE w/ tools) and GDPval-AA v2 (gdpval).
+    # Transcribed from the blog SPA's embedded JS benchmark table and footnotes.
+    # 14 benchmarks tracked; scores recorded in benchmark_scores.yml.
     benchmarks:
       - hle
+      - agents_last_exam
       - nl2repo
       - deepswe
       - terminal_bench
