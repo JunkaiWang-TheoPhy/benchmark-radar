@@ -56,7 +56,7 @@ def test_card_uses_score_frontiers_instead_of_the_adoption_rank():
     assert set(og.CHART_BENCHMARKS) >= {"gpqa_diamond", "hle"}
 
 
-def test_catalog_totals_include_all_searchable_records_and_curated_source(tmp_path):
+def test_catalog_count_includes_all_searchable_records(tmp_path):
     index = tmp_path / "benchmark-index.json"
     index.write_text(
         json.dumps(
@@ -72,6 +72,8 @@ def test_catalog_totals_include_all_searchable_records_and_curated_source(tmp_pa
         encoding="utf-8",
     )
     progression = og.build_score_progression(og.DEFAULT_SCORES_PATH)
-    benchmark_count, source_count = og.catalog_totals(progression, index)
-    assert benchmark_count == progression["benchmark_count"] + 124
-    assert source_count == 4
+    assert og.catalog_count(progression, index) == progression["benchmark_count"] + 124
+
+
+def test_card_uses_the_daily_source_count():
+    assert og.DAILY_SOURCE_COUNT == 11

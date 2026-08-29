@@ -19,6 +19,7 @@ from benchmark_radar.benchmark_scores import DEFAULT_SCORES_PATH, build_score_pr
 WIDTH = 1200
 HEIGHT = 630
 DEFAULT_INDEX_PATH = Path("site/data/benchmark-index.json")
+DAILY_SOURCE_COUNT = 11
 BACKGROUND = "#FAFAFA"
 INK = "#1B2A4A"
 TEAL = "#2A7F8E"
@@ -78,16 +79,14 @@ def _date_position(value: str, first: date, span: int, left: int, width: int) ->
     return left + round((date.fromisoformat(value) - first).days / span * width)
 
 
-def catalog_totals(progression: dict, index_path: Path = DEFAULT_INDEX_PATH) -> tuple[int, int]:
-    """Return the complete searchable catalog total and its source count."""
+def catalog_count(progression: dict, index_path: Path = DEFAULT_INDEX_PATH) -> int:
+    """Return the complete searchable catalog total, across all layers."""
     payload = json.loads(index_path.read_text(encoding="utf-8"))
     records = payload.get("benchmarks", [])
     external_count = int(payload.get("count", len(records)))
-    external_sources = {record["source"] for record in records if record.get("source")}
-    # The curated score layer is a fourth searchable source alongside the
-    # external catalog. Its benchmark IDs are also in `progression`, but its
-    # records are intentionally not duplicated into benchmark-index.json.
-    return progression["benchmark_count"] + external_count, len(external_sources) + 1
+    # Curated score benchmarks are also searchable, but their records are
+    # intentionally not duplicated into benchmark-index.json.
+    return progression["benchmark_count"] + external_count
 
 
 def render(
@@ -160,7 +159,7 @@ def render(
     draw.line([(MARGIN, y), (WIDTH - MARGIN, y)], fill=LIGHT, width=2)
     y += 20
     benchmark_count = benchmark_count or progression["benchmark_count"]
-    source_count = source_count or 1
+    source_count = source_count or DAILY_SOURCE_COUNT
     draw.text(
         (MARGIN, y),
         f"{benchmark_count:,} benchmarks · {source_count} sources",
@@ -194,7 +193,8 @@ def main() -> None:
     args = parser.parse_args()
     _assert_scalable_fonts()
     progression = build_score_progression(args.scores)
-    benchmark_count, source_count = catalog_totals(progression)
+    benchmark_count = catalog_count(progression)
+    source_count = DAILY_SOURCE_COUNT
     path = render(
         progression,
         args.output,
