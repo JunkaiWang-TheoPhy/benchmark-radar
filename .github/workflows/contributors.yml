@@ -33,15 +33,32 @@ jobs:
           avatarSize: 42
           excludeBots: "true"
 
-      - name: Propose updated image
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
-        with:
-          branch: automation/update-contributors-image
-          delete-branch: true
-          commit-message: "chore: update contributors image"
-          title: "chore: update contributors image"
-          body: |
-            Updates the generated contributor profile image.
+      - name: Open or update pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: automation/update-contributors-image
+        run: |
+          set -euo pipefail
 
-            This pull request was opened automatically by the contributors workflow.
-          base: main
+          if git diff --quiet -- assets/contributors.svg; then
+            echo "Contributors image unchanged; nothing to propose."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git add assets/contributors.svg
+          git commit -m "chore: update contributors image"
+          git push --force origin "HEAD:refs/heads/$BRANCH"
+
+          if [ -n "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
+            echo "Pull request already open; branch updated in place."
+            exit 0
+          fi
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore: update contributors image" \
+            --body "Updates the generated contributor profile image. Opened automatically by the contributors workflow."
