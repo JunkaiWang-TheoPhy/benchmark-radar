@@ -6,7 +6,7 @@
 
 # Benchmark Radar
 
-<!-- 记录数 badge 由数据驱动：每次采集都会根据语料重新生成，因此它反映的是项目实际收集到的数据量；下方开头的来源数量是手工维护的，修改 `config.yml` 中的采集 connector 或 first-party feed 时需要同步更新该数字 -->
+<!-- 记录数 badge 由数据驱动：每次采集都会根据语料重新生成，因此它反映的是项目实际收集到的数据量；下方开头的来源数量是手工维护的，当 `config.yml` 增删采集 connector、first-party feed 或 Hacker News attention 来源时，需要同步更新该数字 -->
 
 <p align="center">
   <a href="https://benchmark-radar.org/"><img alt="已收集的 benchmark 记录" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fbenchmark-radar.org%2Fdata%2Frecords-badge.json&amp;style=for-the-badge"></a>

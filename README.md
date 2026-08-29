@@ -10,7 +10,7 @@
 every collection, so it states what the project actually holds rather than a
 hand-edited number (issue #197). The source count in the intro below is
 manually maintained: update it when `config.yml` adds or removes a collection
-connector or first-party feed. -->
+connector, a first-party feed, or the Hacker News attention source. -->
 
 <p align="center">
   <a href="https://benchmark-radar.org/"><img alt="Benchmarks collected" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fbenchmark-radar.org%2Fdata%2Frecords-badge.json&amp;style=for-the-badge"></a>
