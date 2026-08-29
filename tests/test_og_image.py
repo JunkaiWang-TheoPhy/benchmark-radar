@@ -36,20 +36,20 @@ def test_guard_rejects_a_face_that_ignores_the_requested_size(monkeypatch):
 def test_render_writes_a_correctly_sized_card(tmp_path):
     # 1200x630 is what the og:image:width/height meta in site/index.html
     # declares, and a mismatch makes the unfurled card letterbox or crop.
-    leaderboard = og.build_adoption_rank(og.DEFAULT_REGISTRY_PATH)
-    output = og.render(leaderboard, tmp_path / "og-card.png")
+    progression = og.build_score_progression(og.DEFAULT_SCORES_PATH)
+    output = og.render(progression, tmp_path / "og-card.png")
     with Image.open(output) as image:
         assert image.size == (1200, 630)
 
 
 def test_card_reports_the_current_registry_counts(tmp_path):
-    # The card is a claim about the registry that travels without it. The
-    # committed copy drifted from the live one this way: the ranking moved and
-    # the image kept advertising the old count.
-    leaderboard = og.build_adoption_rank(og.DEFAULT_REGISTRY_PATH)
-    top = leaderboard["entries"][0]
-    assert top["card_count"] > 0
-    # render() reads these straight from the leaderboard, so a passing render
-    # plus a non-empty ranking is what ties the image to today's registry.
-    output = og.render(leaderboard, tmp_path / "og-card.png")
+    # The card is a claim about the score evidence that travels without it.
+    progression = og.build_score_progression(og.DEFAULT_SCORES_PATH)
+    assert progression["observation_count"] > 0
+    output = og.render(progression, tmp_path / "og-card.png")
     assert output.stat().st_size > 0
+
+
+def test_card_uses_score_frontiers_instead_of_the_adoption_rank():
+    assert "build_adoption_rank" not in og.__file__
+    assert set(og.CHART_BENCHMARKS) >= {"gpqa_diamond", "hle"}

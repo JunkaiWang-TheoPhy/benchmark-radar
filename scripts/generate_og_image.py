@@ -1,62 +1,41 @@
-"""Render the Open Graph card for the repository and dashboard (issue #88).
+"""Render the Open Graph saturation card for the repository and dashboard.
 
-Without a custom image, every share of this project on Slack, X, LinkedIn, or
-Hacker News renders as a grey placeholder with a URL under it. The share is the
-first and often only impression, and a blank card wastes it on a project whose
-whole point is a specific, checkable finding.
-
-So the card *is* the finding: the question, the top rows of the current ranking,
-and the denominator they were counted against. A reader who never clicks still
-learns what the project measured, and one who does arrives already knowing.
-
-Generated from the same registry as the ranking, never hand-edited, so a card
-advertising counts the registry no longer supports cannot survive a rebuild.
+The share image uses the same score-frontier data as the site, not the model-card
+adoption ranking, so a shared card shows reported scores over time and their
+approach to a ceiling.
 """
 
 from __future__ import annotations
 
 import argparse
+from datetime import date
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from benchmark_radar.model_cards import DEFAULT_REGISTRY_PATH, build_adoption_rank
+from benchmark_radar.benchmark_scores import DEFAULT_SCORES_PATH, build_score_progression
 
-# 1200x630 is the size Open Graph consumers crop to. Rendering at exactly that
-# ratio is what keeps the bottom line from being cut off in a Slack unfurl.
 WIDTH = 1200
 HEIGHT = 630
-
-# The report figures' palette, so a shared card and a figure from the same
-# project do not look like they came from two different ones.
 BACKGROUND = "#FAFAFA"
 INK = "#1B2A4A"
 TEAL = "#2A7F8E"
 SLATE = "#6B7B8D"
 LIGHT = "#DDE3E8"
-PALE = "#EEF2F4"
+COLORS = ("#2A7F8E", "#D26A3A", "#6D58A6", "#3D8B5D")
 
 MARGIN = 64
-ROWS = 5
 TITLE_SIZE = 46
-# "Benchmark" measures ~234px at 46px in DejaVu and Helvetica, and ~55px through
-# Pillow's unscaled default. 150 sits clear of both, so the check does not turn
-# into a per-font tolerance to maintain.
 MIN_TITLE_PROBE_WIDTH = 150
+CHART_BENCHMARKS = ("gpqa_diamond", "hle", "terminal_bench", "swe_bench_verified")
 
 
 def font(size: int, *, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    # DejaVu ships on the Ubuntu runner that publishes the card, so it stays
-    # first and the published image is unchanged. The macOS paths exist so a
-    # maintainer regenerating locally gets a real card rather than a silently
-    # degraded one: PIL's default is an unscalable bitmap face, which ignores
-    # every size below and renders a 46px title at roughly 10px.
     names = [
         "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
         if bold
         else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/System/Library/Fonts/Supplemental/DejaVuSans-Bold.ttf"
         if bold
         else "/System/Library/Fonts/Supplemental/DejaVuSans.ttf",
@@ -74,145 +53,110 @@ def font(size: int, *, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont
 
 
 def _assert_scalable_fonts() -> None:
-    """Refuse to write a card whose text ignored the requested size.
-
-    Checked by measuring rather than by inspecting the font class. Pillow's
-    `load_default()` returns a scalable FreeTypeFont on Pillow 11+ and an
-    unscalable bitmap face before that, so a type check passes on new Pillow
-    while still rendering a 46px title at roughly 10px. Size is the property
-    that actually matters, and it holds across both.
-
-    This fails loudly because the failure is otherwise invisible: the card
-    still writes, and a share image is only ever checked by looking at it.
-    """
+    """Refuse to write a card whose text ignored the requested size."""
     probe = "Benchmark"
     title_width = font(TITLE_SIZE, bold=True).getbbox(probe)[2]
     if title_width < MIN_TITLE_PROBE_WIDTH:
         raise SystemExit(
-            f"Fonts resolved to a face that ignores the requested size: "
-            f'"{probe}" measured {title_width}px wide at {TITLE_SIZE}px, '
-            f"expected at least {MIN_TITLE_PROBE_WIDTH}px. Install DejaVu "
-            "(`brew install --cask font-dejavu` on macOS, "
-            "`apt-get install fonts-dejavu-core` on Debian/Ubuntu) and re-run."
+            f'Fonts resolved to a face that ignores the requested size: "{probe}" '
+            f"measured {title_width}px wide at {TITLE_SIZE}px, expected at least "
+            f"{MIN_TITLE_PROBE_WIDTH}px. Install DejaVu fonts and re-run."
         )
 
 
-def _truncate(draw: ImageDraw.ImageDraw, text: str, typeface, limit: int) -> str:
-    """Shorten to fit `limit` pixels, with an ellipsis when anything was cut.
-
-    Benchmark names are registry data and a long one would otherwise run under
-    the count column and collide with it. Measured rather than counted in
-    characters, because the face is proportional: "Humanity's Last Exam" and
-    "MMMU" differ far more in width than in length.
-    """
-    if draw.textlength(text, font=typeface) <= limit:
-        return text
-    ellipsis = "…"
-    while text and draw.textlength(text + ellipsis, font=typeface) > limit:
-        text = text[:-1]
-    return text.rstrip() + ellipsis
+def _short_name(name: str) -> str:
+    return {
+        "Gpqa Diamond": "GPQA",
+        "Hle": "HLE",
+        "Swe Bench Verified": "SWE-bench",
+    }.get(name, name)
 
 
-def render(leaderboard: dict, output: Path) -> Path:
+def _date_position(value: str, first: date, span: int, left: int, width: int) -> int:
+    return left + round((date.fromisoformat(value) - first).days / span * width)
+
+
+def render(progression: dict, output: Path) -> Path:
     image = Image.new("RGB", (WIDTH, HEIGHT), BACKGROUND)
     draw = ImageDraw.Draw(image)
-
-    # A teal spine rather than a full banner: it identifies the card at a
-    # glance in a feed without spending vertical space the ranking needs.
     draw.rectangle([0, 0, 12, HEIGHT], fill=TEAL)
 
     title = font(TITLE_SIZE, bold=True)
-    question = font(31)
-    row_face = font(30)
-    row_bold = font(30, bold=True)
-    small = font(23)
-    # A step down from `small`: the URL is provenance, not a line of the
-    # finding, and the size difference is what buys it room on the caveat's
-    # line without either being truncated.
-    attribution = font(21)
+    subtitle = font(30)
+    body = font(22)
+    label = font(20, bold=True)
+    legend = font(21)
 
     y = MARGIN - 12
     draw.text((MARGIN, y), "Benchmark Radar", font=title, fill=INK)
     y += 60
-    draw.text(
-        (MARGIN, y),
-        "Which benchmarks do frontier labs actually report?",
-        font=question,
-        fill=TEAL,
-    )
-    y += 58
-
+    draw.text((MARGIN, y), "Where benchmark scores start to plateau", font=subtitle, fill=TEAL)
+    y += 55
     draw.line([(MARGIN, y), (WIDTH - MARGIN, y)], fill=LIGHT, width=2)
-    y += 26
 
-    count_x = WIDTH - MARGIN - 210
-    org_x = WIDTH - MARGIN - 60
-    draw.text((MARGIN, y), "BENCHMARK", font=small, fill=SLATE)
-    draw.text((count_x, y), "CARDS", font=small, fill=SLATE, anchor="ra")
-    draw.text((org_x, y), "ORGS", font=small, fill=SLATE, anchor="ra")
-    y += 40
+    records = [
+        progression["benchmarks"][benchmark_id]
+        for benchmark_id in CHART_BENCHMARKS
+        if benchmark_id in progression.get("benchmarks", {})
+    ]
+    if not records:
+        raise ValueError("score progression contains no configured chart benchmarks")
+    first = min(date.fromisoformat(record["first_reported_at"]) for record in records)
+    last = max(date.fromisoformat(record["last_reported_at"]) for record in records)
+    span = max((last - first).days, 1)
+    left, right, top, bottom = MARGIN + 48, WIDTH - MARGIN - 10, y + 52, y + 282
+    plot_width, plot_height = right - left, bottom - top
 
-    row_height = 54
-    for index, entry in enumerate(leaderboard["entries"][:ROWS]):
-        # Zebra striping instead of rules: at feed thumbnail size, hairlines
-        # between rows disappear while a fill still reads as separation.
-        if index % 2 == 0:
-            draw.rectangle(
-                [MARGIN - 16, y - 10, WIDTH - MARGIN + 16, y + row_height - 16],
-                fill=PALE,
-            )
-        rank = f"{entry['rank']}."
-        draw.text((MARGIN, y), rank, font=row_face, fill=SLATE)
-        name_x = MARGIN + 46
-        name = _truncate(draw, entry["name"], row_bold, count_x - name_x - 90)
-        draw.text((name_x, y), name, font=row_bold, fill=INK)
-        draw.text((count_x, y), str(entry["card_count"]), font=row_face, fill=INK, anchor="ra")
+    for value in (0, 25, 50, 75, 100):
+        grid_y = bottom - round(value / 100 * plot_height)
+        draw.line([(left, grid_y), (right, grid_y)], fill=LIGHT, width=1)
+        draw.text((left - 14, grid_y), str(value), font=legend, fill=SLATE, anchor="ra")
+    draw.text((left - 48, top - 25), "%", font=label, fill=SLATE)
+
+    for index, record in enumerate(records):
+        points = record["historical_best_frontier"]["points"]
+        xy = []
+        for point in points:
+            x = _date_position(point["reported_at"], first, span, left, plot_width)
+            value = max(0, min(100, float(point["value"])))
+            xy.append((x, bottom - round(value / 100 * plot_height)))
+        if len(xy) > 1:
+            draw.line(xy, fill=COLORS[index], width=5, joint="curve")
+        for x, point_y in xy:
+            draw.ellipse([x - 5, point_y - 5, x + 5, point_y + 5], fill=COLORS[index])
+
+        legend_x = MARGIN + index * 260
+        draw.ellipse([legend_x, bottom + 30, legend_x + 12, bottom + 42], fill=COLORS[index])
         draw.text(
-            (org_x, y),
-            str(entry["organization_count"]),
-            font=row_face,
-            fill=SLATE,
-            anchor="ra",
+            (legend_x + 22, bottom + 24),
+            _short_name(record["benchmark_id"].replace("_", " ").title()),
+            font=legend,
+            fill=INK,
         )
-        y += row_height
 
-    y += 14
+    draw.text((left, bottom + 70), first.strftime("%b %Y"), font=legend, fill=SLATE)
+    draw.text((right, bottom + 70), last.strftime("%b %Y"), font=legend, fill=SLATE, anchor="ra")
+    y = bottom + 112
     draw.line([(MARGIN, y), (WIDTH - MARGIN, y)], fill=LIGHT, width=2)
-    y += 22
-
+    y += 20
     draw.text(
         (MARGIN, y),
-        (
-            f"Across {leaderboard['model_card_count']} model cards from "
-            f"{leaderboard['organization_count']} organizations, "
-            f"tracking {leaderboard['benchmark_count']} benchmarks"
-        ),
-        font=small,
+        f"{progression['observation_count']} cited scores across "
+        f"{progression['benchmark_count']} benchmarks",
+        font=body,
         fill=INK,
     )
-    y += 32
-    # The caveat travels on the card too. This image is the most widely seen
-    # and least clicked-through representation of the ranking, so it is the
-    # worst place to let a bare top-five read as a quality ordering.
-    #
-    # Phrased without a leading "Measures" so it clears the attribution to its
-    # right. The two are measured to fit on one line at these faces with ~75px
-    # between them; lengthening either, or raising `small`, will collide before
-    # it wraps, because Pillow does not wrap.
+    y += 30
     draw.text(
         (MARGIN, y),
-        "Vendor reporting convention, not benchmark quality",
-        font=small,
+        "Historical best frontier · reporting signal, not a quality leaderboard",
+        font=body,
         fill=SLATE,
     )
-    # The card is built to be reposted, and a screenshot of a ranking with no
-    # source is a claim nobody can check. Bottom right, sharing the caveat's
-    # baseline: an unfamiliar reader meets the attribution and the disclaimer
-    # in one glance, and the footer has no room for a third line.
     draw.text(
         (WIDTH - MARGIN, y + 2),
         "github.com/ktwu01/benchmark-radar",
-        font=attribution,
+        font=font(19),
         fill=TEAL,
         anchor="ra",
     )
@@ -224,12 +168,11 @@ def render(leaderboard: dict, output: Path) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--registry", type=Path, default=DEFAULT_REGISTRY_PATH)
+    parser.add_argument("--scores", type=Path, default=DEFAULT_SCORES_PATH)
     parser.add_argument("--output", type=Path, default=Path("site/assets/og-card.png"))
     args = parser.parse_args()
-
     _assert_scalable_fonts()
-    path = render(build_adoption_rank(args.registry), args.output)
+    path = render(build_score_progression(args.scores), args.output)
     print(f"Wrote {path}")
 
 
