@@ -12,8 +12,8 @@
 
     <!-- Without these, every share of this dashboard renders as a grey
          placeholder with a URL under it. The card is generated from the same
-         registry as the ranking (scripts/generate_og_image.py), so a share
-         shows the current top rows rather than a static logo. -->
+         score-frontier data as the saturation view (scripts/generate_og_image.py),
+         so a share shows reported scores over time rather than a leaderboard. -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Benchmark Radar">
     <meta
@@ -32,7 +32,7 @@
     <meta property="og:image:height" content="630">
     <meta
       property="og:image:alt"
-      content="Benchmark Radar: the most-reported benchmarks across frontier model cards, led by GPQA Diamond, SWE-bench Verified, and LiveCodeBench."
+      content="Benchmark Radar: see where reported AI benchmark scores start to plateau, with cited score frontiers across GPQA Diamond, HLE, Terminal-Bench, and SWE-bench Verified."
     >
     <meta name="twitter:card" content="summary_large_image">
     <!-- Mirrors og:image for consumers that read the Twitter namespace only
@@ -185,10 +185,9 @@
           <span class="repo-badge-label" data-i18n="Contact">Contact</span>
         </button>
         <!--
-          Each badge is a call to action, not a link to a roster. Starring has no
-          GET endpoint (GitHub requires an authenticated POST with a CSRF token,
-          so no third-party page can star on a visitor's behalf), so the star
-          badge opens the repo itself, where the Star control is one click away.
+          Each badge is a call to action, not a link to a roster. The live counts
+          come from GitHub's public repository API; starring still opens the repo
+          itself, where the visitor can click GitHub's Star control.
         -->
         <div class="repo-badges" id="repo-badges" aria-label="Support this repository">
           <a
