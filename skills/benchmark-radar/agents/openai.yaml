@@ -1,0 +1,4 @@
+interface:
+  display_name: "Benchmark Radar"
+  short_description: "Find and inspect AI benchmarks with the local CLI"
+  default_prompt: "Use $benchmark-radar to find benchmarks relevant to my request."

@@ -10,6 +10,7 @@ from benchmark_radar.snapshots import rebuild_dashboard, records_badge, write_sn
 
 README = Path("README.md")
 README_ZH = Path("README.zh-CN.md")
+SKILL = Path("skills/benchmark-radar/SKILL.md")
 
 
 def _run(day: int) -> RadarRun:
@@ -95,3 +96,23 @@ def test_chinese_readme_mirrors_the_english_one():
     # language label rather than a filename.
     assert '<div align="left">' in zh.split("# Benchmark Radar")[0]
     assert "[README.md](README.md)" not in zh
+
+
+def test_readmes_separate_consumer_sync_from_maintainer_normalization():
+    # Regression: the first CLI docs told every user to rebuild repository internals.
+    english = README.read_text(encoding="utf-8")
+    chinese = README_ZH.read_text(encoding="utf-8")
+    for text in (english, chinese):
+        assert "benchmark-radar init" in text
+        assert "benchmark-radar sync" in text
+        assert "~/.benchmark-radar" in text
+        assert "build-data-release" in text
+
+
+def test_readmes_expose_the_installable_consumer_skill():
+    # Regression: a repository-local Skill is not discoverable to users unless
+    # the public README provides the real Skills CLI installation path.
+    command = "npx skills add ktwu01/benchmark-radar --skill benchmark-radar"
+    assert SKILL.exists()
+    assert command in README.read_text(encoding="utf-8")
+    assert command in README_ZH.read_text(encoding="utf-8")

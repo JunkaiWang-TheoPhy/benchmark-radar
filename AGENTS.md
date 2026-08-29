@@ -72,6 +72,28 @@ Applies to `README*`, `docs/**`, `.github/ISSUE_TEMPLATE/**`, `site/**`,
 - Do not squash-merge pull requests.
 - Merge pull requests with a merge commit so Git preserves branch ancestry and recognizes the branch as merged.
 
+## Query surfaces
+
+- `benchmark_radar.query.QueryService` is the single source of truth for local
+  benchmark search, detail lookup, recent evidence, and data health.
+- CLI and HTTP query surfaces must call that service and return the same stable
+  JSON contract. Do not add interface-specific ranking, filtering, identity
+  merging, or silent network fallback.
+- Query responses must state their local data provenance and retrieval mode.
+  Missing or malformed generated artifacts fail visibly with machine-readable
+  errors; they must not be replaced with guessed metadata.
+- Installed clients read the active version under the cross-platform
+  `.benchmark-radar` user data directory. `init` and `sync` are the only
+  consumer update paths; search must stay offline and must not hide an update
+  failure behind stale data.
+- Pages publishes the small CLI manifest, while the Pages workflow uploads the
+  complete checksummed bundle to the rolling `cli-data` GitHub Release. Sync
+  validates it before atomically switching state and removes old versions only
+  after the new version is active.
+- The public consumer Skill lives at `skills/benchmark-radar/SKILL.md`. Keep it
+  purpose-neutral and limited to routing user intent through consumer CLI
+  commands; do not make maintainer build commands part of its normal workflow.
+
 ## Before opening a pull request
 
 - Run the full CI sequence locally and get it passing before opening a PR. Do
@@ -87,10 +109,11 @@ Applies to `README*`, `docs/**`, `.github/ISSUE_TEMPLATE/**`, `site/**`,
       ruff format --check .
       benchmark-radar normalize-external
       benchmark-radar classify
+      benchmark-radar build-data-release
       pytest -q
 
-- All five must pass. `ruff format --check` runs before everything else, so a
+- All six must pass. `ruff format --check` runs before everything else, so a
   formatting slip fails the run before a single test executes. Both generators
   run before `pytest` and in that order: `classify` reads the shard directory
-  `normalize-external` writes, and the corpus-backed tests skip themselves when
-  either artifact is missing.
+  `normalize-external` writes, while `build-data-release` packages the validated
+  index, shards, and snapshots that installed clients consume.

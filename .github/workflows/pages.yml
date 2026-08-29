@@ -93,6 +93,10 @@ jobs:
           # This rebuild also writes site/feed.xml from the same validated
           # snapshot history as radar.json (issue #37).
           benchmark-radar classify
+          # Build one complete, checksummed archive for installed CLIs. The
+          # small manifest ships with Pages; a separate least-privilege job
+          # publishes the archive as a bandwidth-safe GitHub Release asset.
+          benchmark-radar build-data-release
           # Standalone citable artifacts alongside the dashboard bundle (issue
           # #88). Written into site/data/ so they deploy with the rest of the
           # site and resolve at a stable URL: an embedded badge or a citation
@@ -107,6 +111,15 @@ jobs:
           # to 357 models against models.json's 355 and nothing noticed.
           python scripts/build_logo_registry.py
           pytest -q
+      - name: Upload CLI data release for publishing
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cli-data-release
+          path: site/data/cli/
+          if-no-files-found: error
+          retention-days: 1
+      - name: Remove CLI archive from Pages artifact
+        run: rm site/data/cli/benchmark-radar-data.zip
       - name: Configure Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
       - name: Upload Pages artifact
@@ -114,8 +127,41 @@ jobs:
         with:
           path: site/
 
-  deploy:
+  publish-cli-data:
     needs: build
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Download verified CLI data release
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cli-data-release
+          path: cli-data-release
+      - name: Publish rolling CLI data release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view cli-data --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            # --latest=false keeps this rolling data drop out of the "Latest"
+            # slot. GitHub picks the latest release by creation date, so without
+            # it a data upload would displace the newest versioned release in
+            # the repository sidebar and at /releases/latest.
+            gh release create cli-data \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --latest=false \
+              --title "Benchmark Radar CLI data" \
+              --notes "Checksummed data used by benchmark-radar init and sync."
+          fi
+          gh release upload cli-data \
+            cli-data-release/benchmark-radar-data.zip \
+            --clobber \
+            --repo "$GITHUB_REPOSITORY"
+
+  deploy:
+    needs: [build, publish-cli-data]
     permissions:
       pages: write
       id-token: write

@@ -39,4 +39,5 @@ jobs:
       # is how a models.json short by 321 models could stay green.
       - run: benchmark-radar normalize-external
       - run: benchmark-radar classify
+      - run: benchmark-radar build-data-release
       - run: pytest -q
