@@ -9,8 +9,8 @@
 <!-- 记录数 badge 由数据驱动：每次采集都会根据语料重新生成，因此它反映的是项目实际收集到的数据量 -->
 
 <p align="center">
-  <a href="https://koutian.is-a.dev/benchmark-radar/"><img alt="已收集的 benchmark 记录" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fkoutian.is-a.dev%2Fbenchmark-radar%2Fdata%2Frecords-badge.json&amp;style=for-the-badge"></a>
-  <a href="https://koutian.is-a.dev/benchmark-radar/data/radar.json"><img alt="下载数据集" src="https://img.shields.io/badge/Dataset-download%20JSON-2f81f7?style=for-the-badge&amp;logo=json&amp;logoColor=white"></a>
+  <a href="https://benchmark-radar.org/"><img alt="已收集的 benchmark 记录" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fbenchmark-radar.org%2Fdata%2Frecords-badge.json&amp;style=for-the-badge"></a>
+  <a href="https://benchmark-radar.org/data/radar.json"><img alt="下载数据集" src="https://img.shields.io/badge/Dataset-download%20JSON-2f81f7?style=for-the-badge&amp;logo=json&amp;logoColor=white"></a>
   <a href="https://x.com/ktwu01"><img alt="X" src="https://img.shields.io/badge/X-000000?style=for-the-badge&amp;logo=x&amp;logoColor=white"></a>
   <a href="https://www.linkedin.com/in/ktwu01"><img alt="LinkedIn" src="https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&amp;logo=linkedin&amp;logoColor=white"></a>
   <a href="https://scholar.google.com/citations?user=s9w1k-cAAAAJ&amp;hl=en"><img alt="Google Scholar" src="https://img.shields.io/badge/Google%20Scholar-4285F4?style=for-the-badge&amp;logo=googlescholar&amp;logoColor=white"></a>
@@ -22,7 +22,7 @@ github.com/ktwu01/benchmark-radar，每天更新，并支持一键导出数据
 **几秒找到一个 benchmark，再看模型成绩如何随时间变化。点击下面的动图，查看
 SWE-bench Verified 的 saturation 过程。**
 
-<a href="https://koutian.is-a.dev/benchmark-radar/?view=leaderboard&lfrontier=swe_bench_verified">
+<a href="https://benchmark-radar.org/?view=leaderboard&lfrontier=swe_bench_verified">
   <img src="assets/swe-bench-verified.gif" alt="搜索 SWE-bench Verified 并查看模型成绩随时间变化的动画演示" width="720" />
 </a>
 
@@ -31,22 +31,22 @@ SWE-bench Verified 的 saturation 过程。**
 **Today：过去 24 小时新出现的东西，全部打分排序，再配一段每日简报，说明发生了
 什么变化，并附上它引用的证据。**
 
-<a href="https://koutian.is-a.dev/benchmark-radar/">
+<a href="https://benchmark-radar.org/">
   <img src="assets/intro-today-page.gif" alt="Today 页面动画演示：新发现 benchmark 的排序信息流，以及附带证据引用的每日简报" width="720" />
 </a>
 
 **Leaderboard：各家模型卡到底最常报告哪些 benchmark，以及每个 benchmark 的成绩
 如何一路上涨，直到几乎没有提升空间。**
 
-<a href="https://koutian.is-a.dev/benchmark-radar/?view=leaderboard">
+<a href="https://benchmark-radar.org/?view=leaderboard">
   <img src="assets/intro-leaderboard-page.gif" alt="Leaderboard 页面动画演示：按模型卡采用度排序的 benchmark、成绩随时间变化的图表，以及剩余提升空间卡片" width="720" />
 </a>
 
 ## 使用方法
 
-- **[打开 dashboard](https://koutian.is-a.dev/benchmark-radar/)** — 每日洞察、趋势、热门 benchmark、模型卡采用排名等
-- **[通过 RSS 订阅](https://koutian.is-a.dev/benchmark-radar/feed.xml)** — 每天获取最新的 benchmark 情报
-- **[下载完整数据集](https://koutian.is-a.dev/benchmark-radar/data/radar.json)** — 免费、公开、机器可读的 JSON，无需爬虫或联系作者
+- **[打开 dashboard](https://benchmark-radar.org/)** — 每日洞察、趋势、热门 benchmark、模型卡采用排名等
+- **[通过 RSS 订阅](https://benchmark-radar.org/feed.xml)** — 每天获取最新的 benchmark 情报
+- **[下载完整数据集](https://benchmark-radar.org/data/radar.json)** — 免费、公开、机器可读的 JSON，无需爬虫或联系作者
 - **[参与贡献](CONTRIBUTING.md)** — 添加 benchmark、模型卡、信源或修复
 
 如果 Benchmark Radar 帮你节省了研究时间，请 **[给仓库点个 Star](https://github.com/ktwu01/benchmark-radar)**，让更多做评测的人发现它。

@@ -997,7 +997,7 @@ def test_share_card_is_declared_with_an_absolute_url():
     # og:image silently yields the same blank grey card as no tag at all
     # (issue #88). The failure is invisible from inside the site.
     assert 'property="og:image"' in html
-    assert "https://koutian.is-a.dev/benchmark-radar/assets/og-card.png" in html
+    assert "https://benchmark-radar.org/assets/og-card.png" in html
     assert 'name="twitter:card" content="summary_large_image"' in html
     # Declared dimensions let a consumer reserve the large-image layout before
     # the file is fetched; without them some fall back to a small thumbnail.
@@ -1770,6 +1770,20 @@ def test_source_mix_names_the_sources_that_found_nothing():
 
     # And the newest day's gaps are stated in words above the table.
     assert 'id="source-gap-note"' in html
+
+
+def test_daily_ledger_is_a_tiny_collapsed_dev_checker_below_the_trends():
+    """The maintenance ledger stays available without competing for attention."""
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    assert '<details class="dev-checker" aria-labelledby="dev-checker-heading">' in html
+    assert '<summary class="dev-checker-summary">' in html
+    assert 'data-i18n="Dev checker">Dev checker</span>' in html
+    assert '<details class="dev-checker" open' not in html
+    assert html.index('class="trend-panel"') < html.index('class="dev-checker"')
+    assert ".dev-checker-summary {" in styles
+    assert "font-size: 0.65rem;" in styles.split(".dev-checker-summary {", 1)[1].split("}", 1)[0]
 
 
 def test_source_mix_separates_the_three_reasons_a_source_shows_zero():

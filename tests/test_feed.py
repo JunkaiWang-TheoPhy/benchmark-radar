@@ -46,9 +46,7 @@ def test_feed_is_deterministic_valid_rss_with_one_item_per_snapshot(tmp_path):
         "Benchmark Radar — 2026-08-07",
         "Benchmark Radar — 2026-08-06",
     ]
-    assert items[0].findtext("link") == (
-        "https://koutian.is-a.dev/benchmark-radar/?date=2026-08-07"
-    )
+    assert items[0].findtext("link") == ("https://benchmark-radar.org/?date=2026-08-07")
     assert items[0].find("guid").attrib["isPermaLink"] == "true"
     assert "1 evidence observation from 1 source" in items[0].findtext("description")
     assert "benchmark: 1, evaluation: 1" in items[0].findtext("description")

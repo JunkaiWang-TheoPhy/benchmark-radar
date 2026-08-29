@@ -6,10 +6,10 @@ authors:
   - family-names: Wu
     given-names: Koutian
 repository-code: "https://github.com/ktwu01/benchmark-radar"
-url: "https://koutian.is-a.dev/benchmark-radar/"
+url: "https://benchmark-radar.org/"
 license: MIT
-version: 0.8.0
-date-released: 2026-08-23
+version: 0.9.0
+date-released: 2026-08-29
 abstract: >-
   A daily evidence-first radar and machine-readable corpus for AI benchmarks,
   evaluations, datasets, model-card reporting, and data quality.

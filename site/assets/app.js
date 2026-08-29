@@ -684,7 +684,7 @@ const I18N = {
     "Releases only": "仅发布",
     "Excludes records re-announced as an update to something already surfaced.":
       "排除作为已出现内容的更新而再次宣布的记录。",
-    "Daily ledger": "每日台账",
+    "Dev checker": "开发检查",
     "trends.ledger.note":
       "来源结构统计的是评分后的排序证据;抓取状态统计的是评分前的原始记录,所以一个来源可能正常却仍为空。",
     Date: "日期",
@@ -1300,7 +1300,7 @@ async function onPopState() {
 // while the visible interface translates through data-i18n.
 const VIEW_SEO = {
   today: {
-    title: "Benchmark Radar — today's new AI benchmarks",
+    title: "Benchmark Radar: AI Benchmark Tracker & Dataset",
     description:
       "A daily evidence-first map of new AI benchmarks, evaluations, and datasets, collected every day from arXiv, GitHub, Hugging Face, OpenReview, Semantic Scholar, Hacker News, and first-party lab feeds.",
     query: "",
@@ -1332,7 +1332,9 @@ function applyViewSeo(view) {
   if (description) description.setAttribute("content", seo.description);
   const canonical = document.querySelector('link[rel="canonical"]');
   if (canonical) {
-    const url = new URL(window.location.pathname, window.location.origin);
+    // Keep every entry point, including the former Pages URL, consolidated
+    // onto the custom domain instead of reflecting whichever origin served it.
+    const url = new URL("/", "https://benchmark-radar.org");
     if (seo.query) url.search = seo.query;
     else url.search = "";
     canonical.setAttribute("href", url.href);

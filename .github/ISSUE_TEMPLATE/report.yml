@@ -19,6 +19,6 @@ body:
     attributes:
       label: Where did you see it / 在哪里看到的
       description: Optional. The page address, or just the area. / 可选：页面地址，或写页面名称。
-      placeholder: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+      placeholder: https://benchmark-radar.org/?view=leaderboard
     validations:
       required: false

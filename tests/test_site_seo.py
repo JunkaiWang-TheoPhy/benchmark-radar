@@ -72,6 +72,7 @@ def test_published_head_and_robots_match_the_generated_sitemap():
     # Canonical default in the static head; app.js restates it per view.
     assert f'<link rel="canonical" href="{SITE_URL}/">' in html
     assert 'link[rel="canonical"]' in script
+    assert 'new URL("/", "https://benchmark-radar.org")' in script
 
     # The four canonical view URLs in app.js are exactly the ones the
     # generator publishes; a view added to one side must land on the other.
@@ -84,6 +85,8 @@ def test_published_head_and_robots_match_the_generated_sitemap():
     assert sitemap_url in robots
     assert "https://ktwu01.github.io/benchmark-radar" not in html
     assert "https://ktwu01.github.io/benchmark-radar" not in robots
+    assert "https://koutian.is-a.dev/benchmark-radar" not in html
+    assert "https://koutian.is-a.dev/benchmark-radar" not in robots
 
 
 def test_structured_data_describes_a_searchable_site_and_a_dataset():
