@@ -11,8 +11,8 @@ every collection, so it states what the project actually holds rather than a
 hand-edited number (issue #197). -->
 
 <p align="center">
-  <a href="https://koutian.is-a.dev/benchmark-radar/"><img alt="Benchmarks collected" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fkoutian.is-a.dev%2Fbenchmark-radar%2Fdata%2Frecords-badge.json&amp;style=for-the-badge"></a>
-  <a href="https://koutian.is-a.dev/benchmark-radar/data/radar.json"><img alt="Download data" src="https://img.shields.io/badge/%E2%86%93%20DOWNLOAD%20DATA-2f81f7?style=for-the-badge"></a>
+  <a href="https://benchmark-radar.org/"><img alt="Benchmarks collected" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fbenchmark-radar.org%2Fdata%2Frecords-badge.json&amp;style=for-the-badge"></a>
+  <a href="https://benchmark-radar.org/data/radar.json"><img alt="Download data" src="https://img.shields.io/badge/%E2%86%93%20DOWNLOAD%20DATA-2f81f7?style=for-the-badge"></a>
   <a href="https://x.com/ktwu01"><img alt="X" src="https://img.shields.io/badge/-000000?style=for-the-badge&amp;logo=x&amp;logoColor=white"></a>
   <a href="https://www.linkedin.com/in/ktwu01"><img alt="LinkedIn" src="https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&amp;logo=linkedin&amp;logoColor=white"></a>
   <a href="https://scholar.google.com/citations?user=s9w1k-cAAAAJ&amp;hl=en"><img alt="Google Scholar" src="https://img.shields.io/badge/Google%20Scholar-4285F4?style=for-the-badge&amp;logo=googlescholar&amp;logoColor=white"></a>
@@ -27,7 +27,7 @@ every day, and keeps updating.
 **Find a benchmark in seconds, then see how model scores change over time. Click
 the GIF below to watch SWE-bench Verified move toward saturation.**
 
-<a href="https://koutian.is-a.dev/benchmark-radar/?view=leaderboard&lfrontier=swe_bench_verified">
+<a href="https://benchmark-radar.org/?view=leaderboard&lfrontier=swe_bench_verified">
   <img src="assets/swe-bench-verified.gif" alt="Animated demo of searching for SWE-bench Verified and viewing its model scores over time" width="720" />
 </a>
 
@@ -36,22 +36,22 @@ the GIF below to watch SWE-bench Verified move toward saturation.**
 **Today: everything that showed up in the last 24 hours, scored and ranked, plus
 a short daily briefing that says what changed and links the evidence it used.**
 
-<a href="https://koutian.is-a.dev/benchmark-radar/">
+<a href="https://benchmark-radar.org/">
   <img src="assets/intro-today-page.gif" alt="Animated tour of the Today page: the ranked feed of newly found benchmarks and the daily briefing with its cited evidence" width="720" />
 </a>
 
 **Leaderboard: which benchmarks labs actually report in their model cards, and
 how scores on each one climb until there is almost no headroom left.**
 
-<a href="https://koutian.is-a.dev/benchmark-radar/?view=leaderboard">
+<a href="https://benchmark-radar.org/?view=leaderboard">
   <img src="assets/intro-leaderboard-page.gif" alt="Animated tour of the Leaderboard page: benchmarks ranked by model-card adoption, a scores-over-time chart, and remaining-headroom cards" width="720" />
 </a>
 
 ## Use it
 
-- **[Open the dashboard](https://koutian.is-a.dev/benchmark-radar/)** — today's insights, trends, popular benchmarks, model-card adoption, and more
-- **[Subscribe via RSS](https://koutian.is-a.dev/benchmark-radar/feed.xml)** — get new benchmark signals every day
-- **[Download the complete dataset](https://koutian.is-a.dev/benchmark-radar/data/radar.json)** — free, public, machine-readable JSON; no crawler or contact required
+- **[Open the dashboard](https://benchmark-radar.org/)** — today's insights, trends, popular benchmarks, model-card adoption, and more
+- **[Subscribe via RSS](https://benchmark-radar.org/feed.xml)** — get new benchmark signals every day
+- **[Download the complete dataset](https://benchmark-radar.org/data/radar.json)** — free, public, machine-readable JSON; no crawler or contact required
 - **[Contribute](CONTRIBUTING.md)** — add benchmarks, model cards, sources, or fixes
 
 If Benchmark Radar saves you research time, **[star the repository](https://github.com/ktwu01/benchmark-radar)**. It helps other eval builders find it.

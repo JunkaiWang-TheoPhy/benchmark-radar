@@ -44,7 +44,7 @@ def test_readme_embeds_the_data_driven_records_badge():
         return
     text = README.read_text(encoding="utf-8")
 
-    url = "https://koutian.is-a.dev/benchmark-radar/data/records-badge.json"
+    url = "https://benchmark-radar.org/data/records-badge.json"
     quoted = quote(url, safe="")
     assert f"https://img.shields.io/endpoint?url={quoted}" in text
 
@@ -87,7 +87,7 @@ def test_chinese_readme_mirrors_the_english_one():
         return
     zh = README_ZH.read_text(encoding="utf-8")
 
-    url = "https://koutian.is-a.dev/benchmark-radar/data/records-badge.json"
+    url = "https://benchmark-radar.org/data/records-badge.json"
     quoted = quote(url, safe="")
     assert f"https://img.shields.io/endpoint?url={quoted}" in zh
     assert "[English](README.md)" in zh

@@ -29,9 +29,9 @@ SECTION_HEADING = "## 🗣 Daily social post"
 # it can only state what the corpus actually holds.
 _RECORDS_BADGE = (
     "[![benchmark records collected]"
-    "(https://img.shields.io/endpoint?url=https%3A%2F%2Fkoutian.is-a.dev"
-    "%2Fbenchmark-radar%2Fdata%2Frecords-badge.json)]"
-    "(https://koutian.is-a.dev/benchmark-radar/)"
+    "(https://img.shields.io/endpoint?url=https%3A%2F%2Fbenchmark-radar.org"
+    "%2Fdata%2Frecords-badge.json)]"
+    "(https://benchmark-radar.org/)"
 )
 
 _CHECKBOX_RE = re.compile(r"^-\s+\[([ xX])\]\s+(.+)$")

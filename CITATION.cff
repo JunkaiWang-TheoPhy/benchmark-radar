@@ -6,7 +6,7 @@ authors:
   - family-names: Wu
     given-names: Koutian
 repository-code: "https://github.com/ktwu01/benchmark-radar"
-url: "https://koutian.is-a.dev/benchmark-radar/"
+url: "https://benchmark-radar.org/"
 license: MIT
 version: 0.8.0
 date-released: 2026-08-23

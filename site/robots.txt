@@ -3,4 +3,4 @@ Allow: /
 
 # The sitemap is regenerated on every dashboard build, so it can never list a
 # view the deployed site does not serve.
-Sitemap: https://koutian.is-a.dev/benchmark-radar/sitemap.xml
+Sitemap: https://benchmark-radar.org/sitemap.xml
