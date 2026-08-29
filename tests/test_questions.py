@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime
 
 import pytest
@@ -78,6 +79,36 @@ def test_reading_packet_keeps_the_category_check_narrowly_scoped():
 
     assert packet["category_composition_check"] == base["category_composition_check"]
     assert "deterministic_guardrails" not in packet
+
+
+def test_large_shared_packet_is_trimmed_to_the_qa_budget():
+    group = _group()
+    packet = {
+        "date": "2026-08-27",
+        "scope": "captured feed",
+        "questions": list(group["questions"]),
+        "stat_registry": {"comparable": False, "comparability_note": "", "stats": []},
+        "coverage": {"evidence_selected": 400, "evidence_injected": 400},
+        "today": {},
+        "first_observed_evidence": [
+            {
+                "id": f"E{index:03d}",
+                "title": f"Benchmark {index}",
+                "summary": "s" * 500,
+                "source": f"source-{index // 20}",
+                "url": f"https://example.test/{index}",
+            }
+            for index in range(1, 401)
+        ],
+    }
+
+    serialized, _, estimate = questions._qa_request(group, packet, "gpt-5.6")
+    fitted = json.loads(serialized)
+
+    assert estimate <= questions.MAX_QA_REQUEST_TOKENS
+    assert 0 < len(fitted["first_observed_evidence"]) < 400
+    assert fitted["coverage"]["evidence_injected"] == len(fitted["first_observed_evidence"])
+    assert fitted["coverage"]["evidence_dropped"] == 400 - len(fitted["first_observed_evidence"])
 
 
 def test_an_answer_citing_an_unknown_statistic_is_rejected():

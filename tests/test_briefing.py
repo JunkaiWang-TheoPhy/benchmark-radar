@@ -3,6 +3,7 @@ import re
 from datetime import UTC, datetime
 
 import pytest
+import tiktoken
 
 from benchmark_radar.briefing import (
     _INSTRUCTIONS,
@@ -10,6 +11,7 @@ from benchmark_radar.briefing import (
     MAX_BULLETS,
     MAX_FINDING_CHARS,
     MAX_INPUT_CHARS,
+    MAX_METRIC_KEY_CHARS,
     MAX_METRIC_KEYS,
     MAX_METRIC_VALUE_CHARS,
     MAX_REQUEST_TOKENS,
@@ -863,17 +865,32 @@ def test_generation_caps_fit_translation_bullet_ceiling():
 
 
 def test_zh_output_budget_covers_worst_case():
-    # 10 bullets at max + caveat + JSON framing must fit in MAX_ZH_OUTPUT_TOKENS.
-    # Chinese chars are ~1 token each (conservative). Framing ~200 tokens.
+    # CJK characters are not uniformly one token. Exercise a deliberately
+    # dense range and reserve room for the model's hidden reasoning tokens.
     from benchmark_radar.translate_zh import (
         MAX_BULLET_CHARS,
         MAX_ZH_CAVEAT_CHARS,
         MAX_ZH_OUTPUT_TOKENS,
+        MIN_ZH_REASONING_HEADROOM_TOKENS,
     )
 
-    worst_zh_chars = MAX_BULLETS * MAX_BULLET_CHARS + MAX_ZH_CAVEAT_CHARS
-    # Conservative: 1 char ≈ 1 token for CJK, plus ~200 tokens framing.
-    assert worst_zh_chars + 200 <= MAX_ZH_OUTPUT_TOKENS
+    cjk = "".join(chr(0x4E00 + index) for index in range(2_000))
+
+    def sized_text(chars: int) -> str:
+        return (cjk * (chars // len(cjk) + 1))[:chars]
+
+    rendered = json.dumps(
+        {
+            "bullets_zh": [sized_text(MAX_BULLET_CHARS) for _ in range(MAX_BULLETS)],
+            "caveat_zh": sized_text(MAX_ZH_CAVEAT_CHARS),
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    visible_tokens = len(tiktoken.get_encoding("o200k_base").encode(rendered))
+
+    assert visible_tokens > 24_000  # The former character approximation was unsafe.
+    assert visible_tokens + MIN_ZH_REASONING_HEADROOM_TOKENS <= MAX_ZH_OUTPUT_TOKENS
 
 
 def test_per_item_caps_bound_evidence_packet():
@@ -882,18 +899,32 @@ def test_per_item_caps_bound_evidence_packet():
     huge_metrics = {
         "m1": "x" * 10_000,  # string value
         "m2": 42,  # numeric value
-        "m3": "y" * 5_000,
-        "m4": "z" * 3_000,
-        "m5": 99,
+        "m3": ["y" * 100_000],  # malformed container value
+        "k" * 10_000: 99,  # malformed key
+        "m5": {"nested": "z" * 100_000},
         "m6": "w" * 2_000,
         "m7": "extra" * 1_000,  # 7th key - should be dropped
     }
     capped = _capped_metrics(huge_metrics)
     # Only first MAX_METRIC_KEYS kept
     assert len(capped) == MAX_METRIC_KEYS
-    # String values truncated
+    # Every serialized key and value is bounded, including malformed containers.
+    assert all(len(key) <= MAX_METRIC_KEY_CHARS for key in capped)
     for v in capped.values():
-        if isinstance(v, str):
-            assert len(v) <= MAX_METRIC_VALUE_CHARS
+        assert not isinstance(v, (list, dict))
+        assert len(str(v)) <= MAX_METRIC_VALUE_CHARS
     # Numeric values pass through
     assert capped["m2"] == 42
+
+
+def test_malformed_attention_metric_cannot_consume_the_packet():
+    run = _run([_item(1)])
+    attention = _attention(1)
+    attention.metrics = {"bad": ["x" * 1_100_000]}
+    run.attention = [attention]
+    current = snapshot_for_run(run)
+
+    value = briefing_input([current], current, [])
+
+    assert len(value["attention_signals"][0]["metrics"]["bad"]) == MAX_METRIC_VALUE_CHARS
+    assert len(json.dumps(value, ensure_ascii=False, separators=(",", ":"))) <= MAX_INPUT_CHARS

@@ -39,9 +39,12 @@ from .http import post_json
 
 # Sizing note (issue #231): the briefing's own generation is budgeted at
 # 270,000 request tokens and 16,000 output tokens. A translation call repeats
-# the day's prose, not its evidence packet, so it needs far less headroom.
-MAX_ZH_REQUEST_TOKENS = 40_000
-MAX_ZH_OUTPUT_TOKENS = 24_000
+# the day's prose, not its evidence packet, but CJK token density and hidden
+# reasoning still need explicit headroom. max_output_tokens covers visible,
+# reasoning, and formatting tokens together.
+MAX_ZH_REQUEST_TOKENS = 80_000
+MAX_ZH_OUTPUT_TOKENS = 80_000
+MIN_ZH_REASONING_HEADROOM_TOKENS = 25_000
 # Generation assembles a bullet from a finding of up to 1,000 chars and a
 # rationale of up to 1,000 plus markers (briefing.py), so an assembled bullet
 # can reach roughly 2,090 chars. The zh rendering is capped at the same ceiling
@@ -147,7 +150,9 @@ def _payload(
         "model": model,
         "instructions": _ZH_INSTRUCTIONS,
         "input": serialized,
-        "reasoning": {"effort": "medium"},
+        # Translation is constrained transformation, so low effort preserves
+        # more of the shared output budget for the required visible rendering.
+        "reasoning": {"effort": "low"},
         "text": {
             "verbosity": "medium",
             "format": {

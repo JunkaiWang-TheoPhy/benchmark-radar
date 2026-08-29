@@ -6,8 +6,10 @@ import html
 import json
 import re
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass, fields, replace
 from datetime import UTC, datetime, timedelta
+from itertools import islice
 from typing import Any
 
 import tiktoken
@@ -49,10 +51,11 @@ MAX_HISTORY_DAYS = 30
 MAX_SUMMARY_CHARS = 700
 MAX_BULLETS = 10
 # Per-item input caps. Prose fields of an evidence record were already bounded;
-# metric values and URLs were not, so one malformed record could eat an
+# metric keys, values, and URLs were not, so one malformed record could eat an
 # outsized share of the packet. Input-side fields truncate via _plain;
 # output-side fields reject via _output_text.
 MAX_METRIC_KEYS = 6
+MAX_METRIC_KEY_CHARS = 60
 MAX_METRIC_VALUE_CHARS = 60
 MAX_URL_CHARS = 300
 # Output-side field caps. Named because translate_zh.MAX_BULLET_CHARS and the
@@ -146,12 +149,29 @@ def _plain(value: Any, limit: int) -> str:
 
 
 def _capped_metrics(metrics: Any) -> dict[str, Any]:
-    """Bound one record's metrics: at most MAX_METRIC_KEYS entries, string values cut."""
-    return {
-        str(key): _plain(value, MAX_METRIC_VALUE_CHARS) if isinstance(value, str) else value
-        for key, value in list((metrics or {}).items())[:MAX_METRIC_KEYS]
-        if value
-    }
+    """Bound every serialized part of one record's metric mapping."""
+    if not isinstance(metrics, Mapping):
+        return {}
+    capped: dict[str, Any] = {}
+    for key, value in islice(metrics.items(), MAX_METRIC_KEYS):
+        if not value:
+            continue
+        capped_key = _plain(key, MAX_METRIC_KEY_CHARS)
+        try:
+            capped_value = _plain(value, MAX_METRIC_VALUE_CHARS)
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if not capped_key or not capped_value:
+            continue
+        # Preserve ordinary numeric values so the model receives measurements
+        # as JSON numbers. Everything else becomes bounded plain text; this
+        # keeps malformed lists, objects, and giant numeric representations
+        # from bypassing the character ceiling.
+        if isinstance(value, (int, float)) and len(str(value)) <= MAX_METRIC_VALUE_CHARS:
+            capped[capped_key] = value
+        else:
+            capped[capped_key] = capped_value
+    return capped
 
 
 def _output_text(value: Any, *, field: str, max_chars: int) -> str:
@@ -244,14 +264,15 @@ def _tracked_artifacts(
             continue
         # `build_corpus` now emits a delta only for metrics present at both
         # endpoints, so a nonzero value here is real movement.
-        deltas = {
-            key: value
-            for key, value in sorted(
-                ((k, v) for k, v in (entity.get("metric_deltas") or {}).items() if v),
-                key=lambda pair: abs(pair[1]),
-                reverse=True,
-            )[:MAX_METRIC_KEYS]
-        }
+        deltas = _capped_metrics(
+            dict(
+                sorted(
+                    ((k, v) for k, v in (entity.get("metric_deltas") or {}).items() if v),
+                    key=lambda pair: abs(pair[1]),
+                    reverse=True,
+                )[:MAX_METRIC_KEYS]
+            )
+        )
         tracked.append(
             {
                 "entity_id": entity["id"],
