@@ -11,7 +11,6 @@ from benchmark_radar.snapshots import rebuild_dashboard, records_badge, write_sn
 README = Path("README.md")
 README_ZH = Path("README.zh-CN.md")
 SKILL = Path("skills/benchmark-radar/SKILL.md")
-TECHNICAL_REPORT = "https://zenodo.org/records/22167102"
 
 
 def _run(day: int) -> RadarRun:
@@ -99,38 +98,31 @@ def test_chinese_readme_mirrors_the_english_one():
     assert "[README.md](README.md)" not in zh
 
 
-def test_readmes_link_the_citable_technical_report():
-    for readme in (README, README_ZH):
-        text = readme.read_text(encoding="utf-8")
-        assert f'<a href="{TECHNICAL_REPORT}">' in text
-        assert "TECH%20REPORT" in text
-
-
-def test_citation_metadata_prefers_the_technical_report():
-    text = Path("CITATION.cff").read_text(encoding="utf-8")
-    assert "preferred-citation:" in text
-    assert 'doi: "10.5281/zenodo.22167102"' in text
-    assert f'url: "{TECHNICAL_REPORT}"' in text
-
-
-def test_readmes_offer_a_short_agent_setup_prompt():
-    # Regression: local-query setup should be one copy-paste prompt, not a second
-    # maintainer manual (issue #436).
+def test_readmes_separate_consumer_sync_from_maintainer_normalization():
+    # Regression: the first CLI docs told every user to rebuild repository internals.
     english = README.read_text(encoding="utf-8")
     chinese = README_ZH.read_text(encoding="utf-8")
-    assert "Give this prompt to your coding agent:" in english
-    assert "把下面这段直接发给你的 coding agent：" in chinese
-    english_section = english.split("## Query it locally", 1)[1].split("## More", 1)[0]
-    chinese_section = chinese.split("## 在本地查询", 1)[1].split("## 更多", 1)[0]
-    for section in (english_section, chinese_section):
-        assert "skills/benchmark-radar/SKILL.md" in section
-        assert "normalize-external" not in section
-        assert "build-data-release" not in section
+    for text in (english, chinese):
+        assert "benchmark-radar init" in text
+        assert "benchmark-radar sync" in text
+        assert "~/.benchmark-radar" in text
+        assert "build-data-release" in text
 
 
-def test_readmes_expose_the_consumer_skill():
-    # The setup prompt routes agents to the public, purpose-neutral consumer guide.
+def test_readmes_expose_the_installable_consumer_skill():
+    # Regression: a repository-local Skill is not discoverable to users unless
+    # the public README provides the real Skills CLI installation path.
+    command = "npx skills add ktwu01/benchmark-radar --skill benchmark-radar"
     assert SKILL.exists()
-    skill_path = "skills/benchmark-radar/SKILL.md"
-    assert skill_path in README.read_text(encoding="utf-8")
-    assert skill_path in README_ZH.read_text(encoding="utf-8")
+    assert command in README.read_text(encoding="utf-8")
+    assert command in README_ZH.read_text(encoding="utf-8")
+
+
+def test_consumer_skill_separates_query_expansion_from_evidence_trust():
+    text = SKILL.read_text(encoding="utf-8")
+
+    assert "two to four short, discriminative variants" in text
+    assert "search_status: no_matches_above_threshold" in text
+    assert "Radar item is a lead" in text
+    assert "raw BM25F scores are query-specific" in text
+    assert "call `show`" in text

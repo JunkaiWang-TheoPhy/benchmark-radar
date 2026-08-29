@@ -8,14 +8,11 @@
 
 <!-- The record-count badge is data-driven: it is regenerated from the corpus on
 every collection, so it states what the project actually holds rather than a
-hand-edited number (issue #197). The source count in the intro below is
-manually maintained: update it when `config.yml` adds or removes a collection
-connector, a first-party feed, or the Hacker News attention source. -->
+hand-edited number (issue #197). -->
 
 <p align="center">
   <a href="https://benchmark-radar.org/"><img alt="Benchmarks collected" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fbenchmark-radar.org%2Fdata%2Frecords-badge.json&amp;style=for-the-badge"></a>
   <a href="https://benchmark-radar.org/data/radar.json"><img alt="Download data" src="https://img.shields.io/badge/%E2%86%93%20DOWNLOAD%20DATA-2f81f7?style=for-the-badge"></a>
-  <a href="https://zenodo.org/records/22167102"><img alt="Read the technical report" src="https://img.shields.io/badge/TECH%20REPORT-1682D4?style=for-the-badge&amp;logo=zenodo&amp;logoColor=white"></a>
   <a href="https://x.com/ktwu01"><img alt="X" src="https://img.shields.io/badge/-000000?style=for-the-badge&amp;logo=x&amp;logoColor=white"></a>
   <a href="https://www.linkedin.com/in/ktwu01"><img alt="LinkedIn" src="https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&amp;logo=linkedin&amp;logoColor=white"></a>
   <a href="https://scholar.google.com/citations?user=s9w1k-cAAAAJ&amp;hl=en"><img alt="Google Scholar" src="https://img.shields.io/badge/Google%20Scholar-4285F4?style=for-the-badge&amp;logo=googlescholar&amp;logoColor=white"></a>
@@ -23,7 +20,9 @@ connector, a first-party feed, or the Hacker News attention source. -->
 
 I kept running into new benchmarks while doing benchmark research, so I built a
 crawler that continuously collects benchmark-related signals from across the
-web. It pulls evidence from 37 public sources every day, and keeps updating.
+web. It pulls evidence from arXiv, GitHub, Hugging Face, OpenAlex, OpenReview,
+first-party lab feeds, Brave Search, Semantic Scholar, Hacker News, and more
+every day, and keeps updating.
 
 **Find a benchmark in seconds, then see how model scores change over time. Click
 the GIF below to watch SWE-bench Verified move toward saturation.**
@@ -57,45 +56,112 @@ how scores on each one climb until there is almost no headroom left.**
 
 If Benchmark Radar saves you research time, **[star the repository](https://github.com/ktwu01/benchmark-radar)**. It helps other eval builders find it.
 
-## Query it locally (CLI version)
+## Query it locally
 
-The web dashboard is the hosted view. For offline querying, use **the CLI
-version**: it installs the CLI, downloads the local searchable data, and
-answers from local files. Give this prompt to your coding agent:
+The CLI downloads a complete, verified copy of the data shown by Benchmark Radar,
+then searches it locally. Until a packaged release is published, install it directly
+from GitHub, then initialize it once:
 
-```text
-Set up Benchmark Radar for local benchmark search. Follow
-https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md
-to install the CLI and consumer Skill, initialize the local data, and verify the
-setup. Use only consumer commands.
+```bash
+python -m pip install 'git+https://github.com/ktwu01/benchmark-radar.git'
+benchmark-radar init
+benchmark-radar search "long-horizon agent benchmark" --scope all --json
+benchmark-radar show opencompass-1248-mmmu --json
+benchmark-radar recent --recommended --json
+benchmark-radar status --json
 ```
+
+`init` stores the current catalog, detail records, and Radar snapshots under
+`~/.benchmark-radar` on macOS/Linux or the current user's `.benchmark-radar`
+directory on Windows. Set `BENCHMARK_RADAR_HOME` or pass `--data-dir` to choose
+another location. Update it explicitly before a new research session:
+
+```bash
+benchmark-radar sync
+```
+
+`sync` first checks the small manifest published with the dashboard. It downloads
+the GitHub Release archive only when the data version changed, keeping bulk CLI
+traffic off the dashboard's GitHub Pages allowance. It verifies the archive size
+and SHA-256 checksum, validates the catalog and snapshots, switches versions
+atomically, then removes the previous version. A failed activation leaves the last
+verified version active. If the OS
+temporarily locks an obsolete directory, sync reports `cleanup_pending` and retries
+that physical cleanup next time; only the new version remains queryable. Search
+itself never accesses the network or silently changes data, so its reported
+`data_version` is reproducible. A Benchmark Radar Skill should run `sync --json`
+once at the start of benchmark research, then use `search --json` and `show --json`;
+`--json` selects the stable machine-readable output, while the default output is
+for people.
+
+Agents can install the optional, purpose-neutral CLI guide from this repository:
+
+```bash
+npx skills add ktwu01/benchmark-radar --skill benchmark-radar
+```
+
+The Skill chooses among the CLI commands from the user's request; it does not assume
+whether the results are for research, evaluation design, model selection, or another
+workflow.
+
+`catalog` searches the normalized benchmark catalog, `radar` searches the daily
+evidence history, and `all` searches both while keeping their identities separate.
+Search is deterministic lexical/token matching in this version—not embedding-based
+semantic search. It requires every query term, ranks eligible records with fielded
+BM25, and returns `no_matches_above_threshold` instead of padding a result page with
+partial matches. Every result explains its matched and missing terms, weighted token
+coverage, matched fields, and ranking score. Raw ranking scores are query-specific;
+do not compare them across different queries. Filters include paper, repository,
+dataset, openness, modality, and source.
+
+Agents should search `catalog` and `radar` separately. Catalog results are normalized
+benchmark records; Radar results are recent evidence leads and may be papers that use
+a benchmark rather than introduce one. A few short query variants can bridge terms
+such as `robot`/`robotics`, but cannot recover a benchmark absent from the local data.
+Inspect shortlisted catalog records with `show` before treating them as suitable.
+
+The optional local HTTP API uses exactly the same query service and JSON response
+contract:
+
+```bash
+benchmark-radar serve --host 127.0.0.1 --port 8765
+curl 'http://127.0.0.1:8765/api/v1/search?q=agent%20benchmark&scope=all'
+```
+
+Available read-only routes are `GET /api/v1/search`,
+`GET /api/v1/benchmarks/<key-or-slug>`, `GET /api/v1/recent`,
+`GET /api/v1/status`, and `GET /healthz`. Both interfaces read generated catalog
+files from the managed data directory; they do not fetch the network during a query.
+This is a local server, not a publicly deployed search API. MCP and semantic
+retrieval can be added later without creating a second ranking implementation.
+
+`benchmark-radar normalize-external` and `benchmark-radar build-data-release` are
+maintainer/CI build commands. End users update with `sync`, not with the normalizer.
 
 ## More
 
-- [Scoring rubric](src/benchmark_radar/rubric.py)
-- [Model-card adoption data](data/model_cards.yml)
-- [Public corpus schema](docs/cumulative-corpus.schema.json)
-- [Citation metadata](CITATION.cff)
-- [Technical report](https://doi.org/10.5281/zenodo.22167102)
-- [Configuration](config.yml)
+- **SEO and indexing:** [`docs/seo-indexing-guide.md`](docs/seo-indexing-guide.md)
+- **Scoring rubric:** [`src/benchmark_radar/rubric.py`](src/benchmark_radar/rubric.py)
+- **Model-card adoption data:** [`data/model_cards.yml`](data/model_cards.yml)
+- **Public corpus schema:** [`docs/cumulative-corpus.schema.json`](docs/cumulative-corpus.schema.json)
+- **Citation metadata:** [`CITATION.cff`](CITATION.cff)
+- **Configuration:** [`config.yml`](config.yml)
 - **Developer setup:** `python -m pip install -e '.[dev]' && benchmark-radar normalize-external`
 - **Support / bugs:** [open an issue](https://github.com/ktwu01/benchmark-radar/issues)
 - **Contact:** [@ktwu01](https://github.com/ktwu01)
-
-## Licensing
-
-Software: [MIT License](LICENSE).
-
-Technical report and original editorial content: [CC BY-NC 4.0](LICENSE-CONTENT.md).
-Commercial republication, resale, paid newsletters, dataset packaging, or
-commercial product integration requires prior written permission from Koutian
-Wu. Third-party source material remains under its original terms.
+- **License:** MIT
 
 ## Join the WeChat group
 
 Scan the QR code to join the WeChat group for daily benchmark updates and eval discussions:
 
 <img src="assets/wechat-group-qr.jpg" alt="WeChat group QR code" width="280" />
+
+## Acknowledgements
+
+The frontier-model score layer, including the SWE-bench Verified timeline above,
+is built on benchmark data collected by [LLM Stats](https://llm-stats.com).
+Thank you for keeping that data open.
 
 ## Contributors
 
@@ -107,19 +173,15 @@ Thanks to everyone who helps make Benchmark Radar more useful.
 
 ## Citation
 
-If Benchmark Radar supports your research or evaluation work, please cite the
-technical report:
+If Benchmark Radar supports your research or evaluation work, please cite it:
 
 ```bibtex
-@misc{wu_2026_22167102,
+@misc{wu2026benchmarkradar,
+  title        = {Benchmark Radar: A Daily, Evidence-First Radar and Machine-Readable Corpus for AI Benchmarks},
   author       = {Wu, Koutian},
-  title        = {Benchmark Radar v0.9.0: Technical Report},
-  month        = aug,
   year         = {2026},
-  publisher    = {Zenodo},
-  version      = {0.9.0},
-  doi          = {10.5281/zenodo.22167102},
-  url          = {https://doi.org/10.5281/zenodo.22167102}
+  howpublished = {\url{https://github.com/ktwu01/benchmark-radar}},
+  note         = {Daily benchmark radar and open dataset}
 }
 ```
 
@@ -133,50 +195,3 @@ See [`CITATION.cff`](CITATION.cff) for machine-readable citation metadata.
     <img alt="Benchmark Radar star history chart" src="https://raw.githubusercontent.com/ktwu01/benchmark-radar/star-history/assets/star-history.svg" />
   </picture>
 </a>
-
-## Acknowledgements
-
-The daily evidence feed is built on public data from [arXiv](https://arxiv.org),
-[GitHub Search](https://github.com/search), [GitHub organizations](https://github.com),
-[GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases),
-[Hugging Face datasets and Spaces](https://huggingface.co), [Hugging Face Papers](https://huggingface.co/papers),
-[OpenAlex](https://openalex.org), [OpenReview](https://openreview.net),
-[Kaggle datasets](https://www.kaggle.com/datasets), [Zenodo](https://zenodo.org),
-[Semantic Scholar](https://www.semanticscholar.org), [Brave Search](https://search.brave.com),
-and [Hacker News](https://news.ycombinator.com), plus first-party lab feeds from
-[OpenAI](https://openai.com/news), [Google AI](https://blog.google/technology/ai/),
-[Google DeepMind](https://deepmind.google/blog/), [Google Research](https://research.google/blog/),
-[Meta Research](https://research.facebook.com), [Microsoft Research](https://www.microsoft.com/en-us/research/),
-[AWS Machine Learning](https://aws.amazon.com/blogs/machine-learning/),
-[Apple Machine Learning Research](https://machinelearning.apple.com),
-[NVIDIA AI Blog](https://blogs.nvidia.com), [NVIDIA Developer](https://developer.nvidia.com/blog/),
-[Hugging Face Blog](https://huggingface.co/blog), [Ai2](https://allenai.org),
-[Mistral AI](https://mistral.ai/news), [Together AI](https://www.together.ai/blog),
-[Sakana AI](https://sakana.ai), [Qwen](https://qwenlm.github.io/blog/),
-[Ollama](https://ollama.com/blog), [Stability AI](https://stability.ai),
-[Nomic AI](https://www.nomic.ai), [Replicate](https://replicate.com/blog),
-[IBM Research](https://research.ibm.com), [Databricks](https://www.databricks.com),
-[LangChain](https://www.langchain.com/blog), and [Meituan Engineering](https://tech.meituan.com).
-
-The frontier-model score layer, including the SWE-bench Verified timeline above,
-is built on benchmark data collected by [LLM Stats](https://llm-stats.com).
-Thank you for keeping that data open.
-
-A special thank you to [Xiaopai Liu](https://github.com/liuxiaopai-ai)
-([@bourneliu66](https://x.com/bourneliu66)) for the shout-out on X, and to his
-daily builder brief, [BuilderPulse](https://github.com/BuilderPulse/BuilderPulse).
-
-<details>
-<summary>Internal documentation</summary>
-
-- [SEO and indexing guide](docs/seo-indexing-guide.md)
-- [Benchmark logo gallery](https://benchmark-radar.org/logos.html)
-
-<details>
-<summary>contribute score</summary>
-
-[See the public contribution-score ledger and rules.](docs/contributor-points.md)
-
-</details>
-
-</details>

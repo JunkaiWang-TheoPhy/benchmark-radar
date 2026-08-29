@@ -175,6 +175,15 @@ upload that exact file. The PDF is a dated interpretation, not a data source.
 - Query responses must state their local data provenance and retrieval mode.
   Missing or malformed generated artifacts fail visibly with machine-readable
   errors; they must not be replaced with guessed metadata.
+- Lexical search is precision-first: every unique query term is required unless
+  the normalized name itself is an exact/prefix/token-sequence match. Eligible
+  records are ranked with the shared BM25F implementation. A partial candidate
+  set is observable through `candidate_count`, but is never padded into results;
+  zero accepted results use `no_matches_above_threshold`.
+- Catalog and Radar are different trust layers. Catalog rows are normalized
+  benchmark records; Radar rows are discovery evidence and must stay labelled as
+  such. Agent query expansion happens in the public Skill as a small number of
+  short variants and never changes service-side matching per interface.
 - Installed clients read the active version under the cross-platform
   `.benchmark-radar` user data directory. `init` and `sync` are the only
   consumer update paths; search must stay offline and must not hide an update

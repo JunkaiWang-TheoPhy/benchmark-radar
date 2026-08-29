@@ -1,0 +1,52 @@
+schema_version: 1
+
+cases:
+  - id: math-reasoning
+    query: math reasoning
+    scope: catalog
+    kind: topical
+    must_include: [MATH, MATH-500, SAT Math]
+
+  - id: visual-reasoning
+    query: visual reasoning
+    scope: catalog
+    kind: topical
+    must_include: [MMMU-Pro, AI2D]
+
+  - id: long-horizon-agent
+    query: long horizon agent
+    scope: catalog
+    kind: topical
+    must_include: [CoWorkBench, Legal Agent Benchmark]
+
+  - id: coding-benchmark
+    query: coding benchmark
+    scope: catalog
+    kind: topical
+    must_include: [WildClawBench, AetherCode]
+
+  - id: medical-vqa
+    query: medical VQA
+    scope: catalog
+    kind: topical
+    must_include: [MedBookVQA, PMC-VQA, VQA-Rad]
+
+  - id: protein-structure-prediction
+    query: protein structure prediction
+    scope: catalog
+    kind: no_answer
+
+  - id: weather-forecasting
+    query: weather forecasting
+    scope: catalog
+    kind: no_answer
+
+  - id: stock-prediction
+    query: stock prediction
+    scope: catalog
+    kind: no_answer
+
+  - id: robot-grasp-planning
+    query: robot grasp planning
+    scope: catalog
+    kind: no_answer

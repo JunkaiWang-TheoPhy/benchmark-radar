@@ -140,6 +140,11 @@ def test_catalog_search_is_deterministic_and_explains_matches(tmp_path: Path) ->
         "llm-stats:agent-workbench-extended",
     ]
     assert result["retrieval_mode"] == "lexical"
+    assert result["search_status"] == "matches_found"
+    assert result["candidate_count"] == 2
+    assert result["total_matches"] == 2
+    assert result["matching_policy"]["name"] == "all_terms_v1"
+    assert result["matching_policy"]["ranking"] == "bm25f_v1"
     assert result["results"][0]["match"]["matched_fields"] == [
         "name",
         "description",
@@ -147,6 +152,28 @@ def test_catalog_search_is_deterministic_and_explains_matches(tmp_path: Path) ->
     ]
     assert result["results"][0]["match"]["reason"] == "exact name match"
     assert result["data"]["catalog_count"] == 3
+
+
+def test_search_rejects_partial_candidates_instead_of_padding_results(tmp_path: Path) -> None:
+    service = QueryService(_catalog(tmp_path))
+
+    result = service.search("protein agent prediction", scope="catalog", limit=10)
+
+    assert result["search_status"] == "no_matches_above_threshold"
+    assert result["candidate_count"] == 2
+    assert result["rejected_candidate_count"] == 2
+    assert result["total_matches"] == 0
+    assert result["results"] == []
+
+
+def test_name_matching_does_not_cross_token_boundaries(tmp_path: Path) -> None:
+    # `ntwo` exists only after concatenating "agent" + "workbench". The old
+    # folded substring matcher treated that accidental character sequence as a
+    # name hit and even returned an empty matched_tokens explanation.
+    result = QueryService(_catalog(tmp_path)).search("ntwo", scope="catalog")
+
+    assert result["candidate_count"] == 0
+    assert result["results"] == []
 
 
 def test_search_filters_before_ranking(tmp_path: Path) -> None:
@@ -181,7 +208,7 @@ def test_all_scope_keeps_catalog_and_radar_identity_separate(tmp_path: Path) -> 
     # Regression: same-looking names from two evidence layers are not proven identities.
     service = QueryService(_catalog(tmp_path))
 
-    result = service.search("long running coding agent", scope="all", limit=10)
+    result = service.search("coding", scope="all", limit=10)
 
     assert {item["kind"] for item in result["results"]} == {"catalog", "radar"}
     assert len({item["key"] for item in result["results"]}) == len(result["results"])
@@ -344,7 +371,7 @@ def test_healthz_identifies_local_health_check_contract(tmp_path: Path) -> None:
         thread.join(timeout=5)
 
     assert payload == {
-        "schema_version": 1,
+        "schema_version": 2,
         "retrieval_mode": "health_check",
         "data": {"source": "local"},
         "status": "ok",
@@ -426,6 +453,6 @@ def test_http_errors_are_machine_readable(tmp_path: Path) -> None:
 
     assert captured.value.code == 400
     assert payload == {
-        "schema_version": 1,
+        "schema_version": 2,
         "error": {"code": "invalid_request", "message": "q is required"},
     }

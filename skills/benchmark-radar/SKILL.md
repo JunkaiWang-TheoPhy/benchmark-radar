@@ -38,18 +38,40 @@ selection criteria, and desired output open unless they specify them.
 - Start the local HTTP interface only when requested:
   `benchmark-radar serve --host 127.0.0.1 --port 8765`
 
-Use `catalog` for normalized benchmark records, `radar` for observed recent
-evidence, and `all` when both are relevant. Search is deterministic lexical/token
-matching, not semantic search. If the first query is weak, try a small number of
-short, discriminative query variants rather than claiming no relevant benchmark
-exists.
+Use `catalog` for normalized benchmark records and `radar` for observed recent
+evidence. Search them separately during discovery: a Radar item is a lead such as
+a paper, repository, or dataset, not a verified catalog benchmark. Use `all` only
+when the user explicitly wants one mixed evidence list; never compare ranking
+scores across the two layers.
+
+Search is deterministic lexical/token matching, not semantic search. It requires
+all unique query terms so an adjacent task is not presented as the requested one.
+For topical discovery, use two to four short, discriminative variants drawn from
+the user's stated need:
+
+1. the task phrase, such as `medical VQA`;
+2. one terminology or morphology variant, such as `robotics manipulation`;
+3. a task-plus-modality variant when the user supplied that constraint;
+4. a known benchmark name only when the user named it or a result supplies it.
+
+Do not add unrelated requirements or generate a large query spray. Keep which
+query produced each candidate. A candidate found by several variants is useful
+support, but raw BM25F scores are query-specific and must not be added or compared
+across queries.
+
+Interpret `search_status: no_matches_above_threshold` as “no sufficiently relevant
+lexical match in this local data version,” not proof that no such benchmark exists.
+If catalog variants fail and recent discovery is relevant, search `radar` with the
+same task terms and label every result as unverified Radar evidence.
 
 Use `--json` for agent work; omit it only when the user wants terminal-friendly
 text. Apply supported filters only when they come from the request. Do not run
 maintainer commands such as `normalize-external`, `classify`, or
 `build-data-release` for ordinary use.
 
-Return the relevant records and their match reasons. Preserve the reported
-`data_version` and `retrieval_mode`, distinguish catalog records from Radar
-evidence, and do not turn search results into a recommendation unless the user
-asked for one.
+Before presenting a catalog record as suitable, call `show` and check that its
+description, modality, artifacts, openness, and provenance support the user's
+actual criteria. Return relevant records and their match reasons. Preserve the
+reported `data_version`, `retrieval_mode`, query provenance, and any explicit
+abstention. Distinguish catalog records from Radar evidence, and do not turn search
+results into a recommendation unless the user asked for one.
