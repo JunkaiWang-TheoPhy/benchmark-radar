@@ -80,10 +80,12 @@ another location. Update it explicitly before a new research session:
 benchmark-radar sync
 ```
 
-`sync` first checks the small published manifest. It downloads only when the data
-version changed, verifies the archive size and SHA-256 checksum, validates the
-catalog and snapshots, switches versions atomically, then removes the previous
-version. A failed activation leaves the last verified version active. If the OS
+`sync` first checks the small manifest published with the dashboard. It downloads
+the GitHub Release archive only when the data version changed, keeping bulk CLI
+traffic off the dashboard's GitHub Pages allowance. It verifies the archive size
+and SHA-256 checksum, validates the catalog and snapshots, switches versions
+atomically, then removes the previous version. A failed activation leaves the last
+verified version active. If the OS
 temporarily locks an obsolete directory, sync reports `cleanup_pending` and retries
 that physical cleanup next time; only the new version remains queryable. Search
 itself never accesses the network or silently changes data, so its reported

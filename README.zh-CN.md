@@ -74,9 +74,11 @@ benchmark-radar status --json
 benchmark-radar sync
 ```
 
-`sync` 先检查很小的远端 manifest；只有 data version 变化时才下载。新数据会经过
-文件大小、SHA-256、catalog 和 snapshots 完整性校验，成功后原子切换，并删除旧版本，
-所以稳定状态只保留最新版本。激活失败时，最后一个验证成功的版本仍可使用。如果操作
+`sync` 先检查随 dashboard 发布的很小 manifest；只有 data version 变化时，才从
+GitHub Release 下载完整压缩包，因此 CLI 的大文件流量不会占用 dashboard 的 GitHub
+Pages 配额。新数据会经过文件大小、SHA-256、catalog 和 snapshots 完整性校验，成功后
+原子切换，并删除旧版本，所以稳定状态只保留最新版本。激活失败时，最后一个验证成功
+的版本仍可使用。如果操作
 系统暂时锁住待删除目录，sync 会明确返回 `cleanup_pending`，并在下次 sync 时重试物理
 清理；查询只会使用新版本。搜索命令本身不会联网或暗中改变数据，并会返回可复现的
 `data_version`。未来的 Benchmark Radar Skill 应在每次调研开始时运行一次

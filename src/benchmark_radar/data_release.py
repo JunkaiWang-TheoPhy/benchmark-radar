@@ -14,7 +14,8 @@ from .snapshots import load_snapshots
 
 DATA_RELEASE_SCHEMA_VERSION = 1
 DEFAULT_RELEASE_DIR = Path("site/data/cli")
-DEFAULT_RELEASE_BASE_URL = "https://ktwu01.github.io/benchmark-radar/data/cli"
+DEFAULT_RELEASE_BASE_URL = "https://github.com/ktwu01/benchmark-radar/releases/download/cli-data"
+DEFAULT_RELEASE_FILENAME = "benchmark-radar-data.zip"
 _ZIP_TIMESTAMP = (2020, 1, 1, 0, 0, 0)
 
 
@@ -50,7 +51,6 @@ def build_data_release(
     # a new snapshot.  Without the content suffix, clients could mistake a
     # changed archive for an already-installed release and stay stale forever.
     timestamp_version = _data_version(generated_at)
-    provisional_filename = f"benchmark-radar-data-{timestamp_version}.zip"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     members: list[tuple[str, Path]] = [("benchmark-index.json", paths.index)]
@@ -60,7 +60,7 @@ def build_data_release(
     members.extend(
         (f"snapshots/{path.name}", path) for path in sorted(paths.snapshots.glob("*.json"))
     )
-    temporary = output_dir / f".{provisional_filename}.tmp"
+    temporary = output_dir / f".{DEFAULT_RELEASE_FILENAME}.tmp"
     try:
         with zipfile.ZipFile(temporary, "w") as archive:
             for archive_name, source in members:
@@ -68,7 +68,7 @@ def build_data_release(
         payload = temporary.read_bytes()
         digest = hashlib.sha256(payload).hexdigest()
         data_version = f"{timestamp_version}-{digest[:12]}"
-        filename = f"benchmark-radar-data-{data_version}.zip"
+        filename = DEFAULT_RELEASE_FILENAME
         bundle_path = output_dir / filename
         temporary.replace(bundle_path)
     finally:
@@ -95,7 +95,4 @@ def build_data_release(
         json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    for old_bundle in output_dir.glob("benchmark-radar-data-*.zip"):
-        if old_bundle != bundle_path:
-            old_bundle.unlink()
     return manifest

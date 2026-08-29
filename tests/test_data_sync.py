@@ -12,8 +12,13 @@ from pathlib import Path
 
 import pytest
 
-from benchmark_radar.data_release import build_data_release
+from benchmark_radar.data_release import (
+    DEFAULT_RELEASE_BASE_URL,
+    DEFAULT_RELEASE_FILENAME,
+    build_data_release,
+)
 from benchmark_radar.data_store import (
+    DEFAULT_MANIFEST_URL,
     DataStore,
     DataSyncError,
     _allowed_download_url,
@@ -170,6 +175,7 @@ def test_release_bundle_is_complete_deterministic_and_self_describing(tmp_path: 
     assert first_bytes == second_bytes
     assert first["benchmark_count"] == 1
     assert first["snapshot_count"] == 1
+    assert first["artifact"]["filename"] == DEFAULT_RELEASE_FILENAME
     assert first["artifact"]["sha256"] == hashlib.sha256(first_bytes).hexdigest()
     with zipfile.ZipFile(io.BytesIO(first_bytes)) as archive:
         assert sorted(archive.namelist()) == [
@@ -189,6 +195,20 @@ def test_deploy_and_ci_build_the_downloadable_release_after_its_inputs() -> None
             < workflow.index("benchmark-radar classify")
             < workflow.index("benchmark-radar build-data-release")
         )
+    assert "gh release upload cli-data" in pages
+    assert "needs: [build, publish-cli-data]" in pages
+    assert (
+        pages.index("Upload CLI data release for publishing")
+        < pages.index("Remove CLI archive from Pages artifact")
+        < pages.index("Upload Pages artifact")
+    )
+
+
+def test_public_defaults_keep_bulk_downloads_off_pages() -> None:
+    assert DEFAULT_MANIFEST_URL == "https://benchmark-radar.org/data/cli/manifest.json"
+    assert DEFAULT_RELEASE_BASE_URL.startswith(
+        "https://github.com/ktwu01/benchmark-radar/releases/download/"
+    )
 
 
 def test_init_downloads_validates_and_queries_managed_data(monkeypatch, tmp_path: Path) -> None:

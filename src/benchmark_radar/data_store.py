@@ -22,10 +22,10 @@ from . import __version__
 from .data_release import DATA_RELEASE_SCHEMA_VERSION
 from .query import QueryError, QueryPaths, QueryService
 
-# GitHub Pages' legacy custom-domain redirect currently downgrades to HTTP.
-# Use the canonical HTTPS Pages origin for integrity-sensitive CLI updates;
-# the dashboard can keep its reader-facing aliases independently.
-DEFAULT_MANIFEST_URL = "https://ktwu01.github.io/benchmark-radar/data/cli/manifest.json"
+# Keep the tiny update manifest on the canonical public site. Its checksummed
+# archive points to a GitHub Release asset so CLI downloads do not consume the
+# dashboard's GitHub Pages bandwidth allowance.
+DEFAULT_MANIFEST_URL = "https://benchmark-radar.org/data/cli/manifest.json"
 STATE_SCHEMA_VERSION = 1
 ENV_DATA_HOME = "BENCHMARK_RADAR_HOME"
 _VERSION_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")

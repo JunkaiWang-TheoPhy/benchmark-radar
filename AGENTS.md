@@ -86,9 +86,10 @@ Applies to `README*`, `docs/**`, `.github/ISSUE_TEMPLATE/**`, `site/**`,
   `.benchmark-radar` user data directory. `init` and `sync` are the only
   consumer update paths; search must stay offline and must not hide an update
   failure behind stale data.
-- Pages publishes one complete checksummed CLI bundle via
-  `build-data-release`. Sync validates it before atomically switching state and
-  removes old versions only after the new version is active.
+- Pages publishes the small CLI manifest, while the Pages workflow uploads the
+  complete checksummed bundle to the rolling `cli-data` GitHub Release. Sync
+  validates it before atomically switching state and removes old versions only
+  after the new version is active.
 - The public consumer Skill lives at `skills/benchmark-radar/SKILL.md`. Keep it
   purpose-neutral and limited to routing user intent through consumer CLI
   commands; do not make maintainer build commands part of its normal workflow.
