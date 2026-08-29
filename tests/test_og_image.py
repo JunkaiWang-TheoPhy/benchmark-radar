@@ -1,3 +1,4 @@
+import json
 import sys
 from pathlib import Path
 
@@ -53,3 +54,24 @@ def test_card_reports_the_current_registry_counts(tmp_path):
 def test_card_uses_score_frontiers_instead_of_the_adoption_rank():
     assert "build_adoption_rank" not in og.__file__
     assert set(og.CHART_BENCHMARKS) >= {"gpqa_diamond", "hle"}
+
+
+def test_catalog_totals_include_all_searchable_records_and_curated_source(tmp_path):
+    index = tmp_path / "benchmark-index.json"
+    index.write_text(
+        json.dumps(
+            {
+                "count": 124,
+                "benchmarks": [
+                    {"source": "llm_stats"},
+                    {"source": "opencompass_hub"},
+                    {"source": "artificial_analysis"},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    progression = og.build_score_progression(og.DEFAULT_SCORES_PATH)
+    benchmark_count, source_count = og.catalog_totals(progression, index)
+    assert benchmark_count == progression["benchmark_count"] + 124
+    assert source_count == 4

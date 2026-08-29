@@ -8,6 +8,7 @@ approach to a ceiling.
 from __future__ import annotations
 
 import argparse
+import json
 from datetime import date
 from pathlib import Path
 
@@ -17,6 +18,7 @@ from benchmark_radar.benchmark_scores import DEFAULT_SCORES_PATH, build_score_pr
 
 WIDTH = 1200
 HEIGHT = 630
+DEFAULT_INDEX_PATH = Path("site/data/benchmark-index.json")
 BACKGROUND = "#FAFAFA"
 INK = "#1B2A4A"
 TEAL = "#2A7F8E"
@@ -76,7 +78,25 @@ def _date_position(value: str, first: date, span: int, left: int, width: int) ->
     return left + round((date.fromisoformat(value) - first).days / span * width)
 
 
-def render(progression: dict, output: Path) -> Path:
+def catalog_totals(progression: dict, index_path: Path = DEFAULT_INDEX_PATH) -> tuple[int, int]:
+    """Return the complete searchable catalog total and its source count."""
+    payload = json.loads(index_path.read_text(encoding="utf-8"))
+    records = payload.get("benchmarks", [])
+    external_count = int(payload.get("count", len(records)))
+    external_sources = {record["source"] for record in records if record.get("source")}
+    # The curated score layer is a fourth searchable source alongside the
+    # external catalog. Its benchmark IDs are also in `progression`, but its
+    # records are intentionally not duplicated into benchmark-index.json.
+    return progression["benchmark_count"] + external_count, len(external_sources) + 1
+
+
+def render(
+    progression: dict,
+    output: Path,
+    *,
+    benchmark_count: int | None = None,
+    source_count: int | None = None,
+) -> Path:
     image = Image.new("RGB", (WIDTH, HEIGHT), BACKGROUND)
     draw = ImageDraw.Draw(image)
     draw.rectangle([0, 0, 12, HEIGHT], fill=TEAL)
@@ -139,10 +159,11 @@ def render(progression: dict, output: Path) -> Path:
     y = bottom + 112
     draw.line([(MARGIN, y), (WIDTH - MARGIN, y)], fill=LIGHT, width=2)
     y += 20
+    benchmark_count = benchmark_count or progression["benchmark_count"]
+    source_count = source_count or 1
     draw.text(
         (MARGIN, y),
-        f"{progression['observation_count']} cited scores across "
-        f"{progression['benchmark_count']} benchmarks",
+        f"{benchmark_count:,} benchmarks · {source_count} sources",
         font=body,
         fill=INK,
     )
@@ -172,7 +193,14 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=Path("site/assets/og-card.png"))
     args = parser.parse_args()
     _assert_scalable_fonts()
-    path = render(build_score_progression(args.scores), args.output)
+    progression = build_score_progression(args.scores)
+    benchmark_count, source_count = catalog_totals(progression)
+    path = render(
+        progression,
+        args.output,
+        benchmark_count=benchmark_count,
+        source_count=source_count,
+    )
     print(f"Wrote {path}")
 
 
