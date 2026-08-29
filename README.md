@@ -81,6 +81,14 @@ The frontier-model score layer, including the SWE-bench Verified timeline above,
 is built on benchmark data collected by [LLM Stats](https://llm-stats.com).
 Thank you for keeping that data open.
 
+## Contributors
+
+Thanks to everyone who helps make Benchmark Radar more useful.
+
+<a href="https://github.com/ktwu01/benchmark-radar/graphs/contributors">
+  <img src="assets/contributors.svg" alt="Benchmark Radar contributors" />
+</a>
+
 ## Citation
 
 If Benchmark Radar supports your research or evaluation work, please cite it:
