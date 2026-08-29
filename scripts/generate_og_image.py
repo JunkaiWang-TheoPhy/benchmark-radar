@@ -169,7 +169,7 @@ def render(
     y += 30
     draw.text(
         (MARGIN, y),
-        "Historical best frontier · reporting signal, not a quality leaderboard",
+        "Scores from cited model reports",
         font=body,
         fill=SLATE,
     )
