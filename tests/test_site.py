@@ -1772,6 +1772,20 @@ def test_source_mix_names_the_sources_that_found_nothing():
     assert 'id="source-gap-note"' in html
 
 
+def test_daily_ledger_is_a_tiny_collapsed_dev_checker_below_the_trends():
+    """The maintenance ledger stays available without competing for attention."""
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    assert '<details class="dev-checker" aria-labelledby="dev-checker-heading">' in html
+    assert '<summary class="dev-checker-summary">' in html
+    assert 'data-i18n="Dev checker">Dev checker</span>' in html
+    assert '<details class="dev-checker" open' not in html
+    assert html.index('class="trend-panel"') < html.index('class="dev-checker"')
+    assert ".dev-checker-summary {" in styles
+    assert "font-size: 0.65rem;" in styles.split(".dev-checker-summary {", 1)[1].split("}", 1)[0]
+
+
 def test_source_mix_separates_the_three_reasons_a_source_shows_zero():
     """Issue #260: the source mix counts ranked evidence, fetch health counts
     raw records, so a zero has three different meanings and only two of them

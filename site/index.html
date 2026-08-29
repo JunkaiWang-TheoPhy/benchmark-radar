@@ -719,38 +719,40 @@
           </div>
         </div>
 
-        <section class="ledger" aria-labelledby="ledger-heading">
-          <div class="section-title">
-            <h2 id="ledger-heading" data-i18n="Daily ledger">Daily ledger</h2>
+        <details class="dev-checker" aria-labelledby="dev-checker-heading">
+          <summary class="dev-checker-summary">
+            <span id="dev-checker-heading" data-i18n="Dev checker">Dev checker</span>
             <span id="snapshot-count"></span>
+          </summary>
+          <div class="dev-checker-body">
+            <p class="section-note" data-i18n="trends.ledger.note">
+              Source mix counts ranked evidence after scoring. Fetch health counts raw records
+              returned before scoring, so a source can be ok and still empty.
+            </p>
+            <!-- Sources that found nothing are the ones worth reading first: a
+                 source that quietly returns nothing day after day is usually
+                 broken rather than idle (issue #260). role="status" so a screen
+                 reader hears it when the day's numbers are re-rendered. -->
+            <p class="source-gap-note" id="source-gap-note" role="status" hidden></p>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th data-i18n="Date">Date</th>
+                    <th data-i18n="Coverage (UTC)">Coverage (UTC)</th>
+                    <th data-i18n="Evidence">Evidence</th>
+                    <th data-i18n="Source mix">Source mix</th>
+                    <th data-i18n="Categories">Categories</th>
+                    <th data-i18n="Events">Events</th>
+                    <th data-i18n="Attention">Attention</th>
+                    <th data-i18n="Fetch health">Fetch health</th>
+                  </tr>
+                </thead>
+                <tbody id="trend-table"></tbody>
+              </table>
+            </div>
           </div>
-          <p class="section-note" data-i18n="trends.ledger.note">
-            Source mix counts ranked evidence after scoring. Fetch health counts raw records
-            returned before scoring, so a source can be ok and still empty.
-          </p>
-          <!-- Sources that found nothing are the ones worth reading first: a
-               source that quietly returns nothing day after day is usually
-               broken rather than idle (issue #260). role="status" so a screen
-               reader hears it when the day's numbers are re-rendered. -->
-          <p class="source-gap-note" id="source-gap-note" role="status" hidden></p>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th data-i18n="Date">Date</th>
-                  <th data-i18n="Coverage (UTC)">Coverage (UTC)</th>
-                  <th data-i18n="Evidence">Evidence</th>
-                  <th data-i18n="Source mix">Source mix</th>
-                  <th data-i18n="Categories">Categories</th>
-                  <th data-i18n="Events">Events</th>
-                  <th data-i18n="Attention">Attention</th>
-                  <th data-i18n="Fetch health">Fetch health</th>
-                </tr>
-              </thead>
-              <tbody id="trend-table"></tbody>
-            </table>
-          </div>
-        </section>
+        </details>
       </section>
 
       <section class="error-state" id="error-state" hidden>

@@ -1782,6 +1782,40 @@ input {
   margin-top: 2rem;
 }
 
+/* Collection history is useful when maintaining the radar, but it is not an
+   audience-facing trend. Keep it as the last, closed control on the page so it
+   remains one click away without competing with the chart above it. */
+.dev-checker {
+  margin-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.dev-checker-summary {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  width: fit-content;
+  padding: 0.45rem 0;
+  font-family: var(--utility);
+  font-size: 0.65rem;
+  cursor: pointer;
+}
+
+.dev-checker-summary::marker {
+  color: var(--muted);
+  font-size: 0.55rem;
+}
+
+.dev-checker-summary #snapshot-count::before {
+  content: "\00b7";
+  margin-right: 0.5rem;
+}
+
+.dev-checker-body {
+  padding: 0.25rem 0 1rem;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
