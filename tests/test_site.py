@@ -749,6 +749,24 @@ def test_badge_accessible_names_state_the_action():
     assert 'badge.setAttribute("aria-label"' in script
 
 
+def test_repo_badge_counts_are_visible():
+    css = Path("site/assets/styles.css").read_text(encoding="utf-8")
+    html = Path("site/index.html").read_text(encoding="utf-8")
+
+    # Issue #402: the GitHub API count should be useful to sighted visitors,
+    # not only present as clipped text for screen readers.
+    assert 'id="badge-stars"' in html
+    assert ".repo-badge-count" in css
+    assert (
+        "clip-path: inset(50%)"
+        not in css[css.index(".repo-badge-count") : css.index(".feed-badge svg")]
+    )
+    assert (
+        "background: var(--panel)"
+        in css[css.index(".repo-badge-count") : css.index(".feed-badge svg")]
+    )
+
+
 def test_leaderboard_view_is_a_first_class_dashboard_view():
     parser = SiteParser()
     html = Path("site/index.html").read_text(encoding="utf-8")

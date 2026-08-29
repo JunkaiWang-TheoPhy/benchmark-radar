@@ -246,6 +246,53 @@ def test_answers_translation_rejects_a_dropped_digit(monkeypatch):
         translate_answers_to_zh(answers, "k")
 
 
+def test_answers_translation_retries_an_introduced_ordinal_digit(monkeypatch):
+    """Regression for the 2026-08-29 run: translating "first" as 第1 added an
+    Arabic digit, so the safe first response must be rejected and retried."""
+    answers = [
+        {
+            "signal": "An observation arrived today.",
+            "plain_english": "This is the first observation. [E001]",
+            "takeaway": "Inspect it first.",
+            "counter_view": "The first sighting may be old.",
+        }
+    ]
+    responses = [
+        {
+            "index": 0,
+            "signal_zh": "一项观测今天到达。",
+            "plain_chinese": "这是第1个观测。[E001]",
+            "takeaway_zh": "先检查它。",
+            "counter_view_zh": "首次发现的项目可能已存在很久。",
+        },
+        {
+            "index": 0,
+            "signal_zh": "一项观测今天到达。",
+            "plain_chinese": "这是首个观测。[E001]",
+            "takeaway_zh": "先检查它。",
+            "counter_view_zh": "首次发现的项目可能已存在很久。",
+        },
+    ]
+    calls = 0
+
+    def fake_post(url, body, **kwargs):
+        nonlocal calls
+        response = _fake_response(json.dumps({"answers_zh": [responses[calls]]}))
+        response["id"] = f"resp_zh_{calls + 1}"
+        calls += 1
+        return response
+
+    monkeypatch.setattr("benchmark_radar.translate_zh.post_json", fake_post)
+
+    zh, meta = translate_answers_to_zh(answers, "k")
+
+    assert calls == 2
+    assert zh[0]["plain_chinese"] == "这是首个观测。[E001]"
+    assert meta["response_id"] == "resp_zh_2"
+    assert meta["validation_retries"] == 1
+    assert meta["usage"]["total_tokens"] == 300
+
+
 def test_answers_translation_rejects_a_wrong_answer_count(monkeypatch):
     answers = [
         {

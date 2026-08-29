@@ -73,6 +73,14 @@ SWE-bench Verified 的 saturation 过程。**
 
 前沿模型分数层（包括上方的 SWE-bench Verified 时间线）基于 [LLM Stats](https://llm-stats.com) 采集的 benchmark 数据构建，感谢他们把这些数据公开出来。
 
+## 贡献者
+
+感谢所有让 Benchmark Radar 变得更有用的人。
+
+<a href="https://github.com/ktwu01/benchmark-radar/graphs/contributors">
+  <img src="assets/contributors.svg" alt="Benchmark Radar 贡献者" />
+</a>
+
 ## 引用
 
 如果 Benchmark Radar 对你的研究或评测工作有帮助，欢迎引用：

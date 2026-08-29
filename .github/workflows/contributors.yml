@@ -1,0 +1,44 @@
+name: Update contributors image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "README.md"
+      - "README.zh-CN.md"
+      - ".github/workflows/contributors.yml"
+  schedule:
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: contributors-image
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Generate contributors image
+        uses: jaywcjlove/github-action-contributors@86707f6d4c2469ce6b46bc3367253ebd41ee242c # v2.1.0
+        with:
+          output: assets/contributors.svg
+          avatarSize: 42
+          excludeBots: "true"
+
+      - name: Commit updated image
+        run: |
+          if git diff --quiet -- assets/contributors.svg; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add assets/contributors.svg
+          git commit -m "chore: update contributors image"
+          git push

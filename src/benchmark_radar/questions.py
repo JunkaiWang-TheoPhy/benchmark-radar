@@ -486,10 +486,11 @@ def generate_daily_questions(
 ) -> dict[str, Any]:
     """Answer today's question set, one call per group, and keep the proof.
 
-    With translate_zh, one extra call renders every answer's prose in
-    Simplified Chinese (issue #231). A translation failure must not cost the
-    day its English answers, so it is reported as a warning and the zh fields
-    are simply absent; the dashboard falls back to English.
+    With translate_zh, one batched call normally renders every answer's prose
+    in Simplified Chinese (issue #231), with one validated retry for unsafe
+    model output. A translation failure must not cost the day its English
+    answers, so it is reported as a warning and the zh fields are simply
+    absent; the dashboard falls back to English.
     """
     registry = build_registry(history, current, config)
     stats_by_id = stat_index(registry)
