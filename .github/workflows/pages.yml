@@ -93,6 +93,10 @@ jobs:
           # This rebuild also writes site/feed.xml from the same validated
           # snapshot history as radar.json (issue #37).
           benchmark-radar classify
+          # Publish one complete, checksummed archive for installed CLIs.
+          # init/sync fetch this bundle instead of asking every user to clone
+          # the repository or issue thousands of requests for detail shards.
+          benchmark-radar build-data-release
           # Standalone citable artifacts alongside the dashboard bundle (issue
           # #88). Written into site/data/ so they deploy with the rest of the
           # site and resolve at a stable URL: an embedded badge or a citation

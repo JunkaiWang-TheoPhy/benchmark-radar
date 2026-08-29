@@ -95,3 +95,14 @@ def test_chinese_readme_mirrors_the_english_one():
     # language label rather than a filename.
     assert '<div align="left">' in zh.split("# Benchmark Radar")[0]
     assert "[README.md](README.md)" not in zh
+
+
+def test_readmes_separate_consumer_sync_from_maintainer_normalization():
+    # Regression: the first CLI docs told every user to rebuild repository internals.
+    english = README.read_text(encoding="utf-8")
+    chinese = README_ZH.read_text(encoding="utf-8")
+    for text in (english, chinese):
+        assert "benchmark-radar init" in text
+        assert "benchmark-radar sync" in text
+        assert "~/.benchmark-radar" in text
+        assert "build-data-release" in text

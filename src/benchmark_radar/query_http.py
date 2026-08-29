@@ -165,7 +165,7 @@ def create_query_server(
                 return {
                     "schema_version": QUERY_SCHEMA_VERSION,
                     "retrieval_mode": "health_check",
-                    "data": {"source": "local"},
+                    "data": status["data"],
                     "status": "ok",
                     "data_status": status["status"],
                 }

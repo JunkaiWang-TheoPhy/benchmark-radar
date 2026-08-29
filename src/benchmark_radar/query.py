@@ -59,6 +59,9 @@ class QueryPaths:
     index: Path = DEFAULT_INDEX_PATH
     shards: Path = DEFAULT_SHARD_DIR
     snapshots: Path = DEFAULT_SNAPSHOT_DIR
+    data_version: str | None = None
+    generated_at: str | None = None
+    synced_at: str | None = None
 
 
 def _read_object(path: Path, *, label: str) -> dict[str, Any]:
@@ -316,8 +319,16 @@ class QueryService:
                 }
         return list(latest_by_identity.values())
 
+    def _provenance(self) -> dict[str, Any]:
+        return {
+            "source": "local",
+            **({"data_version": self.paths.data_version} if self.paths.data_version else {}),
+            **({"generated_at": self.paths.generated_at} if self.paths.generated_at else {}),
+            **({"synced_at": self.paths.synced_at} if self.paths.synced_at else {}),
+        }
+
     def _data_summary(self, *, scope: str) -> dict[str, Any]:
-        value: dict[str, Any] = {"source": "local"}
+        value = self._provenance()
         if scope in {"catalog", "all"}:
             index = self._load_index()
             value.update(
@@ -465,7 +476,7 @@ class QueryService:
             "identifier": record["key"],
             "retrieval_mode": "direct",
             "data": {
-                "source": "local",
+                **self._data_summary(scope="catalog"),
                 "catalog_path": str(self.paths.index),
                 "shard_path": str(path),
             },
@@ -540,7 +551,7 @@ class QueryService:
         return {
             "schema_version": QUERY_SCHEMA_VERSION,
             "retrieval_mode": "health_check",
-            "data": {"source": "local"},
+            "data": self._provenance(),
             "status": "ok" if not gaps and not missing_shards else "degraded",
             "catalog": {
                 "path": str(self.paths.index),

@@ -96,8 +96,10 @@ Before opening a pull request:
 ```bash
 ruff check .
 ruff format --check .
+benchmark-radar normalize-external
+benchmark-radar classify
+benchmark-radar build-data-release
 pytest -q
-benchmark-radar rebuild
 ```
 
 Two conventions matter more here than in most repositories:

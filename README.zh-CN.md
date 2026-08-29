@@ -51,26 +51,44 @@ SWE-bench Verified 的 saturation 过程。**
 
 如果 Benchmark Radar 帮你节省了研究时间，请 **[给仓库点个 Star](https://github.com/ktwu01/benchmark-radar)**，让更多做评测的人发现它。
 
-## 在本地查询：CLI 和 HTTP
+## 在本地查询
 
-Agent 和脚本不需要抓取 dashboard，也能搜索 Benchmark Radar 的同一份本地数据。
-先生成一次 catalog，然后直接从命令行查询：
+CLI 会下载并校验 Benchmark Radar 网站使用的完整数据，然后全部在本地查询。正式
+package 发布前，可以直接从 GitHub 安装，然后第一次运行：
 
 ```bash
-python -m pip install -e '.[dev]'
-benchmark-radar normalize-external
+python -m pip install 'git+https://github.com/ktwu01/benchmark-radar.git'
+benchmark-radar init
 benchmark-radar search "long-horizon agent benchmark" --scope all --json
 benchmark-radar show opencompass-1248-mmmu --json
 benchmark-radar recent --recommended --json
 benchmark-radar status --json
 ```
 
+`init` 会把当前 catalog、详情记录和 Radar snapshots 存到 macOS/Linux 的
+`~/.benchmark-radar`，Windows 则是当前用户目录下的 `.benchmark-radar`。可以用
+`BENCHMARK_RADAR_HOME` 或 `--data-dir` 更改位置。每次开始新的 benchmark 调研前，
+显式更新一次：
+
+```bash
+benchmark-radar sync
+```
+
+`sync` 先检查很小的远端 manifest；只有 data version 变化时才下载。新数据会经过
+文件大小、SHA-256、catalog 和 snapshots 完整性校验，成功后原子切换，并删除旧版本，
+所以稳定状态只保留最新版本。激活失败时，最后一个验证成功的版本仍可使用。如果操作
+系统暂时锁住待删除目录，sync 会明确返回 `cleanup_pending`，并在下次 sync 时重试物理
+清理；查询只会使用新版本。搜索命令本身不会联网或暗中改变数据，并会返回可复现的
+`data_version`。未来的 Benchmark Radar Skill 应在每次调研开始时运行一次
+`sync --json`，随后调用 `search --json` 和 `show --json`；`--json` 是稳定的机器输出，
+不加时则输出适合人阅读的文本。
+
 `catalog` 搜索标准化 benchmark 目录，`radar` 搜索每日情报历史，`all` 同时搜索
 两者，但不会擅自合并它们的身份。当前版本是可复现的关键词/token 检索，不是基于
 embedding 的 semantic search；每条结果都会说明匹配字段、token 覆盖率和排序理由。
 可以按论文、代码仓库、数据集、开放程度、模态和来源过滤。
 
-本地 HTTP API 与 CLI 复用完全相同的查询服务和 JSON 返回结构：
+可选的本地 HTTP API 与 CLI 复用完全相同的查询服务和 JSON 返回结构：
 
 ```bash
 benchmark-radar serve --host 127.0.0.1 --port 8765
@@ -79,9 +97,12 @@ curl 'http://127.0.0.1:8765/api/v1/search?q=agent%20benchmark&scope=all'
 
 只读接口包括 `GET /api/v1/search`、
 `GET /api/v1/benchmarks/<key-or-slug>`、`GET /api/v1/recent`、
-`GET /api/v1/status` 和 `GET /healthz`。CLI 与 HTTP 查询时只读取磁盘上的生成
-catalog 和仓库内每日 snapshots，不会临时访问网络。以后可以再增加 MCP 和 semantic
-retrieval，而不用复制另一套排序逻辑。
+`GET /api/v1/status` 和 `GET /healthz`。CLI 与 HTTP 查询时只读取 managed data
+目录，不会临时访问网络。它目前是本地服务，不是已经部署的公共 Search API。以后可以
+再增加 MCP 和 semantic retrieval，而不用复制另一套排序逻辑。
+
+`benchmark-radar normalize-external` 和 `benchmark-radar build-data-release` 是维护者
+及 CI 的构建命令。普通用户通过 `sync` 更新，不需要运行 normalizer。
 
 ## 更多
 
@@ -90,7 +111,7 @@ retrieval，而不用复制另一套排序逻辑。
 - **公开语料 schema：** [`docs/cumulative-corpus.schema.json`](docs/cumulative-corpus.schema.json)
 - **引用信息：** [`CITATION.cff`](CITATION.cff)
 - **配置：** [`config.yml`](config.yml)
-- **本地运行：** `python -m pip install -e '.[dev]' && benchmark-radar`
+- **开发环境：** `python -m pip install -e '.[dev]' && benchmark-radar normalize-external`
 - **支持 / 反馈：** [提交 issue](https://github.com/ktwu01/benchmark-radar/issues)
 - **联系：** [@ktwu01](https://github.com/ktwu01)
 - **开源协议：** MIT

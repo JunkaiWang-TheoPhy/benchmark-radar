@@ -10,10 +10,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+from .data_store import DEFAULT_MANIFEST_URL, DataStore
 from .query import (
-    DEFAULT_INDEX_PATH,
-    DEFAULT_SHARD_DIR,
-    DEFAULT_SNAPSHOT_DIR,
     SEARCH_SCOPES,
     QueryError,
     QueryPaths,
@@ -22,14 +20,15 @@ from .query import (
 )
 from .query_http import serve_query_api
 
-QUERY_COMMANDS = frozenset({"search", "show", "recent", "status", "serve"})
+QUERY_COMMANDS = frozenset({"init", "sync", "search", "show", "recent", "status", "serve"})
 
 
 def _data_parent() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--index", type=Path, default=DEFAULT_INDEX_PATH)
-    parser.add_argument("--shards", type=Path, default=DEFAULT_SHARD_DIR)
-    parser.add_argument("--snapshots", type=Path, default=DEFAULT_SNAPSHOT_DIR)
+    parser.add_argument("--data-dir", type=Path, default=None)
+    parser.add_argument("--index", type=Path, default=None, help=argparse.SUPPRESS)
+    parser.add_argument("--shards", type=Path, default=None, help=argparse.SUPPRESS)
+    parser.add_argument("--snapshots", type=Path, default=None, help=argparse.SUPPRESS)
     return parser
 
 
@@ -40,6 +39,15 @@ def _parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
     data_parent = _data_parent()
+
+    init = subparsers.add_parser("init", help="Download and verify the current dataset.")
+    init.add_argument("--data-dir", type=Path, default=None)
+    init.add_argument("--manifest-url", default=DEFAULT_MANIFEST_URL)
+    init.add_argument("--json", action="store_true")
+
+    sync = subparsers.add_parser("sync", help="Update an initialized local dataset.")
+    sync.add_argument("--data-dir", type=Path, default=None)
+    sync.add_argument("--json", action="store_true")
 
     search = subparsers.add_parser(
         "search", parents=[data_parent], help="Search benchmark catalog and Radar records."
@@ -84,7 +92,18 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _service(args: argparse.Namespace) -> QueryService:
-    return QueryService(QueryPaths(index=args.index, shards=args.shards, snapshots=args.snapshots))
+    explicit = (args.index, args.shards, args.snapshots)
+    if any(value is not None for value in explicit):
+        if not all(value is not None for value in explicit):
+            raise QueryError(
+                "--index, --shards, and --snapshots must be passed together",
+                code="invalid_paths",
+                status=400,
+            )
+        return QueryService(
+            QueryPaths(index=args.index, shards=args.shards, snapshots=args.snapshots)
+        )
+    return QueryService(DataStore(root=args.data_dir).query_paths())
 
 
 def _print_json(payload: dict[str, Any]) -> None:
@@ -130,12 +149,28 @@ def _print_status(payload: dict[str, Any]) -> None:
     print(f"required source gaps: {', '.join(gaps) if gaps else 'none'}")
 
 
+def _print_sync(payload: dict[str, Any]) -> None:
+    print(f"data: {payload['status']} ({payload['data_version']})")
+    print(f"location: {payload['data_home']}")
+    if payload.get("cleanup_pending"):
+        print("cleanup: pending; the next sync will retry obsolete data removal")
+
+
 def run_query_cli(argv: Sequence[str] | None = None) -> int:
     """Run one query command and return a process-style exit code."""
 
     args = _parser().parse_args(argv)
-    service = _service(args)
     try:
+        if args.command == "init":
+            payload = DataStore(root=args.data_dir, manifest_url=args.manifest_url).initialize()
+            _print_json(payload) if args.json else _print_sync(payload)
+            return 0
+        if args.command == "sync":
+            payload = DataStore(root=args.data_dir).sync()
+            _print_json(payload) if args.json else _print_sync(payload)
+            return 0
+
+        service = _service(args)
         if args.command == "search":
             payload = service.search(
                 args.query,
@@ -172,8 +207,7 @@ def run_query_cli(argv: Sequence[str] | None = None) -> int:
             status = service.status()
             if not status["catalog"]["complete"]:
                 raise QueryError(
-                    "catalog detail shards are incomplete; run "
-                    "`benchmark-radar normalize-external` before serving",
+                    "catalog detail shards are incomplete; run `benchmark-radar sync`",
                     code="data_unavailable",
                     status=503,
                 )

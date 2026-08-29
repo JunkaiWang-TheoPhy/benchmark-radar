@@ -56,20 +56,41 @@ how scores on each one climb until there is almost no headroom left.**
 
 If Benchmark Radar saves you research time, **[star the repository](https://github.com/ktwu01/benchmark-radar)**. It helps other eval builders find it.
 
-## Query it locally: CLI and HTTP
+## Query it locally
 
-Agents and scripts can search the same local data shown by Benchmark Radar without
-scraping the dashboard. Generate the catalog once, then query it from the command
-line:
+The CLI downloads a complete, verified copy of the data shown by Benchmark Radar,
+then searches it locally. Until a packaged release is published, install it directly
+from GitHub, then initialize it once:
 
 ```bash
-python -m pip install -e '.[dev]'
-benchmark-radar normalize-external
+python -m pip install 'git+https://github.com/ktwu01/benchmark-radar.git'
+benchmark-radar init
 benchmark-radar search "long-horizon agent benchmark" --scope all --json
 benchmark-radar show opencompass-1248-mmmu --json
 benchmark-radar recent --recommended --json
 benchmark-radar status --json
 ```
+
+`init` stores the current catalog, detail records, and Radar snapshots under
+`~/.benchmark-radar` on macOS/Linux or the current user's `.benchmark-radar`
+directory on Windows. Set `BENCHMARK_RADAR_HOME` or pass `--data-dir` to choose
+another location. Update it explicitly before a new research session:
+
+```bash
+benchmark-radar sync
+```
+
+`sync` first checks the small published manifest. It downloads only when the data
+version changed, verifies the archive size and SHA-256 checksum, validates the
+catalog and snapshots, switches versions atomically, then removes the previous
+version. A failed activation leaves the last verified version active. If the OS
+temporarily locks an obsolete directory, sync reports `cleanup_pending` and retries
+that physical cleanup next time; only the new version remains queryable. Search
+itself never accesses the network or silently changes data, so its reported
+`data_version` is reproducible. A Benchmark Radar Skill should run `sync --json`
+once at the start of benchmark research, then use `search --json` and `show --json`;
+`--json` selects the stable machine-readable output, while the default output is
+for people.
 
 `catalog` searches the normalized benchmark catalog, `radar` searches the daily
 evidence history, and `all` searches both while keeping their identities separate.
@@ -78,7 +99,8 @@ semantic search—and every result explains its matched fields, token coverage, 
 ranking reason. Filters include paper, repository, dataset, openness, modality, and
 source.
 
-The local HTTP API uses exactly the same query service and JSON response contract:
+The optional local HTTP API uses exactly the same query service and JSON response
+contract:
 
 ```bash
 benchmark-radar serve --host 127.0.0.1 --port 8765
@@ -88,9 +110,12 @@ curl 'http://127.0.0.1:8765/api/v1/search?q=agent%20benchmark&scope=all'
 Available read-only routes are `GET /api/v1/search`,
 `GET /api/v1/benchmarks/<key-or-slug>`, `GET /api/v1/recent`,
 `GET /api/v1/status`, and `GET /healthz`. Both interfaces read generated catalog
-files plus committed daily snapshots from disk; they do not fetch the network during
-a query. MCP and semantic retrieval can be added later without creating a second
-ranking implementation.
+files from the managed data directory; they do not fetch the network during a query.
+This is a local server, not a publicly deployed search API. MCP and semantic
+retrieval can be added later without creating a second ranking implementation.
+
+`benchmark-radar normalize-external` and `benchmark-radar build-data-release` are
+maintainer/CI build commands. End users update with `sync`, not with the normalizer.
 
 ## More
 
@@ -99,7 +124,7 @@ ranking implementation.
 - **Public corpus schema:** [`docs/cumulative-corpus.schema.json`](docs/cumulative-corpus.schema.json)
 - **Citation metadata:** [`CITATION.cff`](CITATION.cff)
 - **Configuration:** [`config.yml`](config.yml)
-- **Run locally:** `python -m pip install -e '.[dev]' && benchmark-radar`
+- **Developer setup:** `python -m pip install -e '.[dev]' && benchmark-radar normalize-external`
 - **Support / bugs:** [open an issue](https://github.com/ktwu01/benchmark-radar/issues)
 - **Contact:** [@ktwu01](https://github.com/ktwu01)
 - **License:** MIT

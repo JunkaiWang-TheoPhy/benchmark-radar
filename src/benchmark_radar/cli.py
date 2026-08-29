@@ -101,6 +101,7 @@ def main() -> None:
             "authors",
             "social",
             "normalize-external",
+            "build-data-release",
             *sorted(QUERY_COMMANDS),
         ),
         default="run",
@@ -113,7 +114,8 @@ def main() -> None:
             "the public profiles of authors behind popular benchmark repositories, "
             "render the daily social post section from the day's evidence and git history, "
             "or normalize the committed aggregator crawl snapshots into the external "
-            "benchmark catalog. Query commands search and inspect those local artifacts "
+            "benchmark catalog, or build the downloadable CLI dataset. Query commands "
+            "search and inspect managed local artifacts "
             "through the same contract exposed by the local HTTP API."
         ),
     )
@@ -397,6 +399,18 @@ def main() -> None:
             f"{candidates['name_only_count']} name-only -> {DEFAULT_CANDIDATES_PATH}\n"
             f"identity inherited: {inherited_count} records show a reviewed donor's identity\n"
             f"catalog written to {DEFAULT_OUTPUT_DIR}"
+        )
+        return
+
+    if args.command == "build-data-release":
+        from .data_release import build_data_release
+        from .query import QueryPaths
+
+        manifest = build_data_release(paths=QueryPaths())
+        print(
+            f"CLI data release: {manifest['data_version']} "
+            f"({manifest['benchmark_count']} benchmarks, "
+            f"{manifest['snapshot_count']} snapshots)"
         )
         return
 
