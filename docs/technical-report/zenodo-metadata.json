@@ -1,0 +1,36 @@
+{
+  "metadata": {
+    "title": "Benchmark Radar: An Evidence-First Index for Tracking AI Benchmarks",
+    "upload_type": "publication",
+    "publication_type": "report",
+    "publication_date": "2026-08-29",
+    "description": "Technical report for Benchmark Radar v0.9.0, a daily evidence-linked index and machine-readable corpus for AI benchmarks, evaluations, datasets, model-card adoption, and protocol-aware score observations. Through 29 August 2026, the cumulative corpus contains 7,540 source observations covering 4,537 unique artifacts across 37 snapshots, and the normalized benchmark catalog contains 1,173 searchable records.",
+    "creators": [
+      {
+        "name": "Wu, Koutian"
+      }
+    ],
+    "access_right": "open",
+    "license": "cc-by-4.0",
+    "version": "1.0",
+    "keywords": [
+      "AI benchmarks",
+      "model evaluation",
+      "model cards",
+      "research software",
+      "open dataset"
+    ],
+    "related_identifiers": [
+      {
+        "identifier": "https://github.com/ktwu01/benchmark-radar",
+        "relation": "isSupplementTo",
+        "resource_type": "software"
+      },
+      {
+        "identifier": "https://benchmark-radar.org/",
+        "relation": "documents",
+        "resource_type": "dataset"
+      }
+    ]
+  }
+}
