@@ -1,0 +1,431 @@
+from __future__ import annotations
+
+import json
+import threading
+import urllib.parse
+import urllib.request
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+import pytest
+
+from benchmark_radar.models import RadarItem, RadarRun, SourceHealth
+from benchmark_radar.query import QueryError, QueryPaths, QueryService
+from benchmark_radar.query_cli import run_query_cli
+from benchmark_radar.query_http import create_query_server
+from benchmark_radar.snapshots import write_snapshot
+
+
+def _catalog(tmp_path: Path) -> QueryPaths:
+    index_path = tmp_path / "site" / "data" / "benchmark-index.json"
+    shard_dir = index_path.parent / "benchmarks"
+    snapshot_dir = tmp_path / "data" / "snapshots"
+    index_path.parent.mkdir(parents=True)
+    shard_dir.mkdir()
+    records = [
+        {
+            "slug": "opencompass-agent-workbench",
+            "key": "opencompass:agent-workbench",
+            "name": "Agent Workbench",
+            "source": "opencompass_hub",
+            "publisher": "Example Lab",
+            "released": "2026-01-01",
+            "openness": "open",
+            "modality": "text",
+            "description": "Long-horizon coding agent evaluation with executable tasks.",
+            "categories": ["agent", "coding"],
+            "languages": ["en"],
+            "score_count": 4,
+            "has_paper": True,
+            "has_repo": True,
+            "has_dataset": True,
+            "has_size": True,
+        },
+        {
+            "slug": "llm-stats-agent-workbench-extended",
+            "key": "llm-stats:agent-workbench-extended",
+            "name": "Agent Workbench Extended",
+            "source": "llm_stats",
+            "publisher": None,
+            "released": None,
+            "openness": "unknown",
+            "modality": "text",
+            "description": "",
+            "categories": ["agent"],
+            "languages": [],
+            "score_count": 12,
+            "has_paper": False,
+            "has_repo": False,
+            "has_dataset": False,
+            "has_size": False,
+        },
+        {
+            "slug": "opencompass-science-discovery",
+            "key": "opencompass:science-discovery",
+            "name": "Science Discovery Suite",
+            "source": "opencompass_hub",
+            "publisher": "Research Institute",
+            "released": "2025-12-01",
+            "openness": "restricted",
+            "modality": "multimodal",
+            "description": "A benchmark for scientific discovery agents.",
+            "categories": ["science"],
+            "languages": ["en", "zh"],
+            "score_count": 0,
+            "has_paper": True,
+            "has_repo": True,
+            "has_dataset": False,
+            "has_size": False,
+        },
+    ]
+    index_path.write_text(
+        json.dumps({"schema_version": 1, "count": len(records), "benchmarks": records}),
+        encoding="utf-8",
+    )
+    for record in records:
+        (shard_dir / f"{record['slug']}.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "record": {
+                        **record,
+                        "artifacts": [
+                            {"kind": "repo", "url": "https://github.com/example/benchmark"}
+                        ]
+                        if record["has_repo"]
+                        else [],
+                    },
+                    "siblings": [],
+                    "scores_by_source": {},
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    generated_at = datetime(2026, 8, 29, 8, 0, tzinfo=UTC)
+    write_snapshot(
+        RadarRun(
+            generated_at=generated_at,
+            since=generated_at - timedelta(hours=48),
+            items=[
+                RadarItem(
+                    source="GitHub",
+                    source_id="example/new-agent-bench",
+                    title="New Agent Memory Benchmark",
+                    url="https://github.com/example/new-agent-bench",
+                    published_at=generated_at - timedelta(hours=1),
+                    summary="Evaluates persistent memory in long-running coding agents.",
+                    categories=["benchmark", "agentic"],
+                    recommended=True,
+                )
+            ],
+            health=[
+                SourceHealth(source=source, ok=True, item_count=1, method="API")
+                for source in ("arxiv", "github", "huggingface")
+            ],
+        ),
+        snapshot_dir,
+    )
+    return QueryPaths(index=index_path, shards=shard_dir, snapshots=snapshot_dir)
+
+
+def test_catalog_search_is_deterministic_and_explains_matches(tmp_path: Path) -> None:
+    # Regression: interface-specific ranking would let CLI and HTTP disagree.
+    service = QueryService(_catalog(tmp_path))
+
+    result = service.search("agent workbench", scope="catalog", limit=10)
+
+    assert [item["key"] for item in result["results"][:2]] == [
+        "opencompass:agent-workbench",
+        "llm-stats:agent-workbench-extended",
+    ]
+    assert result["retrieval_mode"] == "lexical"
+    assert result["results"][0]["match"]["matched_fields"] == [
+        "name",
+        "description",
+        "categories",
+    ]
+    assert result["results"][0]["match"]["reason"] == "exact name match"
+    assert result["data"]["catalog_count"] == 3
+
+
+def test_search_filters_before_ranking(tmp_path: Path) -> None:
+    # Regression: filtering a truncated result list can hide eligible matches.
+    service = QueryService(_catalog(tmp_path))
+
+    result = service.search(
+        "agent",
+        scope="catalog",
+        limit=10,
+        has_repo=True,
+        has_dataset=True,
+        openness="open",
+        modality="text",
+    )
+
+    assert [item["key"] for item in result["results"]] == ["opencompass:agent-workbench"]
+    assert result["filters"] == {
+        "has_dataset": True,
+        "has_repo": True,
+        "modality": "text",
+        "openness": "open",
+    }
+
+    without_repositories = service.search("agent", has_repo=False)
+    assert [item["key"] for item in without_repositories["results"]] == [
+        "llm-stats:agent-workbench-extended"
+    ]
+
+
+def test_all_scope_keeps_catalog_and_radar_identity_separate(tmp_path: Path) -> None:
+    # Regression: same-looking names from two evidence layers are not proven identities.
+    service = QueryService(_catalog(tmp_path))
+
+    result = service.search("long running coding agent", scope="all", limit=10)
+
+    assert {item["kind"] for item in result["results"]} == {"catalog", "radar"}
+    assert len({item["key"] for item in result["results"]}) == len(result["results"])
+
+
+def test_show_accepts_key_or_slug_and_rejects_missing_shards(tmp_path: Path) -> None:
+    # Regression: an index hit without its detail shard must not look complete.
+    paths = _catalog(tmp_path)
+    service = QueryService(paths)
+
+    by_key = service.show("opencompass:agent-workbench")
+    by_slug = service.show("opencompass-agent-workbench")
+
+    assert by_key == by_slug
+    assert by_key["benchmark"]["record"]["key"] == "opencompass:agent-workbench"
+
+    (paths.shards / "opencompass-agent-workbench.json").unlink()
+    with pytest.raises(QueryError, match="detail shard is missing"):
+        service.show("opencompass:agent-workbench")
+
+
+def test_recent_and_status_report_snapshot_health(tmp_path: Path) -> None:
+    # Regression: freshness without required-source coverage overstates local health.
+    service = QueryService(_catalog(tmp_path))
+
+    recent = service.recent(limit=5)
+    status = service.status()
+
+    assert recent["date"] == "2026-08-29"
+    assert recent["retrieval_mode"] == "latest_snapshot"
+    assert recent["results"][0]["source_id"] == "example/new-agent-bench"
+    assert status["catalog"]["count"] == 3
+    assert status["retrieval_mode"] == "health_check"
+    assert status["data"] == {"source": "local"}
+    assert status["catalog"]["complete"] is True
+    assert status["catalog"]["shard_count"] == 3
+    assert status["catalog"]["validated_shard_count"] == 3
+    assert status["radar"]["snapshot_count"] == 1
+    assert status["radar"]["latest_date"] == "2026-08-29"
+    assert status["radar"]["required_coverage_complete"] is True
+
+
+def test_status_exposes_incomplete_detail_shards(tmp_path: Path) -> None:
+    # Regression: counting only the index used to hide absent detail artifacts.
+    paths = _catalog(tmp_path)
+    (paths.shards / "opencompass-agent-workbench.json").unlink()
+
+    status = QueryService(paths).status()
+
+    assert status["status"] == "degraded"
+    assert status["catalog"]["complete"] is False
+    assert status["catalog"]["missing_shards"] == ["opencompass-agent-workbench.json"]
+
+
+def test_status_rejects_malformed_detail_shards(tmp_path: Path) -> None:
+    # Regression: matching filenames alone let corrupt shard JSON pass serve preflight.
+    paths = _catalog(tmp_path)
+    (paths.shards / "opencompass-agent-workbench.json").write_text("{}", encoding="utf-8")
+
+    with pytest.raises(QueryError, match="does not match catalog key"):
+        QueryService(paths).status()
+
+
+def test_cli_and_http_return_the_same_search_contract(tmp_path: Path, capsys) -> None:
+    # Regression: separate serializers drift even when ranking happens to agree.
+    paths = _catalog(tmp_path)
+    service = QueryService(paths)
+    exit_code = run_query_cli(
+        [
+            "search",
+            "agent workbench",
+            "--scope",
+            "catalog",
+            "--limit",
+            "2",
+            "--json",
+            "--index",
+            str(paths.index),
+            "--shards",
+            str(paths.shards),
+            "--snapshots",
+            str(paths.snapshots),
+        ]
+    )
+    cli_payload = json.loads(capsys.readouterr().out)
+
+    server = create_query_server(service, host="127.0.0.1", port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        query = urllib.parse.urlencode({"q": "agent workbench", "scope": "catalog", "limit": 2})
+        with urllib.request.urlopen(
+            f"http://127.0.0.1:{server.server_port}/api/v1/search?{query}", timeout=5
+        ) as response:
+            http_payload = json.load(response)
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+    assert exit_code == 0
+    assert cli_payload == http_payload
+
+
+def test_cli_and_http_return_the_same_non_search_contracts(tmp_path: Path, capsys) -> None:
+    # Regression: shared search alone did not prevent detail/status serializers drifting.
+    paths = _catalog(tmp_path)
+    service = QueryService(paths)
+    server = create_query_server(service, host="127.0.0.1", port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        cases = [
+            (
+                ["show", "opencompass-agent-workbench"],
+                "/api/v1/benchmarks/opencompass-agent-workbench",
+            ),
+            (["recent", "--limit", "1"], "/api/v1/recent?limit=1"),
+            (["status"], "/api/v1/status"),
+        ]
+        for arguments, route in cases:
+            exit_code = run_query_cli(
+                [
+                    *arguments,
+                    "--json",
+                    "--index",
+                    str(paths.index),
+                    "--shards",
+                    str(paths.shards),
+                    "--snapshots",
+                    str(paths.snapshots),
+                ]
+            )
+            cli_payload = json.loads(capsys.readouterr().out)
+            with urllib.request.urlopen(
+                f"http://127.0.0.1:{server.server_port}{route}", timeout=5
+            ) as response:
+                http_payload = json.load(response)
+            assert exit_code == 0
+            assert cli_payload == http_payload
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
+def test_healthz_identifies_local_health_check_contract(tmp_path: Path) -> None:
+    # Regression: the lightweight health route omitted provenance and retrieval mode.
+    server = create_query_server(QueryService(_catalog(tmp_path)), host="127.0.0.1", port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with urllib.request.urlopen(
+            f"http://127.0.0.1:{server.server_port}/healthz", timeout=5
+        ) as response:
+            payload = json.load(response)
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+    assert payload == {
+        "schema_version": 1,
+        "retrieval_mode": "health_check",
+        "data": {"source": "local"},
+        "status": "ok",
+        "data_status": "ok",
+    }
+
+
+def test_cli_can_filter_for_absent_artifacts(tmp_path: Path, capsys) -> None:
+    # Regression: one-way CLI flags could not express the HTTP false filters.
+    paths = _catalog(tmp_path)
+
+    exit_code = run_query_cli(
+        [
+            "search",
+            "agent",
+            "--no-has-repo",
+            "--json",
+            "--index",
+            str(paths.index),
+            "--shards",
+            str(paths.shards),
+            "--snapshots",
+            str(paths.snapshots),
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["filters"] == {"has_repo": False}
+    assert [item["key"] for item in payload["results"]] == ["llm-stats:agent-workbench-extended"]
+
+
+def test_malformed_index_is_a_machine_readable_cli_error(tmp_path: Path, capsys) -> None:
+    # Regression: malformed rows escaped as KeyError tracebacks instead of JSON errors.
+    paths = _catalog(tmp_path)
+    malformed = json.loads(paths.index.read_text(encoding="utf-8"))
+    del malformed["benchmarks"][0]["slug"]
+    paths.index.write_text(json.dumps(malformed), encoding="utf-8")
+
+    exit_code = run_query_cli(
+        [
+            "search",
+            "agent",
+            "--json",
+            "--index",
+            str(paths.index),
+            "--shards",
+            str(paths.shards),
+            "--snapshots",
+            str(paths.snapshots),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert captured.out == ""
+    assert json.loads(captured.err)["error"] == {
+        "code": "invalid_data",
+        "message": "benchmark index record 0 slug must be a non-empty string",
+    }
+
+
+def test_http_errors_are_machine_readable(tmp_path: Path) -> None:
+    # Regression: agent callers need a stable error envelope, not an HTML error page.
+    service = QueryService(_catalog(tmp_path))
+    server = create_query_server(service, host="127.0.0.1", port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with pytest.raises(urllib.error.HTTPError) as captured:
+            urllib.request.urlopen(
+                f"http://127.0.0.1:{server.server_port}/api/v1/search", timeout=5
+            )
+        payload = json.loads(captured.value.read())
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+    assert captured.value.code == 400
+    assert payload == {
+        "schema_version": 1,
+        "error": {"code": "invalid_request", "message": "q is required"},
+    }

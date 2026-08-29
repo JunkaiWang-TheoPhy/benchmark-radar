@@ -516,6 +516,20 @@ def build_benchmark_index(
                 "slug": record["slug"],
                 "key": record["key"],
                 "name": record["name"],
+                # Search text stays source-derived. The normalizers carry
+                # descriptions by language; no generated prose or inferred
+                # category is introduced in this compact index.
+                "description": " ".join(
+                    str(value).strip()
+                    for value in (
+                        record.get("description", {}).values()
+                        if isinstance(record.get("description"), dict)
+                        else [record.get("description")]
+                    )
+                    if str(value or "").strip()
+                ),
+                "categories": list(record.get("categories") or []),
+                "languages": list(record.get("languages") or []),
                 "source": record["source"],
                 "publisher": publisher["name"] if publisher else None,
                 "released": record.get("released"),

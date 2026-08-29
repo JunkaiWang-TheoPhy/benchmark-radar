@@ -56,6 +56,42 @@ how scores on each one climb until there is almost no headroom left.**
 
 If Benchmark Radar saves you research time, **[star the repository](https://github.com/ktwu01/benchmark-radar)**. It helps other eval builders find it.
 
+## Query it locally: CLI and HTTP
+
+Agents and scripts can search the same local data shown by Benchmark Radar without
+scraping the dashboard. Generate the catalog once, then query it from the command
+line:
+
+```bash
+python -m pip install -e '.[dev]'
+benchmark-radar normalize-external
+benchmark-radar search "long-horizon agent benchmark" --scope all --json
+benchmark-radar show opencompass-1248-mmmu --json
+benchmark-radar recent --recommended --json
+benchmark-radar status --json
+```
+
+`catalog` searches the normalized benchmark catalog, `radar` searches the daily
+evidence history, and `all` searches both while keeping their identities separate.
+Search is deterministic lexical/token matching in this version—not embedding-based
+semantic search—and every result explains its matched fields, token coverage, and
+ranking reason. Filters include paper, repository, dataset, openness, modality, and
+source.
+
+The local HTTP API uses exactly the same query service and JSON response contract:
+
+```bash
+benchmark-radar serve --host 127.0.0.1 --port 8765
+curl 'http://127.0.0.1:8765/api/v1/search?q=agent%20benchmark&scope=all'
+```
+
+Available read-only routes are `GET /api/v1/search`,
+`GET /api/v1/benchmarks/<key-or-slug>`, `GET /api/v1/recent`,
+`GET /api/v1/status`, and `GET /healthz`. Both interfaces read generated catalog
+files plus committed daily snapshots from disk; they do not fetch the network during
+a query. MCP and semantic retrieval can be added later without creating a second
+ranking implementation.
+
 ## More
 
 - **Scoring rubric:** [`src/benchmark_radar/rubric.py`](src/benchmark_radar/rubric.py)

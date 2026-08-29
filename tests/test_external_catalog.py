@@ -56,6 +56,20 @@ def test_counts_match_the_declared_snapshot(normalized: dict) -> None:
     assert len(normalized["score_observations"]) == 5544
 
 
+def test_search_index_carries_semantic_source_fields_without_inference(normalized: dict) -> None:
+    # Regression: the first CLI search index omitted all descriptive source
+    # fields, so non-name queries had nothing meaningful to match.
+    from benchmark_radar.external_catalog import build_benchmark_index
+
+    index = build_benchmark_index(normalized["source_records"])
+
+    assert index
+    for row in index:
+        assert isinstance(row["description"], str)
+        assert isinstance(row["categories"], list)
+        assert isinstance(row["languages"], list)
+
+
 def test_obs_id_is_unique(normalized: dict) -> None:
     """Without this a rerun silently duplicates every score row."""
     obs_ids = [row["obs_id"] for row in normalized["score_observations"]]

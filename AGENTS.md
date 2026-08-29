@@ -72,6 +72,17 @@ Applies to `README*`, `docs/**`, `.github/ISSUE_TEMPLATE/**`, `site/**`,
 - Do not squash-merge pull requests.
 - Merge pull requests with a merge commit so Git preserves branch ancestry and recognizes the branch as merged.
 
+## Query surfaces
+
+- `benchmark_radar.query.QueryService` is the single source of truth for local
+  benchmark search, detail lookup, recent evidence, and data health.
+- CLI and HTTP query surfaces must call that service and return the same stable
+  JSON contract. Do not add interface-specific ranking, filtering, identity
+  merging, or silent network fallback.
+- Query responses must state their local data provenance and retrieval mode.
+  Missing or malformed generated artifacts fail visibly with machine-readable
+  errors; they must not be replaced with guessed metadata.
+
 ## Before opening a pull request
 
 - Run the full CI sequence locally and get it passing before opening a PR. Do

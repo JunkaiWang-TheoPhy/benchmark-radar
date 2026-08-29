@@ -51,6 +51,38 @@ SWE-bench Verified 的 saturation 过程。**
 
 如果 Benchmark Radar 帮你节省了研究时间，请 **[给仓库点个 Star](https://github.com/ktwu01/benchmark-radar)**，让更多做评测的人发现它。
 
+## 在本地查询：CLI 和 HTTP
+
+Agent 和脚本不需要抓取 dashboard，也能搜索 Benchmark Radar 的同一份本地数据。
+先生成一次 catalog，然后直接从命令行查询：
+
+```bash
+python -m pip install -e '.[dev]'
+benchmark-radar normalize-external
+benchmark-radar search "long-horizon agent benchmark" --scope all --json
+benchmark-radar show opencompass-1248-mmmu --json
+benchmark-radar recent --recommended --json
+benchmark-radar status --json
+```
+
+`catalog` 搜索标准化 benchmark 目录，`radar` 搜索每日情报历史，`all` 同时搜索
+两者，但不会擅自合并它们的身份。当前版本是可复现的关键词/token 检索，不是基于
+embedding 的 semantic search；每条结果都会说明匹配字段、token 覆盖率和排序理由。
+可以按论文、代码仓库、数据集、开放程度、模态和来源过滤。
+
+本地 HTTP API 与 CLI 复用完全相同的查询服务和 JSON 返回结构：
+
+```bash
+benchmark-radar serve --host 127.0.0.1 --port 8765
+curl 'http://127.0.0.1:8765/api/v1/search?q=agent%20benchmark&scope=all'
+```
+
+只读接口包括 `GET /api/v1/search`、
+`GET /api/v1/benchmarks/<key-or-slug>`、`GET /api/v1/recent`、
+`GET /api/v1/status` 和 `GET /healthz`。CLI 与 HTTP 查询时只读取磁盘上的生成
+catalog 和仓库内每日 snapshots，不会临时访问网络。以后可以再增加 MCP 和 semantic
+retrieval，而不用复制另一套排序逻辑。
+
 ## 更多
 
 - **评分规则：** [`src/benchmark_radar/rubric.py`](src/benchmark_radar/rubric.py)

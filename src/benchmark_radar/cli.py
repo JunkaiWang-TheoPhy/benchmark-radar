@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from .kw_bench_store import STORE_FILENAME as KW_BENCH_STORE_FILENAME
 from .kw_bench_tracks import DEFAULT_BATCH_SIZE
 from .kw_bench_tracks import backfill as backfill_classifications
 from .pipeline import _failure_streak_key, run_pipeline, simulate_backfill
+from .query_cli import QUERY_COMMANDS, run_query_cli
 from .questions import QA_SCHEMA_VERSION, generate_daily_questions
 from .report import render_markdown
 from .snapshots import (
@@ -80,6 +82,9 @@ def load_config(path: Path) -> dict:
 
 
 def main() -> None:
+    if len(sys.argv) > 1 and sys.argv[1] in QUERY_COMMANDS:
+        raise SystemExit(run_query_cli(sys.argv[1:]))
+
     parser = argparse.ArgumentParser(description="Generate a daily AI benchmark and data radar.")
     parser.add_argument(
         "command",
@@ -96,6 +101,7 @@ def main() -> None:
             "authors",
             "social",
             "normalize-external",
+            *sorted(QUERY_COMMANDS),
         ),
         default="run",
         help=(
@@ -107,7 +113,8 @@ def main() -> None:
             "the public profiles of authors behind popular benchmark repositories, "
             "render the daily social post section from the day's evidence and git history, "
             "or normalize the committed aggregator crawl snapshots into the external "
-            "benchmark catalog."
+            "benchmark catalog. Query commands search and inspect those local artifacts "
+            "through the same contract exposed by the local HTTP API."
         ),
     )
     parser.add_argument(
