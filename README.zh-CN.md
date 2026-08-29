@@ -6,7 +6,7 @@
 
 # Benchmark Radar
 
-<!-- 记录数 badge 由数据驱动：每次采集都会根据语料重新生成，因此它反映的是项目实际收集到的数据量 -->
+<!-- 记录数 badge 由数据驱动：每次采集都会根据语料重新生成，因此它反映的是项目实际收集到的数据量；下方开头的来源数量是手工维护的，当 `config.yml` 增删采集 connector、first-party feed 或 Hacker News attention 来源时，需要同步更新该数字 -->
 
 <p align="center">
   <a href="https://benchmark-radar.org/"><img alt="已收集的 benchmark 记录" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fbenchmark-radar.org%2Fdata%2Frecords-badge.json&amp;style=for-the-badge"></a>
@@ -16,7 +16,7 @@
   <a href="https://scholar.google.com/citations?user=s9w1k-cAAAAJ&amp;hl=en"><img alt="Google Scholar" src="https://img.shields.io/badge/Google%20Scholar-4285F4?style=for-the-badge&amp;logo=googlescholar&amp;logoColor=white"></a>
 </p>
 
-做 benchmark 研究的时候发现新东西太多了，所以我搞了这个持续爬虫，每天自动从全网抓新的 benchmark 相关信息。它目前每天从 arXiv、GitHub、Hugging Face、OpenAlex、OpenReview、各家实验室官方 feed、Brave Search、Semantic Scholar、Hacker News 等来源采集，并持续更新。你如果需要寻找 related work 或找到适合eval自己的agent 的 bench 或者关注最新的 eval 进展，可以看这里哈哈哈：
+做 benchmark 研究的时候发现新东西太多了，所以我搞了这个持续爬虫，每天自动从全网抓新的 benchmark 相关信息。它目前每天从 37 个公开来源采集，并持续更新。你如果需要寻找 related work 或找到适合eval自己的agent 的 bench 或者关注最新的 eval 进展，可以看这里哈哈哈：
 github.com/ktwu01/benchmark-radar，每天更新，并支持一键导出数据
 
 **几秒找到一个 benchmark，再看模型成绩如何随时间变化。点击下面的动图，查看
@@ -117,11 +117,11 @@ curl 'http://127.0.0.1:8765/api/v1/search?q=agent%20benchmark&scope=all'
 
 ## 更多
 
-- **评分规则：** [`src/benchmark_radar/rubric.py`](src/benchmark_radar/rubric.py)
-- **模型卡采用数据：** [`data/model_cards.yml`](data/model_cards.yml)
-- **公开语料 schema：** [`docs/cumulative-corpus.schema.json`](docs/cumulative-corpus.schema.json)
-- **引用信息：** [`CITATION.cff`](CITATION.cff)
-- **配置：** [`config.yml`](config.yml)
+- [评分规则](src/benchmark_radar/rubric.py)
+- [模型卡采用数据](data/model_cards.yml)
+- [公开语料 schema](docs/cumulative-corpus.schema.json)
+- [引用信息](CITATION.cff)
+- [配置](config.yml)
 - **开发环境：** `python -m pip install -e '.[dev]' && benchmark-radar normalize-external`
 - **支持 / 反馈：** [提交 issue](https://github.com/ktwu01/benchmark-radar/issues)
 - **联系：** [@ktwu01](https://github.com/ktwu01)
@@ -134,6 +134,8 @@ curl 'http://127.0.0.1:8765/api/v1/search?q=agent%20benchmark&scope=all'
 <img src="assets/wechat-group-qr.jpg" alt="微信群二维码" width="280" />
 
 ## 感谢
+
+每日信息流基于以下公开来源：[arXiv](https://arxiv.org)、[GitHub Search](https://github.com/search)、[GitHub organizations](https://github.com)、[GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)、[Hugging Face datasets and Spaces](https://huggingface.co)、[Hugging Face Papers](https://huggingface.co/papers)、[OpenAlex](https://openalex.org)、[OpenReview](https://openreview.net)、[Kaggle datasets](https://www.kaggle.com/datasets)、[Zenodo](https://zenodo.org)、[Semantic Scholar](https://www.semanticscholar.org)、[Brave Search](https://search.brave.com)、[Hacker News](https://news.ycombinator.com)，以及各家 first-party lab feed：[OpenAI](https://openai.com/news)、[Google AI](https://blog.google/technology/ai/)、[Google DeepMind](https://deepmind.google/blog/)、[Google Research](https://research.google/blog/)、[Meta Research](https://research.facebook.com)、[Microsoft Research](https://www.microsoft.com/en-us/research/)、[AWS Machine Learning](https://aws.amazon.com/blogs/machine-learning/)、[Apple Machine Learning Research](https://machinelearning.apple.com)、[NVIDIA AI Blog](https://blogs.nvidia.com)、[NVIDIA Developer](https://developer.nvidia.com/blog/)、[Hugging Face Blog](https://huggingface.co/blog)、[Ai2](https://allenai.org)、[Mistral AI](https://mistral.ai/news)、[Together AI](https://www.together.ai/blog)、[Sakana AI](https://sakana.ai)、[Qwen](https://qwenlm.github.io/blog/)、[Ollama](https://ollama.com/blog)、[Stability AI](https://stability.ai)、[Nomic AI](https://www.nomic.ai)、[Replicate](https://replicate.com/blog)、[IBM Research](https://research.ibm.com)、[Databricks](https://www.databricks.com)、[LangChain](https://www.langchain.com/blog)、[Meituan Engineering](https://tech.meituan.com)。
 
 前沿模型分数层（包括上方的 SWE-bench Verified 时间线）基于 [LLM Stats](https://llm-stats.com) 采集的 benchmark 数据构建，感谢他们把这些数据公开出来。
 
@@ -169,3 +171,11 @@ curl 'http://127.0.0.1:8765/api/v1/search?q=agent%20benchmark&scope=all'
     <img alt="Benchmark Radar Star 历史图" src="https://raw.githubusercontent.com/ktwu01/benchmark-radar/star-history/assets/star-history.svg" />
   </picture>
 </a>
+
+<details>
+<summary>内部文档</summary>
+
+- [SEO 与索引指南](docs/seo-indexing-guide.md)
+- [Benchmark logo 图库](https://benchmark-radar.org/logos.html)
+
+</details>

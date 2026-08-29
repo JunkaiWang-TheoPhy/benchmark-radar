@@ -8,7 +8,9 @@
 
 <!-- The record-count badge is data-driven: it is regenerated from the corpus on
 every collection, so it states what the project actually holds rather than a
-hand-edited number (issue #197). -->
+hand-edited number (issue #197). The source count in the intro below is
+manually maintained: update it when `config.yml` adds or removes a collection
+connector, a first-party feed, or the Hacker News attention source. -->
 
 <p align="center">
   <a href="https://benchmark-radar.org/"><img alt="Benchmarks collected" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fbenchmark-radar.org%2Fdata%2Frecords-badge.json&amp;style=for-the-badge"></a>
@@ -20,9 +22,7 @@ hand-edited number (issue #197). -->
 
 I kept running into new benchmarks while doing benchmark research, so I built a
 crawler that continuously collects benchmark-related signals from across the
-web. It pulls evidence from arXiv, GitHub, Hugging Face, OpenAlex, OpenReview,
-first-party lab feeds, Brave Search, Semantic Scholar, Hacker News, and more
-every day, and keeps updating.
+web. It pulls evidence from 37 public sources every day, and keeps updating.
 
 **Find a benchmark in seconds, then see how model scores change over time. Click
 the GIF below to watch SWE-bench Verified move toward saturation.**
@@ -131,12 +131,11 @@ maintainer/CI build commands. End users update with `sync`, not with the normali
 
 ## More
 
-- **SEO and indexing:** [`docs/seo-indexing-guide.md`](docs/seo-indexing-guide.md)
-- **Scoring rubric:** [`src/benchmark_radar/rubric.py`](src/benchmark_radar/rubric.py)
-- **Model-card adoption data:** [`data/model_cards.yml`](data/model_cards.yml)
-- **Public corpus schema:** [`docs/cumulative-corpus.schema.json`](docs/cumulative-corpus.schema.json)
-- **Citation metadata:** [`CITATION.cff`](CITATION.cff)
-- **Configuration:** [`config.yml`](config.yml)
+- [Scoring rubric](src/benchmark_radar/rubric.py)
+- [Model-card adoption data](data/model_cards.yml)
+- [Public corpus schema](docs/cumulative-corpus.schema.json)
+- [Citation metadata](CITATION.cff)
+- [Configuration](config.yml)
 - **Developer setup:** `python -m pip install -e '.[dev]' && benchmark-radar normalize-external`
 - **Support / bugs:** [open an issue](https://github.com/ktwu01/benchmark-radar/issues)
 - **Contact:** [@ktwu01](https://github.com/ktwu01)
@@ -149,6 +148,28 @@ Scan the QR code to join the WeChat group for daily benchmark updates and eval d
 <img src="assets/wechat-group-qr.jpg" alt="WeChat group QR code" width="280" />
 
 ## Acknowledgements
+
+The daily evidence feed is built on public data from [arXiv](https://arxiv.org),
+[GitHub Search](https://github.com/search), [GitHub organizations](https://github.com),
+[GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases),
+[Hugging Face datasets and Spaces](https://huggingface.co), [Hugging Face Papers](https://huggingface.co/papers),
+[OpenAlex](https://openalex.org), [OpenReview](https://openreview.net),
+[Kaggle datasets](https://www.kaggle.com/datasets), [Zenodo](https://zenodo.org),
+[Semantic Scholar](https://www.semanticscholar.org), [Brave Search](https://search.brave.com),
+and [Hacker News](https://news.ycombinator.com), plus first-party lab feeds from
+[OpenAI](https://openai.com/news), [Google AI](https://blog.google/technology/ai/),
+[Google DeepMind](https://deepmind.google/blog/), [Google Research](https://research.google/blog/),
+[Meta Research](https://research.facebook.com), [Microsoft Research](https://www.microsoft.com/en-us/research/),
+[AWS Machine Learning](https://aws.amazon.com/blogs/machine-learning/),
+[Apple Machine Learning Research](https://machinelearning.apple.com),
+[NVIDIA AI Blog](https://blogs.nvidia.com), [NVIDIA Developer](https://developer.nvidia.com/blog/),
+[Hugging Face Blog](https://huggingface.co/blog), [Ai2](https://allenai.org),
+[Mistral AI](https://mistral.ai/news), [Together AI](https://www.together.ai/blog),
+[Sakana AI](https://sakana.ai), [Qwen](https://qwenlm.github.io/blog/),
+[Ollama](https://ollama.com/blog), [Stability AI](https://stability.ai),
+[Nomic AI](https://www.nomic.ai), [Replicate](https://replicate.com/blog),
+[IBM Research](https://research.ibm.com), [Databricks](https://www.databricks.com),
+[LangChain](https://www.langchain.com/blog), and [Meituan Engineering](https://tech.meituan.com).
 
 The frontier-model score layer, including the SWE-bench Verified timeline above,
 is built on benchmark data collected by [LLM Stats](https://llm-stats.com).
@@ -186,3 +207,11 @@ See [`CITATION.cff`](CITATION.cff) for machine-readable citation metadata.
     <img alt="Benchmark Radar star history chart" src="https://raw.githubusercontent.com/ktwu01/benchmark-radar/star-history/assets/star-history.svg" />
   </picture>
 </a>
+
+<details>
+<summary>Internal documentation</summary>
+
+- [SEO and indexing guide](docs/seo-indexing-guide.md)
+- [Benchmark logo gallery](https://benchmark-radar.org/logos.html)
+
+</details>
