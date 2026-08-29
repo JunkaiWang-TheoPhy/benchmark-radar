@@ -58,6 +58,7 @@ If Benchmark Radar saves you research time, **[star the repository](https://gith
 
 ## More
 
+- **SEO and indexing:** [`docs/seo-indexing-guide.md`](docs/seo-indexing-guide.md)
 - **Scoring rubric:** [`src/benchmark_radar/rubric.py`](src/benchmark_radar/rubric.py)
 - **Model-card adoption data:** [`data/model_cards.yml`](data/model_cards.yml)
 - **Public corpus schema:** [`docs/cumulative-corpus.schema.json`](docs/cumulative-corpus.schema.json)
