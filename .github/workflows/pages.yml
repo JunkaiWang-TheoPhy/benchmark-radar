@@ -144,9 +144,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if ! gh release view cli-data --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            # --latest=false keeps this rolling data drop out of the "Latest"
+            # slot. GitHub picks the latest release by creation date, so without
+            # it a data upload would displace the newest versioned release in
+            # the repository sidebar and at /releases/latest.
             gh release create cli-data \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
+              --latest=false \
               --title "Benchmark Radar CLI data" \
               --notes "Checksummed data used by benchmark-radar init and sync."
           fi

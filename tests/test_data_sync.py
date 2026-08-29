@@ -196,6 +196,8 @@ def test_deploy_and_ci_build_the_downloadable_release_after_its_inputs() -> None
             < workflow.index("benchmark-radar build-data-release")
         )
     assert "gh release upload cli-data" in pages
+    # The rolling data drop must never take the "Latest" slot from a versioned release.
+    assert "--latest=false" in pages
     assert "needs: [build, publish-cli-data]" in pages
     assert (
         pages.index("Upload CLI data release for publishing")
