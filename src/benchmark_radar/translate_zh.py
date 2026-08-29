@@ -4,8 +4,10 @@ Issue #231: the dashboard's interface chrome (labels, buttons, help text) is
 translated in the browser through the I18N table in site/assets/app.js, but the
 daily briefing and the Q&A answers are model prose generated at runtime, so a
 Chinese reader toggling the interface still saw English paragraphs. This module
-translates that prose on the same run that generates it, one extra OpenAI call
-each for the briefing and for the Q&A answers.
+translates that prose on the same run that generates it, normally with one
+extra OpenAI call each for the briefing and for the Q&A answers. An unsafe Q&A
+translation gets one fresh validation attempt before the Chinese fields are
+omitted.
 
 The English text is the source of truth: it was validated against the evidence
 packet and the stat registry before this module runs. Translation therefore
@@ -53,6 +55,10 @@ MIN_ZH_REASONING_HEADROOM_TOKENS = 25_000
 MAX_BULLET_CHARS = 2_100
 MAX_ZH_CAVEAT_CHARS = 1_400
 MAX_ZH_ANSWER_CHARS = 900
+# A structurally valid model response can still fail the grounding pass. One
+# fresh call is cheap compared with dropping the entire Chinese Q&A rendering,
+# and the 2026-08-29 run showed that this class of error is transient.
+MAX_ZH_VALIDATION_ATTEMPTS = 2
 
 _ZH_INSTRUCTIONS = (
     "Role: You are the translator for the AI Benchmark Radar dashboard.\n\n"
@@ -67,7 +73,9 @@ _ZH_INSTRUCTIONS = (
     "decimals, percentages, and thousands separators (-5%, 3, 20, 40, 12.5, 40%, "
     "4,000). Never write a quantity "
     "with a Chinese numeral such as 三 or 二十. The translated prose must contain "
-    "exactly the same Arabic digit runs as the English.\n"
+    "exactly the same Arabic digit runs as the English. Do not turn an English "
+    "number word or ordinal into Arabic digits: translate 'first' as '首次', not "
+    "'第1', and 'one item' as '一个条目', not '1个条目'.\n"
     "3. For briefing bullets, keep the English structural markers exactly as written: "
     'the phrases "Why it matters:" and "Evidence:", and the trailing confidence '
     'phrase such as "High confidence." or "Medium confidence.". Translate only the '
@@ -189,10 +197,12 @@ def _check_grounding(en_text: str, zh_text: str, field: str) -> None:
     """Reject a translation that dropped, renamed, or changed an id or a number."""
     if set(_ID_TOKEN.findall(en_text)) != set(_ID_TOKEN.findall(zh_text)):
         raise BriefingError(f"zh translation of {field} dropped or changed an E###/S### id")
-    if _digit_runs(en_text) != _digit_runs(zh_text):
+    expected_digits = _digit_runs(en_text)
+    actual_digits = _digit_runs(zh_text)
+    if expected_digits != actual_digits:
         raise BriefingError(
             f"zh translation of {field} changed a quantity; every Arabic digit "
-            "must survive verbatim"
+            f"must survive verbatim (expected {expected_digits!r}, got {actual_digits!r})"
         )
 
 
@@ -300,7 +310,7 @@ def translate_answers_to_zh(
     *,
     model: str = DEFAULT_BRIEFING_MODEL,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Translate every prose field of one day's answers in a single call.
+    """Translate every prose field of one day's answers as one batch.
 
     Returns (zh answers aligned to the input by position, provenance). Raises
     BriefingError on a count, shape, or grounding violation.
@@ -318,36 +328,54 @@ def translate_answers_to_zh(
                 },
             }
         )
-    parsed, meta = _translate(
-        {"answers": en_answers},
-        _ANSWERS_ZH_SCHEMA,
-        "daily_radar_answers_zh",
-        api_key,
-        model,
-    )
-    raw = parsed.get("answers_zh") or []
-    if len(raw) != len(en_answers):
-        raise BriefingError("zh translation returned the wrong number of answers")
-    try:
-        by_index = {int(item.get("index")): item for item in raw}
-    except (TypeError, ValueError) as error:
-        raise BriefingError("zh translation returned a malformed answer index") from error
-    translated: list[dict[str, Any]] = []
-    for index, en_answer in enumerate(en_answers):
-        item = by_index.get(index)
-        if not isinstance(item, dict):
-            raise BriefingError("zh translation returned a malformed answer")
-        zh_answer: dict[str, Any] = {"index": index}
-        for en_field, zh_field in _ANSWER_FIELD_PAIRS:
-            en_value = en_answer[en_field]
-            if not en_value:
-                # Nothing to translate; leave the zh field absent so the
-                # dashboard falls back to the (empty) English field.
+    total_usage: dict[str, int] = {}
+    for attempt in range(MAX_ZH_VALIDATION_ATTEMPTS):
+        parsed, meta = _translate(
+            {"answers": en_answers},
+            _ANSWERS_ZH_SCHEMA,
+            "daily_radar_answers_zh",
+            api_key,
+            model,
+        )
+        for key, value in meta["usage"].items():
+            total_usage[key] = total_usage.get(key, 0) + value
+
+        try:
+            raw = parsed.get("answers_zh") or []
+            if len(raw) != len(en_answers):
+                raise BriefingError("zh translation returned the wrong number of answers")
+            try:
+                by_index = {int(item.get("index")): item for item in raw}
+            except (AttributeError, TypeError, ValueError) as error:
+                raise BriefingError("zh translation returned a malformed answer index") from error
+            translated: list[dict[str, Any]] = []
+            for index, en_answer in enumerate(en_answers):
+                item = by_index.get(index)
+                if not isinstance(item, dict):
+                    raise BriefingError("zh translation returned a malformed answer")
+                zh_answer: dict[str, Any] = {"index": index}
+                for en_field, zh_field in _ANSWER_FIELD_PAIRS:
+                    en_value = en_answer[en_field]
+                    if not en_value:
+                        # Nothing to translate; leave the zh field absent so
+                        # the dashboard falls back to the empty English field.
+                        continue
+                    value = _require_zh_text(
+                        item.get(zh_field), field=zh_field, max_chars=MAX_ZH_ANSWER_CHARS
+                    )
+                    _check_grounding(en_value, value, zh_field)
+                    zh_answer[zh_field] = value
+                translated.append(zh_answer)
+        except BriefingError:
+            if attempt + 1 < MAX_ZH_VALIDATION_ATTEMPTS:
                 continue
-            value = _require_zh_text(
-                item.get(zh_field), field=zh_field, max_chars=MAX_ZH_ANSWER_CHARS
-            )
-            _check_grounding(en_value, value, zh_field)
-            zh_answer[zh_field] = value
-        translated.append(zh_answer)
-    return translated, meta
+            raise
+
+        # The usage record includes the rejected call as well as the accepted
+        # retry, so cost provenance remains honest when recovery was needed.
+        meta["usage"] = total_usage
+        if attempt:
+            meta["validation_retries"] = attempt
+        return translated, meta
+
+    raise AssertionError("unreachable zh translation attempt loop")

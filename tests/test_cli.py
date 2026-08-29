@@ -432,6 +432,21 @@ def test_pages_rebuilds_when_any_package_module_changes():
     assert "src/benchmark_radar/**" in paths
 
 
+def test_pages_custom_domain_stays_on_the_actions_artifact():
+    """A root CNAME switches Pages toward a legacy main:/ deployment, but the
+    only complete website artifact is the site/ directory built by Actions."""
+    assert not Path("CNAME").exists()
+
+    workflow = yaml.safe_load(Path(".github/workflows/pages.yml").read_text(encoding="utf-8"))
+    build_steps = workflow["jobs"]["build"]["steps"]
+    upload = next(
+        step
+        for step in build_steps
+        if step.get("uses", "").startswith("actions/upload-pages-artifact@")
+    )
+    assert upload["with"]["path"] == "site/"
+
+
 def test_daily_radar_persists_only_a_fresh_target_day_snapshot():
     """A queued run must not overlay its full, potentially stale history."""
     workflow_path = Path(".github/workflows/daily-radar.yml")

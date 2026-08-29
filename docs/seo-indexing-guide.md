@@ -1,9 +1,9 @@
 # SEO and indexing guide
 
-Benchmark Radar is not ready to submit to search engines yet. The first job is
-to make `https://benchmark-radar.org/` the one reliable public address. Search
-engines can index the site after that; submitting an HTTP site with a broken
-HTTPS certificate and an old-domain sitemap sends conflicting signals.
+Benchmark Radar now has one reliable public address:
+`https://benchmark-radar.org/`. HTTPS, redirects, crawler files, and canonical
+metadata passed the August 29 checks below, so search-engine setup can proceed
+without sending conflicting domain signals.
 
 ## Live status
 
@@ -12,33 +12,38 @@ Last checked: **August 29, 2026**.
 | Check | Live result | What to do |
 | --- | --- | --- |
 | DNS | Apex points to GitHub Pages; `www` points to `ktwu01.github.io` | Keep it |
-| GitHub Pages domain | `benchmark-radar.org` is registered and verified | Keep it |
-| HTTPS | **Blocked:** the server presents a `*.github.io` certificate | Re-provision the certificate, then enforce HTTPS |
-| HTTP redirect | **Blocked:** the apex returns `200` over HTTP | Redirect every HTTP request to HTTPS |
-| `robots.txt` | **Stale:** its sitemap URL uses `koutian.is-a.dev` | Deploy the current source |
-| `sitemap.xml` | **Stale:** all four URLs use `koutian.is-a.dev` | Regenerate and deploy it |
-| Page metadata | The repository source uses the new canonical domain | Deploy and verify the rendered page |
+| GitHub Pages domain | `benchmark-radar.org` is verified and publishing through GitHub Actions | Keep the publishing source on **GitHub Actions** |
+| HTTPS | **Passing:** certificate approved and HTTPS enforced | Keep it |
+| HTTP redirect | **Passing:** apex HTTP redirects to the HTTPS apex | Keep it |
+| `www` redirect | **Passing:** HTTPS `www` redirects to the HTTPS apex | Keep it |
+| `robots.txt` | **Current:** sitemap uses `benchmark-radar.org` | Keep it |
+| `sitemap.xml` | **Current:** all four URLs use `benchmark-radar.org` | Keep it |
+| Page metadata | **Current:** canonical and `og:url` use the HTTPS apex | Keep it |
 
 Re-run the checks below after any DNS or Pages change. The table is a dated
 snapshot, not a substitute for the live result.
 
 ## Fastest path to indexing
 
-### 1. Fix HTTPS before submitting anything
+### 1. Keep workflow publishing and HTTPS healthy
 
-In the GitHub repository, open **Settings → Pages**:
+In the GitHub repository, open **Settings → Pages** and confirm:
 
-1. Set the custom domain to `benchmark-radar.org` and save it.
-2. If it is already saved but the certificate is still wrong, remove the
-   custom domain, save, then add it again. This asks GitHub Pages to provision
-   the certificate again. GitHub says certificate and DNS changes can take up
-   to 24 hours.
-3. When it becomes available, enable **Enforce HTTPS**.
-4. If a CAA DNS record exists, make sure it permits `letsencrypt.org`.
+1. **Source** is set to **GitHub Actions**, not a branch and folder.
+2. The custom domain is `benchmark-radar.org`.
+3. **Enforce HTTPS** remains enabled.
 
 This project deploys with a custom GitHub Actions workflow, so it does not need
 a committed `CNAME` file. The domain configured in **Settings → Pages** is the
 important setting.
+
+On August 29, 2026, a root-level `CNAME` commit triggered a legacy deployment
+from `main:/`. That source has no root `index.html` because the real artifact is
+built from `site/`, so the successful legacy deployment replaced the dashboard
+with a 404. Switching the publishing source back to GitHub Actions and rerunning
+`.github/workflows/pages.yml` restored the site. Do not restore the root
+`CNAME`; if a deployment succeeds but the public URL returns 404, check the
+publishing source before changing DNS or the certificate.
 
 Verify the result:
 
