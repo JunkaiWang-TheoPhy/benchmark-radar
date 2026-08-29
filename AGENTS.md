@@ -89,6 +89,9 @@ Applies to `README*`, `docs/**`, `.github/ISSUE_TEMPLATE/**`, `site/**`,
 - Pages publishes one complete checksummed CLI bundle via
   `build-data-release`. Sync validates it before atomically switching state and
   removes old versions only after the new version is active.
+- The public consumer Skill lives at `skills/benchmark-radar/SKILL.md`. Keep it
+  purpose-neutral and limited to routing user intent through consumer CLI
+  commands; do not make maintainer build commands part of its normal workflow.
 
 ## Before opening a pull request
 

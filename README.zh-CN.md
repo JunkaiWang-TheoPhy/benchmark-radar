@@ -83,6 +83,15 @@ benchmark-radar sync
 `sync --json`，随后调用 `search --json` 和 `show --json`；`--json` 是稳定的机器输出，
 不加时则输出适合人阅读的文本。
 
+Agent 可以从本仓库安装这个可选、用途无关的 CLI 使用 Skill：
+
+```bash
+npx skills add ktwu01/benchmark-radar --skill benchmark-radar
+```
+
+Skill 只根据用户当前请求选择 CLI 命令，不预设结果是用于科研、评测设计、模型选择，
+还是其他工作。
+
 `catalog` 搜索标准化 benchmark 目录，`radar` 搜索每日情报历史，`all` 同时搜索
 两者，但不会擅自合并它们的身份。当前版本是可复现的关键词/token 检索，不是基于
 embedding 的 semantic search；每条结果都会说明匹配字段、token 覆盖率和排序理由。

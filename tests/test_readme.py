@@ -10,6 +10,7 @@ from benchmark_radar.snapshots import rebuild_dashboard, records_badge, write_sn
 
 README = Path("README.md")
 README_ZH = Path("README.zh-CN.md")
+SKILL = Path("skills/benchmark-radar/SKILL.md")
 
 
 def _run(day: int) -> RadarRun:
@@ -106,3 +107,12 @@ def test_readmes_separate_consumer_sync_from_maintainer_normalization():
         assert "benchmark-radar sync" in text
         assert "~/.benchmark-radar" in text
         assert "build-data-release" in text
+
+
+def test_readmes_expose_the_installable_consumer_skill():
+    # Regression: a repository-local Skill is not discoverable to users unless
+    # the public README provides the real Skills CLI installation path.
+    command = "npx skills add ktwu01/benchmark-radar --skill benchmark-radar"
+    assert SKILL.exists()
+    assert command in README.read_text(encoding="utf-8")
+    assert command in README_ZH.read_text(encoding="utf-8")

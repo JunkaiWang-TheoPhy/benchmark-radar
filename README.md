@@ -92,6 +92,16 @@ once at the start of benchmark research, then use `search --json` and `show --js
 `--json` selects the stable machine-readable output, while the default output is
 for people.
 
+Agents can install the optional, purpose-neutral CLI guide from this repository:
+
+```bash
+npx skills add ktwu01/benchmark-radar --skill benchmark-radar
+```
+
+The Skill chooses among the CLI commands from the user's request; it does not assume
+whether the results are for research, evaluation design, model selection, or another
+workflow.
+
 `catalog` searches the normalized benchmark catalog, `radar` searches the daily
 evidence history, and `all` searches both while keeping their identities separate.
 Search is deterministic lexical/token matching in this version—not embedding-based
