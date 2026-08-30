@@ -52,17 +52,54 @@
          runs; app.js rewrites it per view on navigation. -->
     <link rel="canonical" href="https://benchmark-radar.org/">
 
-    <!-- Structured data for the two things this project actually is: a
-         searchable site and a dataset. The SearchAction target is the real
-         search endpoint (the leaderboard's lq filter), not a pretend one, so
-         a search result lands on a page that answers it. -->
+    <!-- Structured data for the three things this project actually is: a
+         named publisher, a searchable site, and a dataset. Each block is one
+         object with one @type rather than an @graph array, because that is the
+         shape the structured-data validators and tests/test_site_seo.py both
+         read. The @id values are what let the three cross-reference each
+         other instead of describing three unrelated entities.
+
+         The SearchAction target is the real search endpoint (the leaderboard's
+         lq filter), not a pretend one, so a search result lands on a page that
+         answers it. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "@id": "https://benchmark-radar.org/#organization",
+        "name": "Benchmark Radar",
+        "url": "https://benchmark-radar.org/",
+        "description": "Benchmark Radar tracks new AI benchmarks and evaluations daily and publishes the collection as an open, evidence-linked dataset.",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://benchmark-radar.org/icon.svg",
+          "caption": "Benchmark Radar"
+        },
+        "image": "https://benchmark-radar.org/assets/og-card.png",
+        "founder": {
+          "@type": "Person",
+          "name": "Koutian Wu",
+          "url": "https://github.com/ktwu01"
+        },
+        "sameAs": [
+          "https://github.com/ktwu01/benchmark-radar",
+          "https://x.com/ktwu01",
+          "https://www.linkedin.com/in/ktwu01",
+          "https://scholar.google.com/citations?user=s9w1k-cAAAAJ&hl=en"
+        ]
+      }
+    </script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "WebSite",
+        "@id": "https://benchmark-radar.org/#website",
         "name": "Benchmark Radar",
+        "alternateName": "Benchmark Radar: AI Benchmark Tracker &amp; Dataset",
         "url": "https://benchmark-radar.org/",
         "description": "An evidence-linked tracker and open dataset for new AI benchmarks, model-card adoption, reported scores, and evaluation trends.",
+        "inLanguage": ["en", "zh-Hans"],
+        "publisher": { "@id": "https://benchmark-radar.org/#organization" },
         "sameAs": "https://github.com/ktwu01/benchmark-radar",
         "potentialAction": {
           "@type": "SearchAction",
@@ -95,12 +132,40 @@
           "name": "Koutian Wu",
           "url": "https://github.com/ktwu01"
         },
+        "publisher": { "@id": "https://benchmark-radar.org/#organization" },
+        "isPartOf": { "@id": "https://benchmark-radar.org/#website" },
+        "includedInDataCatalog": {
+          "@type": "DataCatalog",
+          "name": "Benchmark Radar",
+          "url": "https://benchmark-radar.org/benchmarks/"
+        },
+        "measurementTechnique": "Daily automated collection from public APIs and feeds, with every record linked to the document it was read from.",
+        "temporalCoverage": "2026-07-23/..",
         "sameAs": "https://github.com/ktwu01/benchmark-radar",
         "distribution": [
           {
             "@type": "DataDownload",
+            "name": "Complete daily corpus",
             "encodingFormat": "application/json",
             "contentUrl": "https://benchmark-radar.org/data/radar.json"
+          },
+          {
+            "@type": "DataDownload",
+            "name": "Benchmark index",
+            "encodingFormat": "application/json",
+            "contentUrl": "https://benchmark-radar.org/data/benchmark-index.json"
+          },
+          {
+            "@type": "DataDownload",
+            "name": "Model Card Adoption Rank",
+            "encodingFormat": "application/json",
+            "contentUrl": "https://benchmark-radar.org/data/leaderboard.json"
+          },
+          {
+            "@type": "DataDownload",
+            "name": "Model Card Adoption Rank (CSV)",
+            "encodingFormat": "text/csv",
+            "contentUrl": "https://benchmark-radar.org/data/leaderboard.csv"
           }
         ]
       }
@@ -126,7 +191,7 @@
     <a class="skip-link" href="#main-content" data-i18n="Skip to content">Skip to content</a>
 
     <header class="masthead">
-      <a class="brand" href="./" aria-label="Benchmark Radar home">
+      <a class="brand" href="https://benchmark-radar.org/" aria-label="Benchmark Radar home">
         <span class="brand-mark" aria-hidden="true">
           <span></span>
         </span>
@@ -135,7 +200,7 @@
       <div class="masthead-end" aria-label="Site utilities" data-i18n-aria="Site utilities">
         <a
           class="repo-badge feed-badge"
-          href="feed.xml"
+          href="https://benchmark-radar.org/feed.xml"
           title="Subscribe to Benchmark Radar via RSS"
           aria-label="Subscribe to Benchmark Radar via RSS"
           data-i18n-title="Subscribe to Benchmark Radar via RSS"
@@ -256,15 +321,16 @@
 
     <nav class="view-nav" aria-label="Dashboard views" data-i18n-aria="Dashboard views">
       <button type="button" data-view="today" aria-controls="today-view" data-i18n="Today">Today</button>
-      <!-- The three non-default views are real anchors, not buttons: crawlers
-         do not follow buttons, and without hrefs the site reported zero
-         internal links. app.js intercepts the click so navigation stays
-         client-side; the href is the same canonical URL the view writes. -->
-      <a href="?view=leaderboard" data-view="leaderboard" aria-controls="leaderboard-view" data-i18n="Leaderboard">
+      <!-- The non-default views are real anchors, not buttons: crawlers do not
+         follow buttons, and without hrefs the site reported zero internal
+         links. app.js intercepts the click so navigation stays client-side;
+         the href is the same canonical URL the view writes, absolute so link
+         analyzers count it as internal. -->
+      <a href="https://benchmark-radar.org/?view=leaderboard" data-view="leaderboard" aria-controls="leaderboard-view" data-i18n="Leaderboard">
         Leaderboard
       </a>
-      <a href="?view=trends" data-view="trends" aria-controls="trends-view" data-i18n="Trends">Trends</a>
-      <a href="?view=map" data-view="map" aria-controls="map-view" data-i18n="Explore">Explore</a>
+      <a href="https://benchmark-radar.org/?view=trends" data-view="trends" aria-controls="trends-view" data-i18n="Trends">Trends</a>
+      <a href="https://benchmark-radar.org/?view=map" data-view="map" aria-controls="map-view" data-i18n="Explore">Explore</a>
       <button
         type="button"
         id="rubric-nav"
