@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "title": "Benchmark Radar: System and Data Evaluation",
+    "title": "Benchmark Radar v0.9.0: Technical Report",
     "upload_type": "publication",
     "publication_type": "report",
     "publication_date": "2026-08-29",
-    "description": "System and data evaluation for Benchmark Radar v0.9.0, a daily evidence-linked monitor, searchable benchmark catalog, model-card adoption registry, and protocol-aware score archive. Through 29 August 2026, the cumulative corpus contains 7,540 source observations covering 4,537 unique artifacts across 37 snapshots. The web search surface reaches 1,242 entries across four search sources: 1,173 external catalog records and 69 curated score-tracked benchmarks. The report audits the full pipeline, all 37 public collection sources, query surfaces, existing reports, count definitions, evidence quality, and known limits.",
+    "description": "Benchmark Radar v0.9.0 collects new AI benchmark papers, repositories, datasets, and model reports from 37 public sources. This report follows the pipeline from collection through catalog search, model-card adoption, and score history. At the 29 August 2026 cutoff, the cumulative corpus holds 7,540 source observations for 4,537 artifacts across 37 snapshots. Web search covers 1,242 entries: 1,173 external catalog records and 69 curated score tracks.",
     "creators": [
       {
         "name": "Wu, Koutian"
@@ -12,7 +12,7 @@
     ],
     "access_right": "open",
     "license": "cc-by-4.0",
-    "version": "1.0",
+    "version": "0.9.0",
     "keywords": [
       "AI benchmarks",
       "model evaluation",

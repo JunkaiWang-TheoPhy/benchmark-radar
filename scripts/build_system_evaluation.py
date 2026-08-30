@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the comprehensive Benchmark Radar system and data evaluation."""
 
-# ReportLab prose is intentionally kept as readable source text.
+# Keep ReportLab prose as readable source text.
 # ruff: noqa: E501
 
 from __future__ import annotations
@@ -147,7 +147,7 @@ def pipeline_figure() -> Drawing:
     boxes = [
         ("DISCOVER", "37 public sources"),
         ("VALIDATE", "health + schema"),
-        ("RESOLVE", "exact IDs only"),
+        ("RESOLVE", "exact identifiers"),
         ("INTERPRET", "taxonomy + rubric"),
         ("PUBLISH", "web, RSS, JSON"),
         ("QUERY", "offline CLI + HTTP"),
@@ -191,7 +191,7 @@ def pipeline_figure() -> Drawing:
         String(
             246,
             6,
-            "Snapshots remain canonical; derived products are rebuilt deterministically.",
+            "The same snapshots and code produce the same derived files.",
             fontName=ITALIC,
             fontSize=6.9,
             fillColor=MUTED,
@@ -246,9 +246,9 @@ class EvaluationDoc(BaseDocTemplate):
             leftMargin=MARGIN_X,
             topMargin=0.58 * inch,
             bottomMargin=0.58 * inch,
-            title="Benchmark Radar: System and Data Evaluation",
+            title="Benchmark Radar v0.9.0: Technical Report",
             author="Koutian Wu",
-            subject="Benchmark Radar technical report, version 1.0",
+            subject="Benchmark Radar technical report, version 0.9.0",
             keywords="AI benchmarks, evaluation, research software, data provenance, model cards",
         )
         self.doi = doi
@@ -275,7 +275,7 @@ class EvaluationDoc(BaseDocTemplate):
         canvas.drawString(
             MARGIN_X,
             0.22 * inch,
-            f"Benchmark Radar System and Data Evaluation v1.0  |  DOI: {self.doi}",
+            f"Benchmark Radar v0.9.0 Technical Report  |  DOI: {self.doi}",
         )
         canvas.drawRightString(PAGE_W - MARGIN_X, 0.22 * inch, str(doc.page))
         canvas.restoreState()
@@ -290,7 +290,7 @@ def story(doi: str) -> list:
         [
             Spacer(1, 0.18 * inch),
             p(
-                "TECHNICAL REPORT  |  SYSTEM AND DATA EVALUATION  |  VERSION 1.0",
+                "TECHNICAL REPORT  |  BENCHMARK RADAR v0.9.0",
                 ParagraphStyle(
                     "Kicker",
                     parent=st["meta"],
@@ -300,9 +300,9 @@ def story(doi: str) -> list:
                     spaceAfter=9,
                 ),
             ),
-            p("Benchmark Radar", st["title"]),
+            p("Benchmark Radar v0.9.0", st["title"]),
             p(
-                "What the pipeline covers, what the numbers mean, and where its evidence stops",
+                "From daily collection to benchmark search and score history",
                 st["subtitle"],
             ),
             p("Koutian Wu", st["author"]),
@@ -318,7 +318,7 @@ def story(doi: str) -> list:
                 [
                     [
                         p(
-                            "The useful result is not one giant benchmark count. Benchmark Radar exposes four evidence layers, each answering a different question: what appeared today, what can be found in catalog search, what vendors report, and which score points are actually comparable.",
+                            "Benchmark Radar brings daily discoveries, catalog search, vendor reporting, and sourced model scores into one place. Each layer keeps its own count because each records a different kind of evidence.",
                             st["callout"],
                         )
                     ]
@@ -338,24 +338,24 @@ def story(doi: str) -> list:
             Spacer(1, 0.16 * inch),
             p("Executive findings", st["section"]),
             bullet(
-                "<b>Coverage is broad but not a census.</b> The daily system monitors 37 public endpoints and the search surface reaches 1,242 entries, yet private, unindexed, deleted, and stale artifacts remain outside the observable frame.",
+                "<b>Search covers 1,242 entries.</b> Three external catalogs supply 1,173 rows. The curated score archive adds 69 benchmark tracks.",
                 st["body"],
             ),
             bullet(
-                "<b>Provenance is the strongest part of the system.</b> 7,523 of 7,540 cumulative observations, or 99.77%, came from primary or structured sources; every published record keeps its source URL and retrieval metadata.",
+                "<b>The daily corpus holds 7,540 observations for 4,537 artifacts.</b> Primary or structured sources supplied 7,523 observations, and each record keeps its source URL and retrieval metadata.",
                 st["body"],
             ),
             bullet(
-                "<b>The count contract must stay visible.</b> The 1,242-search total is 1,173 external catalog rows plus 69 curated score-tracked benchmarks. It is not the same population as 4,537 cumulative artifacts or 94 benchmarks in the adoption registry.",
+                "<b>Thirty-six model reports cover 94 curated benchmarks.</b> The same documents supply 285 scores across 69 benchmark tracks when the report includes a readable value and evaluation setup.",
                 st["body"],
             ),
             bullet(
-                "<b>The main gaps are measurable.</b> Four of 37 snapshots are simulated, only 41 of 4,537 artifacts have evidence from more than one normalized source, and all 4,129 KW-Bench tracks remain unclassified in this release.",
+                "<b>Identity and task classification need more work.</b> Forty-one artifacts link across multiple sources. KW-Bench has produced 4,129 tracks, with classification still empty in v0.9.0.",
                 st["body"],
             ),
             p("Abstract", st["subsection"]),
             p(
-                "Benchmark Radar is a daily evidence-linked monitor, searchable benchmark catalog, model-card adoption registry, and protocol-aware score archive. This evaluation audits the README promises, collection and normalization pipeline, public reports, source coverage, query surfaces, and generated artifacts. It finds a well-tested, reproducible publication pipeline with explicit provenance guardrails, alongside limits in source availability, cross-source identity resolution, semantic retrieval, protocol completeness, and task-level classification. Counts are stated by unit so a discovery feed is not mistaken for the total benchmark market.",
+                "Benchmark Radar collects benchmark work from 37 public sources and publishes it through a dashboard, RSS, JSON, and an offline client. This report checks the full path from collection to search. It covers source health, exact-identifier matching, the ranking rubric, the 1,242-entry search index, model-card adoption, score histories, and the reports already in the repository. The system has strong provenance and reproducible builds. Cross-source matching, protocol capture, semantic search, and KW-Bench classification remain active work.",
                 st["body"],
             ),
         ]
@@ -364,60 +364,60 @@ def story(doi: str) -> list:
     story.extend(
         [
             PageBreak(),
-            p("1. What a reader can do", st["section"]),
+            p("1. Product tour", st["section"]),
             p(
-                "The README leads with the user task: find a benchmark quickly, then inspect model-card adoption and score movement. The dashboard and RSS feed are the primary reading surfaces; JSON, the local CLI, and the local HTTP API are the reproducible research surfaces.",
+                "The README leads with the user task: find a benchmark in seconds, then inspect model-card adoption and score movement. The dashboard and RSS feed serve readers. JSON, the local CLI, and the local HTTP API support reproducible research.",
                 st["body"],
             ),
             search_surface(st),
             Spacer(1, 7),
-            p("1.1 Why the search says 1,242 benchmarks · 4 sources", st["subsection"]),
+            p("1.1 Search coverage", st["subsection"]),
             table(
                 [
                     [
                         p("Search layer", st["table_header"]),
                         p("Rows", st["table_header"]),
-                        p("Contribution", st["table_header"]),
-                        p("Trust boundary", st["table_header"]),
+                        p("Best field", st["table_header"]),
+                        p("Score data", st["table_header"]),
                     ],
                     [
                         p("LLM Stats", st["small_bold"]),
                         p("687", st["small"]),
-                        p("Names and 5,544 score rows.", st["small"]),
-                        p("Aggregator scores lack full protocols.", st["small"]),
+                        p("Benchmark names and descriptions", st["small"]),
+                        p("5,544 rows; evaluation setup is sparse", st["small"]),
                     ],
                     [
                         p("OpenCompass Hub", st["small_bold"]),
                         p("461", st["small"]),
-                        p("Paper, repo, publisher, release, dataset links.", st["small"]),
-                        p("Identity leads; publisher may not be creator.", st["small"]),
+                        p("Paper, repository, release, and dataset links", st["small"]),
+                        p("Historical leaderboards stay source-labelled", st["small"]),
                     ],
                     [
                         p("Artificial Analysis", st["small_bold"]),
                         p("25", st["small"]),
-                        p("Current catalog and 7,050 score rows.", st["small"]),
-                        p("Aggregator series stay outside curated scores.", st["small"]),
+                        p("Current commercial evaluation catalog", st["small"]),
+                        p("7,050 third-party rows", st["small"]),
                     ],
                     [
                         p("Curated score tracks", st["small_bold"]),
                         p("69", st["small"]),
-                        p("Benchmarks with cited score records.", st["small"]),
-                        p("Instrument + protocol govern joins.", st["small"]),
+                        p("Scores read from primary model reports", st["small"]),
+                        p("285 rows with instrument and protocol fields", st["small"]),
                     ],
                     [
-                        p("Displayed total", st["small_bold"]),
+                        p("Search box", st["small_bold"]),
                         p("1,242", st["small_bold"]),
-                        p("1,173 external + 69 curated rows.", st["small_bold"]),
-                        p("Reach count, not a deduplicated census.", st["small_bold"]),
+                        p("All four layers in one index", st["small_bold"]),
+                        p("Source label shown on every result", st["small_bold"]),
                     ],
                 ],
                 [1.35 * inch, 0.55 * inch, 2.25 * inch, 2.45 * inch],
             ),
             p(
-                "The four sources beside the search box are search layers, not the 37 collection endpoints. External records stay one row per source, so a benchmark may appear more than once when equivalence has not been reviewed.",
+                "The UI adds 1,173 external rows and 69 curated score tracks. It keeps source records separate, so the same benchmark name can appear in more than one catalog. The label “4 sources” refers to these four search layers. The daily collector uses 37 public endpoints.",
                 st["body"],
             ),
-            p("1.2 Six usable surfaces", st["subsection"]),
+            p("1.2 Dashboard and local tools", st["subsection"]),
             table(
                 [
                     [
@@ -428,22 +428,22 @@ def story(doi: str) -> list:
                     [
                         p("Today", st["small_bold"]),
                         p("What appeared or changed?", st["small"]),
-                        p("Ranked triage with evidence; not a quality verdict.", st["small"]),
+                        p("Ranks new records and links the source evidence.", st["small"]),
                     ],
                     [
                         p("Search", st["small_bold"]),
                         p("Which records match this name, task, or domain?", st["small"]),
-                        p("Transparent lexical matching; no semantic retrieval.", st["small"]),
+                        p("Ranks exact names, phrases, and field-token matches.", st["small"]),
                     ],
                     [
                         p("Leaderboard", st["small_bold"]),
                         p("Which benchmarks do labs report?", st["small"]),
-                        p("Vendor attention, not benchmark quality.", st["small"]),
+                        p("Counts benchmark mentions across vendor reports.", st["small"]),
                     ],
                     [
                         p("Scores", st["small_bold"]),
                         p("Which printed values can be connected?", st["small"]),
-                        p("Only identical instrument + protocol form a series.", st["small"]),
+                        p("Matching instrument + protocol creates a series.", st["small"]),
                     ],
                     [
                         p("Trends / map", st["small_bold"]),
@@ -472,33 +472,33 @@ def story(doi: str) -> list:
                 st["body"],
             ),
             p(
-                "The cutoff run fetched 826 rows, deduplicated them to 783, classified 273 as eligible, and recommended 97. The published day merges two same-day collections and contains 528 records, 186 recommended. The report treats 528 as a daily published total, not as cumulative corpus size.",
+                "The cutoff run fetched 826 rows, deduplicated them to 783, classified 273 as eligible, and recommended 97. Two collections ran that day. Their merged page contains 528 records, including 186 recommendations.",
                 st["body"],
             ),
             p("2.2 Normalization, identity, and retention", st["subsection"]),
             bullet(
-                "Stable fields include source ID, URL, title, timestamps, authors or organizations when supplied, parser version, retrieval time, and a SHA-256 payload fingerprint. Raw responses and credentials are not published.",
+                "Stable fields include source ID, URL, title, timestamps, authors or organizations when supplied, parser version, retrieval time, and a SHA-256 payload fingerprint. The publisher omits raw responses and credentials.",
                 st["body"],
             ),
             bullet(
-                "Exact DOI, arXiv, OpenReview, GitHub, and Hugging Face anchors can merge observations. Title similarity alone cannot. This favors false splits over false joins.",
+                "The resolver merges observations that share a DOI, arXiv ID, OpenReview ID, GitHub repository, or Hugging Face artifact. A similar title leaves two records in place until a reviewer confirms the match.",
                 st["body"],
             ),
             bullet(
-                "Every taxonomy-matching, non-suppressed record is retained, including records below the recommendation threshold. Recommendation changes presentation, not corpus inclusion.",
+                "The corpus includes eligible records below the recommendation threshold. The recommended tag controls display priority.",
                 st["body"],
             ),
             p("2.3 Interpretation, publication, and query", st["subsection"]),
             p(
-                "Priority combines relevance (35%), evidence (20%), recency (20%), and adoption (25%) on a 0–100 scale. Scoring version 5 is published with the data. Validated snapshots are canonical; generators replay them into the cumulative graph, normalize external catalogs, classify KW-Bench tracks, and package a checksummed release. Installed clients activate data atomically. Search never hides a failed update behind network fallback.",
+                "Priority combines relevance (35%), evidence (20%), recency (20%), and adoption (25%) on a 0–100 scale. Scoring version 5 ships with the data. Generators replay validated snapshots into the cumulative graph, normalize external catalogs, classify KW-Bench tracks, and package a checksummed release. Installed clients switch to a new data version after checksum and schema validation. Search reads the active local version.",
                 st["body"],
             ),
             table(
                 [
                     [
-                        p("Audit dimension", st["table_header"]),
-                        p("What works", st["table_header"]),
-                        p("Bound or risk", st["table_header"]),
+                        p("Area", st["table_header"]),
+                        p("Working today", st["table_header"]),
+                        p("Current gap", st["table_header"]),
                     ],
                     [
                         p("Reproducibility", st["small_bold"]),
@@ -519,17 +519,17 @@ def story(doi: str) -> list:
                     [
                         p("Identity", st["small_bold"]),
                         p("Exact-anchor merges and reviewed external groups.", st["small"]),
-                        p("Only 41 artifacts have more than one source.", st["small"]),
+                        p("Forty-one artifacts have more than one source.", st["small"]),
                     ],
                     [
                         p("Interfaces", st["small_bold"]),
                         p("CLI and HTTP share QueryService and JSON.", st["small"]),
-                        p("Search is lexical and local, not semantic or hosted.", st["small"]),
+                        p("Local token matching misses some paraphrases.", st["small"]),
                     ],
                     [
                         p("Verification", st["small_bold"]),
                         p("Clean-worktree rebuild plus 1,028 passing tests.", st["small"]),
-                        p("Tests do not establish source completeness.", st["small"]),
+                        p("Source coverage still depends on public endpoints.", st["small"]),
                     ],
                 ],
                 [1.15 * inch, 2.75 * inch, 2.70 * inch],
@@ -540,9 +540,9 @@ def story(doi: str) -> list:
     story.extend(
         [
             PageBreak(),
-            p("3. Data products and counting contract", st["section"]),
+            p("3. Counts and units", st["section"]),
             p(
-                "The published populations overlap, but they are not interchangeable. A number should be cited with its unit and cutoff.",
+                "The dashboard publishes several counts because it tracks several units. Use the unit and cutoff beside the number.",
                 st["body"],
             ),
             table(
@@ -551,13 +551,13 @@ def story(doi: str) -> list:
                         p("Unit / product", st["table_header"]),
                         p("Count", st["table_header"]),
                         p("Definition", st["table_header"]),
-                        p("Safe claim", st["table_header"]),
+                        p("Use it for", st["table_header"]),
                     ],
                     [
                         p("Snapshot", st["small_bold"]),
                         p("37", st["small"]),
                         p("33 observed, 4 simulated.", st["small"]),
-                        p("Available history, not independent samples.", st["small"]),
+                        p("The dated history available for replay.", st["small"]),
                     ],
                     [
                         p("Source observation", st["small_bold"]),
@@ -575,7 +575,7 @@ def story(doi: str) -> list:
                         p("External catalog row", st["small_bold"]),
                         p("1,173", st["small"]),
                         p("One row from three catalog sources.", st["small"]),
-                        p("Searchable records; duplicates may remain.", st["small"]),
+                        p("Broad, source-labelled catalog search.", st["small"]),
                     ],
                     [
                         p("Searchable entry", st["small_bold"]),
@@ -587,7 +587,7 @@ def story(doi: str) -> list:
                         p("Adoption benchmark", st["small_bold"]),
                         p("94", st["small"]),
                         p("Canonical identity in curated registry.", st["small"]),
-                        p("Adoption denominator, including zero mentions.", st["small"]),
+                        p("Model-card adoption and missing adoption.", st["small"]),
                     ],
                     [
                         p("Model-card document", st["small_bold"]),
@@ -599,13 +599,13 @@ def story(doi: str) -> list:
                         p("Curated score", st["small_bold"]),
                         p("285", st["small"]),
                         p("Numeric result from a cited document; 69 tracks.", st["small"]),
-                        p("Comparable only under exact protocols.", st["small"]),
+                        p("Score histories grouped by evaluation setup.", st["small"]),
                     ],
                     [
                         p("Model registry", st["small_bold"]),
                         p("861", st["small"]),
                         p("Models across curated and crawled layers; 19 in both.", st["small"]),
-                        p("Inventory, not quality ranking.", st["small"]),
+                        p("Finding a model across both data layers.", st["small"]),
                     ],
                 ],
                 [1.30 * inch, 0.55 * inch, 2.45 * inch, 2.30 * inch],
@@ -614,12 +614,12 @@ def story(doi: str) -> list:
             p("3.1 Cumulative source composition", st["subsection"]),
             source_bars(),
             p(
-                "Five normalized source labels supply 7,376 of 7,540 observations (97.8%). Breadth across 37 endpoints does not mean equal contribution; it means multiple discovery routes whose realized yield and availability are reported separately.",
+                "Five normalized source labels supply 7,376 of 7,540 observations (97.8%). The other endpoints add discovery routes and publish their own yield and health status.",
                 st["body"],
             ),
             p("3.2 Adoption and score findings", st["subsection"]),
             p(
-                "GPQA Diamond leads reporting breadth (26 of 36 documents, 10 organizations), followed by Humanity's Last Exam, SWE-bench Verified, Terminal-Bench, AIME, LiveCodeBench, MMLU-Pro, and BrowseComp. This is reporting convention, not superiority. The curated score layer identifies eight bounded metrics at or below five points of headroom and a reading gap where six benchmarks gained model-card mentions after their last readable score.",
+                "GPQA Diamond appears in 26 of 36 documents from 10 organizations. Humanity's Last Exam, SWE-bench Verified, Terminal-Bench, AIME, LiveCodeBench, MMLU-Pro, and BrowseComp form the rest of the top eight. These counts show which benchmarks vendors choose to report. The score archive finds eight bounded metrics with five points of headroom or less. Six benchmarks gained model-card mentions after their last readable score.",
                 st["body"],
             ),
         ]
@@ -630,7 +630,7 @@ def story(doi: str) -> list:
             PageBreak(),
             p("4. Source inventory and health", st["section"]),
             p(
-                "The README's 37 sources are 12 direct discovery connectors, 24 first-party feeds, and one public-attention source. The search box's four sources are a different concept.",
+                "The daily collector reads 12 discovery connectors, 24 first-party feeds, and Hacker News. The search box draws from four catalog layers.",
                 st["body"],
             ),
             p("4.1 Direct discovery connectors (12)", st["subsection"]),
@@ -737,12 +737,12 @@ def story(doi: str) -> list:
                 tiny=True,
             ),
             p(
-                "The feed collector was healthy and yielded three relevant records. A live feed can yield zero after relevance filtering without being broken. Organizations without a verified first-party feed are queried only through domain-constrained web searches; third-party mirrors are not substituted.",
+                "The feed collector yielded three relevant records. Some healthy feeds produced zero matches after relevance filtering. Domain-constrained searches cover organizations that lack a verified feed. The collector excludes third-party mirrors.",
                 st["body"],
             ),
             p("4.3 Public attention (1)", st["subsection"]),
             p(
-                "Hacker News is collected through its anonymous public API and rendered as unranked attention, separate from evidence. It yielded 12 records on the cutoff run and never contributes to quality or priority scores.",
+                "The Hacker News collector uses the public Algolia API. It found 12 records on the cutoff run and places them in a separate attention feed. The priority calculation uses evidence sources only.",
                 st["body"],
             ),
         ]
@@ -751,7 +751,7 @@ def story(doi: str) -> list:
     story.extend(
         [
             PageBreak(),
-            p("5. Evidence quality and report audit", st["section"]),
+            p("5. Data quality and report history", st["section"]),
             table(
                 [
                     [
@@ -763,7 +763,7 @@ def story(doi: str) -> list:
                         p("High provenance", st["small_bold"]),
                         p("7,523 / 7,540 primary or structured (99.77%).", st["small"]),
                         p(
-                            "Stable upstream records; not validation of every source claim.",
+                            "Readers can open the upstream record for almost every observation.",
                             st["small"],
                         ),
                     ],
@@ -783,13 +783,13 @@ def story(doi: str) -> list:
                     [
                         p("Simulation", st["small_bold"]),
                         p("23–26 July are simulated snapshots.", st["small"]),
-                        p("System-history test data, not observed market activity.", st["small"]),
+                        p("Use them to test replay and UI history.", st["small"]),
                     ],
                     [
                         p("Classification gap", st["small_bold"]),
                         p("KW-Bench: 4,129 tracks, 0 classified.", st["small"]),
                         p(
-                            "Task-capability view is scaffolding, not an empirical result.",
+                            "The task-capability view has no classifications yet.",
                             st["small"],
                         ),
                     ],
@@ -799,7 +799,10 @@ def story(doi: str) -> list:
                             "12,594 aggregator scores stay outside curated progression.",
                             st["small"],
                         ),
-                        p("Volume cannot replace missing evaluation conditions.", st["small"]),
+                        p(
+                            "Comparison needs shots, harness, tools, attempts, and date.",
+                            st["small"],
+                        ),
                     ],
                     [
                         p("Lexical retrieval", st["small_bold"]),
@@ -814,8 +817,8 @@ def story(doi: str) -> list:
                 [
                     [
                         p("Document", st["table_header"]),
-                        p("Still useful for", st["table_header"]),
-                        p("Do not reuse as", st["table_header"]),
+                        p("Use today", st["table_header"]),
+                        p("Date limit", st["table_header"]),
                     ],
                     [
                         p("Landscape report, 31 Jul", st["small_bold"]),
@@ -824,41 +827,41 @@ def story(doi: str) -> list:
                             st["small"],
                         ),
                         p(
-                            "A current market total; it predates most new sources and the external catalog.",
+                            "Its totals stop on 31 July, before the external catalog and newer connectors.",
                             st["small"],
                         ),
                     ],
                     [
                         p("Source probes, 27 Aug", st["small_bold"]),
                         p("Verified HF Papers, Kaggle, Spaces, and Zenodo endpoints.", st["small"]),
-                        p("A completeness or uptime guarantee.", st["small"]),
+                        p("The probes record one check on 27 August.", st["small"]),
                     ],
                     [
                         p("External catalog audit", st["small_bold"]),
                         p(
-                            "Why OpenCompass is identity-heavy and the other catalogs are score-heavy.",
+                            "OpenCompass identity fields and the score-heavy peer catalogs.",
                             st["small"],
                         ),
                         p(
-                            "Permission to merge same-name benchmarks or protocol-free scores.",
+                            "The audit keeps same-name records separate until identity review.",
                             st["small"],
                         ),
                     ],
                     [
                         p("Daily report / briefing", st["small_bold"]),
                         p("Triage with citations and source health.", st["small"]),
-                        p("A literature review or neutral quality ranking.", st["small"]),
+                        p("Each edition covers one collection window.", st["small"]),
                     ],
                 ],
                 [1.65 * inch, 2.75 * inch, 2.20 * inch],
             ),
-            p("5.2 Claims supported", st["subsection"]),
+            p("5.2 Reading the evidence", st["subsection"]),
             bullet(
-                "Supported: a source published or updated a record; it matched the declared taxonomy; a vendor document named a benchmark; a cited document printed a score under stored conditions.",
+                "You can trace a new or updated record to its source, inspect why the taxonomy matched it, and find the vendor document behind each curated benchmark mention.",
                 st["body"],
             ),
             bullet(
-                "Not supported by itself: the total benchmarks in existence; scientific benchmark quality; a fair model ranking across unlike protocols; proof that a benchmark is solved; or a field-wide trend when coverage changed.",
+                "For score comparisons, match the instrument and protocol fields. For trend comparisons, use days with the same connector coverage and report limit. Market-size estimates need a separate benchmark-family census.",
                 st["body"],
             ),
         ]
@@ -867,38 +870,38 @@ def story(doi: str) -> list:
     story.extend(
         [
             PageBreak(),
-            p("6. Decision-useful interpretation", st["section"]),
+            p("6. Findings from the current data", st["section"]),
             p(
-                "The strongest present-tense result is operational: Benchmark Radar turns a fragmented stream into traceable records that can be searched, filtered, downloaded, and re-queried offline. It also makes missing evidence visible.",
+                "Benchmark Radar turns papers, repositories, datasets, and model reports into records you can search, filter, download, and query offline. Three results stand out in the current data.",
                 st["body"],
             ),
             p("6.1 Vendor attention has converged on a small reporting core", st["subsection"]),
             p(
-                "Eight benchmarks appear in documents from at least six organizations: GPQA Diamond, Humanity's Last Exam, SWE-bench Verified, Terminal-Bench, AIME, LiveCodeBench, MMLU-Pro, and BrowseComp. This is comparability of attention, not superiority. Repeated reporting can persist after a benchmark loses discriminatory power.",
+                "Eight benchmarks appear in documents from at least six organizations: GPQA Diamond, Humanity's Last Exam, SWE-bench Verified, Terminal-Bench, AIME, LiveCodeBench, MMLU-Pro, and BrowseComp. Teams comparing new model reports will encounter this group most often. The score archive shows where these familiar tests have little headroom left.",
                 st["body"],
             ),
             p("6.2 Several bounded metrics are near their ceiling", st["subsection"]),
             p(
-                "The curated layer records at most five points of headroom for AIME, Arena-Hard, DeepSearchQA, HMMT, MATH-500, MathVision, SWE-bench Verified, and tau2-bench. These are best-on-record observations, not proof of general saturation. Changing reasoning budget, tools, attempts, or evaluator can move a score without producing a comparable capability change.",
+                "The curated layer records five points of headroom or less for AIME, Arena-Hard, DeepSearchQA, HMMT, MATH-500, MathVision, SWE-bench Verified, and tau2-bench. Read each value with its reasoning budget, tools, attempts, and evaluator. Those settings often explain score movement between model reports.",
                 st["body"],
             ),
-            p("6.3 Breadth and evidence quality are intentionally asymmetric", st["subsection"]),
+            p("6.3 Broad search, deeper curation", st["subsection"]),
             p(
-                "The 1,173-row external catalog is more than twelve times the 94-benchmark adoption registry. That breadth makes search useful for discovery; the curated registry supplies stronger attribution and protocol. The product should preserve this split: broad source-labelled search first, stronger claims only after review.",
+                "The external catalog holds 1,173 rows, more than twelve times the 94-benchmark adoption registry. Use catalog search to find candidates. The curated registry adds the model reports, organizations, instruments, and protocols needed for comparison.",
                 st["body"],
             ),
-            p("6.4 Highest-value next measurements", st["subsection"]),
+            p("6.4 What to build next", st["subsection"]),
             table(
                 [
                     [
                         p("Priority", st["table_header"]),
                         p("Measurement work", st["table_header"]),
-                        p("Why it matters", st["table_header"]),
+                        p("Result", st["table_header"]),
                     ],
                     [
                         p("1", st["small_bold"]),
                         p("Show the count unit beside every UI total and export.", st["small"]),
-                        p("Prevents catalog reach from becoming a census claim.", st["small"]),
+                        p("Readers can see which population each number counts.", st["small"]),
                     ],
                     [
                         p("2", st["small_bold"]),
@@ -906,7 +909,7 @@ def story(doi: str) -> list:
                             "Resolve high-value cross-source identities with anchors and review.",
                             st["small"],
                         ),
-                        p("Raises corroboration without false families.", st["small"]),
+                        p("More records gain paper, code, and dataset links.", st["small"]),
                     ],
                     [
                         p("3", st["small_bold"]),
@@ -924,7 +927,7 @@ def story(doi: str) -> list:
                             "Add optional semantic retrieval while retaining lexical reasons.",
                             st["small"],
                         ),
-                        p("Improves paraphrase recall without losing auditability.", st["small"]),
+                        p("Finds paraphrases while retaining visible match reasons.", st["small"]),
                     ],
                 ],
                 [0.55 * inch, 3.35 * inch, 2.70 * inch],
@@ -933,9 +936,9 @@ def story(doi: str) -> list:
             Table(
                 [
                     [
-                        p("Bottom line", st["callout"]),
+                        p("Use it", st["callout"]),
                         p(
-                            "Benchmark Radar is ready to cite as an evidence-indexing system and open dataset. It should not be cited as a complete census, a benchmark-quality ranking, or a protocol-normalized model leaderboard.",
+                            "Cite Benchmark Radar for source-linked benchmark discovery, catalog search, and vendor-reporting evidence. Use the source and protocol fields when you compare records or scores.",
                             st["body"],
                         ),
                     ]
@@ -1006,7 +1009,7 @@ def story(doi: str) -> list:
             ),
             p("Suggested citation", st["subsection"]),
             p(
-                f"Wu, K. (2026). <i>Benchmark Radar: System and Data Evaluation</i> (Technical Report v1.0). Zenodo. https://doi.org/{doi}",
+                f"Wu, K. (2026). <i>Benchmark Radar v0.9.0: Technical Report</i>. Zenodo. https://doi.org/{doi}",
                 st["body"],
             ),
             p("Data statement", st["subsection"]),
@@ -1078,7 +1081,9 @@ def story(doi: str) -> list:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--output", type=Path, default=Path("output/pdf/benchmark-radar-technical-report-v1.0.pdf")
+        "--output",
+        type=Path,
+        default=Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf"),
     )
     parser.add_argument("--doi", default="10.5281/zenodo.22167102")
     args = parser.parse_args()

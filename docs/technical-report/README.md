@@ -1,4 +1,4 @@
-# Benchmark Radar system and data evaluation
+# Benchmark Radar v0.9.0 technical report
 
 This directory tracks the source and deposit metadata for the citable Benchmark
 Radar technical report. The report evaluates software version 0.9.0, its full
@@ -13,7 +13,7 @@ python3 scripts/build_system_evaluation.py \
 ```
 
 The builder writes
-`output/pdf/benchmark-radar-technical-report-v1.0.pdf`. The reserved DOI appears
+`output/pdf/benchmark-radar-technical-report-v0.9.0.pdf`. The reserved DOI appears
 in the PDF itself. Upload that PDF to the Zenodo record described by
 `zenodo-metadata.json`, then publish the record.
 

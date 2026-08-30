@@ -346,7 +346,7 @@ class ReportDocTemplate(BaseDocTemplate):
             bottomMargin=BOTTOM,
             title="Benchmark Radar: An Evidence-First Index for Tracking AI Benchmarks",
             author="Koutian Wu",
-            subject="Benchmark Radar technical report, version 1.0",
+            subject="Benchmark Radar technical report, version 0.9.0",
             keywords="AI benchmarks, evaluation, dataset, evidence, model cards",
         )
         self.doi = doi
@@ -370,7 +370,7 @@ class ReportDocTemplate(BaseDocTemplate):
         canvas.line(MARGIN_X, 0.42 * inch, PAGE_W - MARGIN_X, 0.42 * inch)
         canvas.setFont(REGULAR, 6.9)
         canvas.setFillColor(MUTED)
-        footer = f"Benchmark Radar Technical Report v1.0  |  29 August 2026  |  DOI: {self.doi}"
+        footer = f"Benchmark Radar Technical Report v0.9.0  |  29 August 2026  |  DOI: {self.doi}"
         canvas.drawString(MARGIN_X, 0.24 * inch, footer)
         canvas.drawRightString(PAGE_W - MARGIN_X, 0.24 * inch, str(doc.page))
         canvas.restoreState()
@@ -385,7 +385,7 @@ def report_story(doi: str) -> list:
         [
             Spacer(1, 0.25 * inch),
             p(
-                "TECHNICAL REPORT  |  VERSION 1.0",
+                "TECHNICAL REPORT  |  BENCHMARK RADAR v0.9.0",
                 ParagraphStyle(
                     "Kicker",
                     parent=st["meta"],
@@ -399,7 +399,7 @@ def report_story(doi: str) -> list:
             p("An evidence-first index for tracking AI benchmarks", st["subtitle"]),
             Spacer(1, 0.05 * inch),
             p("Koutian Wu", st["author"]),
-            p("29 August 2026  |  Software v0.9.0  |  Report v1.0", st["meta"]),
+            p("29 August 2026  |  Benchmark Radar v0.9.0", st["meta"]),
             p(f"DOI: {doi}", st["meta"]),
             Spacer(1, 0.28 * inch),
             metric_strip(st),
@@ -433,7 +433,7 @@ def report_story(doi: str) -> list:
             ),
             p("Suggested citation", st["subsection"]),
             p(
-                f"Wu, K. (2026). <i>Benchmark Radar: An evidence-first index for tracking AI benchmarks</i> (Technical Report v1.0). DOI: {doi}",
+                f"Wu, K. (2026). <i>Benchmark Radar: An evidence-first index for tracking AI benchmarks</i> (Version 0.9.0). DOI: {doi}",
                 st["body"],
             ),
         ]
@@ -576,7 +576,7 @@ def report_story(doi: str) -> list:
                 st["body"],
             ),
             bullet(
-                "Model-card adoption measures vendor reporting choices. Vendors select benchmarks and protocols, so the registry cannot support a neutral model ranking.",
+                "Model-card adoption counts the benchmarks vendors choose to report. Score comparisons use the instrument and protocol fields stored with each observation.",
                 st["body"],
             ),
             bullet(
@@ -702,7 +702,7 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("output/pdf/benchmark-radar-technical-report-v1.0.pdf"),
+        default=Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf"),
     )
     parser.add_argument(
         "--doi",
