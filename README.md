@@ -107,8 +107,9 @@ workflow.
 `catalog` searches the normalized benchmark catalog, `radar` searches the daily
 evidence history, and `all` searches both while keeping their identities separate.
 Search is deterministic lexical/token matching in this version—not embedding-based
-semantic search. Any shared token can retrieve a candidate; fielded BM25, soft
-weighted-query coverage, name matches, and phrase matches determine its rank. Partial
+semantic search. Any shared token can retrieve a candidate; fielded BM25 plus
+controlled exact-name and phrase boosts determine its score. Weighted query coverage
+is retained as a tie-breaker and explanation instead of being counted twice. Partial
 matches remain visible for the consuming agent to judge instead of being deleted by an
 all-terms gate. Every result explains its matched and missing terms, weighted token
 coverage, matched fields, and score components. `no_lexical_candidates` means that no
@@ -141,6 +142,17 @@ retrieval can be added later without creating a second ranking implementation.
 
 `benchmark-radar normalize-external` and `benchmark-radar build-data-release` are
 maintainer/CI build commands. End users update with `sync`, not with the normalizer.
+
+Search ranking changes are checked against the versioned sparse-judgment dataset:
+
+```bash
+python scripts/evaluate_search.py
+```
+
+The report includes Hit@5, MRR@20, Recall@20, navigational Hit@1, and both partial
+candidate retention and full-match rates for known Catalog gaps. Unlisted results are
+deliberately treated as unjudged rather than negative, so this initial dataset does
+not claim precision or NDCG.
 
 ## More
 

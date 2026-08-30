@@ -40,4 +40,7 @@ jobs:
       - run: benchmark-radar normalize-external
       - run: benchmark-radar classify
       - run: benchmark-radar build-data-release
+      # Ranking evaluation consumes the generated Catalog and fails on a
+      # versioned retrieval-quality threshold before the broader test suite.
+      - run: python scripts/evaluate_search.py
       - run: pytest -q

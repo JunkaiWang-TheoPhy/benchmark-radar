@@ -32,11 +32,13 @@ guessed from a name.
 Search has three explicit stages:
 
 1. Any shared token creates an observable candidate.
-2. Every candidate receives a BM25F score plus soft weighted-coverage, exact/prefix/
-   contiguous-token name, and contiguous-phrase signals. Missing terms lower rank;
-   they never make an otherwise observable candidate ineligible.
+2. BM25F over weighted fields is the primary score. Exact, prefix, and contiguous
+   name matches receive bounded query-IDF-scaled boosts. A contiguous query phrase
+   in a non-name field receives a smaller query-IDF-scaled boost. Name phrases are
+   not counted twice.
 3. Candidates are returned with the evidence an agent needs to make the final
-   relevance and suitability judgment.
+   relevance and suitability judgment. Weighted query coverage is a tie-breaker and
+   explanation, never an eligibility gate or an additive score component.
 
 The response exposes `candidate_count`, `total_matches`, `search_status`, policy
 identity, matched and missing tokens, weighted coverage, fields, phrase fields, the
@@ -61,6 +63,20 @@ that the wider world contains no such benchmark. Conversely, `matches_found` onl
 means that lexical candidates exist; it does not assert that they satisfy the user's
 task.
 
+This follows the same broad decomposition used by established lexical engines:
+
+- [Elasticsearch multi-match](https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-multi-match-query)
+  supports per-field boosts and phrase queries;
+- [Elasticsearch match phrase](https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query-phrase)
+  treats analyzed token proximity as a separate query signal;
+- [Meilisearch ranking rules](https://www.meilisearch.com/docs/learn/relevancy/ranking_rules)
+  separate broad word/proximity matching from later attribute and exactness rules;
+- [Typesense search](https://typesense.org/docs/29.0/api/search.html) exposes field
+  weights and explicit exact-phrase matching.
+
+Benchmark Radar keeps the same ideas in a small deterministic implementation rather
+than introducing a search server for 1,173 local Catalog records.
+
 ## Agent query expansion
 
 The Skill may issue two to four short variants grounded in the user's stated task,
@@ -84,6 +100,14 @@ The versioned relevance suite covers:
 - token-boundary safety;
 - Catalog/Radar identity separation;
 - CLI/HTTP JSON equality.
+
+The broader evaluation dataset lives at `tests/fixtures/search_evaluation.yml` and
+runs through `scripts/evaluate_search.py`. It contains navigational, topical, and
+known Catalog-gap queries with sparse positive relevance judgments. Because unlisted
+records are unjudged rather than negative, its valid aggregate metrics are Hit@K,
+MRR@K, and Recall@K. Catalog-gap labels additionally test partial-candidate retention
+and unexpected full matches. Precision and NDCG require a completely judged result
+pool and are intentionally not reported yet.
 
 Every confirmed search failure becomes a labelled regression case. Do not update an
 expectation merely to make a new ranking pass: inspect the underlying records and state

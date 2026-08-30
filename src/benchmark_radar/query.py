@@ -14,7 +14,7 @@ from typing import Any
 
 from .snapshots import REQUIRED_SOURCES, load_snapshots
 
-QUERY_SCHEMA_VERSION = 3
+QUERY_SCHEMA_VERSION = 4
 DEFAULT_INDEX_PATH = Path("site/data/benchmark-index.json")
 DEFAULT_SHARD_DIR = Path("site/data/benchmarks")
 DEFAULT_SNAPSHOT_DIR = Path("data/snapshots")
@@ -40,6 +40,8 @@ _FIELD_WEIGHTS = {
 }
 _BM25_K1 = 1.2
 _BM25_B = 0.75
+_NAME_MATCH_MULTIPLIERS = (3.0, 1.5, 0.75)
+_PHRASE_MULTIPLIER = 0.5
 
 LOGGER = logging.getLogger(__name__)
 
@@ -271,19 +273,21 @@ def _match(
         )
 
     bm25f_score = _bm25f_score(document, query_tokens, corpus)
-    # Coverage is intentionally a soft signal. Search retrieves inspectable
-    # candidates for an agent; it must not silently turn a user's longer intent
-    # into an all-terms eligibility test. The bonus promotes broader and rarer
-    # token coverage without deleting partial lexical evidence.
-    coverage_bonus = matched_weight
     phrase_fields = [
         field
         for field in _FIELD_ORDER
         if _contains_tokens(document.field_tokens[field], query_tokens)
     ]
-    phrase_bonus = query_weight if phrase_fields else 0.0
-    name_bonus = (100.0, 30.0, 15.0)[name_match[0]] if name_match is not None else 0.0
-    ranking_score = bm25f_score + coverage_bonus + phrase_bonus + name_bonus
+    # BM25F already rewards matching more query terms, so weighted coverage is
+    # only a tie-breaker and explanation. Exactness and phrase proximity are the
+    # two conventional secondary signals. Scale both by query IDF instead of
+    # mixing giant fixed constants into a corpus-dependent lexical score.
+    non_name_phrase = any(field != "name" for field in phrase_fields)
+    phrase_bonus = query_weight * _PHRASE_MULTIPLIER if non_name_phrase else 0.0
+    name_bonus = (
+        query_weight * _NAME_MATCH_MULTIPLIERS[name_match[0]] if name_match is not None else 0.0
+    )
+    ranking_score = bm25f_score + phrase_bonus + name_bonus
 
     record = document.record
     completeness = sum(
@@ -301,11 +305,10 @@ def _match(
     return (
         sort_key,
         {
-            "ranking_algorithm": "bm25f_v2",
+            "ranking_algorithm": "bm25f_v3",
             "ranking_score": round(ranking_score, 6),
             "score_components": {
                 "bm25f": round(bm25f_score, 6),
-                "coverage_bonus": round(coverage_bonus, 6),
                 "phrase_bonus": round(phrase_bonus, 6),
                 "name_bonus": round(name_bonus, 6),
             },
@@ -556,10 +559,10 @@ class QueryService:
             "retrieval_mode": "lexical",
             "search_status": status,
             "matching_policy": {
-                "name": "soft_coverage_v1",
-                "ranking": "bm25f_v2",
+                "name": "lexical_candidates_v1",
+                "ranking": "bm25f_v3",
                 "minimum_should_match": "one unique query term",
-                "query_coverage": "soft ranking signal",
+                "query_coverage": "tie-breaker and explanation",
             },
             "filters": filters,
             "limit": limit,

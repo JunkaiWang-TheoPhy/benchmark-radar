@@ -176,12 +176,13 @@ upload that exact file. The PDF is a dated interpretation, not a data source.
   Missing or malformed generated artifacts fail visibly with machine-readable
   errors; they must not be replaced with guessed metadata.
 - Lexical search is a high-recall candidate retriever for agents, not a final
-  suitability judge. Any shared query token may produce a candidate. Rank all
-  candidates with the shared BM25F implementation plus soft weighted-coverage,
-  exact/prefix/token-sequence name, and phrase signals; never require every
-  query term as an eligibility gate. Every result must expose matched and missing
-  tokens, fields, coverage, and score components so the consuming agent can
-  inspect partial matches. Zero token overlap uses `no_lexical_candidates`.
+  suitability judge. Any shared query token may produce a candidate. BM25F is
+  the primary score. Exact/prefix/token-sequence name matches and non-name
+  contiguous phrases are bounded, query-IDF-scaled boosts; weighted coverage is
+  only a tie-breaker and explanation because BM25F already rewards additional
+  matched terms. Never require every query term as an eligibility gate. Every
+  result must expose matched and missing tokens, fields, coverage, and score
+  components. Zero token overlap uses `no_lexical_candidates`.
 - Catalog and Radar are different trust layers. Catalog rows are normalized
   benchmark records; Radar rows are discovery evidence and must stay labelled as
   such. A search result is a candidate, not a suitability claim. Agent query
@@ -198,6 +199,11 @@ upload that exact file. The PDF is a dated interpretation, not a data source.
 - The public consumer Skill lives at `skills/benchmark-radar/SKILL.md`. Keep it
   purpose-neutral and limited to routing user intent through consumer CLI
   commands; do not make maintainer build commands part of its normal workflow.
+- Search ranking changes must run `scripts/evaluate_search.py` against the
+  versioned sparse-judgment dataset. Unlisted records are unjudged, not negative;
+  do not report precision or NDCG until the result pools are completely labelled.
+  A source refresh that changes a judgement must trigger record review, not a
+  mechanical fixture update.
 
 ## Before opening a pull request
 
@@ -215,10 +221,12 @@ upload that exact file. The PDF is a dated interpretation, not a data source.
       benchmark-radar normalize-external
       benchmark-radar classify
       benchmark-radar build-data-release
+      python scripts/evaluate_search.py
       pytest -q
 
-- All six must pass. `ruff format --check` runs before everything else, so a
+- All seven must pass. `ruff format --check` runs before everything else, so a
   formatting slip fails the run before a single test executes. Both generators
   run before `pytest` and in that order: `classify` reads the shard directory
   `normalize-external` writes, while `build-data-release` packages the validated
-  index, shards, and snapshots that installed clients consume.
+  index, shards, and snapshots that installed clients consume. Search evaluation
+  runs after those artifacts exist and before the full suite.

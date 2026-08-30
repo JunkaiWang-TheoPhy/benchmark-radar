@@ -45,11 +45,12 @@ when the user explicitly wants one mixed evidence list; never compare ranking
 scores across the two layers.
 
 Search is deterministic lexical/token matching, not semantic search. Any shared
-token can retrieve a candidate. BM25F, soft weighted-query coverage, name matches,
-and phrase matches determine rank; partial matches remain visible with matched and
-missing tokens so you can judge them against the user's request. A search result is
-a candidate, not a suitability claim. For topical discovery, use two to four short,
-discriminative variants drawn from the user's stated need:
+token can retrieve a candidate. BM25F is the main ranking score, with controlled
+name and phrase boosts; weighted-query coverage is a tie-breaker and explanation,
+not a service-side acceptance decision. Partial matches remain visible with matched
+and missing tokens so you can judge them against the user's request. A search result
+is a candidate, not a suitability claim. For topical discovery, use two to four
+short, discriminative variants drawn from the user's stated need:
 
 1. the task phrase, such as `medical VQA`;
 2. one terminology or morphology variant, such as `robotics manipulation`;

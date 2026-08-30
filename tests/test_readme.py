@@ -121,10 +121,21 @@ def test_readmes_expose_the_installable_consumer_skill():
 def test_consumer_skill_separates_query_expansion_from_evidence_trust():
     text = SKILL.read_text(encoding="utf-8")
 
-    assert "two to four short" in text
-    assert "discriminative variants" in text
+    assert "two to four" in text
+    assert "short, discriminative variants" in text
     assert "search_status: no_lexical_candidates" in text
-    assert "A search result is\na candidate, not a suitability claim" in text
+    assert "A search result" in text
+    assert "is a candidate, not a suitability claim" in text
     assert "Radar item is a lead" in text
     assert "raw BM25F scores are query-specific" in text
     assert "call `show`" in text
+
+
+def test_readmes_expose_search_evaluation_without_claiming_complete_labels():
+    # Regression: sparse positive judgments were almost presented as precision,
+    # which would silently count every unreviewed result as a false positive.
+    command = "python scripts/evaluate_search.py"
+    for path in (README, README_ZH):
+        text = path.read_text(encoding="utf-8")
+        assert command in text
+        assert "NDCG" in text

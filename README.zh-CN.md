@@ -97,11 +97,12 @@ Skill 只根据用户当前请求选择 CLI 命令，不预设结果是用于科
 `catalog` 搜索标准化 benchmark 目录，`radar` 搜索每日情报历史，`all` 同时搜索
 两者，但不会擅自合并它们的身份。当前版本是可复现的关键词/token 检索，不是基于
 embedding 的 semantic search。只要共享一个 query token 就可以召回候选，再由
-fielded BM25、加权查询覆盖率、名称匹配和短语匹配共同软排序。局部匹配不会被
-“所有词必须命中”的硬门槛删除，而是连同判断证据交给 Agent。每条结果都会说明命中与
-缺失的 token、加权覆盖率、匹配字段和各项分数组成。`no_lexical_candidates` 表示当前
-本地数据版本中没有记录命中任何 query token。原始排序分数只在同一次 query 内有意义，
-不能跨 query 比较。可以按论文、代码仓库、数据集、开放程度、模态和来源过滤。
+fielded BM25 主分数、受控的名称匹配和短语匹配 boost 排序；加权查询覆盖率只作为
+同分候选的次级排序和解释，避免与 BM25 重复计分。局部匹配不会被“所有词必须命中”的
+硬门槛删除，而是连同判断证据交给 Agent。每条结果都会说明命中与缺失的 token、加权
+覆盖率、匹配字段和各项分数组成。`no_lexical_candidates` 表示当前本地数据版本中没有
+记录命中任何 query token。原始排序分数只在同一次 query 内有意义，不能跨 query 比较。
+可以按论文、代码仓库、数据集、开放程度、模态和来源过滤。
 
 Agent 应分别搜索 `catalog` 与 `radar`。Catalog 是标准化 benchmark 记录；Radar 是近期
 证据线索，其中可能只是使用某 benchmark 的论文，并不一定发布了新 benchmark。少量、
@@ -124,6 +125,16 @@ curl 'http://127.0.0.1:8765/api/v1/search?q=agent%20benchmark&scope=all'
 
 `benchmark-radar normalize-external` 和 `benchmark-radar build-data-release` 是维护者
 及 CI 的构建命令。普通用户通过 `sync` 更新，不需要运行 normalizer。
+
+搜索排序变更会通过版本化的稀疏标注数据集检查：
+
+```bash
+python scripts/evaluate_search.py
+```
+
+报告包含 Hit@5、MRR@20、Recall@20、导航查询 Hit@1，以及已知 Catalog 缺口的 Top-20
+部分候选保留率与完整匹配率。未列出的结果按“尚未标注”处理，而不是负例，因此初版
+数据集不会虚报 Precision 或 NDCG。
 
 ## 更多
 

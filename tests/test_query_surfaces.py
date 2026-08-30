@@ -143,8 +143,8 @@ def test_catalog_search_is_deterministic_and_explains_matches(tmp_path: Path) ->
     assert result["search_status"] == "matches_found"
     assert result["candidate_count"] == 2
     assert result["total_matches"] == 2
-    assert result["matching_policy"]["name"] == "soft_coverage_v1"
-    assert result["matching_policy"]["ranking"] == "bm25f_v2"
+    assert result["matching_policy"]["name"] == "lexical_candidates_v1"
+    assert result["matching_policy"]["ranking"] == "bm25f_v3"
     assert result["results"][0]["match"]["matched_fields"] == [
         "name",
         "description",
@@ -177,8 +177,23 @@ def test_search_returns_partial_candidates_with_evidence_for_agent_judgment(
         for item in result["results"]
     )
     assert all(
-        item["match"]["score_components"]["coverage_bonus"] > 0 for item in result["results"]
+        set(item["match"]["score_components"]) == {"bm25f", "name_bonus", "phrase_bonus"}
+        for item in result["results"]
     )
+
+
+def test_exact_name_and_phrase_are_controlled_boosts(tmp_path: Path) -> None:
+    # Regression: hard-coded giant bonuses hid BM25 relevance and double-counted
+    # a name phrase, making the score impossible to reason about or tune.
+    service = QueryService(_catalog(tmp_path))
+
+    exact = service.search("agent workbench", scope="catalog", limit=1)["results"][0]
+    phrase = service.search("scientific discovery", scope="catalog", limit=1)["results"][0]
+
+    assert exact["match"]["score_components"]["name_bonus"] > 0
+    assert exact["match"]["score_components"]["phrase_bonus"] == 0
+    assert phrase["key"] == "opencompass:science-discovery"
+    assert phrase["match"]["score_components"]["phrase_bonus"] > 0
 
 
 def test_full_coverage_is_a_soft_ranking_signal_not_an_eligibility_gate(tmp_path: Path) -> None:
@@ -404,7 +419,7 @@ def test_healthz_identifies_local_health_check_contract(tmp_path: Path) -> None:
         thread.join(timeout=5)
 
     assert payload == {
-        "schema_version": 3,
+        "schema_version": 4,
         "retrieval_mode": "health_check",
         "data": {"source": "local"},
         "status": "ok",
@@ -486,6 +501,6 @@ def test_http_errors_are_machine_readable(tmp_path: Path) -> None:
 
     assert captured.value.code == 400
     assert payload == {
-        "schema_version": 3,
+        "schema_version": 4,
         "error": {"code": "invalid_request", "message": "q is required"},
     }
