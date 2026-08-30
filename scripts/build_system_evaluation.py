@@ -1059,7 +1059,7 @@ def story(doi: str) -> list:
                 [
                     [
                         p(
-                            "Repository: github.com/ktwu01/benchmark-radar<br/>Dashboard: benchmark-radar.org<br/>Software license: MIT  |  Report license: CC BY 4.0",
+                            "Software: MIT License.<br/>Technical report and original editorial content: CC BY-NC 4.0.<br/>Commercial republication, resale, paid newsletters, dataset packaging, or commercial product integration requires prior written permission from Koutian Wu.<br/>Third-party source material remains under its original terms.",
                             ParagraphStyle(
                                 "EndCard",
                                 parent=st["body"],

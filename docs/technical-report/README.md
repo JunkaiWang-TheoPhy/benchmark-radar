@@ -17,6 +17,12 @@ The builder writes
 in the PDF itself. Upload that PDF to the Zenodo record described by
 `zenodo-metadata.json`, then publish the record.
 
+The software remains under the MIT License. The technical report and original
+editorial content use CC BY-NC 4.0. Commercial republication, resale, paid
+newsletters, dataset packaging, or commercial product integration requires
+prior written permission from Koutian Wu. Third-party source material remains
+under its original terms.
+
 The report derives its quantitative claims from these versioned files and from
 the current README and report documentation:
 
