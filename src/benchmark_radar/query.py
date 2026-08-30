@@ -244,16 +244,18 @@ def _match(
     query_tokens: tuple[str, ...],
     corpus: _SearchCorpus,
 ) -> tuple[tuple[Any, ...], dict[str, Any]] | None:
+    query_token_set = set(query_tokens)
+    if document.all_tokens.isdisjoint(query_token_set):
+        return None
+
     matched_fields: list[str] = []
     matched_tokens: set[str] = set()
     for field in _FIELD_ORDER:
-        hits = set(query_tokens) & set(document.field_tokens[field])
+        hits = query_token_set.intersection(document.field_counts[field])
         if hits:
             matched_fields.append(field)
             matched_tokens.update(hits)
     name_match = _name_match(document.field_tokens["name"], query_tokens)
-    if not matched_tokens and name_match is None:
-        return None
 
     coverage = len(matched_tokens) / len(query_tokens)
     query_weight = sum(_idf(term, corpus) for term in query_tokens)
