@@ -117,6 +117,17 @@ def test_page_has_unique_title_and_canonical(tmp_path):
     )
 
 
+def test_interactive_view_link_lands_on_the_leaderboard_with_the_slug(tmp_path):
+    output = _generated_pages(tmp_path, _shard("alpha-bench", "Alpha Bench"))
+    page = _page_text(output, "alpha-bench")
+    # The permalink needs the leaderboard view, not a bare lfrontier query that
+    # opens the default Today view and cannot resolve the slug.
+    assert 'href="https://benchmark-radar.org/?view=leaderboard&lfrontier=alpha-bench"' in page
+    assert "?lfrontier=alpha-bench" not in page.replace(
+        "?view=leaderboard&lfrontier=alpha-bench", ""
+    )
+
+
 def test_description_is_present_and_derived_from_the_shard(tmp_path):
     output = _generated_pages(
         tmp_path,
