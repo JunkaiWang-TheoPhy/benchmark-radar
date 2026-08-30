@@ -11,6 +11,7 @@
 <p align="center">
   <a href="https://benchmark-radar.org/"><img alt="已收集的 benchmark 记录" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fbenchmark-radar.org%2Fdata%2Frecords-badge.json&amp;style=for-the-badge"></a>
   <a href="https://benchmark-radar.org/data/radar.json"><img alt="下载数据集" src="https://img.shields.io/badge/Dataset-download%20JSON-2f81f7?style=for-the-badge&amp;logo=json&amp;logoColor=white"></a>
+  <a href="https://zenodo.org/records/22167102"><img alt="阅读技术报告" src="https://img.shields.io/badge/TECH%20REPORT-1682D4?style=for-the-badge&amp;logo=zenodo&amp;logoColor=white"></a>
   <a href="https://x.com/ktwu01"><img alt="X" src="https://img.shields.io/badge/X-000000?style=for-the-badge&amp;logo=x&amp;logoColor=white"></a>
   <a href="https://www.linkedin.com/in/ktwu01"><img alt="LinkedIn" src="https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&amp;logo=linkedin&amp;logoColor=white"></a>
   <a href="https://scholar.google.com/citations?user=s9w1k-cAAAAJ&amp;hl=en"><img alt="Google Scholar" src="https://img.shields.io/badge/Google%20Scholar-4285F4?style=for-the-badge&amp;logo=googlescholar&amp;logoColor=white"></a>
@@ -53,67 +54,13 @@ SWE-bench Verified 的 saturation 过程。**
 
 ## 在本地查询
 
-CLI 会下载并校验 Benchmark Radar 网站使用的完整数据，然后全部在本地查询。正式
-package 发布前，可以直接从 GitHub 安装，然后第一次运行：
+把下面这段直接发给你的 coding agent：
 
-```bash
-python -m pip install 'git+https://github.com/ktwu01/benchmark-radar.git'
-benchmark-radar init
-benchmark-radar search "long-horizon agent benchmark" --scope all --json
-benchmark-radar show opencompass-1248-mmmu --json
-benchmark-radar recent --recommended --json
-benchmark-radar status --json
+```text
+请帮我配置 Benchmark Radar 的本地 benchmark 搜索。请遵循
+https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md，
+安装 CLI 和 consumer Skill，初始化本地数据并确认配置成功。只使用面向用户的命令。
 ```
-
-`init` 会把当前 catalog、详情记录和 Radar snapshots 存到 macOS/Linux 的
-`~/.benchmark-radar`，Windows 则是当前用户目录下的 `.benchmark-radar`。可以用
-`BENCHMARK_RADAR_HOME` 或 `--data-dir` 更改位置。每次开始新的 benchmark 调研前，
-显式更新一次：
-
-```bash
-benchmark-radar sync
-```
-
-`sync` 先检查随 dashboard 发布的很小 manifest；只有 data version 变化时，才从
-GitHub Release 下载完整压缩包，因此 CLI 的大文件流量不会占用 dashboard 的 GitHub
-Pages 配额。新数据会经过文件大小、SHA-256、catalog 和 snapshots 完整性校验，成功后
-原子切换，并删除旧版本，所以稳定状态只保留最新版本。激活失败时，最后一个验证成功
-的版本仍可使用。如果操作
-系统暂时锁住待删除目录，sync 会明确返回 `cleanup_pending`，并在下次 sync 时重试物理
-清理；查询只会使用新版本。搜索命令本身不会联网或暗中改变数据，并会返回可复现的
-`data_version`。未来的 Benchmark Radar Skill 应在每次调研开始时运行一次
-`sync --json`，随后调用 `search --json` 和 `show --json`；`--json` 是稳定的机器输出，
-不加时则输出适合人阅读的文本。
-
-Agent 可以从本仓库安装这个可选、用途无关的 CLI 使用 Skill：
-
-```bash
-npx skills add ktwu01/benchmark-radar --skill benchmark-radar
-```
-
-Skill 只根据用户当前请求选择 CLI 命令，不预设结果是用于科研、评测设计、模型选择，
-还是其他工作。
-
-`catalog` 搜索标准化 benchmark 目录，`radar` 搜索每日情报历史，`all` 同时搜索
-两者，但不会擅自合并它们的身份。当前版本是可复现的关键词/token 检索，不是基于
-embedding 的 semantic search；每条结果都会说明匹配字段、token 覆盖率和排序理由。
-可以按论文、代码仓库、数据集、开放程度、模态和来源过滤。
-
-可选的本地 HTTP API 与 CLI 复用完全相同的查询服务和 JSON 返回结构：
-
-```bash
-benchmark-radar serve --host 127.0.0.1 --port 8765
-curl 'http://127.0.0.1:8765/api/v1/search?q=agent%20benchmark&scope=all'
-```
-
-只读接口包括 `GET /api/v1/search`、
-`GET /api/v1/benchmarks/<key-or-slug>`、`GET /api/v1/recent`、
-`GET /api/v1/status` 和 `GET /healthz`。CLI 与 HTTP 查询时只读取 managed data
-目录，不会临时访问网络。它目前是本地服务，不是已经部署的公共 Search API。以后可以
-再增加 MCP 和 semantic retrieval，而不用复制另一套排序逻辑。
-
-`benchmark-radar normalize-external` 和 `benchmark-radar build-data-release` 是维护者
-及 CI 的构建命令。普通用户通过 `sync` 更新，不需要运行 normalizer。
 
 ## 更多
 
@@ -121,6 +68,7 @@ curl 'http://127.0.0.1:8765/api/v1/search?q=agent%20benchmark&scope=all'
 - [模型卡采用数据](data/model_cards.yml)
 - [公开语料 schema](docs/cumulative-corpus.schema.json)
 - [引用信息](CITATION.cff)
+- [技术报告](https://doi.org/10.5281/zenodo.22167102)
 - [配置](config.yml)
 - **开发环境：** `python -m pip install -e '.[dev]' && benchmark-radar normalize-external`
 - **支持 / 反馈：** [提交 issue](https://github.com/ktwu01/benchmark-radar/issues)
@@ -149,15 +97,18 @@ curl 'http://127.0.0.1:8765/api/v1/search?q=agent%20benchmark&scope=all'
 
 ## 引用
 
-如果 Benchmark Radar 对你的研究或评测工作有帮助，欢迎引用：
+如果 Benchmark Radar 对你的研究或评测工作有帮助，欢迎引用这份技术报告：
 
 ```bibtex
-@misc{wu2026benchmarkradar,
-  title        = {Benchmark Radar: A Daily, Evidence-First Radar and Machine-Readable Corpus for AI Benchmarks},
+@misc{wu_2026_22167102,
   author       = {Wu, Koutian},
+  title        = {Benchmark Radar v0.9.0: Technical Report},
+  month        = aug,
   year         = {2026},
-  howpublished = {\url{https://github.com/ktwu01/benchmark-radar}},
-  note         = {Daily benchmark radar and open dataset}
+  publisher    = {Zenodo},
+  version      = {0.9.0},
+  doi          = {10.5281/zenodo.22167102},
+  url          = {https://doi.org/10.5281/zenodo.22167102}
 }
 ```
 
