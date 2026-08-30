@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If Benchmark Radar supports your research or evaluation work, please cite it using this metadata."
+message: "If Benchmark Radar supports your research or evaluation work, please cite this technical report."
 title: "Benchmark Radar"
 type: dataset
 authors:
@@ -13,3 +13,16 @@ date-released: 2026-08-29
 abstract: >-
   A daily evidence-first radar and machine-readable corpus for AI benchmarks,
   evaluations, datasets, model-card reporting, and data quality.
+preferred-citation:
+  type: report
+  title: "Benchmark Radar v0.9.0: Technical Report"
+  authors:
+    - family-names: Wu
+      given-names: Koutian
+  doi: "10.5281/zenodo.22167102"
+  month: 8
+  year: 2026
+  publisher:
+    name: Zenodo
+  url: "https://zenodo.org/records/22167102"
+  version: 0.9.0

@@ -15,6 +15,7 @@ connector, a first-party feed, or the Hacker News attention source. -->
 <p align="center">
   <a href="https://benchmark-radar.org/"><img alt="Benchmarks collected" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fbenchmark-radar.org%2Fdata%2Frecords-badge.json&amp;style=for-the-badge"></a>
   <a href="https://benchmark-radar.org/data/radar.json"><img alt="Download data" src="https://img.shields.io/badge/%E2%86%93%20DOWNLOAD%20DATA-2f81f7?style=for-the-badge"></a>
+  <a href="https://zenodo.org/records/22167102"><img alt="Read the technical report" src="https://img.shields.io/badge/TECH%20REPORT-1682D4?style=for-the-badge&amp;logo=zenodo&amp;logoColor=white"></a>
   <a href="https://x.com/ktwu01"><img alt="X" src="https://img.shields.io/badge/-000000?style=for-the-badge&amp;logo=x&amp;logoColor=white"></a>
   <a href="https://www.linkedin.com/in/ktwu01"><img alt="LinkedIn" src="https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&amp;logo=linkedin&amp;logoColor=white"></a>
   <a href="https://scholar.google.com/citations?user=s9w1k-cAAAAJ&amp;hl=en"><img alt="Google Scholar" src="https://img.shields.io/badge/Google%20Scholar-4285F4?style=for-the-badge&amp;logo=googlescholar&amp;logoColor=white"></a>
@@ -58,76 +59,14 @@ If Benchmark Radar saves you research time, **[star the repository](https://gith
 
 ## Query it locally
 
-The CLI downloads a complete, verified copy of the data shown by Benchmark Radar,
-then searches it locally. Until a packaged release is published, install it directly
-from GitHub, then initialize it once:
+Give this prompt to your coding agent:
 
-```bash
-python -m pip install 'git+https://github.com/ktwu01/benchmark-radar.git'
-benchmark-radar init
-benchmark-radar search "long-horizon agent benchmark" --scope all --json
-benchmark-radar show opencompass-1248-mmmu --json
-benchmark-radar recent --recommended --json
-benchmark-radar status --json
+```text
+Set up Benchmark Radar for local benchmark search. Follow
+https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md
+to install the CLI and consumer Skill, initialize the local data, and verify the
+setup. Use only consumer commands.
 ```
-
-`init` stores the current catalog, detail records, and Radar snapshots under
-`~/.benchmark-radar` on macOS/Linux or the current user's `.benchmark-radar`
-directory on Windows. Set `BENCHMARK_RADAR_HOME` or pass `--data-dir` to choose
-another location. Update it explicitly before a new research session:
-
-```bash
-benchmark-radar sync
-```
-
-`sync` first checks the small manifest published with the dashboard. It downloads
-the GitHub Release archive only when the data version changed, keeping bulk CLI
-traffic off the dashboard's GitHub Pages allowance. It verifies the archive size
-and SHA-256 checksum, validates the catalog and snapshots, switches versions
-atomically, then removes the previous version. A failed activation leaves the last
-verified version active. If the OS
-temporarily locks an obsolete directory, sync reports `cleanup_pending` and retries
-that physical cleanup next time; only the new version remains queryable. Search
-itself never accesses the network or silently changes data, so its reported
-`data_version` is reproducible. A Benchmark Radar Skill should run `sync --json`
-once at the start of benchmark research, then use `search --json` and `show --json`;
-`--json` selects the stable machine-readable output, while the default output is
-for people.
-
-Agents can install the optional, purpose-neutral CLI guide from this repository:
-
-```bash
-npx skills add ktwu01/benchmark-radar --skill benchmark-radar
-```
-
-The Skill chooses among the CLI commands from the user's request; it does not assume
-whether the results are for research, evaluation design, model selection, or another
-workflow.
-
-`catalog` searches the normalized benchmark catalog, `radar` searches the daily
-evidence history, and `all` searches both while keeping their identities separate.
-Search is deterministic lexical/token matching in this version—not embedding-based
-semantic search—and every result explains its matched fields, token coverage, and
-ranking reason. Filters include paper, repository, dataset, openness, modality, and
-source.
-
-The optional local HTTP API uses exactly the same query service and JSON response
-contract:
-
-```bash
-benchmark-radar serve --host 127.0.0.1 --port 8765
-curl 'http://127.0.0.1:8765/api/v1/search?q=agent%20benchmark&scope=all'
-```
-
-Available read-only routes are `GET /api/v1/search`,
-`GET /api/v1/benchmarks/<key-or-slug>`, `GET /api/v1/recent`,
-`GET /api/v1/status`, and `GET /healthz`. Both interfaces read generated catalog
-files from the managed data directory; they do not fetch the network during a query.
-This is a local server, not a publicly deployed search API. MCP and semantic
-retrieval can be added later without creating a second ranking implementation.
-
-`benchmark-radar normalize-external` and `benchmark-radar build-data-release` are
-maintainer/CI build commands. End users update with `sync`, not with the normalizer.
 
 ## More
 
@@ -194,15 +133,19 @@ Thanks to everyone who helps make Benchmark Radar more useful.
 
 ## Citation
 
-If Benchmark Radar supports your research or evaluation work, please cite it:
+If Benchmark Radar supports your research or evaluation work, please cite the
+technical report:
 
 ```bibtex
-@misc{wu2026benchmarkradar,
-  title        = {Benchmark Radar: A Daily, Evidence-First Radar and Machine-Readable Corpus for AI Benchmarks},
+@misc{wu_2026_22167102,
   author       = {Wu, Koutian},
+  title        = {Benchmark Radar v0.9.0: Technical Report},
+  month        = aug,
   year         = {2026},
-  howpublished = {\url{https://github.com/ktwu01/benchmark-radar}},
-  note         = {Daily benchmark radar and open dataset}
+  publisher    = {Zenodo},
+  version      = {0.9.0},
+  doi          = {10.5281/zenodo.22167102},
+  url          = {https://doi.org/10.5281/zenodo.22167102}
 }
 ```
 
