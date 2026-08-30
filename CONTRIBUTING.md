@@ -99,7 +99,6 @@ ruff format --check .
 benchmark-radar normalize-external
 benchmark-radar classify
 benchmark-radar build-data-release
-python scripts/evaluate_search.py
 pytest -q
 ```
 

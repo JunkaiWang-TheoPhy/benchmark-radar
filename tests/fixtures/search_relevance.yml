@@ -38,7 +38,7 @@ cases:
     query: protein structure prediction
     scope: catalog
     kind: catalog_gap
-    expected_status: matches_found
+    expected_status: partial_candidates_only
     minimum_candidates: 1
     must_include_candidates: [StructTokenBench]
 
@@ -54,7 +54,7 @@ cases:
     query: stock prediction
     scope: catalog
     kind: catalog_gap
-    expected_status: matches_found
+    expected_status: partial_candidates_only
     minimum_candidates: 1
     must_include_candidates: []
 
@@ -62,6 +62,6 @@ cases:
     query: robot grasp planning
     scope: catalog
     kind: catalog_gap
-    expected_status: matches_found
+    expected_status: partial_candidates_only
     minimum_candidates: 1
     must_include_candidates: []

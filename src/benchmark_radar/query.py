@@ -14,7 +14,7 @@ from typing import Any
 
 from .snapshots import REQUIRED_SOURCES, load_snapshots
 
-QUERY_SCHEMA_VERSION = 4
+QUERY_SCHEMA_VERSION = 5
 DEFAULT_INDEX_PATH = Path("site/data/benchmark-index.json")
 DEFAULT_SHARD_DIR = Path("site/data/benchmarks")
 DEFAULT_SNAPSHOT_DIR = Path("data/snapshots")
@@ -539,16 +539,26 @@ class QueryService:
             sort_key, explanation = match
             scored.append((sort_key, {**record, "match": explanation}))
         scored.sort(key=lambda value: value[0])
+        full_match_count = sum(not record["match"]["missing_tokens"] for _, record in scored)
+        partial_match_count = len(scored) - full_match_count
         results = [
             {**record, "rank": rank} for rank, (_, record) in enumerate(scored[:limit], start=1)
         ]
-        status = "matches_found" if scored else "no_lexical_candidates"
+        if full_match_count:
+            status = "full_matches_found"
+        elif partial_match_count:
+            status = "partial_candidates_only"
+        else:
+            status = "no_lexical_candidates"
         LOGGER.info(
-            "lexical search query=%r scope=%s documents=%d candidates=%d returned=%d status=%s",
+            "lexical search query=%r scope=%s documents=%d candidates=%d full=%d partial=%d "
+            "returned=%d status=%s",
             query,
             scope,
             len(corpus.documents),
             candidate_count,
+            full_match_count,
+            partial_match_count,
             len(results),
             status,
         )
@@ -568,6 +578,8 @@ class QueryService:
             "limit": limit,
             "candidate_count": candidate_count,
             "total_matches": len(scored),
+            "full_match_count": full_match_count,
+            "partial_match_count": partial_match_count,
             "count": len(results),
             "data": self._data_summary(scope=scope),
             "results": results,

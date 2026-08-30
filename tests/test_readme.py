@@ -123,7 +123,9 @@ def test_consumer_skill_separates_query_expansion_from_evidence_trust():
 
     assert "two to four" in text
     assert "short, discriminative variants" in text
-    assert "search_status: no_lexical_candidates" in text
+    assert "no_lexical_candidates" in text
+    assert "partial_candidates_only" in text
+    assert "full_matches_found" in text
     assert "A search result" in text
     assert "is a candidate, not a suitability claim" in text
     assert "Radar item is a lead" in text

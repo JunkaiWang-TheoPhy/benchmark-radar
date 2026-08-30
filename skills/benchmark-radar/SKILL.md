@@ -62,12 +62,13 @@ query produced each candidate. A candidate found by several variants is useful
 support, but raw BM25F scores are query-specific and must not be added or compared
 across queries.
 
-Interpret `search_status: no_lexical_candidates` as “no record shared any query
-token in this local data version,” not proof that no such benchmark exists. Partial
-matches may be useful terminology or adjacent-task leads, but never treat coverage
-or rank alone as proof of suitability. If catalog candidates remain insufficient
-and recent discovery is relevant, search `radar` with the same task terms and label
-every result as unverified Radar evidence.
+Interpret `search_status: full_matches_found` as complete lexical coverage in at
+least one candidate, not proof of suitability. Interpret `partial_candidates_only`
+as inspectable evidence that still needs query refinement or record review, never as
+an answer. Interpret `no_lexical_candidates` as “no record shared any query token in
+this local data version,” not proof that no such benchmark exists. If Catalog
+candidates remain insufficient and recent discovery is relevant, search `radar` with
+the same task terms and label every result as unverified Radar evidence.
 
 Use `--json` for agent work; omit it only when the user wants terminal-friendly
 text. Apply supported filters only when they come from the request. Do not run

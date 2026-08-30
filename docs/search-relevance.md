@@ -40,12 +40,23 @@ Search has three explicit stages:
    relevance and suitability judgment. Weighted query coverage is a tie-breaker and
    explanation, never an eligibility gate or an additive score component.
 
-The response exposes `candidate_count`, `total_matches`, `search_status`, policy
-identity, matched and missing tokens, weighted coverage, fields, phrase fields, the
-raw ranking score, and its score components. Candidate count and total matches are
-equal because search no longer hides partial lexical evidence behind a service-side
-acceptance policy. The score orders one query; it is not calibrated confidence and
-must not be compared across queries.
+The response exposes `candidate_count`, `total_matches`, `full_match_count`,
+`partial_match_count`, `search_status`, policy identity, matched and missing tokens,
+weighted coverage, fields, phrase fields, the raw ranking score, and its score
+components. Candidate count and total matches are equal because search no longer
+hides partial lexical evidence behind a service-side acceptance policy. The score
+orders one query; it is not calibrated confidence and must not be compared across
+queries.
+
+Status is a lexical decision separate from candidate retrieval:
+
+- `full_matches_found`: at least one candidate covers every unique query token;
+- `partial_candidates_only`: candidates exist, but all have missing query tokens;
+- `no_lexical_candidates`: no record shares any query token.
+
+Partial candidates remain in `results` for agent inspection. The status prevents
+them from being presented as confident answers without reintroducing an all-terms
+eligibility gate.
 
 When no record shares even one token with the query, the result is:
 
@@ -54,14 +65,15 @@ When no record shares even one token with the query, the result is:
   "search_status": "no_lexical_candidates",
   "candidate_count": 0,
   "total_matches": 0,
+  "full_match_count": 0,
+  "partial_match_count": 0,
   "results": []
 }
 ```
 
 This is a retrieval fact about the current local data version. It does not prove
-that the wider world contains no such benchmark. Conversely, `matches_found` only
-means that lexical candidates exist; it does not assert that they satisfy the user's
-task.
+that the wider world contains no such benchmark. Likewise, complete lexical coverage
+does not assert that a candidate satisfies the user's task.
 
 This follows the same broad decomposition used by established lexical engines:
 

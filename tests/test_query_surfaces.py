@@ -140,9 +140,11 @@ def test_catalog_search_is_deterministic_and_explains_matches(tmp_path: Path) ->
         "llm-stats:agent-workbench-extended",
     ]
     assert result["retrieval_mode"] == "lexical"
-    assert result["search_status"] == "matches_found"
+    assert result["search_status"] == "full_matches_found"
     assert result["candidate_count"] == 2
     assert result["total_matches"] == 2
+    assert result["full_match_count"] == 2
+    assert result["partial_match_count"] == 0
     assert result["matching_policy"]["name"] == "lexical_candidates_v1"
     assert result["matching_policy"]["ranking"] == "bm25f_v3"
     assert result["results"][0]["match"]["matched_fields"] == [
@@ -161,9 +163,11 @@ def test_search_returns_partial_candidates_with_evidence_for_agent_judgment(
 
     result = service.search("protein agent prediction", scope="catalog", limit=10)
 
-    assert result["search_status"] == "matches_found"
+    assert result["search_status"] == "partial_candidates_only"
     assert result["candidate_count"] == 2
     assert result["total_matches"] == 2
+    assert result["full_match_count"] == 0
+    assert result["partial_match_count"] == 2
     assert [item["key"] for item in result["results"]] == [
         "opencompass:agent-workbench",
         "llm-stats:agent-workbench-extended",
@@ -221,6 +225,8 @@ def test_name_matching_does_not_cross_token_boundaries(tmp_path: Path) -> None:
     assert result["search_status"] == "no_lexical_candidates"
     assert result["candidate_count"] == 0
     assert result["total_matches"] == 0
+    assert result["full_match_count"] == 0
+    assert result["partial_match_count"] == 0
     assert result["results"] == []
 
 
@@ -361,6 +367,35 @@ def test_cli_and_http_return_the_same_search_contract(tmp_path: Path, capsys) ->
     assert cli_payload == http_payload
 
 
+def test_cli_labels_partial_candidates_without_hiding_them(tmp_path: Path, capsys) -> None:
+    # Regression: the terminal rendered weak one-token evidence as ordinary
+    # matches, so an agent had no top-level signal that no full lexical match existed.
+    paths = _catalog(tmp_path)
+
+    exit_code = run_query_cli(
+        [
+            "search",
+            "protein agent prediction",
+            "--scope",
+            "catalog",
+            "--limit",
+            "2",
+            "--index",
+            str(paths.index),
+            "--shards",
+            str(paths.shards),
+            "--snapshots",
+            str(paths.snapshots),
+        ]
+    )
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert "2 of 2 partial lexical candidates" in output
+    assert "none matched every query token" in output
+    assert "Agent Workbench" in output
+
+
 def test_cli_and_http_return_the_same_non_search_contracts(tmp_path: Path, capsys) -> None:
     # Regression: shared search alone did not prevent detail/status serializers drifting.
     paths = _catalog(tmp_path)
@@ -419,7 +454,7 @@ def test_healthz_identifies_local_health_check_contract(tmp_path: Path) -> None:
         thread.join(timeout=5)
 
     assert payload == {
-        "schema_version": 4,
+        "schema_version": 5,
         "retrieval_mode": "health_check",
         "data": {"source": "local"},
         "status": "ok",
@@ -501,6 +536,6 @@ def test_http_errors_are_machine_readable(tmp_path: Path) -> None:
 
     assert captured.value.code == 400
     assert payload == {
-        "schema_version": 4,
+        "schema_version": 5,
         "error": {"code": "invalid_request", "message": "q is required"},
     }

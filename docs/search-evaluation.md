@@ -48,8 +48,10 @@ python scripts/evaluate_search.py
 ```
 
 The command exits non-zero when a versioned threshold fails and prints per-query
-evidence for review. Ranking changes must also run the repository's complete CI
-sequence; this dataset supplements structural tests rather than replacing them.
+evidence for review. It is deliberately not part of CI while judgments remain
+LLM-assisted and sparsely human-reviewed. Ranking changes must still run the
+repository's complete CI sequence; this dataset supplements structural tests rather
+than replacing them.
 
 ## Current limitation
 
@@ -58,3 +60,12 @@ were assembled from confirmed user intents and inspected local records, so they 
 useful for preventing regressions but insufficient for claiming general search
 quality. A later version should add independently authored intents and pooled human
 judgments before reporting Precision@K or NDCG.
+
+## Qualitative judge set
+
+`evaluation/search_judge_cases.yml` contains twenty additional navigational,
+topical, ambiguous, and out-of-catalog intents. It has no executable thresholds and
+is not loaded by product code or CI. A human or LLM reviewer runs every case through
+the same `QueryService`, then judges leading candidates, status honesty, and match
+evidence using the shared rubric. The ranking implementation must never branch on a
+case ID or query string from this file.

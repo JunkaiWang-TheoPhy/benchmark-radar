@@ -40,7 +40,7 @@ def test_positive_queries_surface_known_relevant_records(case: dict) -> None:
     result = QueryService().search(case["query"], scope=case["scope"], limit=20)
     returned = {record["name"] for record in result["results"]}
 
-    assert result["search_status"] == "matches_found"
+    assert result["search_status"] == "full_matches_found"
     assert set(case["must_include"]) <= returned
     assert all(record["match"]["matched_tokens"] for record in result["results"])
 
@@ -60,12 +60,16 @@ def test_catalog_gap_queries_return_inspectable_candidates_without_false_full_ma
     assert result["total_matches"] == result["candidate_count"]
     returned = {record["name"] for record in result["results"]}
     assert set(case["must_include_candidates"]) <= returned
-    if case["expected_status"] == "matches_found":
+    if case["expected_status"] == "partial_candidates_only":
         assert result["results"]
+        assert result["full_match_count"] == 0
+        assert result["partial_match_count"] == result["total_matches"]
         assert all(record["match"]["missing_tokens"] for record in result["results"])
         assert all(record["match"]["query_coverage"] < 1.0 for record in result["results"])
     else:
         assert result["candidate_count"] == 0
+        assert result["full_match_count"] == 0
+        assert result["partial_match_count"] == 0
         assert result["results"] == []
 
 

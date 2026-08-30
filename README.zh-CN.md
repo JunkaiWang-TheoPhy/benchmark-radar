@@ -101,8 +101,11 @@ fielded BM25 主分数、受控的名称匹配和短语匹配 boost 排序；加
 同分候选的次级排序和解释，避免与 BM25 重复计分。局部匹配不会被“所有词必须命中”的
 硬门槛删除，而是连同判断证据交给 Agent。每条结果都会说明命中与缺失的 token、加权
 覆盖率、匹配字段和各项分数组成。`no_lexical_candidates` 表示当前本地数据版本中没有
-记录命中任何 query token。原始排序分数只在同一次 query 内有意义，不能跨 query 比较。
-可以按论文、代码仓库、数据集、开放程度、模态和来源过滤。
+记录命中任何 query token。`partial_candidates_only` 表示找到了词法证据，但没有候选覆盖
+所有 query token；这些记录仍交给 Agent 检查，却不会伪装成已经找到答案。
+`full_matches_found` 只表示至少一条记录实现完整词法覆盖，不代表它自动适用。原始排序
+分数只在同一次 query 内有意义，不能跨 query 比较。可以按论文、代码仓库、数据集、
+开放程度、模态和来源过滤。
 
 Agent 应分别搜索 `catalog` 与 `radar`。Catalog 是标准化 benchmark 记录；Radar 是近期
 证据线索，其中可能只是使用某 benchmark 的论文，并不一定发布了新 benchmark。少量、
@@ -126,7 +129,7 @@ curl 'http://127.0.0.1:8765/api/v1/search?q=agent%20benchmark&scope=all'
 `benchmark-radar normalize-external` 和 `benchmark-radar build-data-release` 是维护者
 及 CI 的构建命令。普通用户通过 `sync` 更新，不需要运行 normalizer。
 
-搜索排序变更会通过版本化的稀疏标注数据集检查：
+搜索排序变更可以在本地通过版本化的稀疏标注数据集复核：
 
 ```bash
 python scripts/evaluate_search.py
@@ -134,7 +137,8 @@ python scripts/evaluate_search.py
 
 报告包含 Hit@5、MRR@20、Recall@20、导航查询 Hit@1，以及已知 Catalog 缺口的 Top-20
 部分候选保留率与完整匹配率。未列出的结果按“尚未标注”处理，而不是负例，因此初版
-数据集不会虚报 Precision 或 NDCG。
+数据集不会虚报 Precision 或 NDCG。在标签得到更广泛的人工复核前，这套 LLM 辅助评测
+不会作为 CI gate。
 
 ## 更多
 

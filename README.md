@@ -113,9 +113,13 @@ is retained as a tie-breaker and explanation instead of being counted twice. Par
 matches remain visible for the consuming agent to judge instead of being deleted by an
 all-terms gate. Every result explains its matched and missing terms, weighted token
 coverage, matched fields, and score components. `no_lexical_candidates` means that no
-record shared even one query token in this local data version. Raw ranking scores are
-query-specific; do not compare them across different queries. Filters include paper,
-repository, dataset, openness, modality, and source.
+record shared even one query token in this local data version.
+`partial_candidates_only` means evidence was retrieved but no candidate covered every
+query token; those rows remain available for agent inspection without being presented
+as an answer. `full_matches_found` means at least one row has complete lexical
+coverage, not that it is automatically suitable. Raw ranking scores are query-specific;
+do not compare them across different queries. Filters include paper, repository,
+dataset, openness, modality, and source.
 
 Agents should search `catalog` and `radar` separately. Catalog results are normalized
 benchmark records; Radar results are recent evidence leads and may be papers that use
@@ -143,7 +147,8 @@ retrieval can be added later without creating a second ranking implementation.
 `benchmark-radar normalize-external` and `benchmark-radar build-data-release` are
 maintainer/CI build commands. End users update with `sync`, not with the normalizer.
 
-Search ranking changes are checked against the versioned sparse-judgment dataset:
+Search ranking changes can be reviewed locally against the versioned sparse-judgment
+dataset:
 
 ```bash
 python scripts/evaluate_search.py
@@ -152,7 +157,8 @@ python scripts/evaluate_search.py
 The report includes Hit@5, MRR@20, Recall@20, navigational Hit@1, and both partial
 candidate retention and full-match rates for known Catalog gaps. Unlisted results are
 deliberately treated as unjudged rather than negative, so this initial dataset does
-not claim precision or NDCG.
+not claim precision or NDCG. This LLM-assisted evaluation is intentionally not a CI
+gate until its labels receive broader human review.
 
 ## More
 

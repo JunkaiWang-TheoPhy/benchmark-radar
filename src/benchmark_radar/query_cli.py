@@ -114,10 +114,17 @@ def _print_search(payload: dict[str, Any]) -> None:
     if payload["search_status"] == "no_lexical_candidates":
         print(f"No lexical candidates found (scope={payload['scope']}).")
         return
-    print(
-        f"{payload['count']} of {payload['total_matches']} lexical candidates "
-        f"({payload['retrieval_mode']}, scope={payload['scope']})"
-    )
+    if payload["search_status"] == "partial_candidates_only":
+        print(
+            f"{payload['count']} of {payload['total_matches']} partial lexical candidates; "
+            f"none matched every query token (scope={payload['scope']})"
+        )
+    else:
+        print(
+            f"{payload['count']} of {payload['total_matches']} lexical candidates "
+            f"({payload['full_match_count']} full, {payload['partial_match_count']} partial, "
+            f"scope={payload['scope']})"
+        )
     for item in payload["results"]:
         locator = item.get("slug") or item["key"]
         print(f"{item['rank']:>3}. {item['name']}  [{item['kind']}]  {locator}")
