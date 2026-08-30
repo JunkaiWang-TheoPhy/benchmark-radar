@@ -1,0 +1,123 @@
+name: Contributor points
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [assigned]
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: contributor-points-${{ github.event.issue.number || 'scheduled' }}
+  cancel-in-progress: false
+
+jobs:
+  claim:
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.comment.body == '/claim' &&
+      !github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Assign one contributor and publish the deadline
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          CONTRIBUTOR: ${{ github.actor }}
+          CLAIMED_AT: ${{ github.event.comment.created_at }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          title="$(gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --json title --jq .title)"
+          assignee_count="$(gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --json assignees --jq '.assignees | length')"
+
+          if [[ ! "$title" =~ ^\[[1-9][0-9]*\ points?\] ]]; then
+            gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
+              --body "This issue is not scored yet. A maintainer must add a \`[N points]\` prefix before it can be claimed. / 这个 issue 还没有定分，需先由维护者添加 \`[N points]\`。"
+            exit 0
+          fi
+          if [[ "$assignee_count" != "0" ]]; then
+            gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
+              --body "This issue already has an assignee, so this claim was not accepted. / 这个 issue 已有人认领，本次认领无效。"
+            exit 0
+          fi
+
+          gh issue edit "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --add-assignee "$CONTRIBUTOR"
+          deadline="$(date -u --date "$CLAIMED_AT + 7 days" +'%Y-%m-%dT%H:%M:%SZ')"
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
+            --body "Claimed by @$CONTRIBUTOR. Complete and merge the closing PR by **$deadline** (168 hours) to earn the title score. / @$CONTRIBUTOR 已认领，请在 **$deadline** 前完成并合并关闭此 issue 的 PR。"
+
+  enforce-one-assignee:
+    if: github.event_name == 'issues' && github.event.action == 'assigned'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Remove a second assignee
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          NEW_ASSIGNEE: ${{ github.event.assignee.login }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          title="$(gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --json title --jq .title)"
+          if [[ ! "$title" =~ ^\[[1-9][0-9]*\ points?\] ]]; then
+            exit 0
+          fi
+          assignee_count="$(gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --json assignees --jq '.assignees | length')"
+          if (( assignee_count <= 1 )); then
+            exit 0
+          fi
+          gh issue edit "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --remove-assignee "$NEW_ASSIGNEE"
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
+            --body "Only one assignee is allowed on scored work; @$NEW_ASSIGNEE was removed. / 计分任务只能有一位负责人，已移除 @$NEW_ASSIGNEE。"
+
+  update-public-ledger:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+      - name: Build ledger
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/contributor_points.py --format json > "$RUNNER_TEMP/contributor-points.json"
+      - name: Release expired claims
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS=$'\t' read -r issue_number contributor deadline; do
+            [ -n "$issue_number" ] || continue
+            gh issue edit "$issue_number" --repo "$GITHUB_REPOSITORY" --remove-assignee "$contributor"
+            gh issue comment "$issue_number" --repo "$GITHUB_REPOSITORY" \
+              --body "@$contributor's claim expired at **$deadline**. No points were awarded and the issue is available again. / @$contributor 的认领已于 **$deadline** 到期，本次不计分，issue 重新开放认领。"
+          done < <(jq -r '.contributions[] | select(.kind == "issue" and .status == "expired" and .contributor) | [.number, .contributor, .deadline] | @tsv' "$RUNNER_TEMP/contributor-points.json")
+      - name: Rebuild public score document
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/contributor_points.py --format markdown > docs/contributor-points.md
+      - name: Publish changed scores
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat docs/contributor-points.md >> "$GITHUB_STEP_SUMMARY"
+          if git diff --quiet -- docs/contributor-points.md; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/contributor-points.md
+          git commit -m "docs: update contribution scores"
+          git push origin HEAD:main

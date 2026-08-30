@@ -1,10 +1,11 @@
 name: Show how you use Benchmark Radar / 展示你的使用场景
 description: Share a project, paper, evaluation, or workflow that Benchmark Radar helped. / 分享 Benchmark Radar 帮到的项目、论文、评测或工作流。
+title: "[3 points] 真实使用案例 / Real use case: "
 labels: ["use-case"]
 body:
   - type: markdown
     attributes:
-      value: "A short note is enough. A public link helps other eval builders learn from it. / 简短说明即可；附上公开链接，别人更容易参考。"
+      value: "Propose any real use case—not only the examples in the collaboration call. An accepted case is worth 3 points. After acceptance, comment `/claim`; one person gets 7 days to complete it. / 可以提出任何真实使用案例，不限于协作征集中的例子。通过后为 3 分；请评论 `/claim` 认领，每次仅一人，7 天内完成。"
 
   - type: textarea
     id: use

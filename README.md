@@ -166,4 +166,11 @@ See [`CITATION.cff`](CITATION.cff) for machine-readable citation metadata.
 - [SEO and indexing guide](docs/seo-indexing-guide.md)
 - [Benchmark logo gallery](https://benchmark-radar.org/logos.html)
 
+<details>
+<summary>contribute score</summary>
+
+[See the public contribution-score ledger and rules.](docs/contributor-points.md)
+
+</details>
+
 </details>
