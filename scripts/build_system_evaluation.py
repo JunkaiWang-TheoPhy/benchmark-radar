@@ -370,7 +370,7 @@ def story(doi: str) -> list:
                 st["body"],
             ),
             p(
-                "BuilderPulse cross-validates more than 300 live public signals into one sourced daily build brief [8]. Benchmark Radar applies a similar daily-brief format to benchmark discovery, then retains normalized records for search and score history.",
+                "Benchmark Radar's daily-intelligence logic was inspired by BuilderPulse, an AI-powered daily intelligence project for indie hackers and builders that answers 20 questions from 10+ sources every morning [8]. Benchmark Radar adapts that multi-source briefing pattern to benchmark discovery, normalized catalog search, and score history.",
                 st["body"],
             ),
             search_surface(st),
@@ -1051,7 +1051,7 @@ def story(doi: str) -> list:
                 st["reference"],
             ),
             p(
-                "[8] L. Xiaopai. BuilderPulse: a daily opportunity brief for indie hackers. GitHub, 2026. https://github.com/BuilderPulse/BuilderPulse",
+                "[8] L. Xiaopai. BuilderPulse: AI-powered daily intelligence for indie hackers and builders. GitHub, 2026. https://github.com/BuilderPulse/BuilderPulse",
                 st["reference"],
             ),
             Spacer(1, 9),
