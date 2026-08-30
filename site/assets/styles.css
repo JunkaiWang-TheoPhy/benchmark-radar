@@ -158,6 +158,16 @@ th {
   color: var(--muted);
 }
 
+.privacy-note {
+  max-width: 76ch;
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.privacy-note a {
+  color: inherit;
+}
+
 .brand-mark {
   position: relative;
   width: 42px;

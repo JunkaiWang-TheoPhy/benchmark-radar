@@ -62,6 +62,26 @@ def test_site_has_accessible_landmarks_and_views():
     assert "explorer-view" not in parser.ids
 
 
+def test_every_html_entry_point_loads_clarity_once_and_discloses_analytics():
+    html_paths = sorted(Path("site").glob("*.html"))
+    assert html_paths
+
+    for path in html_paths:
+        html = path.read_text(encoding="utf-8")
+        head = html.split("<head>", 1)[1].split("</head>", 1)[0]
+        assert head.count('src="assets/clarity.js"') == 1, path
+
+    loader = Path("site/assets/clarity.js").read_text(encoding="utf-8")
+    assert loader.count("ya4h95jvfj") == 1
+    assert "https://www.clarity.ms/tag/" in loader
+    assert "t.async = 1" in loader
+
+    homepage = Path("site/index.html").read_text(encoding="utf-8")
+    assert "session replays and heatmaps" in homepage
+    assert "Sensitive content is masked by default" in homepage
+    assert "https://privacy.microsoft.com/privacystatement" in homepage
+
+
 def test_priority_score_is_reachably_explained():
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
