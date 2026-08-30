@@ -257,7 +257,7 @@ def _page_html(slug: str, shard: dict[str, Any]) -> str:
         scores_html = (
             '<p class="caveat">No reported scores are on record for this benchmark yet.</p>'
         )
-    interactive = f"{SITE_URL}/?lfrontier={slug}"
+    interactive = f"{SITE_URL}/?view=leaderboard&lfrontier={slug}"
     nav = _benchmark_nav(interactive)
     return f"""<!doctype html>
 <html lang="en">
