@@ -711,8 +711,12 @@ def main() -> None:
     )
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    doc = ReportDocTemplate(str(args.output), doi=args.doi)
-    doc.build(report_story(args.doi))
+    # Keep the original entry point working while the expanded system audit
+    # lives in its own readable source module.
+    from build_system_evaluation import EvaluationDoc, story
+
+    doc = EvaluationDoc(str(args.output), doi=args.doi)
+    doc.build(story(args.doi))
     print(args.output)
 
 
