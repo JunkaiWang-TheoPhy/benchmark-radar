@@ -369,6 +369,10 @@ def story(doi: str) -> list:
                 "The README leads with the user task: find a benchmark in seconds, then inspect model-card adoption and score movement. The dashboard and RSS feed serve readers. JSON, the local CLI, and the local HTTP API support reproducible research.",
                 st["body"],
             ),
+            p(
+                "BuilderPulse cross-validates more than 300 live public signals into one sourced daily build brief [8]. Benchmark Radar applies a similar daily-brief format to benchmark discovery, then retains normalized records for search and score history.",
+                st["body"],
+            ),
             search_surface(st),
             Spacer(1, 7),
             p("1.1 Search coverage", st["subsection"]),
@@ -1044,6 +1048,10 @@ def story(doi: str) -> list:
             ),
             p(
                 "[7] Citation File Format developers. Citation File Format 1.2.0. https://citation-file-format.github.io/",
+                st["reference"],
+            ),
+            p(
+                "[8] L. Xiaopai. BuilderPulse: a daily opportunity brief for indie hackers. GitHub, 2026. https://github.com/BuilderPulse/BuilderPulse",
                 st["reference"],
             ),
             Spacer(1, 9),
