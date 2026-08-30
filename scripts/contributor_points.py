@@ -15,7 +15,7 @@ from typing import Any
 POINTS_RE = re.compile(r"^\[([1-9][0-9]*) points?\](?:\s|$)", re.IGNORECASE)
 POLICY_START = datetime(2026, 8, 30, tzinfo=UTC)
 CLAIM_WINDOW = timedelta(days=7)
-COLLABORATOR_THRESHOLD = 6
+COLLABORATOR_THRESHOLD = 12
 OWNER = "ktwu01"
 
 
@@ -303,12 +303,14 @@ def render_markdown(ledger: dict[str, Any]) -> str:
         "`/claim`. One person gets 168 hours to merge a PR that closes it. / 选择标题以 "
         "`[N points]` 开头的 issue，评论 `/claim`；每次一人，须在 168 小时内合并关闭它的 PR。",
         "- Only work an outside contributor can complete is scored. A clear bug is at "
-        "least 2 points; a clear model-card addition or new real use case is 3. Broader "
+        "least 2 points; a clear model-card addition is 3 and a new real use case is 6. "
+        "Broader "
         "or ambiguous work may be higher. / 只有外部贡献者能完成的任务才计分；明确的 bug "
-        "最低 2 分，明确的模型卡补充或新真实使用案例为 3 分；范围更广或更模糊的任务可以更高。",
-        "- Six points earns a collaborator seat. Technical-report coauthorship also "
+        "最低 2 分，明确的模型卡补充为 3 分，新真实使用案例为 6 分；"
+        "范围更广或更模糊的任务可以更高。",
+        "- Twelve points earns a collaborator seat. Technical-report coauthorship also "
         "requires substantive intellectual contribution, drafting or critical revision, "
-        "final approval, and accountability. / 累计 6 分获得协作者席位；"
+        "final approval, and accountability. / 累计 12 分获得协作者席位；"
         "技术报告署名还要求实质性智力贡献、撰写或关键修订、最终批准和责任承担。",
         "",
         "[Available scored issues](https://github.com/ktwu01/benchmark-radar/"

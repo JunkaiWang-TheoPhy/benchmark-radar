@@ -113,7 +113,7 @@ def test_historical_prs_count_once_and_bots_cannot_take_a_seat():
         ),
         pull_request(
             number=2,
-            title="[2 points] Fix bug",
+            title="[8 points] Add analysis",
             mergedAt="2026-08-21T00:00:00Z",
         ),
         pull_request(
@@ -140,9 +140,10 @@ def test_historical_prs_count_once_and_bots_cannot_take_a_seat():
 
     assert totals["alice"] == {
         "contributor": "alice",
-        "points": 6,
+        "points": 12,
         "eligible_for_collaborator_seat": True,
     }
+    assert ledger["collaborator_threshold"] == 12
     assert totals["app/dependabot"]["points"] == 8
     assert not totals["app/dependabot"]["eligible_for_collaborator_seat"]
     assert "ktwu01" not in totals
@@ -168,6 +169,6 @@ def test_public_markdown_is_standalone_and_omits_unclaimed_queue():
     assert markdown.startswith("# Contribution score\n")
     assert "`/claim`" in markdown
     assert "Only work an outside contributor can complete is scored" in markdown
-    assert "clear model-card addition or new real use case is 3" in markdown
+    assert "clear model-card addition is 3 and a new real use case is 6" in markdown
     assert "[PR #1](https://example.test/pull/20)" in markdown
     assert "ready" not in markdown

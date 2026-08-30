@@ -34,7 +34,7 @@ The report becomes a public research program rather than a static description of
 - "No certified trend" means the current corpus cannot justify the conclusion; it does not mean the underlying field has no trend.
 - A real use case records the user's question, the Radar data or interface used, the analysis performed, the decision or finding, and limitations.
 - Any issue whose title begins with `[N points]` is part of the public contribution program, regardless of label. Existing `friends` issues are the first scored set, not the boundary of the program.
-- A contributor may propose any real Benchmark Radar use case. An accepted use-case issue starts at three points and may be rescoped before assignment.
+- A contributor may propose any real Benchmark Radar use case. An accepted use-case issue starts at six points and may be rescoped before assignment.
 - One issue has one primary assignee and one score. If two people need independently countable work, split the issue before assignment.
 - Issue points are earned only when the required linked pull requests are merged and the issue's acceptance criteria are satisfied.
 - A rigorous finding that the available evidence is insufficient is a valid result for UC3 or UC4 when the inclusion rules, comparison protocol, and missing evidence are documented.
@@ -64,13 +64,13 @@ Proposed reader-facing copy:
 > 3. **LLM development through benchmark scores.** What development pattern can be supported by protocol-aware score observations, and where do changed prompts, tools, attempts, or evaluators prevent comparison?
 > 4. **Agent development and weaknesses.** Which agent capabilities or failure modes recur across benchmarks, and what evidence supports that conclusion?
 >
-> These are starting examples, not limits. Contributors may propose any real use case as a three-point issue. Each study runs through a scored GitHub issue and pull-request discussion. Accepted evidence, analysis, and prose will be merged into the next report source and rebuilt PDF. Contributors whose completed issue work is substantial and who participate in manuscript drafting or critical revision, final approval, and accountability will be invited as coauthors.
+> These are starting examples, not limits. Contributors may propose any real use case as a six-point issue. Each study runs through a scored GitHub issue and pull-request discussion. Accepted evidence, analysis, and prose will be merged into the next report source and rebuilt PDF. Contributors whose completed issue work is substantial and who participate in manuscript drafting or critical revision, final approval, and accountability will be invited as coauthors.
 
 The final arXiv/Zenodo report should contain completed findings, not invitations alone. Until then, the draft must show unfinished work as open studies.
 
-### 2. Make real use cases three-point issues
+### 2. Make real use cases six-point issues
 
-The four starting cases and any contributor-proposed real use case are worth three points. A use case is a documented application of Benchmark Radar, not a testimonial. It can later be split or rescored before assignment if the accepted scope is materially larger or smaller.
+The four starting cases and any contributor-proposed real use case are worth six points. A use case is a documented application of Benchmark Radar, not a testimonial. It can later be split or rescored before assignment if the accepted scope is materially larger or smaller.
 
 Every case-study issue must require:
 
@@ -96,10 +96,10 @@ The four expected outputs are:
 
 | Track | Report-ready output | Score |
 |---|---|---:|
-| UC1: industry agent evaluation | A selection memo comparing candidate evaluation systems and explaining the chosen suite | 3 |
-| UC2: new benchmark paper | A prior-art map showing related benchmarks, protocol choices, duplication risks, and the remaining gap | 3 |
-| UC3: LLM development | A protocol-aware score analysis that separates comparable movement from changed evaluation settings | 3 |
-| UC4: agent development | An evidence-backed taxonomy of recurring agent capabilities, weaknesses, and measurement gaps | 3 |
+| UC1: industry agent evaluation | A selection memo comparing candidate evaluation systems and explaining the chosen suite | 6 |
+| UC2: new benchmark paper | A prior-art map showing related benchmarks, protocol choices, duplication risks, and the remaining gap | 6 |
+| UC3: LLM development | A protocol-aware score analysis that separates comparable movement from changed evaluation settings | 6 |
+| UC4: agent development | An evidence-backed taxonomy of recurring agent capabilities, weaknesses, and measurement gaps | 6 |
 
 Track-specific acceptance checks:
 
@@ -116,14 +116,15 @@ Put a positive-integer score at the start of the title, such as `[2 points]` or 
 |---:|---|
 | 1 | Tiny, bounded contribution that an outside contributor can complete |
 | 2 | Clearly specified bug fix or other small tested implementation; bugs are never scored below 2 |
-| 3 | A clearly specified model-card addition or a new, accepted real use case |
+| 3 | A clearly specified model-card addition |
+| 6 | A new, accepted real use case |
 | 4+ | Broader or more ambiguous work requiring discovery, product judgment, research, or multiple validated deliverables |
 
-Only score work that an outside contributor can actually complete. Maintainer-only work, including access-controlled SEO configuration and posting through the maintainer's social accounts, stays unscored. Assign the score before a contributor claims the issue. The score reflects uncertainty, independent judgment, completion difficulty, review burden, and required evidence—not the file type or number of files changed. A clear, bounded task stays low even when it changes the UI; broader or ambiguous work may be higher when its acceptance criteria explain the extra judgment required. Contributor-proposed use cases and clear model-card additions default to three points; bugs have a floor of two points.
+Only score work that an outside contributor can actually complete. Maintainer-only work, including access-controlled SEO configuration and posting through the maintainer's social accounts, stays unscored. Assign the score before a contributor claims the issue. The score reflects uncertainty, independent judgment, completion difficulty, review burden, and required evidence—not the file type or number of files changed. A clear, bounded task stays low even when it changes the UI; broader or ambiguous work may be higher when its acceptance criteria explain the extra judgment required. Contributor-proposed use cases default to six points, clear model-card additions default to three, and bugs have a floor of two points.
 
 The lead author or a named reviewer owns the independent reproduction step. If reproduction itself requires substantial new work, create and score a separate validation issue before it begins; the original issue keeps its indivisible score, and the validation issue credits the reviewer independently.
 
-Boundary examples: a one-line copy correction may be 1; the clearly specified page-loading fix in #311 is 2; a model-card addition or contributor-proposed real use case is 3; a connector plus coverage analysis and manuscript findings may be 4 or more. The broad UI-reference issues may remain 12 because they require discovery and product judgment, not merely because they touch UI. Larger work may exceed 12 when its published acceptance criteria justify it.
+Boundary examples: a one-line copy correction may be 1; the clearly specified page-loading fix in #311 is 2; a model-card addition is 3; a contributor-proposed real use case is 6; a connector plus coverage analysis and manuscript findings may be 4 or more. The broad UI-reference issues may remain 12 because they require discovery and product judgment, not merely because they touch UI. Larger work may exceed 12 when its published acceptance criteria justify it.
 
 Provisional scores for the issues currently carrying `friends`:
 
@@ -178,12 +179,12 @@ Canonical issue metadata:
 - linked pull requests using GitHub's closing keywords or explicit links;
 - a closing comment naming the merged pull requests, report section affected, and earned score.
 
-The contributor-points calculator reads title prefixes, assignment events, issue completion state, closing pull requests, and historical prefixed pull requests. It prints a dated JSON or Markdown report containing earned points, active and expired claims, totals, and the six-point collaborator threshold. Issue and pull-request metadata remain canonical; generated totals are disposable.
+The contributor-points calculator reads title prefixes, assignment events, issue completion state, closing pull requests, and historical prefixed pull requests. It prints a dated JSON or Markdown report containing earned points, active and expired claims, totals, and the twelve-point collaborator threshold. Issue and pull-request metadata remain canonical; generated totals are disposable.
 
 ### 5. Use totals for collaborator author order
 
 - Koutian Wu remains lead and corresponding author for the system conception, implementation, original analysis, and v0.9.0 manuscript.
-- A new contributor receives a collaborator seat after earning at least **6 points**. Coauthorship additionally requires at least one completed issue supplying original analysis used in the report or an accepted method/result/limitations subsection, participation in drafting or critical revision, final manuscript approval, and accountability.
+- A new contributor receives a collaborator seat after earning at least **12 points**. Coauthorship additionally requires at least one completed issue supplying original analysis used in the report or an accepted method/result/limitations subsection, participation in drafting or critical revision, final manuscript approval, and accountability.
 - Eligible collaborators are listed after the lead author in descending order of completed issue points.
 - Equal totals receive an equal-contribution statement when the work is comparable; names within that tied group are alphabetical.
 - If equal totals do not represent comparable contributions, names are still alphabetical within the tied score group; equal-contribution language is a separate editorial decision.
@@ -204,7 +205,7 @@ Only future issue work uses the seven-day assignment rule. Every historical merg
 
 - A completed use case appears in the findings section with its method, evidence, result, limitations, contributor, and issue link.
 - An active study appears only in the future-work collaboration box with assignee, score, and issue link. It contributes no finding yet.
-- An unclaimed study appears only in that collaboration box as available work. Readers may also add a different real use case through the three-point issue form.
+- An unclaimed study appears only in that collaboration box as available work. Readers may also add a different real use case through the six-point issue form.
 - If no studies are complete, the next draft contains the collaboration box but makes no use-case result claim.
 - The arXiv/Zenodo release contains completed findings plus a short future-work box for any remaining studies. It never presents an active or unclaimed study as evidence.
 
@@ -218,10 +219,10 @@ Only future issue work uses the seven-day assignment rule. Every historical merg
 - The draft distinguishes "no supported trend conclusion" from "no trend exists."
 - The report presents the four starting use cases as examples and explicitly accepts other real use cases.
 - Each use-case issue has a primary owner, score, reproducible deliverables, and report-writing requirement.
-- Every claimable issue has a positive-integer point prefix, exactly one assignee, and acceptance criteria before assignment; maintainer-only work is unscored, clear bugs begin at two points, and clear model-card additions and new use cases are three.
+- Every claimable issue has a positive-integer point prefix, exactly one assignee, and acceptance criteria before assignment; maintainer-only work is unscored, clear bugs begin at two points, clear model-card additions are three, and new use cases are six.
 - A `/claim` workflow assigns external commenters, rejects occupied or unscored issues, and removes expired assignees after seven days.
-- The calculator awards issue points only for a qualifying completion inside 168 hours, counts every prefixed historical non-owner PR once, and shows the six-point collaborator threshold.
-- The use-case issue form accepts contributor-defined cases and starts their titles at three points.
+- The calculator awards issue points only for a qualifying completion inside 168 hours, counts every prefixed historical non-owner PR once, and shows the twelve-point collaborator threshold.
+- The use-case issue form accepts contributor-defined cases and starts their titles at six points.
 - Authorship eligibility, collaborator ordering, tie handling, acknowledgements, and the contribution cutoff are published before work begins.
 - The eventual report includes only completed cases with evidence and limitations; unfinished cases remain labeled as open work.
 - Each coauthor reviews and approves the final manuscript and has a visible CRediT contribution statement.
@@ -232,7 +233,7 @@ The collaboration call is authored in `scripts/build_system_evaluation.py` and a
 
 ## Next Steps
 
-1. Update the public coordination issue and use-case form to accept unlimited contributor-defined three-point cases.
+1. Update the public coordination issue and use-case form to accept unlimited contributor-defined six-point cases.
 2. Add the `/claim` and seven-day expiry workflow, then test it on one scored issue.
 3. Add the contributor-points calculator and retroactively prefix every merged non-`ktwu01` pull request.
 4. Review currently unscored open issues and prefix those ready for public assignment.
@@ -240,7 +241,7 @@ The collaboration call is authored in `scripts/build_system_evaluation.py` and a
 
 ## The Assignment
 
-Ask one external contributor to comment `/claim` on a scored issue. Verify that assignment, the seven-day deadline, PR linkage, completion, points, and the six-point total all appear correctly before promoting the program more widely.
+Ask one external contributor to comment `/claim` on a scored issue. Verify that assignment, the seven-day deadline, PR linkage, completion, points, and the twelve-point total all appear correctly before promoting the program more widely.
 
 ## Reviewer Concerns
 
