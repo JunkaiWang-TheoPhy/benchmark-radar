@@ -60,8 +60,8 @@ If Benchmark Radar saves you research time, **[star the repository](https://gith
 ## Query it locally (CLI version)
 
 The web dashboard is the hosted view. For offline querying, use **the CLI
-version**: give this prompt to your coding agent and it will install the CLI,
-download the same corpus, and answer from local data.
+version**: it installs the CLI, downloads the local searchable data, and
+answers from local files. Give this prompt to your coding agent:
 
 ```text
 Set up Benchmark Radar for local benchmark search. Follow
