@@ -1,0 +1,36 @@
+{
+  "metadata": {
+    "title": "Benchmark Radar v0.9.0: Technical Report",
+    "upload_type": "publication",
+    "publication_type": "report",
+    "publication_date": "2026-08-29",
+    "description": "Benchmark Radar v0.9.0 collects new AI benchmark papers, repositories, datasets, and model reports from 37 public sources. This report follows the pipeline from collection through catalog search, model-card adoption, and score history. At the 29 August 2026 cutoff, the cumulative corpus holds 7,540 source observations for 4,537 artifacts across 37 snapshots. Web search covers 1,242 entries: 1,173 external catalog records and 69 curated score tracks. The software uses the MIT License. The technical report and original editorial content use CC BY-NC 4.0. Commercial republication, resale, paid newsletters, dataset packaging, or commercial product integration requires prior written permission from Koutian Wu. Third-party source material remains under its original terms.",
+    "creators": [
+      {
+        "name": "Wu, Koutian"
+      }
+    ],
+    "access_right": "open",
+    "license": "cc-by-nc-4.0",
+    "version": "0.9.0",
+    "keywords": [
+      "AI benchmarks",
+      "model evaluation",
+      "model cards",
+      "research software",
+      "open dataset"
+    ],
+    "related_identifiers": [
+      {
+        "identifier": "https://github.com/ktwu01/benchmark-radar",
+        "relation": "isSupplementTo",
+        "resource_type": "software"
+      },
+      {
+        "identifier": "https://benchmark-radar.org/",
+        "relation": "documents",
+        "resource_type": "dataset"
+      }
+    ]
+  }
+}

@@ -135,11 +135,20 @@ maintainer/CI build commands. End users update with `sync`, not with the normali
 - [Model-card adoption data](data/model_cards.yml)
 - [Public corpus schema](docs/cumulative-corpus.schema.json)
 - [Citation metadata](CITATION.cff)
+- [Technical report](https://doi.org/10.5281/zenodo.22167102)
 - [Configuration](config.yml)
 - **Developer setup:** `python -m pip install -e '.[dev]' && benchmark-radar normalize-external`
 - **Support / bugs:** [open an issue](https://github.com/ktwu01/benchmark-radar/issues)
 - **Contact:** [@ktwu01](https://github.com/ktwu01)
-- **License:** MIT
+
+## Licensing
+
+Software: [MIT License](LICENSE).
+
+Technical report and original editorial content: [CC BY-NC 4.0](LICENSE-CONTENT.md).
+Commercial republication, resale, paid newsletters, dataset packaging, or
+commercial product integration requires prior written permission from Koutian
+Wu. Third-party source material remains under its original terms.
 
 ## Join the WeChat group
 
