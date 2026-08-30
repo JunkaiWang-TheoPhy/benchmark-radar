@@ -3920,21 +3920,9 @@ dialog::backdrop {
   font-size: 0.75rem;
 }
 
-.footer-dataset a,
-.footer-contact-link {
+.footer-dataset a {
   color: var(--ink);
   font: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.footer-contact-link {
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--ink);
-  font: inherit;
-  cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
 }

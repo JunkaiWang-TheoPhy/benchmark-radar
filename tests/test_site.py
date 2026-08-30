@@ -2114,16 +2114,27 @@ def test_issue_311_the_today_list_loads_one_page_at_a_time():
     assert '${attentionCount} ${t("attention")}' in renderer
     assert '"need attention"' not in script
 
-    # Dataset access remains free; starring is an earned request, not a gate.
+    # Dataset access remains free under the homepage pager; starring is an
+    # earned request, not a gate. The stronger cite/star/share card closes the
+    # page in the footer instead of competing with the result list.
     assert 'id="badge-export"' not in html
     assert 'id="export-dialog"' not in html
     assert "function openExport(" not in script
     assert "function observationsToCsv(" not in script
     assert "function downloadText(" not in script
-    footer = html.split('<div class="footer-dataset">', 1)[1].split("</div>", 1)[0]
-    assert "Free dataset. No crawler needed." in footer
-    assert 'href="data/radar.json"' in footer
-    assert 'id="footer-contact"' in footer
+    pager_end = html.index("</nav>", html.index('class="today-pagination"'))
+    dataset_card = html.index('<div class="footer-dataset">')
+    page_footer = html.index("<footer>")
+    assert pager_end < dataset_card < page_footer
+    dataset = html.split('<div class="footer-dataset">', 1)[1].split("</div>", 1)[0]
+    assert "Free dataset. No crawler needed." in dataset
+    assert 'href="data/radar.json"' in dataset
+    assert "Star the repository" not in dataset
+    assert "Contact" not in dataset
+    footer = html.split("<footer>", 1)[1].split("</footer>", 1)[0]
+    assert 'class="adoption-cta"' in footer
+    assert "If this saved you research time" in footer
+    assert 'id="share-radar"' in footer
     contact = script.split("function openContact(", 1)[1].split("dialog.showModal();", 1)[0]
     assert "The complete dataset is free to download" in contact
     assert 'href: "data/radar.json"' in contact

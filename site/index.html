@@ -374,30 +374,12 @@
               <p id="today-page-status" role="status"></p>
               <button type="button" id="today-page-next" data-i18n="Next">Next</button>
             </nav>
-            <aside class="adoption-cta" aria-label="Support Benchmark Radar">
-              <p data-i18n="If this saved you research time, cite the work, star the repo and help other eval builders find it.">
-                If this saved you research time, cite the work, star the repo and help other eval builders find it.
-              </p>
-              <span class="adoption-actions">
-                <a
-                  class="primary-link"
-                  href="https://github.com/ktwu01/benchmark-radar/blob/main/CITATION.cff"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-i18n="Cite"
-                >Cite</a>
-                <a
-                  class="primary-link"
-                  href="https://github.com/ktwu01/benchmark-radar"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-i18n="Star the repository"
-                >Star the repository</a>
-                <button type="button" class="secondary-link" id="share-radar" data-i18n="Share">
-                  Share
-                </button>
+            <div class="footer-dataset">
+              <strong data-i18n="Free dataset. No crawler needed.">Free dataset. No crawler needed.</strong>
+              <span class="footer-dataset-actions">
+                <a href="data/radar.json" data-i18n="Download">Download</a>
               </span>
-            </aside>
+            </div>
           </div>
           <div>
             <!-- The day's narrative and Q&A describe the whole scan date
@@ -800,24 +782,30 @@
 
     <footer>
       <p id="build-meta">Updated —</p>
-      <div class="footer-dataset">
-        <strong data-i18n="Free dataset. No crawler needed.">Free dataset. No crawler needed.</strong>
-        <span class="footer-dataset-actions">
-          <a href="data/radar.json" data-i18n="Download">Download</a>
+      <aside class="adoption-cta" aria-label="Support Benchmark Radar">
+        <p data-i18n="If this saved you research time, cite the work, star the repo and help other eval builders find it.">
+          If this saved you research time, cite the work, star the repo and help other eval builders find it.
+        </p>
+        <span class="adoption-actions">
           <a
+            class="primary-link"
+            href="https://github.com/ktwu01/benchmark-radar/blob/main/CITATION.cff"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-i18n="Cite"
+          >Cite</a>
+          <a
+            class="primary-link"
             href="https://github.com/ktwu01/benchmark-radar"
             target="_blank"
             rel="noopener noreferrer"
             data-i18n="Star the repository"
           >Star the repository</a>
-          <button
-            type="button"
-            class="footer-contact-link"
-            id="footer-contact"
-            data-i18n="Contact"
-          >Contact</button>
+          <button type="button" class="secondary-link" id="share-radar" data-i18n="Share">
+            Share
+          </button>
         </span>
-      </div>
+      </aside>
     </footer>
   </body>
 </html>
