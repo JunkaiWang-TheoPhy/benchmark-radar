@@ -68,9 +68,9 @@ Proposed reader-facing copy:
 
 The final arXiv/Zenodo report should contain completed findings, not invitations alone. Until then, the draft must show unfinished work as open studies.
 
-### 2. Make real use cases six-point issues
+### 2. Make new real use cases start at six points
 
-The four starting cases and any contributor-proposed real use case are worth six points. A use case is a documented application of Benchmark Radar, not a testimonial. It can later be split or rescored before assignment if the accepted scope is materially larger or smaller.
+A contributor-proposed real use case starts at six points. The four starting research tracks are pre-scoped between 6 and 12 points according to their required analysis, sensitivity checks, and independent review. A use case is a documented application of Benchmark Radar, not a testimonial. It can later be split or rescored before assignment if the accepted scope is materially larger or smaller.
 
 Every case-study issue must require:
 
@@ -94,12 +94,12 @@ The minimum reproducibility package attached to the issue or pull request is:
 
 The four expected outputs are:
 
-| Track | Report-ready output | Score |
-|---|---|---:|
-| UC1: industry agent evaluation | A selection memo comparing candidate evaluation systems and explaining the chosen suite | 6 |
-| UC2: new benchmark paper | A prior-art map showing related benchmarks, protocol choices, duplication risks, and the remaining gap | 6 |
-| UC3: LLM development | A protocol-aware score analysis that separates comparable movement from changed evaluation settings | 6 |
-| UC4: agent development | An evidence-backed taxonomy of recurring agent capabilities, weaknesses, and measurement gaps | 6 |
+| Track | Issue | Report-ready output | Score |
+|---|---:|---|---:|
+| UC1: industry agent evaluation | [#452](https://github.com/ktwu01/benchmark-radar/issues/452) | A selection memo comparing candidate evaluation systems and explaining the chosen suite | 6 |
+| UC2: new benchmark paper | [#453](https://github.com/ktwu01/benchmark-radar/issues/453) | A prior-art map showing related benchmarks, protocol choices, duplication risks, and the remaining gap | 8 |
+| UC3: LLM development | [#454](https://github.com/ktwu01/benchmark-radar/issues/454) | A protocol-aware score analysis that separates comparable movement from changed evaluation settings | 12 |
+| UC4: agent development | [#455](https://github.com/ktwu01/benchmark-radar/issues/455) | An evidence-backed taxonomy of recurring agent capabilities, weaknesses, and measurement gaps | 12 |
 
 Track-specific acceptance checks:
 
@@ -107,6 +107,13 @@ Track-specific acceptance checks:
 - **UC2:** state the proposed benchmark construct; identify the closest prior benchmarks from both the daily-discovery and external-catalog layers; compare task, data, metric, protocol, and contamination or duplication risks; state the remaining gap or conclude that the proposed benchmark is not sufficiently distinct.
 - **UC3:** predeclare the benchmark and comparison window; retain only observations with compatible protocols or show protocol strata separately; identify changed prompts, tools, attempts, budgets, or evaluators; cite and evaluate the authoritative `comparable_window` and measurement-conflict gates in `src/benchmark_radar/findings.py`; report a trend only if the rebuilt data passes those gates, otherwise report why no trend is certified.
 - **UC4:** predeclare the agent capability scope and benchmark inclusion rule; code cited tasks or failure evidence into a reviewable taxonomy; publish a coding guide; have a second reviewer independently code a sample and adjudicate every disagreement; test alternative groupings and counterexamples; separate weaknesses demonstrated by benchmark evidence from weaknesses merely suggested by benchmark design.
+
+Two additional issues audit claims already present in the report:
+
+| Report section | Issue | Required decision | Score |
+|---|---:|---|---:|
+| 6.1 Vendor attention | [#456](https://github.com/ktwu01/benchmark-radar/issues/456) | Retain, narrow, replace, or remove the benchmark-core convergence claim after sensitivity analysis | 8 |
+| 6.2 Near-ceiling metrics | [#457](https://github.com/ktwu01/benchmark-radar/issues/457) | Retain, qualify, replace, or remove each saturation claim after protocol controls | 12 |
 
 ### 3. Score any eligible repository issue on one public scale
 
