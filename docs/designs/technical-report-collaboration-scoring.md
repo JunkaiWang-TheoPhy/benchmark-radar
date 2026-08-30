@@ -178,12 +178,12 @@ Canonical issue metadata:
 - linked pull requests using GitHub's closing keywords or explicit links;
 - a closing comment naming the merged pull requests, report section affected, and earned score.
 
-The contributor-points calculator reads title prefixes, assignment events, issue completion state, closing pull requests, and historical prefixed pull requests. It prints a dated JSON or Markdown report containing earned points, active and expired claims, totals, and the six-point collaborator threshold. Issue and pull-request metadata remain canonical; generated totals are disposable.
+The contributor-points calculator reads title prefixes, assignment events, issue completion state, closing pull requests, and historical prefixed pull requests. It prints a dated JSON or Markdown report containing earned points, active and expired claims, totals, and the twelve-point collaborator threshold. Issue and pull-request metadata remain canonical; generated totals are disposable.
 
 ### 5. Use totals for collaborator author order
 
 - Koutian Wu remains lead and corresponding author for the system conception, implementation, original analysis, and v0.9.0 manuscript.
-- A new contributor receives a collaborator seat after earning at least **6 points**. Coauthorship additionally requires at least one completed issue supplying original analysis used in the report or an accepted method/result/limitations subsection, participation in drafting or critical revision, final manuscript approval, and accountability.
+- A new contributor receives a collaborator seat after earning at least **12 points**. Coauthorship additionally requires at least one completed issue supplying original analysis used in the report or an accepted method/result/limitations subsection, participation in drafting or critical revision, final manuscript approval, and accountability.
 - Eligible collaborators are listed after the lead author in descending order of completed issue points.
 - Equal totals receive an equal-contribution statement when the work is comparable; names within that tied group are alphabetical.
 - If equal totals do not represent comparable contributions, names are still alphabetical within the tied score group; equal-contribution language is a separate editorial decision.
@@ -220,7 +220,7 @@ Only future issue work uses the seven-day assignment rule. Every historical merg
 - Each use-case issue has a primary owner, score, reproducible deliverables, and report-writing requirement.
 - Every claimable issue has a positive-integer point prefix, exactly one assignee, and acceptance criteria before assignment; maintainer-only work is unscored, clear bugs begin at two points, and clear model-card additions and new use cases are three.
 - A `/claim` workflow assigns external commenters, rejects occupied or unscored issues, and removes expired assignees after seven days.
-- The calculator awards issue points only for a qualifying completion inside 168 hours, counts every prefixed historical non-owner PR once, and shows the six-point collaborator threshold.
+- The calculator awards issue points only for a qualifying completion inside 168 hours, counts every prefixed historical non-owner PR once, and shows the twelve-point collaborator threshold.
 - The use-case issue form accepts contributor-defined cases and starts their titles at three points.
 - Authorship eligibility, collaborator ordering, tie handling, acknowledgements, and the contribution cutoff are published before work begins.
 - The eventual report includes only completed cases with evidence and limitations; unfinished cases remain labeled as open work.
@@ -240,7 +240,7 @@ The collaboration call is authored in `scripts/build_system_evaluation.py` and a
 
 ## The Assignment
 
-Ask one external contributor to comment `/claim` on a scored issue. Verify that assignment, the seven-day deadline, PR linkage, completion, points, and the six-point total all appear correctly before promoting the program more widely.
+Ask one external contributor to comment `/claim` on a scored issue. Verify that assignment, the seven-day deadline, PR linkage, completion, points, and the twelve-point total all appear correctly before promoting the program more widely.
 
 ## Reviewer Concerns
 
