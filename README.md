@@ -107,18 +107,22 @@ workflow.
 `catalog` searches the normalized benchmark catalog, `radar` searches the daily
 evidence history, and `all` searches both while keeping their identities separate.
 Search is deterministic lexical/token matching in this version—not embedding-based
-semantic search. It requires every query term, ranks eligible records with fielded
-BM25, and returns `no_matches_above_threshold` instead of padding a result page with
-partial matches. Every result explains its matched and missing terms, weighted token
-coverage, matched fields, and ranking score. Raw ranking scores are query-specific;
-do not compare them across different queries. Filters include paper, repository,
-dataset, openness, modality, and source.
+semantic search. Any shared token can retrieve a candidate; fielded BM25, soft
+weighted-query coverage, name matches, and phrase matches determine its rank. Partial
+matches remain visible for the consuming agent to judge instead of being deleted by an
+all-terms gate. Every result explains its matched and missing terms, weighted token
+coverage, matched fields, and score components. `no_lexical_candidates` means that no
+record shared even one query token in this local data version. Raw ranking scores are
+query-specific; do not compare them across different queries. Filters include paper,
+repository, dataset, openness, modality, and source.
 
 Agents should search `catalog` and `radar` separately. Catalog results are normalized
 benchmark records; Radar results are recent evidence leads and may be papers that use
 a benchmark rather than introduce one. A few short query variants can bridge terms
 such as `robot`/`robotics`, but cannot recover a benchmark absent from the local data.
-Inspect shortlisted catalog records with `show` before treating them as suitable.
+Search results are candidates, not suitability claims. Inspect shortlisted catalog
+records with `show` and let the agent apply the user's actual requirements before
+treating any candidate as suitable.
 
 The optional local HTTP API uses exactly the same query service and JSON response
 contract:

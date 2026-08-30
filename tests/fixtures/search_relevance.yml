@@ -1,4 +1,4 @@
-schema_version: 1
+schema_version: 2
 
 cases:
   - id: math-reasoning
@@ -31,22 +31,37 @@ cases:
     kind: topical
     must_include: [MedBookVQA, PMC-VQA, VQA-Rad]
 
+  # These are known gaps in this catalog version, not globally negative intents.
+  # Search should preserve partial lexical candidates for the agent to inspect,
+  # while never presenting one as a full-query lexical match.
   - id: protein-structure-prediction
     query: protein structure prediction
     scope: catalog
-    kind: no_answer
+    kind: catalog_gap
+    expected_status: matches_found
+    minimum_candidates: 1
+    must_include_candidates: [StructTokenBench]
 
   - id: weather-forecasting
     query: weather forecasting
     scope: catalog
-    kind: no_answer
+    kind: catalog_gap
+    expected_status: no_lexical_candidates
+    minimum_candidates: 0
+    must_include_candidates: []
 
   - id: stock-prediction
     query: stock prediction
     scope: catalog
-    kind: no_answer
+    kind: catalog_gap
+    expected_status: matches_found
+    minimum_candidates: 1
+    must_include_candidates: []
 
   - id: robot-grasp-planning
     query: robot grasp planning
     scope: catalog
-    kind: no_answer
+    kind: catalog_gap
+    expected_status: matches_found
+    minimum_candidates: 1
+    must_include_candidates: []

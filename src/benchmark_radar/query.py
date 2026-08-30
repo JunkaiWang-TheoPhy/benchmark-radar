@@ -14,7 +14,7 @@ from typing import Any
 
 from .snapshots import REQUIRED_SOURCES, load_snapshots
 
-QUERY_SCHEMA_VERSION = 2
+QUERY_SCHEMA_VERSION = 3
 DEFAULT_INDEX_PATH = Path("site/data/benchmark-index.json")
 DEFAULT_SHARD_DIR = Path("site/data/benchmarks")
 DEFAULT_SNAPSHOT_DIR = Path("data/snapshots")
@@ -40,7 +40,6 @@ _FIELD_WEIGHTS = {
 }
 _BM25_K1 = 1.2
 _BM25_B = 0.75
-_MINIMUM_WEIGHTED_QUERY_COVERAGE = 1.0
 
 LOGGER = logging.getLogger(__name__)
 
@@ -213,15 +212,6 @@ def _name_match(
     return None
 
 
-def _minimum_should_match(query_size: int) -> int:
-    # Search is the precision boundary for an agent-facing catalog. Query
-    # expansion belongs to the agent, which can issue a few short variants and
-    # inspect each result set independently. Silently dropping terms here turns
-    # an adjacent task (protein structure tokenization) into an answer to a
-    # different task (protein structure prediction).
-    return query_size
-
-
 def _bm25f_score(
     document: _SearchDocument,
     query_tokens: tuple[str, ...],
@@ -251,7 +241,7 @@ def _match(
     *,
     query_tokens: tuple[str, ...],
     corpus: _SearchCorpus,
-) -> tuple[tuple[Any, ...], dict[str, Any], bool] | None:
+) -> tuple[tuple[Any, ...], dict[str, Any]] | None:
     matched_fields: list[str] = []
     matched_tokens: set[str] = set()
     for field in _FIELD_ORDER:
@@ -267,43 +257,42 @@ def _match(
     query_weight = sum(_idf(term, corpus) for term in query_tokens)
     matched_weight = sum(_idf(term, corpus) for term in matched_tokens)
     weighted_coverage = matched_weight / query_weight if query_weight else 0.0
-    required_terms = _minimum_should_match(len(query_tokens))
-    eligible = name_match is not None or (
-        len(matched_tokens) >= required_terms
-        and weighted_coverage >= _MINIMUM_WEIGHTED_QUERY_COVERAGE
-    )
 
     if name_match is not None:
-        tier, reason = name_match
+        name_tier, reason = name_match
     elif len(matched_tokens) == len(query_tokens):
-        tier = 3
+        name_tier = 3
         reason = "all query tokens matched across fields"
     else:
-        tier = 4
+        name_tier = 4
         reason = (
-            f"{len(matched_tokens)} of {len(query_tokens)} query tokens matched; "
-            f"weighted coverage {weighted_coverage:.2f}"
+            f"{len(matched_tokens)} of {len(query_tokens)} unique query tokens matched "
+            f"across fields; weighted coverage {weighted_coverage:.2f}"
         )
 
-    ranking_score = _bm25f_score(document, query_tokens, corpus)
+    bm25f_score = _bm25f_score(document, query_tokens, corpus)
+    # Coverage is intentionally a soft signal. Search retrieves inspectable
+    # candidates for an agent; it must not silently turn a user's longer intent
+    # into an all-terms eligibility test. The bonus promotes broader and rarer
+    # token coverage without deleting partial lexical evidence.
+    coverage_bonus = matched_weight
     phrase_fields = [
         field
         for field in _FIELD_ORDER
         if _contains_tokens(document.field_tokens[field], query_tokens)
     ]
-    if phrase_fields:
-        ranking_score += sum(_idf(term, corpus) for term in query_tokens)
-    if name_match is not None:
-        ranking_score += (100.0, 30.0, 15.0)[name_match[0]]
+    phrase_bonus = query_weight if phrase_fields else 0.0
+    name_bonus = (100.0, 30.0, 15.0)[name_match[0]] if name_match is not None else 0.0
+    ranking_score = bm25f_score + coverage_bonus + phrase_bonus + name_bonus
 
     record = document.record
     completeness = sum(
         1 for field in ("publisher", "released", "modality") if record.get(field) not in (None, "")
     ) + sum(1 for field in ("has_paper", "has_repo", "has_dataset") if record.get(field))
     sort_key = (
-        tier,
         -ranking_score,
         -weighted_coverage,
+        name_tier,
         -completeness,
         len(str(record.get("name") or "")),
         str(record.get("name") or "").casefold(),
@@ -312,18 +301,22 @@ def _match(
     return (
         sort_key,
         {
-            "ranking_algorithm": "bm25f_v1",
+            "ranking_algorithm": "bm25f_v2",
             "ranking_score": round(ranking_score, 6),
+            "score_components": {
+                "bm25f": round(bm25f_score, 6),
+                "coverage_bonus": round(coverage_bonus, 6),
+                "phrase_bonus": round(phrase_bonus, 6),
+                "name_bonus": round(name_bonus, 6),
+            },
             "matched_fields": matched_fields,
             "matched_tokens": sorted(matched_tokens),
             "missing_tokens": sorted(set(query_tokens) - matched_tokens),
             "query_coverage": round(coverage, 4),
             "weighted_query_coverage": round(weighted_coverage, 4),
-            "minimum_should_match": required_terms,
             "phrase_fields": phrase_fields,
             "reason": reason,
         },
-        eligible,
     )
 
 
@@ -532,7 +525,6 @@ class QueryService:
         corpus = _build_search_corpus(candidates)
         scored: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
         candidate_count = 0
-        rejected_count = 0
         for document in corpus.documents:
             record = document.record
             if not _matches_filter(record, filters):
@@ -541,25 +533,20 @@ class QueryService:
             if match is None:
                 continue
             candidate_count += 1
-            sort_key, explanation, eligible = match
-            if not eligible:
-                rejected_count += 1
-                continue
+            sort_key, explanation = match
             scored.append((sort_key, {**record, "match": explanation}))
         scored.sort(key=lambda value: value[0])
         results = [
             {**record, "rank": rank} for rank, (_, record) in enumerate(scored[:limit], start=1)
         ]
-        status = "matches_found" if scored else "no_matches_above_threshold"
+        status = "matches_found" if scored else "no_lexical_candidates"
         LOGGER.info(
-            "lexical search query=%r scope=%s documents=%d candidates=%d accepted=%d "
-            "rejected=%d status=%s",
+            "lexical search query=%r scope=%s documents=%d candidates=%d returned=%d status=%s",
             query,
             scope,
             len(corpus.documents),
             candidate_count,
-            len(scored),
-            rejected_count,
+            len(results),
             status,
         )
         return {
@@ -569,15 +556,14 @@ class QueryService:
             "retrieval_mode": "lexical",
             "search_status": status,
             "matching_policy": {
-                "name": "all_terms_v1",
-                "ranking": "bm25f_v1",
-                "minimum_weighted_query_coverage": _MINIMUM_WEIGHTED_QUERY_COVERAGE,
-                "minimum_should_match": "all unique query terms",
+                "name": "soft_coverage_v1",
+                "ranking": "bm25f_v2",
+                "minimum_should_match": "one unique query term",
+                "query_coverage": "soft ranking signal",
             },
             "filters": filters,
             "limit": limit,
             "candidate_count": candidate_count,
-            "rejected_candidate_count": rejected_count,
             "total_matches": len(scored),
             "count": len(results),
             "data": self._data_summary(scope=scope),

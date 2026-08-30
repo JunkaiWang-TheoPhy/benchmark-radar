@@ -44,10 +44,12 @@ a paper, repository, or dataset, not a verified catalog benchmark. Use `all` onl
 when the user explicitly wants one mixed evidence list; never compare ranking
 scores across the two layers.
 
-Search is deterministic lexical/token matching, not semantic search. It requires
-all unique query terms so an adjacent task is not presented as the requested one.
-For topical discovery, use two to four short, discriminative variants drawn from
-the user's stated need:
+Search is deterministic lexical/token matching, not semantic search. Any shared
+token can retrieve a candidate. BM25F, soft weighted-query coverage, name matches,
+and phrase matches determine rank; partial matches remain visible with matched and
+missing tokens so you can judge them against the user's request. A search result is
+a candidate, not a suitability claim. For topical discovery, use two to four short,
+discriminative variants drawn from the user's stated need:
 
 1. the task phrase, such as `medical VQA`;
 2. one terminology or morphology variant, such as `robotics manipulation`;
@@ -59,10 +61,12 @@ query produced each candidate. A candidate found by several variants is useful
 support, but raw BM25F scores are query-specific and must not be added or compared
 across queries.
 
-Interpret `search_status: no_matches_above_threshold` as “no sufficiently relevant
-lexical match in this local data version,” not proof that no such benchmark exists.
-If catalog variants fail and recent discovery is relevant, search `radar` with the
-same task terms and label every result as unverified Radar evidence.
+Interpret `search_status: no_lexical_candidates` as “no record shared any query
+token in this local data version,” not proof that no such benchmark exists. Partial
+matches may be useful terminology or adjacent-task leads, but never treat coverage
+or rank alone as proof of suitability. If catalog candidates remain insufficient
+and recent discovery is relevant, search `radar` with the same task terms and label
+every result as unverified Radar evidence.
 
 Use `--json` for agent work; omit it only when the user wants terminal-friendly
 text. Apply supported filters only when they come from the request. Do not run
@@ -71,7 +75,9 @@ maintainer commands such as `normalize-external`, `classify`, or
 
 Before presenting a catalog record as suitable, call `show` and check that its
 description, modality, artifacts, openness, and provenance support the user's
-actual criteria. Return relevant records and their match reasons. Preserve the
-reported `data_version`, `retrieval_mode`, query provenance, and any explicit
-abstention. Distinguish catalog records from Radar evidence, and do not turn search
-results into a recommendation unless the user asked for one.
+actual criteria. Use `matched_tokens`, `missing_tokens`, `matched_fields`, and the
+record detail as evidence for your own final relevance judgment. Return relevant
+records and their match reasons. Preserve the reported `data_version`,
+`retrieval_mode`, and query provenance. Distinguish catalog records from Radar
+evidence, and do not turn search results into a recommendation unless the user asked
+for one.

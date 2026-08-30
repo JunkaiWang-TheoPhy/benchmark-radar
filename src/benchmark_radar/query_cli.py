@@ -111,14 +111,11 @@ def _print_json(payload: dict[str, Any]) -> None:
 
 
 def _print_search(payload: dict[str, Any]) -> None:
-    if payload["search_status"] == "no_matches_above_threshold":
-        print(
-            "No sufficiently relevant lexical matches "
-            f"({payload['candidate_count']} partial candidates rejected, scope={payload['scope']})."
-        )
+    if payload["search_status"] == "no_lexical_candidates":
+        print(f"No lexical candidates found (scope={payload['scope']}).")
         return
     print(
-        f"{payload['count']} of {payload['total_matches']} matches "
+        f"{payload['count']} of {payload['total_matches']} lexical candidates "
         f"({payload['retrieval_mode']}, scope={payload['scope']})"
     )
     for item in payload["results"]:

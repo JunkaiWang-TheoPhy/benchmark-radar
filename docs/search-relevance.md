@@ -27,35 +27,39 @@ LLM Stats is different: its API has no paper, repository, licence, size, creator
 or evaluation protocol fields. Those values remain unknown rather than being
 guessed from a name.
 
-## Matching and ranking
+## Candidate retrieval and ranking
 
 Search has three explicit stages:
 
 1. Any shared token creates an observable candidate.
-2. Every unique query token must match, unless the normalized benchmark name is
-   an exact, prefix, or contiguous token-sequence match.
-3. Eligible records are ranked by BM25F over weighted fields, with name matches
-   ahead of non-name matches.
+2. Every candidate receives a BM25F score plus soft weighted-coverage, exact/prefix/
+   contiguous-token name, and contiguous-phrase signals. Missing terms lower rank;
+   they never make an otherwise observable candidate ineligible.
+3. Candidates are returned with the evidence an agent needs to make the final
+   relevance and suitability judgment.
 
-The response exposes `candidate_count`, accepted `total_matches`,
-`rejected_candidate_count`, `search_status`, policy identity, matched and missing
-tokens, weighted coverage, fields, phrase fields, and the raw ranking score. The
-score orders one query; it is not calibrated confidence and must not be compared
-across queries.
+The response exposes `candidate_count`, `total_matches`, `search_status`, policy
+identity, matched and missing tokens, weighted coverage, fields, phrase fields, the
+raw ranking score, and its score components. Candidate count and total matches are
+equal because search no longer hides partial lexical evidence behind a service-side
+acceptance policy. The score orders one query; it is not calibrated confidence and
+must not be compared across queries.
 
-When candidates exist but none is eligible, the result is:
+When no record shares even one token with the query, the result is:
 
 ```json
 {
-  "search_status": "no_matches_above_threshold",
-  "candidate_count": 20,
+  "search_status": "no_lexical_candidates",
+  "candidate_count": 0,
   "total_matches": 0,
   "results": []
 }
 ```
 
-This means no sufficiently relevant lexical match was found in this data version.
-It does not prove that the wider world contains no such benchmark.
+This is a retrieval fact about the current local data version. It does not prove
+that the wider world contains no such benchmark. Conversely, `matches_found` only
+means that lexical candidates exist; it does not assert that they satisfy the user's
+task.
 
 ## Agent query expansion
 
@@ -65,16 +69,17 @@ and Radar separately, and never adds raw scores across queries. Query expansion 
 bridge vocabulary differences; it cannot repair missing sources, discarded metadata,
 stale snapshots, identity errors, or insufficient benchmark detail.
 
-Catalog candidates must be inspected with `show` before suitability claims. Radar
-results remain labelled unverified evidence until their primary artifact establishes
-the task and benchmark identity.
+Catalog candidates must be inspected with `show` before suitability claims. The
+agent, not the query service, decides whether a full or partial match answers the
+user's intent. Radar results remain labelled unverified evidence until their primary
+artifact establishes the task and benchmark identity.
 
 ## Regression gates
 
 The versioned relevance suite covers:
 
 - navigational and topical positive queries;
-- explicit no-answer/OOD queries;
+- known Catalog-gap queries whose partial evidence must remain inspectable;
 - source-metadata survival for opaque names such as ClimateViz;
 - token-boundary safety;
 - Catalog/Radar identity separation;

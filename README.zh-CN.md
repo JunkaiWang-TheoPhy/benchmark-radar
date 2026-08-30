@@ -96,16 +96,18 @@ Skill 只根据用户当前请求选择 CLI 命令，不预设结果是用于科
 
 `catalog` 搜索标准化 benchmark 目录，`radar` 搜索每日情报历史，`all` 同时搜索
 两者，但不会擅自合并它们的身份。当前版本是可复现的关键词/token 检索，不是基于
-embedding 的 semantic search。搜索要求每个 query token 都匹配，再用 fielded BM25
-排序；只有局部匹配时会返回 `no_matches_above_threshold`，不会用噪声填满结果页。
-每条结果都会说明命中与缺失的 token、加权覆盖率、匹配字段和排序分数。原始排序分数
-只在同一次 query 内有意义，不能跨 query 比较。可以按论文、代码仓库、数据集、开放
-程度、模态和来源过滤。
+embedding 的 semantic search。只要共享一个 query token 就可以召回候选，再由
+fielded BM25、加权查询覆盖率、名称匹配和短语匹配共同软排序。局部匹配不会被
+“所有词必须命中”的硬门槛删除，而是连同判断证据交给 Agent。每条结果都会说明命中与
+缺失的 token、加权覆盖率、匹配字段和各项分数组成。`no_lexical_candidates` 表示当前
+本地数据版本中没有记录命中任何 query token。原始排序分数只在同一次 query 内有意义，
+不能跨 query 比较。可以按论文、代码仓库、数据集、开放程度、模态和来源过滤。
 
 Agent 应分别搜索 `catalog` 与 `radar`。Catalog 是标准化 benchmark 记录；Radar 是近期
 证据线索，其中可能只是使用某 benchmark 的论文，并不一定发布了新 benchmark。少量、
 简短的 query 变体可以桥接 `robot`/`robotics` 等表达差异，但无法找回本地数据根本没有
-收录的 benchmark。将候选判断为适用之前，应调用 `show` 检查详情。
+收录的 benchmark。搜索结果只是候选，不代表已经适用；应调用 `show` 检查详情，再由
+Agent 根据用户的真实条件做最终判断。
 
 可选的本地 HTTP API 与 CLI 复用完全相同的查询服务和 JSON 返回结构：
 
