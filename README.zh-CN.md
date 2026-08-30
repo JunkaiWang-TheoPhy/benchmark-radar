@@ -52,9 +52,10 @@ SWE-bench Verified 的 saturation 过程。**
 
 如果 Benchmark Radar 帮你节省了研究时间，请 **[给仓库点个 Star](https://github.com/ktwu01/benchmark-radar)**，让更多做评测的人发现它。
 
-## 在本地查询
+## 在本地查询（CLI 版本）
 
-把下面这段直接发给你的 coding agent：
+网页版 dashboard 是托管视图。需要离线查询时，请使用 **CLI 版本**：它会安装
+CLI、下载本地可搜索的数据，并从本地文件回答。把下面这段直接发给你的 coding agent：
 
 ```text
 请帮我配置 Benchmark Radar 的本地 benchmark 搜索。请遵循
@@ -80,12 +81,6 @@ https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL
 扫码加入微信群，获取每日 benchmark 更新、交流评测相关话题：
 
 <img src="assets/wechat-group-qr.jpg" alt="微信群二维码" width="280" />
-
-## 感谢
-
-每日信息流基于以下公开来源：[arXiv](https://arxiv.org)、[GitHub Search](https://github.com/search)、[GitHub organizations](https://github.com)、[GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)、[Hugging Face datasets and Spaces](https://huggingface.co)、[Hugging Face Papers](https://huggingface.co/papers)、[OpenAlex](https://openalex.org)、[OpenReview](https://openreview.net)、[Kaggle datasets](https://www.kaggle.com/datasets)、[Zenodo](https://zenodo.org)、[Semantic Scholar](https://www.semanticscholar.org)、[Brave Search](https://search.brave.com)、[Hacker News](https://news.ycombinator.com)，以及各家 first-party lab feed：[OpenAI](https://openai.com/news)、[Google AI](https://blog.google/technology/ai/)、[Google DeepMind](https://deepmind.google/blog/)、[Google Research](https://research.google/blog/)、[Meta Research](https://research.facebook.com)、[Microsoft Research](https://www.microsoft.com/en-us/research/)、[AWS Machine Learning](https://aws.amazon.com/blogs/machine-learning/)、[Apple Machine Learning Research](https://machinelearning.apple.com)、[NVIDIA AI Blog](https://blogs.nvidia.com)、[NVIDIA Developer](https://developer.nvidia.com/blog/)、[Hugging Face Blog](https://huggingface.co/blog)、[Ai2](https://allenai.org)、[Mistral AI](https://mistral.ai/news)、[Together AI](https://www.together.ai/blog)、[Sakana AI](https://sakana.ai)、[Qwen](https://qwenlm.github.io/blog/)、[Ollama](https://ollama.com/blog)、[Stability AI](https://stability.ai)、[Nomic AI](https://www.nomic.ai)、[Replicate](https://replicate.com/blog)、[IBM Research](https://research.ibm.com)、[Databricks](https://www.databricks.com)、[LangChain](https://www.langchain.com/blog)、[Meituan Engineering](https://tech.meituan.com)。
-
-前沿模型分数层（包括上方的 SWE-bench Verified 时间线）基于 [LLM Stats](https://llm-stats.com) 采集的 benchmark 数据构建，感谢他们把这些数据公开出来。
 
 ## 贡献者
 
@@ -122,6 +117,14 @@ https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL
     <img alt="Benchmark Radar Star 历史图" src="https://raw.githubusercontent.com/ktwu01/benchmark-radar/star-history/assets/star-history.svg" />
   </picture>
 </a>
+
+## 感谢
+
+每日信息流基于以下公开来源：[arXiv](https://arxiv.org)、[GitHub Search](https://github.com/search)、[GitHub organizations](https://github.com)、[GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)、[Hugging Face datasets and Spaces](https://huggingface.co)、[Hugging Face Papers](https://huggingface.co/papers)、[OpenAlex](https://openalex.org)、[OpenReview](https://openreview.net)、[Kaggle datasets](https://www.kaggle.com/datasets)、[Zenodo](https://zenodo.org)、[Semantic Scholar](https://www.semanticscholar.org)、[Brave Search](https://search.brave.com)、[Hacker News](https://news.ycombinator.com)，以及各家 first-party lab feed：[OpenAI](https://openai.com/news)、[Google AI](https://blog.google/technology/ai/)、[Google DeepMind](https://deepmind.google/blog/)、[Google Research](https://research.google/blog/)、[Meta Research](https://research.facebook.com)、[Microsoft Research](https://www.microsoft.com/en-us/research/)、[AWS Machine Learning](https://aws.amazon.com/blogs/machine-learning/)、[Apple Machine Learning Research](https://machinelearning.apple.com)、[NVIDIA AI Blog](https://blogs.nvidia.com)、[NVIDIA Developer](https://developer.nvidia.com/blog/)、[Hugging Face Blog](https://huggingface.co/blog)、[Ai2](https://allenai.org)、[Mistral AI](https://mistral.ai/news)、[Together AI](https://www.together.ai/blog)、[Sakana AI](https://sakana.ai)、[Qwen](https://qwenlm.github.io/blog/)、[Ollama](https://ollama.com/blog)、[Stability AI](https://stability.ai)、[Nomic AI](https://www.nomic.ai)、[Replicate](https://replicate.com/blog)、[IBM Research](https://research.ibm.com)、[Databricks](https://www.databricks.com)、[LangChain](https://www.langchain.com/blog)、[Meituan Engineering](https://tech.meituan.com)。
+
+前沿模型分数层（包括上方的 SWE-bench Verified 时间线）基于 [LLM Stats](https://llm-stats.com) 采集的 benchmark 数据构建，感谢他们把这些数据公开出来。
+
+特别感谢 [Xiaopai Liu](https://github.com/liuxiaopai-ai)（[@bourneliu66](https://x.com/bourneliu66)）在 X 上为 Benchmark Radar 宣传，也感谢他的每日 builder 简报 [BuilderPulse](https://github.com/BuilderPulse/BuilderPulse)。
 
 <details>
 <summary>内部文档</summary>
