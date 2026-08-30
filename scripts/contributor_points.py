@@ -302,9 +302,10 @@ def render_markdown(ledger: dict[str, Any]) -> str:
         "- Choose an open issue whose title starts with `[N points]`, then comment "
         "`/claim`. One person gets 168 hours to merge a PR that closes it. / 选择标题以 "
         "`[N points]` 开头的 issue，评论 `/claim`；每次一人，须在 168 小时内合并关闭它的 PR。",
-        "- A bug is at least 2 points, a new real use case is 3, and complex UI work "
-        "is 12. Other scores are fixed before assignment. / bug 最低 2 分，新的真实使用案例 "
-        "3 分，复杂 UI 工作 12 分；其他任务在认领前定分。",
+        "- Only work an outside contributor can complete is scored. A clear bug is at "
+        "least 2 points; a clear model-card addition or new real use case is 3. Broader "
+        "or ambiguous work may be higher. / 只有外部贡献者能完成的任务才计分；明确的 bug "
+        "最低 2 分，明确的模型卡补充或新真实使用案例为 3 分；范围更广或更模糊的任务可以更高。",
         "- Six points earns a collaborator seat. Technical-report coauthorship also "
         "requires substantive intellectual contribution, drafting or critical revision, "
         "final approval, and accountability. / 累计 6 分获得协作者席位；"

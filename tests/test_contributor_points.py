@@ -167,6 +167,7 @@ def test_public_markdown_is_standalone_and_omits_unclaimed_queue():
 
     assert markdown.startswith("# Contribution score\n")
     assert "`/claim`" in markdown
-    assert "complex UI work is 12" in markdown
+    assert "Only work an outside contributor can complete is scored" in markdown
+    assert "clear model-card addition or new real use case is 3" in markdown
     assert "[PR #1](https://example.test/pull/20)" in markdown
     assert "ready" not in markdown

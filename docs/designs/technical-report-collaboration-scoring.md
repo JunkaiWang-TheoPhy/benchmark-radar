@@ -114,17 +114,16 @@ Put a positive-integer score at the start of the title, such as `[2 points]` or 
 
 | Score | Meaning |
 |---:|---|
-| 1 | Tiny, bounded copy, documentation, or outreach improvement |
-| 2+ | Bug fix or other small tested implementation; bugs are never scored below 2 |
-| 3 | A new, accepted real use case; also suitable for a validated catalog addition or focused analysis |
-| 4–11 | Increasingly broad engineering, data, or report work, scored from explicit acceptance criteria |
-| 12 | Complex UI work, including the current UI comparison and implementation issues |
+| 1 | Tiny, bounded contribution that an outside contributor can complete |
+| 2 | Clearly specified bug fix or other small tested implementation; bugs are never scored below 2 |
+| 3 | A clearly specified model-card addition or a new, accepted real use case |
+| 4+ | Broader or more ambiguous work requiring discovery, product judgment, research, or multiple validated deliverables |
 
-Assign the score from the complete accepted scope before a contributor claims the issue. The score reflects completion difficulty, review burden, and required evidence—not the number of files changed. The lead author resolves boundary cases publicly before assignment. Contributor-proposed use cases default to three points; bugs have a floor of two points; the current UI issues are twelve points because they require complex product judgment, implementation, and validation.
+Only score work that an outside contributor can actually complete. Maintainer-only work, including access-controlled SEO configuration and posting through the maintainer's social accounts, stays unscored. Assign the score before a contributor claims the issue. The score reflects uncertainty, independent judgment, completion difficulty, review burden, and required evidence—not the file type or number of files changed. A clear, bounded task stays low even when it changes the UI; broader or ambiguous work may be higher when its acceptance criteria explain the extra judgment required. Contributor-proposed use cases and clear model-card additions default to three points; bugs have a floor of two points.
 
 The lead author or a named reviewer owns the independent reproduction step. If reproduction itself requires substantial new work, create and score a separate validation issue before it begins; the original issue keeps its indivisible score, and the validation issue credits the reviewer independently.
 
-Boundary examples: a one-line copy correction may be 1; a bounded bug fix begins at 2; a contributor-proposed real use case is 3; a connector plus coverage analysis and manuscript findings may be 4 or more; complex UI work is 12. Larger work may exceed 12 when its published acceptance criteria justify it.
+Boundary examples: a one-line copy correction may be 1; the clearly specified page-loading fix in #311 is 2; a model-card addition or contributor-proposed real use case is 3; a connector plus coverage analysis and manuscript findings may be 4 or more. The broad UI-reference issues may remain 12 because they require discovery and product judgment, not merely because they touch UI. Larger work may exceed 12 when its published acceptance criteria justify it.
 
 Provisional scores for the issues currently carrying `friends`:
 
@@ -219,7 +218,7 @@ Only future issue work uses the seven-day assignment rule. Every historical merg
 - The draft distinguishes "no supported trend conclusion" from "no trend exists."
 - The report presents the four starting use cases as examples and explicitly accepts other real use cases.
 - Each use-case issue has a primary owner, score, reproducible deliverables, and report-writing requirement.
-- Every claimable issue has a positive-integer point prefix, exactly one assignee, and acceptance criteria before assignment; bugs are at least two points, new use cases are three, and complex UI issues are twelve.
+- Every claimable issue has a positive-integer point prefix, exactly one assignee, and acceptance criteria before assignment; maintainer-only work is unscored, clear bugs begin at two points, and clear model-card additions and new use cases are three.
 - A `/claim` workflow assigns external commenters, rejects occupied or unscored issues, and removes expired assignees after seven days.
 - The calculator awards issue points only for a qualifying completion inside 168 hours, counts every prefixed historical non-owner PR once, and shows the six-point collaborator threshold.
 - The use-case issue form accepts contributor-defined cases and starts their titles at three points.
