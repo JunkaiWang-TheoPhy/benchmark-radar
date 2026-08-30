@@ -382,6 +382,10 @@ def main() -> None:
             observations=all_observations,
         )
 
+        from .site_pages import DEFAULT_SHARD_DIR, write_benchmark_pages
+
+        pages_report = write_benchmark_pages(DEFAULT_SHARD_DIR)
+
         oc_report = opencompass["validation"]
         for result in normalized:
             report = result["validation"]
@@ -395,6 +399,7 @@ def main() -> None:
             f"index: {len(index)} searchable records -> {index_path}\n"
             f"shards: {shard_report['shard_count']} files, "
             f"{shard_report['total_bytes'] / 1024:.0f} KiB -> {shard_report['output_dir']}\n"
+            f"benchmark pages: {pages_report['page_count']} files -> {pages_report['output_dir']}\n"
             f"identity candidates: {candidates['equivalent_candidate_count']} anchor-backed, "
             f"{candidates['name_only_count']} name-only -> {DEFAULT_CANDIDATES_PATH}\n"
             f"identity inherited: {inherited_count} records show a reviewed donor's identity\n"

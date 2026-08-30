@@ -10,6 +10,7 @@ state behind them.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -54,11 +55,16 @@ def _q(tag: str) -> str:
     return f"{{{SITEMAP_NAMESPACE}}}{tag}"
 
 
-def sitemap_tree(snapshots: list[dict[str, Any]]) -> ET.ElementTree:
-    """Build one stable urlset covering every indexable view."""
+def sitemap_tree(
+    snapshots: list[dict[str, Any]],
+    benchmark_slugs: Sequence[str] = (),
+) -> ET.ElementTree:
+    """Build one stable urlset covering every indexable view and benchmark page."""
     root = ET.Element(_q("urlset"))
     lastmod = _lastmod_date(snapshots)
-    for _, path in INDEXABLE_VIEWS:
+    paths = [path for _, path in INDEXABLE_VIEWS]
+    paths.extend(f"/benchmarks/{slug}/" for slug in benchmark_slugs)
+    for path in paths:
         url = ET.SubElement(root, _q("url"))
         ET.SubElement(url, _q("loc")).text = SITE_URL + path
         if lastmod:
@@ -66,10 +72,14 @@ def sitemap_tree(snapshots: list[dict[str, Any]]) -> ET.ElementTree:
     return ET.ElementTree(root)
 
 
-def write_sitemap(snapshots: list[dict[str, Any]], output: Path) -> Path:
+def write_sitemap(
+    snapshots: list[dict[str, Any]],
+    output: Path,
+    benchmark_slugs: Sequence[str] = (),
+) -> Path:
     """Write a deterministic UTF-8 sitemap beside the published data."""
     output.parent.mkdir(parents=True, exist_ok=True)
-    tree = sitemap_tree(snapshots)
+    tree = sitemap_tree(snapshots, benchmark_slugs)
     ET.indent(tree, space="  ")
     tree.write(output, encoding="utf-8", xml_declaration=True)
     return output
