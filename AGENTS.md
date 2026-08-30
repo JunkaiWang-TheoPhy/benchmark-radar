@@ -72,6 +72,99 @@ Applies to `README*`, `docs/**`, `.github/ISSUE_TEMPLATE/**`, `site/**`,
 - Do not squash-merge pull requests.
 - Merge pull requests with a merge commit so Git preserves branch ancestry and recognizes the branch as merged.
 
+## Pipeline and data map
+
+Do not reconstruct the system from a report, the deployed site, or whatever
+generated files happen to be present in a long-lived checkout. Start with the
+sources below, run the generators in order, and measure the rebuilt outputs.
+
+### The three data layers
+
+1. **Daily discovery corpus.** `config.yml` defines the collection and scoring
+   configuration; connectors live under `src/benchmark_radar/`. A daily
+   `benchmark-radar` run writes its durable evidence to
+   `data/snapshots/YYYY-MM-DD.json`. Those dated snapshots are the source of
+   truth for cumulative observations, artifacts, source health, and history.
+2. **External benchmark catalog.** `data/leaderboard_snapshots.yml` registers
+   immutable crawl inputs under `data/leaderboard_snapshots/`. The reviewed
+   join rules are `data/external/identity.yml` and
+   `data/external/llm_stats_identity_overrides.yml`. Other JSONL and validation
+   files under `data/external/` are normalization products; do not hand-edit or
+   treat them as a separate corpus, even when Git currently tracks a generated
+   copy.
+3. **Curated measurement layer.** `data/model_cards.yml` is the reviewed model
+   report/adoption registry. `data/benchmark_scores.yml` is its matched,
+   protocol-aware score archive, and every score must cite a registry document.
+   This layer is deliberately separate from aggregator scores in the external
+   catalog.
+
+### Generator order and outputs
+
+Run these from the repository root, in this order:
+
+1. `benchmark-radar normalize-external` reads the crawl registry, raw crawl
+   files, and reviewed identity rules. It writes normalized intermediates under
+   `data/external/`, then the generated search index
+   `site/data/benchmark-index.json` and detail shards under
+   `site/data/benchmarks/`.
+2. `benchmark-radar classify` reads the dated snapshots plus the external
+   shards and curated YAML files. It regenerates
+   `data/kw_bench_classifications.jsonl`, `site/data/radar.json`,
+   `site/data/models.json`, and `site/feed.xml`. The classifier currently uses
+   the deterministic null extractor in CI; it makes no external model call.
+3. `benchmark-radar build-data-release` validates the local corpus through
+   `QueryService` and writes `site/data/cli/manifest.json` plus the checksummed
+   `site/data/cli/benchmark-radar-data.zip`. The manifest is published on Pages;
+   the complete archive is uploaded to the rolling `cli-data` GitHub Release.
+4. `benchmark-radar export` writes the standalone curated leaderboard JSON,
+   CSV, Markdown, and badge files under `site/data/`. Pages then runs
+   `scripts/generate_og_image.py` and `scripts/build_logo_registry.py` before
+   tests and deployment.
+
+Most `site/data/` files and `data/kw_bench_classifications.jsonl` are derived
+and gitignored. Their absence in a fresh checkout is normal. Never patch them
+to fix a source-data problem; update the relevant snapshot, crawl input,
+identity rule, or curated YAML and regenerate. Never report counts from a stale
+working tree: rebuild first and read the JSON that was just produced. A derived
+file that is tracked, such as `site/data/models.json` or current normalization
+outputs under `data/external/`, is still not an independent source of truth.
+
+### Which artifact answers which question
+
+- `site/data/radar.json`: cumulative daily-discovery corpus, source health,
+  findings, curated adoption, and curated score progression.
+- `site/data/benchmark-index.json`: compact external-catalog search records,
+  one row per source record; reviewed identities do not silently collapse the
+  underlying evidence.
+- `site/data/benchmarks/<slug>.json`: external benchmark detail, provenance,
+  identity, series, and aggregator score observations.
+- `site/data/models.json`: one model registry assembled from both curated and
+  crawled layers.
+- `data/snapshots/*.json`: committed historical evidence used for local radar
+  search and for rebuilding `radar.json`.
+- `site/data/cli/`: distributable copy of the index, shards, and snapshots for
+  installed offline clients.
+
+The web benchmark-search total is not the external index count alone. It is the
+external rows in `benchmark-index.json` plus the curated score tracks in
+`radar.json`. Compute both from current generated files; do not copy a number
+from the README, a PDF, or a previous agent summary. Likewise, the count of
+curated adoption benchmarks in `model_cards.yml` is a different quantity from
+the count of curated score tracks.
+
+### Technical report and deposit files
+
+- Report source/builder: `scripts/build_system_evaluation.py`
+- Report instructions and audited inputs: `docs/technical-report/README.md`
+- Zenodo metadata: `docs/technical-report/zenodo-metadata.json`
+- Generated upload file:
+  `output/pdf/benchmark-radar-technical-report-v0.9.0.pdf`
+
+Before changing report claims or Zenodo metadata, run the clean-checkout CI
+sequence below and recompute claims from its outputs. Build the PDF with the DOI
+command in `docs/technical-report/README.md`, inspect the rendered PDF, and
+upload that exact file. The PDF is a dated interpretation, not a data source.
+
 ## Query surfaces
 
 - `benchmark_radar.query.QueryService` is the single source of truth for local
