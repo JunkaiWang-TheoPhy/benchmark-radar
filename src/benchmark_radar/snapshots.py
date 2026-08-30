@@ -32,6 +32,7 @@ from .rubric import (
     v3_rubric_reference,
     v4_rubric_reference,
 )
+from .site_pages import DEFAULT_SHARD_DIR, benchmark_slugs
 from .site_seo import write_sitemap
 from .sources import GITHUB_RELEASE_PARSER_VERSION, github_release_title
 
@@ -1103,6 +1104,7 @@ def rebuild_dashboard(
     registry_path: Path | None = None,
     scores_path: Path | None = None,
     kw_bench_store_path: Path | None = None,
+    benchmark_shard_dir: Path = DEFAULT_SHARD_DIR,
 ) -> dict[str, Any]:
     snapshots = load_snapshots(snapshot_dir)
     value = dashboard_data(
@@ -1132,7 +1134,11 @@ def rebuild_dashboard(
         if feed_output is not None
         else output.parent / "sitemap.xml"
     )
-    write_sitemap(snapshots, sitemap_output)
+    write_sitemap(
+        snapshots,
+        sitemap_output,
+        benchmark_slugs(benchmark_shard_dir),
+    )
     if feed_output is not None:
         write_feed(snapshots, feed_output)
     return value

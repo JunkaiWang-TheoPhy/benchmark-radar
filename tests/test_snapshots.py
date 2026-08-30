@@ -322,8 +322,17 @@ def test_rebuild_writes_the_sitemap_at_the_site_root(tmp_path):
     write_snapshot(radar_run(27), snapshot_dir)
     data_output = tmp_path / "site" / "data" / "radar.json"
     feed_output = tmp_path / "site" / "feed.xml"
+    shard_dir = tmp_path / "shards"
+    shard_dir.mkdir()
+    for slug in ("alpha-bench", "zeta-bench"):
+        (shard_dir / f"{slug}.json").write_text("{}", encoding="utf-8")
 
-    rebuild_dashboard(snapshot_dir, data_output, feed_output=feed_output)
+    rebuild_dashboard(
+        snapshot_dir,
+        data_output,
+        feed_output=feed_output,
+        benchmark_shard_dir=shard_dir,
+    )
 
     ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
     sitemap_output = tmp_path / "site" / "sitemap.xml"
@@ -336,6 +345,8 @@ def test_rebuild_writes_the_sitemap_at_the_site_root(tmp_path):
         f"{SITE_URL}/?view=leaderboard",
         f"{SITE_URL}/?view=trends",
         f"{SITE_URL}/?view=map",
+        f"{SITE_URL}/benchmarks/alpha-bench/",
+        f"{SITE_URL}/benchmarks/zeta-bench/",
     ]
     lastmods = [node.text for node in root.findall("sm:url/sm:lastmod", ns)]
     assert lastmods == ["2026-07-27"] * len(urls)
