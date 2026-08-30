@@ -57,9 +57,11 @@ how scores on each one climb until there is almost no headroom left.**
 
 If Benchmark Radar saves you research time, **[star the repository](https://github.com/ktwu01/benchmark-radar)**. It helps other eval builders find it.
 
-## Query it locally
+## Query it locally (CLI version)
 
-Give this prompt to your coding agent:
+The web dashboard is the hosted view. For offline querying, use **the CLI
+version**: give this prompt to your coding agent and it will install the CLI,
+download the same corpus, and answer from local data.
 
 ```text
 Set up Benchmark Radar for local benchmark search. Follow
@@ -94,34 +96,6 @@ Wu. Third-party source material remains under its original terms.
 Scan the QR code to join the WeChat group for daily benchmark updates and eval discussions:
 
 <img src="assets/wechat-group-qr.jpg" alt="WeChat group QR code" width="280" />
-
-## Acknowledgements
-
-The daily evidence feed is built on public data from [arXiv](https://arxiv.org),
-[GitHub Search](https://github.com/search), [GitHub organizations](https://github.com),
-[GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases),
-[Hugging Face datasets and Spaces](https://huggingface.co), [Hugging Face Papers](https://huggingface.co/papers),
-[OpenAlex](https://openalex.org), [OpenReview](https://openreview.net),
-[Kaggle datasets](https://www.kaggle.com/datasets), [Zenodo](https://zenodo.org),
-[Semantic Scholar](https://www.semanticscholar.org), [Brave Search](https://search.brave.com),
-and [Hacker News](https://news.ycombinator.com), plus first-party lab feeds from
-[OpenAI](https://openai.com/news), [Google AI](https://blog.google/technology/ai/),
-[Google DeepMind](https://deepmind.google/blog/), [Google Research](https://research.google/blog/),
-[Meta Research](https://research.facebook.com), [Microsoft Research](https://www.microsoft.com/en-us/research/),
-[AWS Machine Learning](https://aws.amazon.com/blogs/machine-learning/),
-[Apple Machine Learning Research](https://machinelearning.apple.com),
-[NVIDIA AI Blog](https://blogs.nvidia.com), [NVIDIA Developer](https://developer.nvidia.com/blog/),
-[Hugging Face Blog](https://huggingface.co/blog), [Ai2](https://allenai.org),
-[Mistral AI](https://mistral.ai/news), [Together AI](https://www.together.ai/blog),
-[Sakana AI](https://sakana.ai), [Qwen](https://qwenlm.github.io/blog/),
-[Ollama](https://ollama.com/blog), [Stability AI](https://stability.ai),
-[Nomic AI](https://www.nomic.ai), [Replicate](https://replicate.com/blog),
-[IBM Research](https://research.ibm.com), [Databricks](https://www.databricks.com),
-[LangChain](https://www.langchain.com/blog), and [Meituan Engineering](https://tech.meituan.com).
-
-The frontier-model score layer, including the SWE-bench Verified timeline above,
-is built on benchmark data collected by [LLM Stats](https://llm-stats.com).
-Thank you for keeping that data open.
 
 ## Contributors
 
@@ -159,6 +133,38 @@ See [`CITATION.cff`](CITATION.cff) for machine-readable citation metadata.
     <img alt="Benchmark Radar star history chart" src="https://raw.githubusercontent.com/ktwu01/benchmark-radar/star-history/assets/star-history.svg" />
   </picture>
 </a>
+
+## Acknowledgements
+
+The daily evidence feed is built on public data from [arXiv](https://arxiv.org),
+[GitHub Search](https://github.com/search), [GitHub organizations](https://github.com),
+[GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases),
+[Hugging Face datasets and Spaces](https://huggingface.co), [Hugging Face Papers](https://huggingface.co/papers),
+[OpenAlex](https://openalex.org), [OpenReview](https://openreview.net),
+[Kaggle datasets](https://www.kaggle.com/datasets), [Zenodo](https://zenodo.org),
+[Semantic Scholar](https://www.semanticscholar.org), [Brave Search](https://search.brave.com),
+and [Hacker News](https://news.ycombinator.com), plus first-party lab feeds from
+[OpenAI](https://openai.com/news), [Google AI](https://blog.google/technology/ai/),
+[Google DeepMind](https://deepmind.google/blog/), [Google Research](https://research.google/blog/),
+[Meta Research](https://research.facebook.com), [Microsoft Research](https://www.microsoft.com/en-us/research/),
+[AWS Machine Learning](https://aws.amazon.com/blogs/machine-learning/),
+[Apple Machine Learning Research](https://machinelearning.apple.com),
+[NVIDIA AI Blog](https://blogs.nvidia.com), [NVIDIA Developer](https://developer.nvidia.com/blog/),
+[Hugging Face Blog](https://huggingface.co/blog), [Ai2](https://allenai.org),
+[Mistral AI](https://mistral.ai/news), [Together AI](https://www.together.ai/blog),
+[Sakana AI](https://sakana.ai), [Qwen](https://qwenlm.github.io/blog/),
+[Ollama](https://ollama.com/blog), [Stability AI](https://stability.ai),
+[Nomic AI](https://www.nomic.ai), [Replicate](https://replicate.com/blog),
+[IBM Research](https://research.ibm.com), [Databricks](https://www.databricks.com),
+[LangChain](https://www.langchain.com/blog), and [Meituan Engineering](https://tech.meituan.com).
+
+The frontier-model score layer, including the SWE-bench Verified timeline above,
+is built on benchmark data collected by [LLM Stats](https://llm-stats.com).
+Thank you for keeping that data open.
+
+A special thank you to [Xiaopai Liu](https://github.com/liuxiaopai-ai)
+([@bourneliu66](https://x.com/bourneliu66)) for the shout-out on X, and to his
+daily builder brief, [BuilderPulse](https://github.com/BuilderPulse/BuilderPulse).
 
 <details>
 <summary>Internal documentation</summary>
