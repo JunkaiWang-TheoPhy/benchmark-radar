@@ -275,7 +275,7 @@ class EvaluationDoc(BaseDocTemplate):
         canvas.drawString(
             MARGIN_X,
             0.22 * inch,
-            f"Benchmark Radar v0.9.0 Technical Report  |  DOI: {self.doi}",
+            "Benchmark Radar v0.9.0 Technical Report  |  https://github.com/ktwu01/benchmark-radar",
         )
         canvas.drawRightString(PAGE_W - MARGIN_X, 0.22 * inch, str(doc.page))
         canvas.restoreState()
