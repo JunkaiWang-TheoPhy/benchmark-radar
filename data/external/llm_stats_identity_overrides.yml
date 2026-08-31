@@ -4,12 +4,14 @@
 # carries cross-source equivalence and variant links and never per-benchmark
 # fields.
 #
-# Every row here cleared the two-anchor gate: a paper naming the benchmark plus
-# a repo that self-identifies with the same name, a repo linking its paper, or
-# a dataset card naming both. One matching page is not an anchor. The crawl this
-# was reviewed from returned 50 benchmarks; the 31 it could not anchor twice are
-# deliberately absent rather than present with guesses, and stay in the issue
-# thread until a second anchor is found for them.
+# Every resolved row here cleared the two-anchor gate: a paper naming the
+# benchmark plus a repo that self-identifies with the same name, a repo linking
+# its paper, or a dataset card naming both. One matching page is not an anchor.
+# Unresolved rows are retained only when they carry an explicit not_found or
+# needs_review status; they cannot produce an artifact. The first crawl reviewed
+# here returned 50 benchmarks, of which 19 cleared the gate and 31 stayed absent.
+# The later issue #303 tier records all 38 outcomes so gaps are named rather
+# than silently omitted.
 #
 # Reviewer corrections applied to the crawl, recorded so they are not silently
 # re-introduced by a later pass:
@@ -34,7 +36,11 @@ schema_version: 1
 
 benchmarks:
   "swe-bench-verified":
-    repo_url: https://github.com/princeton-nlp/SWE-bench/tree/main/swebench/harness
+    resolution_status: resolved
+    repo_kind: shared_parent
+    repo_url: https://github.com/princeton-nlp/SWE-bench
+    repo_full_name: princeton-nlp/SWE-bench
+    repo_subpath: swebench/harness
     dataset_url: https://huggingface.co/datasets/princeton-nlp/SWE-bench_Verified
     site_url: https://openai.com/index/introducing-swe-bench-verified/
     publisher: {name: "OpenAI", role: maintainer}
@@ -49,8 +55,12 @@ benchmarks:
       validated 500-task subset; the harness is shared with SWE-bench.
 
   "humanity's-last-exam":
+    resolution_status: resolved
+    repo_kind: benchmark_source
     paper_url: https://arxiv.org/abs/2501.14249
     repo_url: https://github.com/centerforaisafety/hle
+    repo_full_name: centerforaisafety/hle
+    repo_subpath: null
     dataset_url: https://huggingface.co/datasets/cais/hle
     site_url: https://lastexam.ai/
     publisher: {name: "Center for AI Safety", role: paper_org}
@@ -66,8 +76,12 @@ benchmarks:
       collaborators. Dataset access requires sharing contact information.
 
   "mmmu-pro":
+    resolution_status: resolved
+    repo_kind: shared_parent
     paper_url: https://arxiv.org/abs/2409.02813
-    repo_url: https://github.com/MMMU-Benchmark/MMMU/tree/main/mmmu-pro
+    repo_url: https://github.com/MMMU-Benchmark/MMMU
+    repo_full_name: MMMU-Benchmark/MMMU
+    repo_subpath: mmmu-pro
     dataset_url: https://huggingface.co/datasets/MMMU/MMMU_Pro
     released: 2024-09-04
     released_basis: paper_first_version
@@ -82,8 +96,12 @@ benchmarks:
       it is not summed with the standard test configuration.
 
   "browsecomp":
+    resolution_status: resolved
+    repo_kind: harness_only
     paper_url: https://arxiv.org/abs/2504.12516
-    repo_url: https://github.com/openai/simple-evals/blob/main/browsecomp_eval.py
+    repo_url: https://github.com/openai/simple-evals
+    repo_full_name: openai/simple-evals
+    repo_subpath: browsecomp_eval.py
     site_url: https://openai.com/index/browsecomp/
     publisher: {name: "OpenAI", role: maintainer}
     released: 2025-04-10
@@ -98,8 +116,12 @@ benchmarks:
       root.
 
   "terminal-bench":
+    resolution_status: resolved
+    repo_kind: benchmark_source
     paper_url: https://openreview.net/forum?id=a7Qa4CcHak
     repo_url: https://github.com/harbor-framework/terminal-bench-1
+    repo_full_name: harbor-framework/terminal-bench-1
+    repo_subpath: null
     site_url: https://www.tbench.ai/
     released: 2025-01-17
     released_basis: repo_created
@@ -114,7 +136,11 @@ benchmarks:
       while the release date remains repository creation.
 
   "terminal-bench-2":
+    resolution_status: resolved
+    repo_kind: benchmark_source
     repo_url: https://github.com/harbor-framework/terminal-bench-2
+    repo_full_name: harbor-framework/terminal-bench-2
+    repo_subpath: null
     site_url: https://www.tbench.ai/benchmarks/terminal-bench-2
     released: 2025-09-25
     released_basis: repo_created
@@ -127,8 +153,12 @@ benchmarks:
       embedded in the repository, not a separate dataset page.
 
   "terminal-bench-2.1":
+    resolution_status: resolved
+    repo_kind: benchmark_source
     paper_url: https://arxiv.org/abs/2601.11868
     repo_url: https://github.com/harbor-framework/terminal-bench-2-1
+    repo_full_name: harbor-framework/terminal-bench-2-1
+    repo_subpath: null
     dataset_url: https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2-1/latest
     site_url: https://www.tbench.ai/
     released: 2026-05-05
@@ -141,7 +171,11 @@ benchmarks:
       none is inferred.
 
   "swe-bench-pro":
+    resolution_status: resolved
+    repo_kind: benchmark_source
     repo_url: https://github.com/scaleapi/SWE-bench_Pro-os
+    repo_full_name: scaleapi/SWE-bench_Pro-os
+    repo_subpath: null
     dataset_url: https://huggingface.co/datasets/ScaleAI/SWE-bench_Pro
     publisher: {name: "Scale AI", role: maintainer}
     released: 2025-09-05
@@ -155,7 +189,11 @@ benchmarks:
       variant.
 
   "swe-bench-multilingual":
+    resolution_status: resolved
+    repo_kind: shared_parent
     repo_url: https://github.com/princeton-nlp/SWE-bench
+    repo_full_name: princeton-nlp/SWE-bench
+    repo_subpath: null
     dataset_url: https://huggingface.co/datasets/SWE-bench/SWE-bench_Multilingual
     site_url: https://www.swebench.com/multilingual.html
     code_license: MIT
@@ -169,7 +207,11 @@ benchmarks:
       original SWE-bench paper does not itself introduce this later variant.
 
   "mmmlu":
-    repo_url: https://github.com/openai/simple-evals/blob/main/multilingual_mmlu_benchmark_results.md
+    resolution_status: resolved
+    repo_kind: harness_only
+    repo_url: https://github.com/openai/simple-evals
+    repo_full_name: openai/simple-evals
+    repo_subpath: multilingual_mmlu_benchmark_results.md
     dataset_url: https://huggingface.co/datasets/openai/MMMLU
     publisher: {name: "OpenAI", role: maintainer}
     code_license: MIT
@@ -183,8 +225,12 @@ benchmarks:
       introduced MMMLU paper was verified.
 
   "mmlu-redux":
+    resolution_status: resolved
+    repo_kind: benchmark_source
     paper_url: https://arxiv.org/abs/2406.04127
     repo_url: https://github.com/aryopg/mmlu-redux
+    repo_full_name: aryopg/mmlu-redux
+    repo_subpath: null
     dataset_url: https://huggingface.co/datasets/edinburgh-dawg/mmlu-redux
     released: 2024-06-06
     released_basis: paper_first_version
@@ -200,8 +246,12 @@ benchmarks:
       substituted.
 
   "simpleqa":
+    resolution_status: resolved
+    repo_kind: harness_only
     paper_url: https://arxiv.org/abs/2411.04368
-    repo_url: https://github.com/openai/simple-evals/blob/main/simpleqa_eval.py
+    repo_url: https://github.com/openai/simple-evals
+    repo_full_name: openai/simple-evals
+    repo_subpath: simpleqa_eval.py
     dataset_url: https://openaipublic.blob.core.windows.net/simple-evals/simple_qa_test_set.csv
     site_url: https://openai.com/index/introducing-simpleqa/
     publisher: {name: "OpenAI", role: maintainer}
@@ -217,8 +267,12 @@ benchmarks:
       observed.
 
   "toolathlon":
+    resolution_status: resolved
+    repo_kind: benchmark_source
     paper_url: https://arxiv.org/abs/2510.25726
     repo_url: https://github.com/hkust-nlp/Toolathlon
+    repo_full_name: hkust-nlp/Toolathlon
+    repo_subpath: null
     dataset_url: https://huggingface.co/datasets/hkust-nlp/Toolathlon-Trajectories
     site_url: https://toolathlon.xyz/
     released: 2025-10-29
@@ -233,8 +287,12 @@ benchmarks:
       applies to trajectories rather than task definitions.
 
   "tau2-airline":
+    resolution_status: resolved
+    repo_kind: shared_parent
     paper_url: https://arxiv.org/abs/2506.07982
     repo_url: https://github.com/sierra-research/tau2-bench
+    repo_full_name: sierra-research/tau2-bench
+    repo_subpath: null
     publisher: {name: "Sierra", role: paper_org}
     released: 2025-06-09
     released_basis: paper_first_version
@@ -247,8 +305,12 @@ benchmarks:
       the repository.
 
   "tau2-retail":
+    resolution_status: resolved
+    repo_kind: shared_parent
     paper_url: https://arxiv.org/abs/2506.07982
     repo_url: https://github.com/sierra-research/tau2-bench
+    repo_full_name: sierra-research/tau2-bench
+    repo_subpath: null
     publisher: {name: "Sierra", role: paper_org}
     released: 2025-06-09
     released_basis: paper_first_version
@@ -261,8 +323,12 @@ benchmarks:
       the repository.
 
   "tau2-telecom":
+    resolution_status: resolved
+    repo_kind: shared_parent
     paper_url: https://arxiv.org/abs/2506.07982
     repo_url: https://github.com/sierra-research/tau2-bench
+    repo_full_name: sierra-research/tau2-bench
+    repo_subpath: null
     publisher: {name: "Sierra", role: paper_org}
     released: 2025-06-09
     released_basis: paper_first_version
@@ -276,8 +342,12 @@ benchmarks:
       benchmark task count.
 
   "ifbench":
+    resolution_status: resolved
+    repo_kind: benchmark_source
     paper_url: https://arxiv.org/abs/2507.02833
     repo_url: https://github.com/allenai/IFBench
+    repo_full_name: allenai/IFBench
+    repo_subpath: null
     dataset_url: https://huggingface.co/datasets/allenai/IFBench_test
     publisher: {name: "Allen Institute for AI", role: paper_org}
     released: 2025-07-03
@@ -293,7 +363,11 @@ benchmarks:
       evaluation artifact.
 
   "math-500":
-    repo_url: https://github.com/openai/prm800k/tree/main/prm800k/math_splits
+    resolution_status: resolved
+    repo_kind: monorepo_subdir
+    repo_url: https://github.com/openai/prm800k
+    repo_full_name: openai/prm800k
+    repo_subpath: prm800k/math_splits
     dataset_url: https://github.com/openai/prm800k/blob/main/prm800k/math_splits/test.jsonl
     publisher: {name: "OpenAI", role: maintainer}
     code_license: MIT
@@ -306,8 +380,12 @@ benchmarks:
       separately verified introducing paper.
 
   "mgsm":
+    resolution_status: resolved
+    repo_kind: monorepo_subdir
     paper_url: https://arxiv.org/abs/2210.03057
-    repo_url: https://github.com/google-research/url-nlp/tree/main/mgsm
+    repo_url: https://github.com/google-research/url-nlp
+    repo_full_name: google-research/url-nlp
+    repo_subpath: mgsm
     dataset_url: https://huggingface.co/datasets/juletxara/mgsm
     released: 2022-10-06
     released_basis: paper_first_version
@@ -320,3 +398,418 @@ benchmarks:
       Paper, Google source repository, and independent evaluator/dataset records
       agree. Counts are not multiplied across the 11 translated language
       configurations.
+
+  # Issue #303 Phase A. Unlike the earlier rows, this tier also retains
+  # not_found and needs_review results so all 38 inputs have a structured,
+  # build-validated outcome. Only resolved rows can produce repo artifacts.
+
+  "aime-2025":
+    resolution_status: resolved
+    repo_kind: shared_parent
+    repo_url: https://github.com/eth-sri/matharena
+    repo_full_name: eth-sri/matharena
+    repo_subpath: null
+    dataset_url: https://huggingface.co/datasets/MathArena/aime_2025
+    site_url: https://matharena.ai/competitions
+    note: >-
+      Shared parent: MathArena evaluates AIME 2025 from the same codebase used
+      for other competitions; its dataset card links this repository.
+
+  "livecodebench-v6":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/LiveCodeBench/LiveCodeBench
+    repo_full_name: LiveCodeBench/LiveCodeBench
+    repo_subpath: null
+    paper_url: https://arxiv.org/abs/2403.07974
+    note: >-
+      The official repository documents release_v6, and the paper introduces
+      the same contamination-free code benchmark.
+
+  "aime-2024":
+    resolution_status: not_found
+    repo_kind: not_found
+    repo_url: null
+    repo_full_name: null
+    repo_subpath: null
+    candidate_matches:
+      - url: https://huggingface.co/datasets/Maxwell-Jia/AIME_2024
+        note: Third-party dataset copy, not a source repository.
+      - url: https://matharena.ai/competitions
+        note: MathArena lists later AIME competitions but not AIME 2024.
+    note: No canonical source repository was established for this competition instance.
+
+  "charxiv-r":
+    resolution_status: resolved
+    repo_kind: shared_parent
+    repo_url: https://github.com/princeton-nlp/CharXiv
+    repo_full_name: princeton-nlp/CharXiv
+    repo_subpath: null
+    site_url: https://princeton-nlp.github.io/CharXiv/
+    note: >-
+      Shared parent: CharXiv-R is the reasoning split of CharXiv, and the
+      repository and project page describe both splits.
+
+  "arc-c":
+    resolution_status: not_found
+    repo_kind: not_found
+    repo_url: null
+    repo_full_name: null
+    repo_subpath: null
+    candidate_matches:
+      - url: https://allenai.org/data/arc
+        note: Official dataset distribution page, not a GitHub repository.
+      - url: https://github.com/allenai/ARC-Solvers
+        note: Baseline solvers rather than the benchmark source.
+    note: ARC-Challenge has official data distribution but no verified source repository.
+
+  "ai2d":
+    resolution_status: not_found
+    repo_kind: not_found
+    repo_url: null
+    repo_full_name: null
+    repo_subpath: null
+    candidate_matches:
+      - url: https://allenai.org/data/diagrams
+        note: Official AI2D data portal, not a GitHub repository.
+      - url: https://arxiv.org/abs/1603.07396
+        note: The introducing paper points to the data portal and names no repository.
+    note: The official paper and data portal do not establish a source repository.
+
+  "hmmt-2025":
+    resolution_status: resolved
+    repo_kind: shared_parent
+    repo_url: https://github.com/eth-sri/matharena
+    repo_full_name: eth-sri/matharena
+    repo_subpath: null
+    dataset_url: https://huggingface.co/datasets/MathArena/hmmt_feb_2025
+    site_url: https://matharena.ai/competitions
+    note: >-
+      Shared parent: MathArena publishes the HMMT February 2025 problem set
+      from its common competition codebase.
+
+  "mcp-atlas":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/scaleapi/mcp-atlas
+    repo_full_name: scaleapi/mcp-atlas
+    repo_subpath: null
+    paper_url: https://arxiv.org/html/2602.00933v3
+    note: The repository and paper identify the same 500-task MCP-Atlas benchmark.
+
+  "mmlu-prox":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/weihao1115/MMLU-ProX
+    repo_full_name: weihao1115/MMLU-ProX
+    repo_subpath: null
+    paper_url: https://aclanthology.org/2025.emnlp-main.79/
+    note: The official repository and EMNLP paper identify the 29-language MMLU-ProX benchmark.
+
+  "include":
+    resolution_status: not_found
+    repo_kind: not_found
+    repo_url: null
+    repo_full_name: null
+    repo_subpath: null
+    candidate_matches:
+      - url: https://huggingface.co/datasets/CohereLabs/include-base-44
+        note: Official dataset card; it links the paper but no repository.
+      - url: https://arxiv.org/abs/2411.19799
+        note: Introducing paper with no source repository link.
+    note: The dataset card's only GitHub text is a commented-out user-profile placeholder.
+
+  "multichallenge":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/ekwinox117/multi-challenge
+    repo_full_name: ekwinox117/multi-challenge
+    repo_subpath: null
+    paper_url: https://arxiv.org/abs/2501.17399
+    note: The paper releases MultiChallenge data and code at the matching repository.
+
+  "realworldqa":
+    resolution_status: not_found
+    repo_kind: not_found
+    repo_url: null
+    repo_full_name: null
+    repo_subpath: null
+    candidate_matches:
+      - url: https://huggingface.co/datasets/xai-org/RealworldQA
+        note: Official dataset card, not a repository.
+      - url: https://github.com/QwenLM/Qwen3-VL/tree/main/evaluation/RealWorldQA
+        note: Third-party model evaluation code, not the benchmark source.
+    note: Official xAI sources publish the dataset but no source repository.
+
+  "docvqa":
+    resolution_status: not_found
+    repo_kind: not_found
+    repo_url: null
+    repo_full_name: null
+    repo_subpath: null
+    candidate_matches:
+      - url: https://rrc.cvc.uab.es/?ch=17
+        note: Official challenge portal, not a GitHub repository.
+      - url: https://github.com/VLR-CVC/DocVQA2026
+        note: Evaluation code for a different 2026 competition variant.
+    note: The original DocVQA benchmark has an official portal but no verified source repository.
+
+  "arena-hard":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/lmarena/arena-hard-auto
+    repo_full_name: lmarena/arena-hard-auto
+    repo_subpath: null
+    paper_url: https://arxiv.org/html/2406.11939v2
+    note: The repository ships Arena-Hard-Auto prompts and judging; the paper describes its curation.
+
+  "chartqa":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/vis-nlp/ChartQA
+    repo_full_name: vis-nlp/ChartQA
+    repo_subpath: null
+    paper_url: https://aclanthology.org/2022.findings-acl.177.pdf
+    note: The introducing paper and official repository identify the same ChartQA benchmark.
+
+  "finance-agent-v2":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/vals-ai/finance-agent-v2
+    repo_full_name: vals-ai/finance-agent-v2
+    repo_subpath: null
+    paper_url: https://arxiv.org/pdf/2508.00828
+    site_url: https://www.vals.ai/benchmarks/fabv2
+    note: The Vals repository, leaderboard, and benchmark paper identify Finance Agent v2.
+
+  "videommmu":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/EvolvingLMMs-Lab/VideoMMMU
+    repo_full_name: EvolvingLMMs-Lab/VideoMMMU
+    repo_subpath: null
+    evidence:
+      - url: https://github.com/EvolvingLMMs-Lab/VideoMMMU
+        anchor_type: repo_readme
+        claim: The repository identifies itself as the VideoMMMU benchmark home.
+      - url: https://github.com/EvolvingLMMs-Lab/VideoMMMU/blob/main/README.md
+        anchor_type: repo_readme
+        claim: The README documents VideoMMMU data, metrics, and evaluation.
+    note: The repository publishes the VideoMMMU benchmark data and evaluation.
+
+  "deepswe-1.1":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/datacurve-ai/deep-swe
+    repo_full_name: datacurve-ai/deep-swe
+    repo_subpath: null
+    paper_url: https://arxiv.org/abs/2607.07946
+    note: The paper and repository identify DeepSWE and document the v1.1 grading change.
+
+  "hmmt25":
+    resolution_status: needs_review
+    repo_kind: not_found
+    repo_url: null
+    repo_full_name: null
+    repo_subpath: null
+    candidate_matches:
+      - url: https://llm-stats.com/benchmarks/hmmt25
+        note: The source description spans November 2025 and February 2026 tournaments.
+      - url: https://huggingface.co/datasets/MathArena/hmmt_nov_2025
+        note: Plausible MathArena match, but the scored competition instance is ambiguous.
+    note: A real repository candidate exists, but the exact HMMT instance cannot be pinned down.
+
+  "lvbench":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/zai-org/LVBench
+    repo_full_name: zai-org/LVBench
+    repo_subpath: null
+    dataset_url: https://huggingface.co/datasets/THUDM/LVBench
+    note: The renamed official repository and dataset card identify the same LVBench benchmark.
+
+  "screenspot-pro":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/likaixin2000/ScreenSpot-Pro-GUI-Grounding
+    repo_full_name: likaixin2000/ScreenSpot-Pro-GUI-Grounding
+    repo_subpath: null
+    paper_url: https://huggingface.co/papers/2504.07981
+    note: The repository and paper publish ScreenSpot-Pro data and evaluation scripts.
+
+  "tau-bench-retail":
+    resolution_status: resolved
+    repo_kind: shared_parent
+    repo_url: https://github.com/sierra-research/tau-bench
+    repo_full_name: sierra-research/tau-bench
+    repo_subpath: null
+    paper_url: https://arxiv.org/pdf/2406.12045
+    note: "Shared parent: the tau-bench repository publishes both retail and airline domains."
+
+  "erqa":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/embodiedreasoning/ERQA
+    repo_full_name: embodiedreasoning/ERQA
+    repo_subpath: null
+    site_url: https://deepmind.google/blog/gemini-robotics-er-1-6/
+    note: The repository publishes ERQA examples, and DeepMind's release identifies the benchmark.
+
+  "mathvista-mini":
+    resolution_status: resolved
+    repo_kind: shared_parent
+    repo_url: https://github.com/lupantech/MathVista
+    repo_full_name: lupantech/MathVista
+    repo_subpath: null
+    dataset_url: https://huggingface.co/datasets/AI4Math/MathVista
+    note: "Shared parent: MathVista-Mini is the testmini split published by MathVista."
+
+  "osworld-verified":
+    resolution_status: resolved
+    repo_kind: shared_parent
+    repo_url: https://github.com/xlang-ai/OSWorld
+    repo_full_name: xlang-ai/OSWorld
+    repo_subpath: null
+    site_url: https://xlang.ai/blog/osworld-verified
+    note: "Shared parent: the verified task revisions ship from the OSWorld repository."
+
+  "mrcr-v2-(8-needle)":
+    resolution_status: not_found
+    repo_kind: not_found
+    repo_url: null
+    repo_full_name: null
+    repo_subpath: null
+    candidate_matches:
+      - url: https://huggingface.co/datasets/openai/mrcr
+        note: Official dataset card for the needle variants; it links no repository.
+    note: The official artifact is a dataset card, with no verified source repository.
+
+  "multi-if":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/facebookresearch/Multi-IF
+    repo_full_name: facebookresearch/Multi-IF
+    repo_subpath: null
+    paper_url: https://arxiv.org/abs/2410.15553
+    note: The paper states that Multi-IF is released at the matching repository.
+
+  "polymath":
+    resolution_status: not_found
+    repo_kind: not_found
+    repo_url: null
+    repo_full_name: null
+    repo_subpath: null
+    candidate_matches:
+      - url: https://arxiv.org/abs/2410.14702
+        note: The tracked multimodal PolyMATH paper names no GitHub repository.
+      - url: https://github.com/QwenLM/PolyMath
+        note: A different multilingual math benchmark with the same name.
+    note: No repository was verified for the multimodal PolyMATH tracked by llm-stats.
+
+  "t2-bench":
+    resolution_status: needs_review
+    repo_kind: not_found
+    repo_url: null
+    repo_full_name: null
+    repo_subpath: null
+    candidate_matches:
+      - url: https://llm-stats.com/benchmarks/t2-bench
+        note: The source page gives no paper, site, or repository.
+      - url: https://github.com/sierra-research/tau2-bench
+        note: Plausible ASCII-name match, but no source ties the label t2-bench to this repo.
+    note: The tau2-bench repository is plausible but cannot be resolved from source evidence.
+
+  "tau-bench-airline":
+    resolution_status: resolved
+    repo_kind: shared_parent
+    repo_url: https://github.com/sierra-research/tau-bench
+    repo_full_name: sierra-research/tau-bench
+    repo_subpath: null
+    paper_url: https://arxiv.org/pdf/2406.12045
+    note: "Shared parent: the tau-bench repository publishes both airline and retail domains."
+
+  "wmt24++":
+    resolution_status: not_found
+    repo_kind: not_found
+    repo_url: null
+    repo_full_name: null
+    repo_subpath: null
+    candidate_matches:
+      - url: https://huggingface.co/datasets/google/wmt24pp
+        note: Official dataset card, with no benchmark source repository.
+      - url: https://github.com/google-research/mt-metrics-eval
+        note: Metrics and system-output tooling, not the benchmark source.
+    note: Official WMT24++ sources publish data but no benchmark-specific repository.
+
+  "aider-polyglot":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/Aider-AI/polyglot-benchmark
+    repo_full_name: Aider-AI/polyglot-benchmark
+    repo_subpath: null
+    site_url: https://aider.chat/2024/12/21/polyglot.html
+    note: The repository holds the problems described by aider's benchmark announcement.
+
+  "aime-2026":
+    resolution_status: resolved
+    repo_kind: shared_parent
+    repo_url: https://github.com/eth-sri/matharena
+    repo_full_name: eth-sri/matharena
+    repo_subpath: null
+    dataset_url: https://huggingface.co/datasets/MathArena/aime_2026
+    site_url: https://matharena.ai/?comp=aime--aime_2026
+    note: "Shared parent: MathArena publishes the AIME 2026 configuration and dataset."
+
+  "big-bench-hard":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/suzgunmirac/BIG-Bench-Hard
+    repo_full_name: suzgunmirac/BIG-Bench-Hard
+    repo_subpath: null
+    evidence:
+      - url: https://github.com/suzgunmirac/BIG-Bench-Hard/blob/main/README.md
+        anchor_type: repo_readme
+        claim: The README defines BIG-Bench Hard and its 23 selected tasks.
+      - url: https://github.com/suzgunmirac/BIG-Bench-Hard/blob/main/bbh/boolean_expressions.json
+        anchor_type: repo_readme
+        claim: The repository publishes benchmark task data under bbh.
+    note: The repository defines BIG-Bench Hard and publishes its task data.
+
+  "scicode":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/scicode-bench/SciCode
+    repo_full_name: scicode-bench/SciCode
+    repo_subpath: null
+    paper_url: https://arxiv.org/pdf/2407.13168
+    note: The repository and paper define the same scientist-curated SciCode benchmark.
+
+  "imo-answerbench":
+    resolution_status: resolved
+    repo_kind: monorepo_subdir
+    repo_url: https://github.com/google-deepmind/superhuman
+    repo_full_name: google-deepmind/superhuman
+    repo_subpath: imobench
+    paper_url: https://arxiv.org/html/2511.01846v1
+    dataset_url: https://huggingface.co/datasets/OpenEvals/IMO-AnswerBench
+    note: >-
+      Monorepo subdirectory: imobench contains IMO-AnswerBench inside the wider
+      superhuman repository and must not enter a benchmark-repo contributor crawl.
+
+  "mmbench-v1.1":
+    resolution_status: resolved
+    repo_kind: shared_parent
+    repo_url: https://github.com/open-compass/MMBench
+    repo_full_name: open-compass/MMBench
+    repo_subpath: null
+    paper_url: https://arxiv.org/abs/2307.06281
+    note: "Shared parent: MMBench v1.1 is the cleaned V11 release in the MMBench repository."
+
+  "osworld":
+    resolution_status: resolved
+    repo_kind: benchmark_source
+    repo_url: https://github.com/xlang-ai/OSWorld
+    repo_full_name: xlang-ai/OSWorld
+    repo_subpath: null
+    site_url: https://osworld-v1.xlang.ai/
+    note: The official repository and project site publish OSWorld tasks and evaluation.

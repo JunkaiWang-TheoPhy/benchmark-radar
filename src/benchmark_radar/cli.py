@@ -323,8 +323,6 @@ def main() -> None:
             for snapshot in crawled["snapshots"]
             if snapshot["id"] in SOURCES
         ]
-        for result in normalized:
-            write_catalog(result)
 
         opencompass = normalize_opencompass()
         (DEFAULT_OUTPUT_DIR / "opencompass_source_records.jsonl").write_text(
@@ -341,6 +339,37 @@ def main() -> None:
         all_series = [item for result in normalized for item in result["score_series"]]
         all_observations = [item for result in normalized for item in result["score_observations"]]
         series_by_key = {row["key"]: row for row in all_series}
+        raw_records = [
+            item for result in normalized for item in result["source_records"]
+        ] + opencompass["source_records"]
+
+        from .external_overrides import (
+            apply_llm_stats_identity_overrides,
+            load_llm_stats_identity_overrides,
+            overridden_validation,
+        )
+
+        # llm-stats itself carries no benchmark provenance. Its raw records
+        # above remain the input to candidate generation; separately reviewed
+        # facts are applied before source records, the index, and shards are
+        # written so the product actually receives them.
+        overrides = load_llm_stats_identity_overrides(raw_records)
+        enriched_normalized = []
+        for result in normalized:
+            if result["validation"]["source"] != "llm_stats":
+                enriched_normalized.append(result)
+                continue
+            enriched = dict(result)
+            enriched["source_records"] = apply_llm_stats_identity_overrides(
+                result["source_records"], overrides
+            )
+            enriched["validation"] = overridden_validation(
+                result["validation"], enriched["source_records"], overrides
+            )
+            enriched_normalized.append(enriched)
+        normalized = enriched_normalized
+        for result in normalized:
+            write_catalog(result)
         all_records = [
             item for result in normalized for item in result["source_records"]
         ] + opencompass["source_records"]
@@ -359,7 +388,7 @@ def main() -> None:
         # hand, and the candidates only feed that review. Candidates are built
         # from the raw records, before inheritance, so a borrowed anchor never
         # manufactures a machine candidate.
-        candidates = build_identity_candidates(all_records)
+        candidates = build_identity_candidates(raw_records)
         write_identity_candidates(candidates, DEFAULT_CANDIDATES_PATH)
 
         # Resolve the reviewed join, then let a record in an `equivalent` group
@@ -403,6 +432,8 @@ def main() -> None:
             f"identity candidates: {candidates['equivalent_candidate_count']} anchor-backed, "
             f"{candidates['name_only_count']} name-only -> {DEFAULT_CANDIDATES_PATH}\n"
             f"identity inherited: {inherited_count} records show a reviewed donor's identity\n"
+            f"llm-stats identity overrides: {overrides.validation['override_count']} reviewed "
+            f"records, {overrides.validation['resolution_status_counts']['resolved']} resolved\n"
             f"catalog written to {DEFAULT_OUTPUT_DIR}"
         )
         return
