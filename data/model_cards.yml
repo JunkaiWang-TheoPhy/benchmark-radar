@@ -1063,6 +1063,17 @@ benchmarks:
       failure mechanisms, so scores are highly sensitive to scientific-domain
       knowledge and tool access, not only to coding ability.
 
+  - id: skillsbench
+    name: SkillsBench
+    aliases: ["SkillsBench", "SkillsBench V1", "Skills Bench"]
+    domain: agent
+    url: https://skillsbench.ai/
+    caveat: >-
+      Measures whether curated Agent Skills raise agent pass rates, not raw
+      model capability; the meaningful figure is the paired no-Skills versus
+      curated-Skills gap. No release date is recorded because the paper has no
+      dated first submission; arXiv:2602.12670 first appeared in February 2026.
+
 # Model cards, technical reports and release posts.
 #
 # `organization` is the publisher of the document. `benchmarks` is the set of
@@ -1877,3 +1888,25 @@ model_cards:
       - ifbench
       - simpleqa
       - bfcl
+
+  - id: tencent_hy4_preview
+    organization: Tencent
+    model: Hy4 preview
+    document_type: technical_report
+    published: 2026-08-28
+    url: https://hy.tencent.ai/research/hy4-preview
+    retrieved_at: 2026-08-31
+    # Transcribed from the technical report's benchmark table. Tencent reports
+    # ten results for Hy4 preview; SkillsBench V1 is the only one the registry
+    # did not already track.
+    benchmarks:
+      - hle
+      - gpqa_diamond
+      - terminal_bench
+      - swe_bench_multilingual
+      - swe_bench_pro
+      - deepswe
+      - mcp_atlas
+      - toolathlon_verified
+      - skillsbench
+      - apex_agents

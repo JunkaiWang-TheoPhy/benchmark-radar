@@ -367,6 +367,10 @@ benchmarks:
     metric: accuracy
     direction: higher_is_better
     unit: percent
+  - benchmark_id: skillsbench
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
 
 results:
   # ---------------------------------------------------------------------------
@@ -3381,6 +3385,112 @@ results:
     reported_at: 2026-08-27
     value: 80.5
     read_from: html_text
+
+  # ---------------------------------------------------------------------------
+  # Tencent Hy4 preview technical report (hy.tencent.ai/research/hy4-preview,
+  # 2026-08-28). The report publishes its benchmark table as an image, so the
+  # figures below are transcribed from the rendered table and cross-checked
+  # against independent coverage of the same release before being recorded.
+
+  - benchmark_id: gpqa_diamond
+    instrument: gpqa_diamond
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 92.3
+    read_from: table_image
+
+  - benchmark_id: terminal_bench
+    instrument: terminal_bench_2.1
+    protocol: Terminal-Bench 2.1
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 85.4
+    read_from: table_image
+
+  - benchmark_id: mcp_atlas
+    instrument: mcp_atlas
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 83.7
+    read_from: table_image
+
+  - benchmark_id: swe_bench_multilingual
+    instrument: swe_bench_multilingual
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 82.9
+    read_from: table_image
+
+  - benchmark_id: toolathlon_verified
+    instrument: toolathlon_verified
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 74.1
+    read_from: table_image
+
+  - benchmark_id: swe_bench_pro
+    instrument: swe_bench_pro_public
+    protocol: public split
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 65.7
+    read_from: table_image
+
+  - benchmark_id: deepswe
+    instrument: deepswe
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 64.3
+    read_from: table_image
+
+  - benchmark_id: skillsbench
+    instrument: skillsbench_v1
+    protocol: SkillsBench V1
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 62.9
+    read_from: table_image
+
+  - benchmark_id: hle
+    instrument: hle
+    protocol: w/ tools
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 55.4
+    read_from: table_image
+
+  - benchmark_id: apex_agents
+    instrument: apex_agents
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 37.1
+    read_from: table_image
 
 # ---------------------------------------------------------------------------
 # UNRESOLVED: documents in the registry whose scores could not be read, and why.
