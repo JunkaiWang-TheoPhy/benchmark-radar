@@ -14,7 +14,7 @@ from typing import Any
 
 from .snapshots import REQUIRED_SOURCES, load_snapshots
 
-QUERY_SCHEMA_VERSION = 5
+QUERY_SCHEMA_VERSION = 6
 DEFAULT_INDEX_PATH = Path("site/data/benchmark-index.json")
 DEFAULT_SHARD_DIR = Path("site/data/benchmarks")
 DEFAULT_SNAPSHOT_DIR = Path("data/snapshots")
@@ -260,7 +260,7 @@ def _match(
     coverage = len(matched_tokens) / len(query_tokens)
     query_weight = sum(_idf(term, corpus) for term in query_tokens)
     matched_weight = sum(_idf(term, corpus) for term in matched_tokens)
-    weighted_coverage = matched_weight / query_weight if query_weight else 0.0
+    idf_coverage = matched_weight / query_weight if query_weight else 0.0
 
     if name_match is not None:
         name_tier, reason = name_match
@@ -271,7 +271,7 @@ def _match(
         name_tier = 4
         reason = (
             f"{len(matched_tokens)} of {len(query_tokens)} unique query tokens matched "
-            f"across fields; weighted coverage {weighted_coverage:.2f}"
+            f"across fields; IDF coverage {idf_coverage:.2f}"
         )
 
     bm25f_score = _bm25f_score(document, query_tokens, corpus)
@@ -280,7 +280,7 @@ def _match(
         for field in _FIELD_ORDER
         if _contains_tokens(document.field_tokens[field], query_tokens)
     ]
-    # BM25F already rewards matching more query terms, so weighted coverage is
+    # BM25F already rewards matching more query terms, so IDF coverage is
     # only a tie-breaker and explanation. Exactness and phrase proximity are the
     # two conventional secondary signals. Scale both by query IDF instead of
     # mixing giant fixed constants into a corpus-dependent lexical score.
@@ -289,15 +289,15 @@ def _match(
     name_bonus = (
         query_weight * _NAME_MATCH_MULTIPLIERS[name_match[0]] if name_match is not None else 0.0
     )
-    ranking_score = bm25f_score + phrase_bonus + name_bonus
+    retrieval_score = bm25f_score + phrase_bonus + name_bonus
 
     record = document.record
     completeness = sum(
         1 for field in ("publisher", "released", "modality") if record.get(field) not in (None, "")
     ) + sum(1 for field in ("has_paper", "has_repo", "has_dataset") if record.get(field))
     sort_key = (
-        -ranking_score,
-        -weighted_coverage,
+        -retrieval_score,
+        -idf_coverage,
         name_tier,
         -completeness,
         len(str(record.get("name") or "")),
@@ -308,7 +308,7 @@ def _match(
         sort_key,
         {
             "ranking_algorithm": "bm25f_v3",
-            "ranking_score": round(ranking_score, 6),
+            "retrieval_score": round(retrieval_score, 6),
             "score_components": {
                 "bm25f": round(bm25f_score, 6),
                 "phrase_bonus": round(phrase_bonus, 6),
@@ -318,7 +318,7 @@ def _match(
             "matched_tokens": sorted(matched_tokens),
             "missing_tokens": sorted(set(query_tokens) - matched_tokens),
             "query_coverage": round(coverage, 4),
-            "weighted_query_coverage": round(weighted_coverage, 4),
+            "idf_coverage": round(idf_coverage, 4),
             "phrase_fields": phrase_fields,
             "reason": reason,
         },
@@ -575,6 +575,7 @@ class QueryService:
                 "ranking": "bm25f_v3",
                 "minimum_should_match": "one unique query term",
                 "query_coverage": "tie-breaker and explanation",
+                "idf_coverage": "tie-breaker and explanation using smoothed query IDF",
             },
             "filters": filters,
             "limit": limit,

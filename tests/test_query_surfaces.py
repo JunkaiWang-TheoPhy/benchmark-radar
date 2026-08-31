@@ -153,6 +153,8 @@ def test_catalog_search_is_deterministic_and_explains_matches(tmp_path: Path) ->
         "categories",
     ]
     assert result["results"][0]["match"]["reason"] == "exact name match"
+    assert result["results"][0]["match"]["retrieval_score"] > 0
+    assert result["results"][0]["match"]["idf_coverage"] == pytest.approx(1.0)
     assert result["data"]["catalog_count"] == 3
 
 
@@ -178,6 +180,10 @@ def test_search_returns_partial_candidates_with_evidence_for_agent_judgment(
     )
     assert all(
         item["match"]["query_coverage"] == pytest.approx(1 / 3, abs=0.0001)
+        for item in result["results"]
+    )
+    assert all(
+        item["match"]["retrieval_score"] > 0 and 0 < item["match"]["idf_coverage"] < 1
         for item in result["results"]
     )
     assert all(
@@ -454,7 +460,7 @@ def test_healthz_identifies_local_health_check_contract(tmp_path: Path) -> None:
         thread.join(timeout=5)
 
     assert payload == {
-        "schema_version": 5,
+        "schema_version": 6,
         "retrieval_mode": "health_check",
         "data": {"source": "local"},
         "status": "ok",
@@ -536,6 +542,6 @@ def test_http_errors_are_machine_readable(tmp_path: Path) -> None:
 
     assert captured.value.code == 400
     assert payload == {
-        "schema_version": 5,
+        "schema_version": 6,
         "error": {"code": "invalid_request", "message": "q is required"},
     }

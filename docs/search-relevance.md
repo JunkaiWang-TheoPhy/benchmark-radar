@@ -42,11 +42,13 @@ Search has three explicit stages:
 
 The response exposes `candidate_count`, `total_matches`, `full_match_count`,
 `partial_match_count`, `search_status`, policy identity, matched and missing tokens,
-weighted coverage, fields, phrase fields, the raw ranking score, and its score
+lexical coverage, fields, phrase fields, the raw retrieval score, and its score
 components. Candidate count and total matches are equal because search no longer
 hides partial lexical evidence behind a service-side acceptance policy. The score
 orders one query; it is not calibrated confidence and must not be compared across
-queries.
+queries. `retrieval_score` is a ranking signal only. `idf_coverage` reports the
+fraction of smoothed query-IDF mass matched by a record; it is evidence for the
+consuming agent, not a semantic acceptance threshold.
 
 Status is a lexical decision separate from candidate retrieval:
 

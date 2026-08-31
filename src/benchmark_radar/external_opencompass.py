@@ -46,6 +46,7 @@ from .leaderboard_snapshots import DEFAULT_SNAPSHOTS_PATH, load_snapshots
 OPENCOMPASS_SOURCE = "opencompass_hub"
 OPENCOMPASS_KEY_PREFIX = "opencompass"
 OPENCOMPASS_SNAPSHOT_ID = "opencompass_hub_2026-08-17"
+OPENCOMPASS_ROUND2_BUNDLE_ID = "OpenCompassHub_Round2_Public_Evidence_2026-08-18"
 DEFAULT_ROUND2_PATH = Path("data/leaderboard_snapshots/opencompass_round2/opencompass_round2.jsonl")
 
 # GitHub's sentinel for "a LICENSE file is present but unidentifiable". Not a
@@ -244,6 +245,28 @@ def _description(row: dict[str, str]) -> dict[str, str]:
     return descriptions
 
 
+def _provenance(snapshot: dict[str, Any], row: dict[str, Any], round2_path: Path) -> dict[str, Any]:
+    """Retain the source lineage for both halves of the joined record."""
+    return {
+        "source_url": row.get("source_url"),
+        "crawled_at": "2026-08-18T00:00:00+00:00",
+        "crawl_bundle": OPENCOMPASS_ROUND2_BUNDLE_ID,
+        "inputs": {
+            "catalog_snapshot": {
+                "id": snapshot["id"],
+                "source_url": snapshot.get("source_url"),
+                "crawled_at": snapshot.get("crawled_at"),
+                "file": "data/leaderboard_snapshots/opencompass_hub_catalog_2026-08-17.csv",
+            },
+            "round2_evidence": {
+                "id": OPENCOMPASS_ROUND2_BUNDLE_ID,
+                "file": str(round2_path),
+                "crawled_at": "2026-08-18T00:00:00+00:00",
+            },
+        },
+    }
+
+
 def _categories(row: dict[str, str]) -> list[str]:
     """Source-authored tags and dimensions, deduplicated but not inferred."""
     categories: list[str] = []
@@ -341,11 +364,7 @@ def normalize_opencompass(
                     identity.get("version_reported") or readme.get("version_reported")
                 ),
                 "possible_variant": bool(identity.get("possible_variant")),
-                "provenance": {
-                    "source_url": row.get("source_url"),
-                    "crawled_at": "2026-08-18T00:00:00+00:00",
-                    "crawl_bundle": "OpenCompassHub_Round2_Public_Evidence_2026-08-18",
-                },
+                "provenance": _provenance(snapshot, row, path),
             }
         )
 

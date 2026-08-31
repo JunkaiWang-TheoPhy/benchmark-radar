@@ -63,8 +63,8 @@ judgments before reporting Precision@K or NDCG.
 
 ## Qualitative judge set
 
-`evaluation/search_judge_cases.yml` contains twenty additional navigational,
-topical, ambiguous, and out-of-catalog intents. It has no executable thresholds and
+`evaluation/search_judge_cases.yml` contains twenty-three additional navigational,
+topical, ambiguous, wrapper-language, and out-of-catalog intents. It has no executable thresholds and
 is not loaded by product code or CI. A human or LLM reviewer runs every case through
 the same `QueryService`, then judges leading candidates, status honesty, and match
 evidence using the shared rubric. The ranking implementation must never branch on a

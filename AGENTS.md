@@ -177,14 +177,16 @@ upload that exact file. The PDF is a dated interpretation, not a data source.
   errors; they must not be replaced with guessed metadata.
 - Lexical search is a high-recall candidate retriever for agents, not a final
   suitability judge. Any shared query token may produce a candidate. BM25F is
-  the primary score. Exact/prefix/token-sequence name matches and non-name
-  contiguous phrases are bounded, query-IDF-scaled boosts; weighted coverage is
-  only a tie-breaker and explanation because BM25F already rewards additional
-  matched terms. Never require every query term as an eligibility gate. Every
-  result must expose matched and missing tokens, fields, coverage, and score
-  components. `full_matches_found` means at least one candidate covers every
-  query token, `partial_candidates_only` preserves weaker evidence without
-  claiming an answer, and zero token overlap uses `no_lexical_candidates`.
+  the primary retrieval score. Exact/prefix/token-sequence name matches and
+  non-name contiguous phrases are bounded, query-IDF-scaled boosts; lexical
+  coverage is only a tie-breaker and explanation because BM25F already rewards
+  additional matched terms. Every result must expose matched and missing tokens,
+  fields, coverage, `retrieval_score`, `idf_coverage`, and score components.
+  `full_matches_found` means at least one candidate covers every query token,
+  `partial_candidates_only` preserves weaker evidence without claiming an answer,
+  and zero token overlap uses `no_lexical_candidates`. Semantic acceptance belongs
+  to the consuming Agent/Skill, which may issue focused query variants and inspect
+  `show` details before making a suitability claim.
 - Catalog and Radar are different trust layers. Catalog rows are normalized
   benchmark records; Radar rows are discovery evidence and must stay labelled as
   such. A search result is a candidate, not a suitability claim. Agent query

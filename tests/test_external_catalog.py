@@ -324,6 +324,17 @@ def test_opencompass_card_metadata_survives_round2_enrichment() -> None:
     assert "Multimodal" in climate["categories"]
     assert "Fact-Checking" in climate["categories"]
     assert climate["modality"] == "multimodal"
+    provenance = climate["provenance"]
+    assert provenance["crawl_bundle"] == "OpenCompassHub_Round2_Public_Evidence_2026-08-18"
+    assert provenance["inputs"]["catalog_snapshot"] == {
+        "id": "opencompass_hub_2026-08-17",
+        "source_url": "https://hub.opencompass.org.cn/home",
+        "crawled_at": "2026-08-17T18:57:37.200294+00:00",
+        "file": "data/leaderboard_snapshots/opencompass_hub_catalog_2026-08-17.csv",
+    }
+    assert provenance["inputs"]["round2_evidence"]["id"] == (
+        "OpenCompassHub_Round2_Public_Evidence_2026-08-18"
+    )
 
 
 def test_index_has_one_row_per_source_record(normalized: dict) -> None:

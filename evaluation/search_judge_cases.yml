@@ -37,6 +37,18 @@ cases:
     scope: catalog
     intent: Find the benchmark named LiveCodeBench.
 
+  - id: navigate-wrapped-gpqa
+    category: navigational
+    query: find GPQA Diamond
+    scope: catalog
+    intent: Strip the conversational request wrapper and resolve the exact GPQA Diamond name.
+
+  - id: navigate-wrapped-swe-bench
+    category: navigational
+    query: SWE bench verified please
+    scope: catalog
+    intent: Ignore the conversational politeness wrapper and resolve SWE-bench Verified.
+
   - id: topic-multilingual-grade-school-math
     category: topical
     query: multilingual grade school math
@@ -66,6 +78,12 @@ cases:
     query: medical image question answering
     scope: catalog
     intent: Find question-answering benchmarks grounded in medical images.
+
+  - id: topic-wrapped-medical-vqa
+    category: topical
+    query: I need a medical VQA benchmark
+    scope: catalog
+    intent: Extract the medical VQA task from a natural-language request before judging candidates.
 
   - id: topic-scientific-chart-understanding
     category: topical
