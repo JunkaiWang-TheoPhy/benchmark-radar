@@ -371,6 +371,66 @@ benchmarks:
     metric: accuracy
     direction: higher_is_better
     unit: percent
+  - benchmark_id: biomysterybench
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: swe_atlas
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: swe_marathon
+    metric: resolved
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: cybergym
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: programbench
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: harbor_index
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: onemillionbench
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: draco
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: jobbench
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: workspacebench
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: superchem
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: arxivmath
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: horizonmath
+    metric: pass@4
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: matharena_apex_2025
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
+  - benchmark_id: brokenarxiv
+    metric: accuracy
+    direction: higher_is_better
+    unit: percent
 
 results:
   # ---------------------------------------------------------------------------
@@ -3389,8 +3449,10 @@ results:
   # ---------------------------------------------------------------------------
   # Tencent Hy4 preview technical report (hy.tencent.ai/research/hy4-preview,
   # 2026-08-28). The report publishes its benchmark table as an image, so the
-  # figures below are transcribed from the rendered table and cross-checked
+  # 35 figures below are transcribed from the rendered table and cross-checked
   # against independent coverage of the same release before being recorded.
+  # SWE Atlas contributes three splits and HLE reports both with-tools and
+  # no-tools; five internal Hy-* rows are not tracked.
 
   - benchmark_id: gpqa_diamond
     instrument: gpqa_diamond
@@ -3490,6 +3552,256 @@ results:
     source_id: tencent_hy4_preview
     reported_at: 2026-08-28
     value: 37.1
+    read_from: table_image
+
+  - benchmark_id: swe_atlas
+    instrument: swe_atlas_codebase_qa
+    protocol: Codebase Q&A split
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 60.2
+    read_from: table_image
+
+  - benchmark_id: swe_atlas
+    instrument: swe_atlas_test_writing
+    protocol: Test Writing split
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 54.8
+    read_from: table_image
+
+  - benchmark_id: swe_atlas
+    instrument: swe_atlas_refactoring
+    protocol: Refactoring split
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 51.0
+    read_from: table_image
+
+  - benchmark_id: swe_marathon
+    instrument: swe_marathon
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 38.1
+    read_from: table_image
+
+  - benchmark_id: nl2repo
+    instrument: nl2repo
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 58.9
+    read_from: table_image
+
+  - benchmark_id: cybergym
+    instrument: cybergym
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 78.4
+    read_from: table_image
+
+  - benchmark_id: programbench
+    instrument: programbench
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 17.5
+    read_from: table_image
+
+  - benchmark_id: posttrainbench
+    instrument: posttrainbench_v1.1
+    protocol: PostTrainBench V1.1
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 34.4
+    read_from: table_image
+
+  - benchmark_id: harbor_index
+    instrument: harbor_index
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 39.6
+    read_from: table_image
+
+  - benchmark_id: widesearch
+    instrument: widesearch
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 83.9
+    read_from: table_image
+
+  - benchmark_id: onemillionbench
+    instrument: onemillionbench
+    protocol: w/ tools
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 65.4
+    read_from: table_image
+
+  - benchmark_id: draco
+    instrument: draco
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 77.2
+    read_from: table_image
+
+  - benchmark_id: office_qa_pro
+    instrument: office_qa_pro
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 66.2
+    read_from: table_image
+
+  - benchmark_id: jobbench
+    instrument: jobbench
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 61.7
+    read_from: table_image
+
+  - benchmark_id: workspacebench
+    instrument: workspacebench
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 59.3
+    read_from: table_image
+
+  - benchmark_id: agents_last_exam
+    instrument: agents_last_exam
+    protocol: ALE-CLI
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 22.8
+    read_from: table_image
+
+  - benchmark_id: gdpval
+    instrument: gdpval_pal_ava_v2
+    protocol: GDV-PAL-AVA V2, official
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 1678
+    read_from: table_image
+
+  - benchmark_id: biomysterybench
+    instrument: biomysterybench
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 71.0
+    read_from: table_image
+
+  - benchmark_id: critpt
+    instrument: critpt
+    protocol: official
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 16.9
+    read_from: table_image
+
+  - benchmark_id: hle
+    instrument: hle
+    protocol: w/o tools
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 43.4
+    read_from: table_image
+
+  - benchmark_id: superchem
+    instrument: superchem
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 66.4
+    read_from: table_image
+
+  - benchmark_id: arxivmath
+    instrument: arxivmath
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 65.8
+    read_from: table_image
+
+  - benchmark_id: horizonmath
+    instrument: horizonmath
+    protocol: pass@4
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 8.8
+    read_from: table_image
+
+  - benchmark_id: matharena_apex_2025
+    instrument: matharena_apex_2025
+    protocol: MathArena Apex 2025
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 74.2
+    read_from: table_image
+
+  - benchmark_id: brokenarxiv
+    instrument: brokenarxiv
+    protocol: as printed in the report's benchmark table
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 54.6
     read_from: table_image
 
 # ---------------------------------------------------------------------------

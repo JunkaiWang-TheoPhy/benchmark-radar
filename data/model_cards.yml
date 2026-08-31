@@ -1074,6 +1074,124 @@ benchmarks:
       curated-Skills gap. No release date is recorded because the paper has no
       dated first submission; arXiv:2602.12670 first appeared in February 2026.
 
+  - id: swe_atlas
+    name: SWE Atlas
+    aliases: ["SWE Atlas", "SWE-Atlas"]
+    domain: coding_agent
+    url: https://github.com/scaleapi/SWE-Atlas
+    caveat: >-
+      Reports three splits (Codebase Q&A, Test Writing, Refactoring) as
+      separate figures; the split is part of the instrument.
+
+  - id: swe_marathon
+    name: SWE-Marathon
+    aliases: ["SWE-Marathon", "SWE Marathon"]
+    domain: coding_agent
+    url: https://github.com/abundant-ai/swe-marathon
+    caveat: >-
+      Ultra long-horizon software engineering tasks; the score depends on the
+      agent's loop budget as much as on coding skill.
+
+  - id: cybergym
+    name: CyberGym
+    domain: security
+    url: https://openreview.net/forum?id=2YvbLQEdYt
+    caveat: >-
+      Real-world cybersecurity tasks; tool permissions and time limits are
+      part of the result, not incidental to it.
+
+  - id: programbench
+    name: ProgramBench
+    domain: coding
+    url: https://arxiv.org/abs/2605.03546
+    caveat: >-
+      Cleanroom program-rebuild tasks; most models score low, so small
+      differences sit within run-to-run noise.
+
+  - id: harbor_index
+    name: Harbor-Index
+    aliases: ["Harbor-Index", "Harbor Index"]
+    domain: coding_agent
+    url: https://github.com/harbor-framework/harbor-index
+    caveat: >-
+      Compact high-signal frontier-agent evaluation; the environment and
+      harness define the score.
+
+  - id: onemillionbench
+    name: OneMillionBench
+    aliases: ["OneMillionBench", "One Million Bench"]
+    domain: long_context
+    url: https://github.com/humanlaya/OneMillion-Bench
+    caveat: >-
+      Long-context recall and use; a "with tools" figure is not comparable to
+      a no-tools run.
+
+  - id: draco
+    name: DRACO
+    domain: long_context
+    url: https://huggingface.co/datasets/perplexity-ai/draco
+    caveat: >-
+      Deep-research style long-context agent tasks; the retrieval and tool
+      stack is part of the score.
+
+  - id: jobbench
+    name: JobBench
+    domain: professional
+    url: https://arxiv.org/abs/2605.26329
+    caveat: >-
+      Professional job tasks aligned with human work; rubric grading moves the
+      number beyond model capability alone.
+
+  - id: workspacebench
+    name: WorkspaceBench
+    aliases: ["Workspace-Bench", "Workspace Bench", "Workspace-Bench 1.0"]
+    domain: professional
+    url: https://arxiv.org/abs/2605.03596
+    caveat: >-
+      Large-scale file-workspace tasks; the environment and file dependencies
+      are part of the measurement.
+
+  - id: superchem
+    name: SUPERChem
+    domain: science
+    url: https://github.com/catalystforyou/SUPERChem_eval
+    caveat: >-
+      Multimodal chemical reasoning; image and formula parsing quality moves
+      the reported figure.
+
+  - id: arxivmath
+    name: ArXivMath
+    domain: math
+    url: https://matharena.ai/arxivmath
+    caveat: >-
+      Competition-style mathematics drawn from arXiv; test-time compute budget
+      is part of the result.
+
+  - id: horizonmath
+    name: HorizonMath
+    domain: math
+    url: https://github.com/ewang26/HorizonMath
+    caveat: >-
+      Unsolved research-level mathematics, reported at pass@4, so figures sit
+      far below conventional accuracy scales.
+
+  - id: matharena_apex_2025
+    name: MathArena Apex 2025
+    aliases: ["MathArena Apex", "MathArena Apex 2025", "Apex 2025"]
+    domain: math
+    url: https://matharena.ai/apex
+    caveat: >-
+      The hardest MathArena split; even near-ceiling models sit well below
+      typical math-benchmark numbers.
+
+  - id: brokenarxiv
+    name: BrokenArXiv
+    domain: math
+    url: https://matharena.ai/brokenarxiv
+    caveat: >-
+      arXiv proofs with planted errors; tests whether a model catches a broken
+      argument instead of reproducing it.
+
 # Model cards, technical reports and release posts.
 #
 # `organization` is the publisher of the document. `benchmarks` is the set of
@@ -1896,17 +2014,41 @@ model_cards:
     published: 2026-08-28
     url: https://hy.tencent.ai/research/hy4-preview
     retrieved_at: 2026-08-31
-    # Transcribed from the technical report's benchmark table. Tencent reports
-    # ten results for Hy4 preview; SkillsBench V1 is the only one the registry
-    # did not already track.
+    # Transcribed from the report's benchmark table. Tencent reports 35 rows
+    # across 32 tracked benchmarks: SWE Atlas contributes three splits and HLE
+    # reports both with-tools and no-tools. Five internal Hy-* benchmarks and
+    # the GDV-PAL-AVA V2 Elo row are recorded in benchmark_scores.yml where
+    # scores are stored; five internal Hy-* rows are not tracked at all.
     benchmarks:
-      - hle
-      - gpqa_diamond
-      - terminal_bench
       - swe_bench_multilingual
       - swe_bench_pro
       - deepswe
+      - swe_atlas
+      - swe_marathon
+      - terminal_bench
+      - nl2repo
+      - cybergym
+      - programbench
+      - posttrainbench
+      - harbor_index
+      - widesearch
+      - onemillionbench
+      - draco
+      - office_qa_pro
       - mcp_atlas
       - toolathlon_verified
-      - skillsbench
       - apex_agents
+      - skillsbench
+      - jobbench
+      - workspacebench
+      - agents_last_exam
+      - gdpval
+      - biomysterybench
+      - hle
+      - critpt
+      - gpqa_diamond
+      - superchem
+      - arxivmath
+      - horizonmath
+      - matharena_apex_2025
+      - brokenarxiv
