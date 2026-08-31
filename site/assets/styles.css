@@ -164,6 +164,31 @@ th {
   line-height: 1.55;
 }
 
+.privacy-note summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.privacy-note summary::-webkit-details-marker {
+  display: none;
+}
+
+.privacy-note summary:hover,
+.privacy-note summary:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.privacy-note summary::after {
+  content: "\25b8";
+  margin-left: 0.35rem;
+  color: inherit;
+}
+
+.privacy-note[open] summary::after {
+  content: "\25be";
+}
+
 .privacy-note a {
   color: inherit;
 }

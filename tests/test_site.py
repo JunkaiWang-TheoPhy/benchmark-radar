@@ -82,6 +82,24 @@ def test_every_html_entry_point_loads_clarity_once_and_discloses_analytics():
     assert "https://privacy.microsoft.com/privacystatement" in homepage
 
 
+def test_privacy_notice_is_collapsible_and_collapsed_by_default():
+    homepage = Path("site/index.html").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+    renderer = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    disclosure = homepage.split('<details class="privacy-note">', 1)[1].split("</details>", 1)[0]
+    assert "<summary" in disclosure
+    assert "Privacy notice" in disclosure.split("<summary", 1)[1].split("</summary>", 1)[0]
+    assert "session replays and heatmaps" in disclosure
+    assert "Sensitive content is masked by default" in disclosure
+    assert "https://privacy.microsoft.com/privacystatement" in disclosure
+    assert 'class="privacy-note" open' not in homepage
+
+    assert ".privacy-note summary {" in styles
+    assert ".privacy-note[open] summary::after" in styles
+    assert '"Privacy notice": "隐私声明"' in renderer
+
+
 def test_priority_score_is_reachably_explained():
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
