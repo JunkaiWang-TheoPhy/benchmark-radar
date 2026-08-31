@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "model_count": 861,
-  "curated_only": 16,
+  "model_count": 862,
+  "curated_only": 17,
   "crawled_only": 826,
   "both_layers": 19,
   "organizations": [
@@ -8545,6 +8545,17 @@
       ],
       "source_counts": {
         "crawled": 10
+      }
+    },
+    {
+      "key": "tencent-hy4-preview",
+      "model": "Hy4 preview",
+      "organization": "Tencent",
+      "layers": [
+        "curated"
+      ],
+      "source_counts": {
+        "curated": 1
       }
     },
     {
