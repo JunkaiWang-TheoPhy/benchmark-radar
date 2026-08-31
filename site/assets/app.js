@@ -368,6 +368,7 @@ const I18N = {
     "Get in touch · Email, WeChat, Discord": "联系我 · 邮件、微信、Discord",
     Data: "数据",
     Contact: "联系",
+    "Privacy notice": "隐私声明",
     "Support this repository": "支持这个仓库",
     "Open the repository and star it": "打开仓库并给个 Star",
     Star: "Star",
