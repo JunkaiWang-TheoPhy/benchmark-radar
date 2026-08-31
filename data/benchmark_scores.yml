@@ -411,6 +411,10 @@ benchmarks:
     metric: accuracy
     direction: higher_is_better
     unit: percent
+  - benchmark_id: bankertoolbench
+    metric: weighted_rubric_score
+    direction: higher_is_better
+    unit: percent
   - benchmark_id: superchem
     metric: accuracy
     direction: higher_is_better
@@ -3449,10 +3453,10 @@ results:
   # ---------------------------------------------------------------------------
   # Tencent Hy4 preview technical report (hy.tencent.ai/research/hy4-preview,
   # 2026-08-28). The report publishes its benchmark table as an image, so the
-  # 35 figures below are transcribed from the rendered table and cross-checked
+  # 37 figures below are transcribed from the rendered table and cross-checked
   # against independent coverage of the same release before being recorded.
   # SWE Atlas contributes three splits and HLE reports both with-tools and
-  # no-tools; five internal Hy-* rows are not tracked.
+  # no-tools; nine rows explicitly marked "Internal" are not tracked.
 
   - benchmark_id: gpqa_diamond
     instrument: gpqa_diamond
@@ -3715,13 +3719,33 @@ results:
     read_from: table_image
 
   - benchmark_id: gdpval
-    instrument: gdpval_pal_ava_v2
-    protocol: GDV-PAL-AVA V2, official
+    instrument: gdpval_aa_v2
+    protocol: GDPval-AA V2, Elo, official
     model: Hy4 preview
     organization: Tencent
     source_id: tencent_hy4_preview
     reported_at: 2026-08-28
     value: 1678
+    read_from: table_image
+
+  - benchmark_id: automationbench
+    instrument: automationbench_v1.0.6
+    protocol: AutomationBench v1.0.6, as reported
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 32.1
+    read_from: table_image
+
+  - benchmark_id: bankertoolbench
+    instrument: bankertoolbench
+    protocol: OpenCode scaffold, Gemini 3 Flash judge
+    model: Hy4 preview
+    organization: Tencent
+    source_id: tencent_hy4_preview
+    reported_at: 2026-08-28
+    value: 78.6
     read_from: table_image
 
   - benchmark_id: biomysterybench
@@ -3852,4 +3876,3 @@ results:
 # carries one metric, so the edit-distance reading is omitted here rather
 # than mixed onto the accuracy axis.
 # ---------------------------------------------------------------------------
-

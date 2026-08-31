@@ -711,6 +711,16 @@ benchmarks:
       Published by Zapier over its own automation surface, and cards report
       different task subsets of it.
 
+  - id: bankertoolbench
+    name: BankerToolBench
+    aliases: ["BankerToolBench", "Banker Tool Bench", "BTB"]
+    domain: professional
+    url: https://github.com/Handshake-AI-Research/bankertoolbench
+    caveat: >-
+      End-to-end investment-banking tasks produce spreadsheets, presentations,
+      and documents; the agent harness, financial-data tools, and rubric-grader
+      configuration are part of the score.
+
   - id: agents_last_exam
     name: Agents' Last Exam
     aliases: ["Agents' Last Exam", "ALE", "Agent's Last Exam", "ALE-CLI"]
@@ -2014,11 +2024,10 @@ model_cards:
     published: 2026-08-28
     url: https://hy.tencent.ai/research/hy4-preview
     retrieved_at: 2026-08-31
-    # Transcribed from the report's benchmark table. Tencent reports 35 rows
-    # across 32 tracked benchmarks: SWE Atlas contributes three splits and HLE
-    # reports both with-tools and no-tools. Five internal Hy-* benchmarks and
-    # the GDV-PAL-AVA V2 Elo row are recorded in benchmark_scores.yml where
-    # scores are stored; five internal Hy-* rows are not tracked at all.
+    # Transcribed from the report's benchmark table. Tencent reports 37 rows
+    # across 34 tracked benchmarks: SWE Atlas contributes three splits and HLE
+    # reports both with-tools and no-tools. Nine rows explicitly marked
+    # "Internal" in the report are not tracked.
     benchmarks:
       - swe_bench_multilingual
       - swe_bench_pro
@@ -2043,6 +2052,8 @@ model_cards:
       - workspacebench
       - agents_last_exam
       - gdpval
+      - automationbench
+      - bankertoolbench
       - biomysterybench
       - hle
       - critpt

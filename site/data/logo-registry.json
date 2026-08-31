@@ -1,7 +1,7 @@
 {
   "note": "Frozen IDs for the logo audit page (site/logos.html). An ID is assigned once and never reused, so review feedback citing it stays valid across rebuilds. Which models and organizations exist is decided by models.json, not here.",
   "high_water": {
-    "O": 67,
+    "O": 68,
     "M": 1048
   },
   "organizations": {

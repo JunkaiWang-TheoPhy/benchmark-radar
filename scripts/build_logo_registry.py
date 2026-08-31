@@ -61,8 +61,14 @@ def main() -> None:
     # The highest number ever issued, kept even for entries about to be
     # dropped, so a retired ID is never handed to a different model later.
     retired = {
-        "O": max((int(v.split("-")[1]) for v in org_ids.values()), default=0),
-        "M": max((int(v.split("-")[1]) for v in model_ids.values()), default=0),
+        "O": max(
+            int(high_water.get("O", 0)),
+            max((int(v.split("-")[1]) for v in org_ids.values()), default=0),
+        ),
+        "M": max(
+            int(high_water.get("M", 0)),
+            max((int(v.split("-")[1]) for v in model_ids.values()), default=0),
+        ),
     }
 
     assign(org_ids, organizations, "O")
