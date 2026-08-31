@@ -3561,7 +3561,7 @@ results:
     organization: Tencent
     source_id: tencent_hy4_preview
     reported_at: 2026-08-28
-    value: 60.2
+    value: 64.0
     read_from: table_image
 
   - benchmark_id: swe_atlas
@@ -3571,7 +3571,7 @@ results:
     organization: Tencent
     source_id: tencent_hy4_preview
     reported_at: 2026-08-28
-    value: 54.8
+    value: 57.8
     read_from: table_image
 
   - benchmark_id: swe_atlas
@@ -3581,7 +3581,7 @@ results:
     organization: Tencent
     source_id: tencent_hy4_preview
     reported_at: 2026-08-28
-    value: 51.0
+    value: 53.3
     read_from: table_image
 
   - benchmark_id: swe_marathon
@@ -3591,7 +3591,7 @@ results:
     organization: Tencent
     source_id: tencent_hy4_preview
     reported_at: 2026-08-28
-    value: 38.1
+    value: 31.9
     read_from: table_image
 
   - benchmark_id: nl2repo
@@ -3631,7 +3631,7 @@ results:
     organization: Tencent
     source_id: tencent_hy4_preview
     reported_at: 2026-08-28
-    value: 34.4
+    value: 35.6
     read_from: table_image
 
   - benchmark_id: harbor_index
@@ -3701,7 +3701,7 @@ results:
     organization: Tencent
     source_id: tencent_hy4_preview
     reported_at: 2026-08-28
-    value: 59.3
+    value: 60.2
     read_from: table_image
 
   - benchmark_id: agents_last_exam
@@ -3731,7 +3731,7 @@ results:
     organization: Tencent
     source_id: tencent_hy4_preview
     reported_at: 2026-08-28
-    value: 71.0
+    value: 71.3
     read_from: table_image
 
   - benchmark_id: critpt
@@ -3771,7 +3771,7 @@ results:
     organization: Tencent
     source_id: tencent_hy4_preview
     reported_at: 2026-08-28
-    value: 65.8
+    value: 66.6
     read_from: table_image
 
   - benchmark_id: horizonmath
