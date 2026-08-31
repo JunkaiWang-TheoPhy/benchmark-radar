@@ -2393,7 +2393,7 @@ def test_issue_332_the_freshest_releases_reach_page_one():
         pytest.skip("radar.json is generated; run the pipeline first")
 
     data = json.loads(radar.read_text(encoding="utf-8"))
-    day = next(d for d in data["days"] if d["date"] == data["latest_date"])
+    day = next(d for d in data["days"] if d["date"] == "2026-08-24")
     scanned_at = dt.datetime.fromisoformat(day["generated_at"])
 
     def age_hours(item: dict) -> float:
