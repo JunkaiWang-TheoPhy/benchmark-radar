@@ -11,6 +11,7 @@ from typing import Any
 from . import kw_bench
 from .attention import fetch_attention_feeds
 from .benchmark_scores import DEFAULT_SCORES_PATH, load_scores, score_progression
+from .blog import write_blog
 from .corpus import (
     artifact_alias_map,
     build_corpus,
@@ -20,6 +21,7 @@ from .corpus import (
 from .feed import write_feed
 from .insights import build_insights
 from .kw_bench_tracks import classification_layer, derive_tracks
+from .landing_pages import write_landing_pages
 from .model_cards import DEFAULT_REGISTRY_PATH, adoption_rank, load_registry
 from .models import RadarRun
 from .pipeline import match_phrase, match_proximity_rule
@@ -1134,13 +1136,19 @@ def rebuild_dashboard(
         if feed_output is not None
         else output.parent / "sitemap.xml"
     )
+    slugs = benchmark_slugs(benchmark_shard_dir)
+    blog_entries: list[tuple[str, str | None]] = []
+    if feed_output is not None:
+        write_landing_pages(value, sitemap_output.parent, benchmark_count=len(slugs))
+        blog_report = write_blog(snapshots, sitemap_output.parent)
+        blog_entries = blog_report["sitemap_entries"]
+        write_feed(snapshots, feed_output, blog_report["manual_feed_entries"])
     write_sitemap(
         snapshots,
         sitemap_output,
-        benchmark_slugs(benchmark_shard_dir),
+        slugs,
+        blog_entries,
     )
-    if feed_output is not None:
-        write_feed(snapshots, feed_output)
     return value
 
 

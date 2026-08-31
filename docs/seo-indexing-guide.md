@@ -129,8 +129,7 @@ JSON-LD. Validate the live HTML with Google's
 [Rich Results Test](https://search.google.com/test/rich-results) after every
 metadata change.
 
-The next improvement is architectural. Today the dashboard views are query
-URLs in a JavaScript application:
+The dashboard views remain query states in the JavaScript application:
 
 ```text
 /?view=leaderboard
@@ -138,35 +137,31 @@ URLs in a JavaScript application:
 /?view=map
 ```
 
-They initially return the same HTML and homepage canonical, then JavaScript
-changes the title, description, and canonical. Google can render JavaScript,
-but its guidance recommends putting a stable canonical in the original HTML
-and not changing it to a different value during rendering. This makes separate
-indexing of the current query views less dependable.
+The generated site now gives those search intents stable, server-delivered
+paths: `/leaderboard/`, `/trends/`, and `/explore/`. Each returns useful text,
+data highlights, caveats, metadata, and its canonical in the initial HTML. The
+interactive query state canonicalizes to its matching static path. Filter
+permutations stay out of the sitemap so they do not create thin duplicates.
 
-Choose one clear policy:
+The same rule applies to the evidence blog. `/blog/` shows recent briefs,
+`/blog/archive/` lists the full history, and `/blog/YYYY-MM-DD/` gives every
+validated snapshot a stable evidence page. Reviewed human articles live under
+`content/blog/` and publish at `/blog/<slug>/`. All of these pages reuse the
+dashboard's original colors and typography; SEO does not introduce a second
+visual identity.
 
-- **One indexed landing page now:** keep only the homepage in the sitemap and
-  canonicalize dashboard state and filters to it.
-- **Distinct search pages later:** publish crawlable paths such as
-  `/leaderboard/`, `/trends/`, and `/explore/`. Each should return useful text,
-  one descriptive heading, its own title and summary, and its own canonical in
-  the initial HTML—not only after JavaScript runs.
-
-Distinct pages are the better route if searches such as “AI benchmark
-leaderboard” and “benchmark trends” should land directly on those experiences.
-Do not index every filter combination; that creates many thin duplicate URLs.
-
-The heavy dashboard views should also stop depending on a roughly 45 MB JSON
-download for their first useful content. Ship a small summary payload or render
-the explanatory text before loading the full interactive data. That improves
-the reader's first screen and makes rendering cheaper for crawlers.
+Daily posts are deterministic deploy-time renders of committed snapshots. They
+show the briefing, questions, limitations, coverage disclosure, and deduplicated
+source links. Deployment does not ask a model to write new copy. Human articles
+require explicit authorship, dates, tags, citations, and draft status; raw HTML
+is escaped and unsafe links are rejected or suppressed.
 
 Google references:
 
 - [JavaScript SEO basics](https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics)
 - [Canonical URL guidance](https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls)
 - [Dataset structured data](https://developers.google.com/search/docs/appearance/structured-data/dataset)
+- [Article structured data](https://developers.google.com/search/docs/appearance/structured-data/article)
 
 ## What to monitor
 
@@ -193,4 +188,7 @@ is a quick spot check, not a complete or authoritative index count.
 - [ ] Google Search Console Domain property verified
 - [ ] Sitemap submitted successfully in Google and Bing
 - [ ] Homepage passes live URL inspection and structured-data validation
+- [ ] Landing pages, a daily blog post, and one benchmark page return useful
+      HTML with JavaScript disabled
+- [ ] Blog post `BlogPosting` and breadcrumb structured data validate
 - [ ] Indexing and performance reviewed after Google recrawls the site

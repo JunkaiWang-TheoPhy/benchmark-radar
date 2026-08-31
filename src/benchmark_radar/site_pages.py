@@ -20,13 +20,13 @@ by the source that reported them, the same rule the shards enforce in JSON.
 
 from __future__ import annotations
 
-import html
 import json
 import shutil
 from pathlib import Path
 from typing import Any
 
 from .feed import SITE_URL
+from .site_shell import breadcrumb_schema, esc, render_page, webpage_schema
 
 DEFAULT_SHARD_DIR = Path("site/data/benchmarks")
 DEFAULT_PAGES_DIR = Path("site/benchmarks")
@@ -38,41 +38,9 @@ _DIR_DESCRIPTION = (
     "covering what it tests, who published it, and which scores are on record."
 )
 
-_BENCH_CSS = """\
-:root { color-scheme: light; --ink: #15242a; --muted: #5f7078; --line: #bdc9ce; }
-body { margin: 0; font-family: Avenir Next, Avenir, Segoe UI, sans-serif;
-  color: var(--ink); line-height: 1.55; }
-nav.site { padding: 1rem max(1rem, calc((100% - 900px) / 2));
-  border-bottom: 1px solid var(--line); display: flex; gap: 1rem; flex-wrap: wrap; }
-main { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem; }
-h1 { font-size: 2rem; margin: 0.25rem 0 0.5rem; }
-.lede { color: var(--muted); font-size: 1.05rem; }
-dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1rem;
-  margin: 1.5rem 0; }
-dt { font-weight: 600; }
-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0 1.5rem;
-  font-size: 0.95rem; }
-th, td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--line); }
-th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
-  color: var(--muted); }
-.caveat { color: var(--muted); font-size: 0.9rem; }
-"""
-
-_DIR_CSS = """\
-:root { color-scheme: light; --ink: #15242a; --line: #bdc9ce; }
-body { margin: 0; font-family: Avenir Next, Avenir, Segoe UI, sans-serif;
-  color: var(--ink); line-height: 1.55; }
-nav.site { padding: 1rem max(1rem, calc((100% - 900px) / 2));
-  border-bottom: 1px solid var(--line); display: flex; gap: 1rem; flex-wrap: wrap; }
-main { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem; }
-ul { columns: 3; gap: 0.5rem 2rem; padding: 0; list-style: none; }
-li { break-inside: avoid; margin: 0.2rem 0; }
-@media (max-width: 700px) { ul { columns: 1; } }
-"""
-
 
 def _esc(value: str) -> str:
-    return html.escape(value, quote=True)
+    return esc(value)
 
 
 def _text(record: dict[str, Any], key: str) -> str | None:
@@ -142,50 +110,6 @@ def _facts(record: dict[str, Any], scores_by_source: dict[str, Any]) -> list[tup
     return facts
 
 
-def _json_ld(payload: dict[str, Any]) -> str:
-    """Serialize structured data for a <script> block.
-
-    JSON may legally contain the substring `</`, which would close the script
-    tag early no matter how valid the JSON is. Escaping the slash keeps the
-    block intact and is valid JSON for every consumer.
-    """
-    return json.dumps(payload, ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
-
-
-def _webpage_jsonld(slug: str, name: str, description: str) -> str:
-    payload = {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        "@id": _canonical(slug),
-        "name": f"{name} · Benchmark Radar",
-        "url": _canonical(slug),
-        "description": description,
-        "inLanguage": ["en", "zh-Hans"],
-        "isPartOf": {"@id": f"{SITE_URL}/#website"},
-        "about": {"@type": "Thing", "name": name, "description": description},
-    }
-    return _json_ld(payload)
-
-
-def _breadcrumb_jsonld(slug: str, name: str) -> str:
-    payload = {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "@id": f"{_canonical(slug)}#breadcrumb",
-        "itemListElement": [
-            {"@type": "ListItem", "position": 1, "name": "Benchmark Radar", "item": f"{SITE_URL}/"},
-            {
-                "@type": "ListItem",
-                "position": 2,
-                "name": "Benchmark directory",
-                "item": f"{SITE_URL}/benchmarks/",
-            },
-            {"@type": "ListItem", "position": 3, "name": name, "item": _canonical(slug)},
-        ],
-    }
-    return _json_ld(payload)
-
-
 def _cell(*candidates: Any) -> str:
     for candidate in candidates:
         if candidate is not None and candidate != "":
@@ -216,22 +140,14 @@ def _scores_sections(scores_by_source: dict[str, Any]) -> str:
         if not body:
             continue
         sections.append(
-            "<section>"
+            '<section class="content-section">'
             f"<h2>{_esc(source)}</h2>"
-            "<table><thead><tr><th>Model</th><th>Organization</th>"
+            '<div class="table-wrap"><table class="content-table"><thead>'
+            "<tr><th>Model</th><th>Organization</th>"
             "<th>Reported value</th><th>Reported</th><th>Evidence</th></tr></thead>"
-            f"<tbody>{body}</tbody></table></section>"
+            f"<tbody>{body}</tbody></table></div></section>"
         )
     return "".join(sections)
-
-
-def _benchmark_nav(interactive: str) -> str:
-    return (
-        '<nav class="site">'
-        f'<a href="{SITE_URL}/">Benchmark Radar</a> '
-        f'<a href="{SITE_URL}/benchmarks/">Benchmark directory</a> '
-        f'<a href="{interactive}">Interactive view</a></nav>'
-    )
 
 
 def _page_html(slug: str, shard: dict[str, Any]) -> str:
@@ -248,111 +164,83 @@ def _page_html(slug: str, shard: dict[str, Any]) -> str:
     scores = _scores_sections(scores_by_source)
     if scores:
         scores_html = (
-            f"<section><h2>Reported scores</h2>{scores}</section>"
-            '<p class="caveat">Scores are partitioned by the source that reported '
+            f'<section class="content-section"><h2>Reported scores</h2>{scores}</section>'
+            '<p class="content-caveat">Scores are partitioned by the source that reported '
             "them and are never merged into a single cross-source ranking, because "
             "the sources measure different things and say so.</p>"
         )
     else:
         scores_html = (
-            '<p class="caveat">No reported scores are on record for this benchmark yet.</p>'
+            '<p class="content-caveat">No reported scores are on record for this benchmark yet.</p>'
         )
     interactive = f"{SITE_URL}/?view=leaderboard&lfrontier={slug}"
-    nav = _benchmark_nav(interactive)
-    return f"""<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="{_esc(description)}">
-<meta name="robots" content="index,follow,max-image-preview:large">
-<title>{_esc(title)}</title>
-<link rel="canonical" href="{canonical}">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Benchmark Radar">
-<meta property="og:title" content="{_esc(title)}">
-<meta property="og:description" content="{_esc(description)}">
-<meta property="og:url" content="{canonical}">
-<meta property="og:image" content="{SITE_URL}/assets/og-card.png">
-<meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{_webpage_jsonld(slug, name, description)}</script>
-<script type="application/ld+json">{_breadcrumb_jsonld(slug, name)}</script>
-<style>{_BENCH_CSS}</style>
-</head>
-<body>
-{nav}
-<main>
+    body = f"""<header class="content-hero">
   <p class="eyebrow">Benchmark</p>
   <h1>{_esc(name)}</h1>
-  <p class="lede">{_esc(description)}</p>
-  <dl>{facts}</dl>
-  {scores_html}
-</main>
-{nav}
-</body>
-</html>
-"""
+  <p class="content-lede">{_esc(description)}</p>
+  <div class="content-actions">
+    <a class="primary-link" href="{interactive}">Open the interactive view</a>
+    <a class="secondary-link" href="{SITE_URL}/benchmarks/">Benchmark directory</a>
+  </div>
+</header>
+<section class="content-panel"><dl class="content-facts">{facts}</dl></section>
+{scores_html}"""
+    page_schema = webpage_schema(
+        title=title, description=description, canonical=canonical, languages=("en", "zh-Hans")
+    )
+    page_schema["about"] = {"@type": "Thing", "name": name, "description": description}
+    return render_page(
+        title=title,
+        description=description,
+        canonical=canonical,
+        active="leaderboard",
+        body=body,
+        schemas=(
+            page_schema,
+            breadcrumb_schema(
+                ("Benchmark Radar", f"{SITE_URL}/"),
+                ("Benchmark directory", f"{SITE_URL}/benchmarks/"),
+                (name, canonical),
+                canonical=canonical,
+            ),
+        ),
+    )
 
 
 def _directory_html(entries: list[tuple[str, str]]) -> str:
     """Directory page: title, canonical, schema, and the full listing."""
     canonical = f"{SITE_URL}/benchmarks/"
-    payload = {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        "@id": canonical,
-        "name": "Benchmark directory · Benchmark Radar",
-        "url": canonical,
-        "description": _DIR_DESCRIPTION,
-        "inLanguage": ["en", "zh-Hans"],
-        "isPartOf": {"@id": f"{SITE_URL}/#website"},
-    }
-    breadcrumb = {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "@id": f"{canonical}#breadcrumb",
-        "itemListElement": [
-            {"@type": "ListItem", "position": 1, "name": "Benchmark Radar", "item": f"{SITE_URL}/"},
-            {"@type": "ListItem", "position": 2, "name": "Benchmark directory", "item": canonical},
-        ],
-    }
     links = "".join(f'<li><a href="{_esc(url)}">{_esc(name)}</a></li>' for name, url in entries)
     count = f"{len(entries)} benchmarks"
-    return f"""<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="{_esc(_DIR_DESCRIPTION)}">
-<meta name="robots" content="index,follow,max-image-preview:large">
-<title>Benchmark directory · Benchmark Radar</title>
-<link rel="canonical" href="{canonical}">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Benchmark Radar">
-<meta property="og:title" content="Benchmark directory · Benchmark Radar">
-<meta property="og:url" content="{canonical}">
-<meta property="og:image" content="{SITE_URL}/assets/og-card.png">
-<meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{_json_ld(payload)}</script>
-<script type="application/ld+json">{_json_ld(breadcrumb)}</script>
-<style>{_DIR_CSS}</style>
-</head>
-<body>
-<nav class="site">
-  <a href="{SITE_URL}/">Benchmark Radar</a>
-  <a href="{SITE_URL}/benchmarks/">Benchmark directory</a>
-</nav>
-<main>
+    body = f"""<header class="content-hero">
+  <p class="eyebrow">Benchmark catalog</p>
   <h1>Benchmark directory</h1>
-  <p class="lede">Every benchmark in the catalog, each with its own page covering
+  <p class="content-lede">Every benchmark in the catalog, each with its own page covering
     what it tests, who published it, and which scores are on record. The
     interactive dashboard is <a href="{SITE_URL}/?view=leaderboard">here</a>.</p>
-  <p class="count">{count}</p>
-  <ul>{links}</ul>
-</main>
-</body>
-</html>
-"""
+  <p class="content-meta">{count}</p>
+</header>
+<section class="content-panel"><ul class="content-directory">{links}</ul></section>"""
+    return render_page(
+        title="Benchmark directory · Benchmark Radar",
+        description=_DIR_DESCRIPTION,
+        canonical=canonical,
+        active="leaderboard",
+        body=body,
+        schemas=(
+            webpage_schema(
+                title="Benchmark directory · Benchmark Radar",
+                description=_DIR_DESCRIPTION,
+                canonical=canonical,
+                languages=("en", "zh-Hans"),
+            ),
+            breadcrumb_schema(
+                ("Benchmark Radar", f"{SITE_URL}/"),
+                ("Benchmark directory", canonical),
+                canonical=canonical,
+            ),
+        ),
+    )
 
 
 def _load_shard(path: Path) -> tuple[str, dict[str, Any]]:

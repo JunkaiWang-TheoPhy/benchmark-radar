@@ -15,9 +15,10 @@ def test_sitemap_covers_every_indexable_view():
     urls = [node.text for node in root.findall("sm:url/sm:loc", NS)]
     assert urls == [
         f"{SITE_URL}/",
-        f"{SITE_URL}/?view=leaderboard",
-        f"{SITE_URL}/?view=trends",
-        f"{SITE_URL}/?view=map",
+        f"{SITE_URL}/leaderboard/",
+        f"{SITE_URL}/trends/",
+        f"{SITE_URL}/explore/",
+        f"{SITE_URL}/benchmarks/",
     ]
 
 
@@ -31,13 +32,33 @@ def test_sitemap_lastmod_is_derived_from_history_not_the_clock():
     lastmods = [node.text for node in root.findall("sm:url/sm:lastmod", NS)]
     # One date per URL, the newest snapshot's, so two rebuilds over the same
     # history are byte-identical.
-    assert lastmods == ["2026-08-21"] * len(INDEXABLE_VIEWS)
+    assert lastmods == ["2026-08-21"] * (len(INDEXABLE_VIEWS) + 1)
 
 
 def test_sitemap_without_snapshots_omits_lastmod():
     root = sitemap_tree([]).getroot()
     assert [node.text for node in root.findall("sm:url/sm:lastmod", NS)] == []
-    assert len(root.findall("sm:url", NS)) == len(INDEXABLE_VIEWS)
+    assert len(root.findall("sm:url", NS)) == len(INDEXABLE_VIEWS) + 1
+
+
+def test_sitemap_accepts_dated_blog_entries_without_changing_other_lastmods():
+    root = sitemap_tree(
+        [{"generated_at": "2026-08-21T02:17:00+00:00"}],
+        extra_entries=[
+            ("/blog/", "2026-08-22"),
+            ("/blog/archive/", "2026-08-22"),
+            ("/blog/2026-08-20/", "2026-08-20"),
+        ],
+    ).getroot()
+    entries = [
+        (url.findtext("sm:loc", namespaces=NS), url.findtext("sm:lastmod", namespaces=NS))
+        for url in root.findall("sm:url", NS)
+    ]
+    assert entries[-3:] == [
+        (f"{SITE_URL}/blog/", "2026-08-22"),
+        (f"{SITE_URL}/blog/archive/", "2026-08-22"),
+        (f"{SITE_URL}/blog/2026-08-20/", "2026-08-20"),
+    ]
 
 
 def test_each_view_has_its_own_title_and_description():
@@ -72,13 +93,17 @@ def test_published_head_and_robots_match_the_generated_sitemap():
     # Canonical default in the static head; app.js restates it per view.
     assert f'<link rel="canonical" href="{SITE_URL}/">' in html
     assert 'link[rel="canonical"]' in script
-    assert 'new URL("/", "https://benchmark-radar.org")' in script
+    assert 'new URL(seo.canonical, "https://benchmark-radar.org")' in script
 
-    # The four canonical view URLs in app.js are exactly the ones the
-    # generator publishes; a view added to one side must land on the other.
+    # Dashboard query states consolidate onto the static paths published in
+    # the sitemap; a view added to one side must land on the other.
     for _, path in INDEXABLE_VIEWS:
-        query = path.removeprefix("/?").removeprefix("/")
-        assert f'query: "{query}"' in script
+        assert f'canonical: "{path}"' in script
+
+    assert 'href="https://benchmark-radar.org/leaderboard/"' in html
+    assert 'href="https://benchmark-radar.org/trends/"' in html
+    assert 'href="https://benchmark-radar.org/explore/"' in html
+    assert 'href="https://benchmark-radar.org/blog/"' in html
 
     # robots.txt points at the sitemap URL the build actually writes.
     sitemap_url = f"{SITE_URL}/sitemap.xml"

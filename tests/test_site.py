@@ -811,8 +811,8 @@ def test_leaderboard_view_is_a_first_class_dashboard_view():
     parser.feed(html)
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
-    # Issue #83 step 3: the Model Card Adoption Rank is reachable as
-    # ?view=leaderboard from the homepage nav, not a separate page.
+    # The interactive state remains first class even though the crawlable href
+    # now points at a static landing page and JavaScript intercepts the click.
     assert "leaderboard-view" in parser.ids
     assert 'data-view="leaderboard"' in html
     assert '"map", "leaderboard"' in script

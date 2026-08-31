@@ -381,6 +381,7 @@ const I18N = {
     Leaderboard: "排行榜",
     Trends: "趋势",
     Explore: "探索",
+    Blog: "博客",
     Rubric: "评分标准",
     "Daily briefing": "每日简报",
     "Questions for today": "今日问答",
@@ -1291,38 +1292,36 @@ async function onPopState() {
   }
 }
 
-// Issue #236. Crawlers see one document; these four states are still four
-// different pages a reader can land on and link to, so each one restates its
-// own title, description, and canonical URL when it becomes active. The
-// canonicals carry only the view parameter: filter permutations (q, date,
-// lq, lfrontier, ...) consolidate into the clean view URL instead of
-// fragmenting ranking signals across every state of the same page. These
-// strings are English on purpose: they describe the site to a search engine,
-// while the visible interface translates through data-i18n.
+// The query-string views are application states, while the path-based static
+// pages are the indexable search entries. Every state restates the matching
+// title and description for readers, but its canonical consolidates onto the
+// server-delivered page. Filter permutations therefore cannot fragment search
+// signals. These strings are English on purpose: the visible interface still
+// translates through data-i18n.
 const VIEW_SEO = {
   today: {
     title: "Benchmark Radar: AI Benchmark Tracker & Dataset",
     description:
       "A daily evidence-first map of new AI benchmarks, evaluations, and datasets, collected every day from arXiv, GitHub, Hugging Face, OpenReview, Semantic Scholar, Hacker News, and first-party lab feeds.",
-    query: "",
+    canonical: "/",
   },
   leaderboard: {
     title: "Most reported AI benchmarks in frontier model cards | Benchmark Radar",
     description:
       "Which benchmarks frontier labs actually report: a live Model Card Adoption Rank computed from curated model cards and system cards, plus reported score progression over time.",
-    query: "view=leaderboard",
+    canonical: "/leaderboard/",
   },
   trends: {
     title: "AI benchmark discovery trends over time | Benchmark Radar",
     description:
       "Daily volume of new AI benchmark evidence by category, source, and event, with a ledger of every collection day in the corpus.",
-    query: "view=trends",
+    canonical: "/trends/",
   },
   map: {
     title: "Explore connections across AI benchmarks | Benchmark Radar",
     description:
       "See how benchmarks, datasets, evaluations, sources, and organizations connect across the Benchmark Radar corpus, and jump from any topic into the filtered daily list.",
-    query: "view=map",
+    canonical: "/explore/",
   },
 };
 
@@ -1335,9 +1334,7 @@ function applyViewSeo(view) {
   if (canonical) {
     // Keep every entry point, including the former Pages URL, consolidated
     // onto the custom domain instead of reflecting whichever origin served it.
-    const url = new URL("/", "https://benchmark-radar.org");
-    if (seo.query) url.search = seo.query;
-    else url.search = "";
+    const url = new URL(seo.canonical, "https://benchmark-radar.org");
     canonical.setAttribute("href", url.href);
   }
 }

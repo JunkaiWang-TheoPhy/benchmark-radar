@@ -43,16 +43,38 @@ def test_feed_is_deterministic_valid_rss_with_one_item_per_snapshot(tmp_path):
 
     items = channel.findall("item")
     assert [item.findtext("title") for item in items] == [
-        "Benchmark Radar — 2026-08-07",
-        "Benchmark Radar — 2026-08-06",
+        "Daily AI benchmark brief — 2026-08-07",
+        "Daily AI benchmark brief — 2026-08-06",
     ]
-    assert items[0].findtext("link") == ("https://benchmark-radar.org/?date=2026-08-07")
+    assert items[0].findtext("link") == ("https://benchmark-radar.org/blog/2026-08-07/")
     assert items[0].find("guid").attrib["isPermaLink"] == "true"
     assert "1 evidence observation from 1 source" in items[0].findtext("description")
     assert "benchmark: 1, evaluation: 1" in items[0].findtext("description")
     assert parsedate_to_datetime(items[0].findtext("pubDate")).isoformat() == (
         "2026-08-07T00:00:00+00:00"
     )
+
+
+def test_feed_includes_reviewed_articles_and_deduplicates_links(tmp_path):
+    output = tmp_path / "feed.xml"
+    article = {
+        "title": "How to read an adoption ranking",
+        "link": "https://benchmark-radar.org/blog/read-adoption-rank/",
+        "published": "2026-08-08",
+        "updated": "2026-08-09",
+        "description": "A reviewed guide.",
+    }
+
+    write_feed([snapshot("2026-08-07")], output, [article, article])
+
+    items = ET.parse(output).getroot().findall("./channel/item")
+    assert [item.findtext("title") for item in items] == [
+        "How to read an adoption ranking",
+        "Daily AI benchmark brief — 2026-08-07",
+    ]
+    assert items[0].findtext("link") == article["link"]
+    last_build = ET.parse(output).getroot().findtext("./channel/lastBuildDate")
+    assert parsedate_to_datetime(last_build).date().isoformat() == "2026-08-09"
 
 
 def test_site_advertises_and_visibly_links_the_feed():

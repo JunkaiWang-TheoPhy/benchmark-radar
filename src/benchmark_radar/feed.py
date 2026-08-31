@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Sequence
 from datetime import UTC, date, datetime, time
 from email.utils import format_datetime
 from pathlib import Path
@@ -47,15 +48,18 @@ def _snapshot_summary(snapshot: dict[str, Any]) -> str:
     return "; ".join(parts) + "."
 
 
-def rss_tree(snapshots: list[dict[str, Any]]) -> ET.ElementTree:
-    """Build one stable RSS item per daily snapshot, newest first."""
+def rss_tree(
+    snapshots: list[dict[str, Any]],
+    article_entries: Sequence[dict[str, str]] = (),
+) -> ET.ElementTree:
+    """Build a stable feed of daily briefs and reviewed articles, newest first."""
     root = ET.Element("rss", {"version": "2.0"})
     channel = ET.SubElement(root, "channel")
     ET.SubElement(channel, "title").text = "Benchmark Radar"
     ET.SubElement(channel, "link").text = SITE_URL + "/"
     ET.SubElement(
         channel, "description"
-    ).text = "Daily evidence-first updates on AI benchmarks, evaluations, and datasets."
+    ).text = "Evidence-first briefs and analysis on AI benchmarks, evaluations, and datasets."
     ET.SubElement(channel, "language").text = "en"
     ET.SubElement(
         channel,
@@ -63,30 +67,65 @@ def rss_tree(snapshots: list[dict[str, Any]]) -> ET.ElementTree:
         {"href": FEED_URL, "rel": "self", "type": "application/rss+xml"},
     )
 
-    if snapshots:
-        generated = max(
-            datetime.fromisoformat(str(snapshot["generated_at"]).replace("Z", "+00:00"))
-            for snapshot in snapshots
+    build_dates = [
+        datetime.combine(
+            date.fromisoformat(str(entry.get("updated") or entry["published"])),
+            time.min,
+            tzinfo=UTC,
         )
+        for entry in article_entries
+    ]
+    if snapshots:
+        build_dates.append(
+            max(
+                datetime.fromisoformat(str(snapshot["generated_at"]).replace("Z", "+00:00"))
+                for snapshot in snapshots
+            )
+        )
+    if build_dates:
+        generated = max(build_dates)
         ET.SubElement(channel, "lastBuildDate").text = _rss_date(generated)
 
-    for snapshot in sorted(snapshots, key=lambda value: str(value["date"]), reverse=True):
-        day = str(snapshot["date"])
-        link = f"{SITE_URL}/?date={day}"
-        published = datetime.combine(date.fromisoformat(day), time.min, tzinfo=UTC)
+    items = [
+        {
+            "title": f"Daily AI benchmark brief — {snapshot['date']}",
+            "link": f"{SITE_URL}/blog/{snapshot['date']}/",
+            "published": str(snapshot["date"]),
+            "description": _snapshot_summary(snapshot),
+        }
+        for snapshot in snapshots
+    ]
+    items.extend(article_entries)
+    items.sort(
+        key=lambda value: (str(value.get("published") or ""), str(value.get("link") or "")),
+        reverse=True,
+    )
+    seen: set[str] = set()
+    for entry in items:
+        link = str(entry["link"])
+        if link in seen:
+            continue
+        seen.add(link)
+        published = datetime.combine(
+            date.fromisoformat(str(entry["published"])), time.min, tzinfo=UTC
+        )
         item = ET.SubElement(channel, "item")
-        ET.SubElement(item, "title").text = f"Benchmark Radar — {day}"
+        ET.SubElement(item, "title").text = str(entry["title"])
         ET.SubElement(item, "link").text = link
         ET.SubElement(item, "guid", {"isPermaLink": "true"}).text = link
         ET.SubElement(item, "pubDate").text = _rss_date(published)
-        ET.SubElement(item, "description").text = _snapshot_summary(snapshot)
+        ET.SubElement(item, "description").text = str(entry["description"])
 
     return ET.ElementTree(root)
 
 
-def write_feed(snapshots: list[dict[str, Any]], output: Path) -> None:
+def write_feed(
+    snapshots: list[dict[str, Any]],
+    output: Path,
+    article_entries: Sequence[dict[str, str]] = (),
+) -> None:
     """Write a deterministic UTF-8 RSS document."""
     output.parent.mkdir(parents=True, exist_ok=True)
-    tree = rss_tree(snapshots)
+    tree = rss_tree(snapshots, article_entries)
     ET.indent(tree, space="  ")
     tree.write(output, encoding="utf-8", xml_declaration=True)

@@ -173,7 +173,22 @@ def test_values_are_escaped_and_cannot_inject_markup(tmp_path):
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in page
     assert "<img src=x onerror" not in page
     assert "payload</script>" not in page
-    assert page.count("</script>") == 2  # one per JSON-LD block, no injected markup
+    assert len(_jsonld_blocks(page)) == 2
+    assert page.count("<script>alert(1)</script>") == 0
+
+
+def test_pages_restore_the_dashboard_visual_language(tmp_path):
+    output = _generated_pages(tmp_path, _shard("alpha-bench", "Alpha Bench"))
+    page = _page_text(output, "alpha-bench")
+    directory = (output / "index.html").read_text(encoding="utf-8")
+
+    for html in (page, directory):
+        assert 'class="masthead"' in html
+        assert 'class="brand-mark"' in html
+        assert 'href="/assets/styles.css"' in html
+        assert 'href="/assets/content.css"' in html
+        assert "<style>" not in html
+        assert "font-family:" not in html
 
 
 def test_no_placeholder_text_for_missing_fields(tmp_path):
@@ -258,9 +273,10 @@ def test_sitemap_includes_benchmark_pages_when_slugs_passed(tmp_path):
     ]
     assert urls == [
         f"{SITE_URL}/",
-        f"{SITE_URL}/?view=leaderboard",
-        f"{SITE_URL}/?view=trends",
-        f"{SITE_URL}/?view=map",
+        f"{SITE_URL}/leaderboard/",
+        f"{SITE_URL}/trends/",
+        f"{SITE_URL}/explore/",
+        f"{SITE_URL}/benchmarks/",
         f"{SITE_URL}/benchmarks/alpha-bench/",
         f"{SITE_URL}/benchmarks/zeta-bench/",
     ]
@@ -270,7 +286,7 @@ def test_sitemap_includes_benchmark_pages_when_slugs_passed(tmp_path):
             "sm:url/sm:lastmod", {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
         )
     ]
-    assert lastmods == ["2026-08-21"] * 6
+    assert lastmods == ["2026-08-21"] * 7
 
 
 def test_write_benchmark_pages_fails_loudly_without_shards(tmp_path):

@@ -321,16 +321,16 @@
 
     <nav class="view-nav" aria-label="Dashboard views" data-i18n-aria="Dashboard views">
       <button type="button" data-view="today" aria-controls="today-view" data-i18n="Today">Today</button>
-      <!-- The non-default views are real anchors, not buttons: crawlers do not
-         follow buttons, and without hrefs the site reported zero internal
-         links. app.js intercepts the click so navigation stays client-side;
-         the href is the same canonical URL the view writes, absolute so link
-         analyzers count it as internal. -->
-      <a href="https://benchmark-radar.org/?view=leaderboard" data-view="leaderboard" aria-controls="leaderboard-view" data-i18n="Leaderboard">
+      <!-- The non-default views point at static, content-rich pages so crawlers
+         and no-JavaScript readers receive a useful first response. app.js
+         intercepts the click for dashboard users and keeps navigation
+         client-side. -->
+      <a href="https://benchmark-radar.org/leaderboard/" data-view="leaderboard" aria-controls="leaderboard-view" data-i18n="Leaderboard">
         Leaderboard
       </a>
-      <a href="https://benchmark-radar.org/?view=trends" data-view="trends" aria-controls="trends-view" data-i18n="Trends">Trends</a>
-      <a href="https://benchmark-radar.org/?view=map" data-view="map" aria-controls="map-view" data-i18n="Explore">Explore</a>
+      <a href="https://benchmark-radar.org/trends/" data-view="trends" aria-controls="trends-view" data-i18n="Trends">Trends</a>
+      <a href="https://benchmark-radar.org/explore/" data-view="map" aria-controls="map-view" data-i18n="Explore">Explore</a>
+      <a href="https://benchmark-radar.org/blog/" data-i18n="Blog">Blog</a>
       <button
         type="button"
         id="rubric-nav"
