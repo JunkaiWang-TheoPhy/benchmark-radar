@@ -511,6 +511,7 @@ def build_benchmark_index(
         artifacts = record.get("artifacts") or []
         series = series_by_key.get(record["key"]) or {}
         publisher = record.get("publisher")
+        repository = record.get("repository") or {}
         index.append(
             {
                 "slug": record["slug"],
@@ -538,6 +539,8 @@ def build_benchmark_index(
                 "score_count": series.get("observation_count", 0),
                 "has_paper": any(item["kind"] == "paper" for item in artifacts),
                 "has_repo": any(item["kind"] == "repo" for item in artifacts),
+                "repo_kind": repository.get("kind"),
+                "repo_resolution_status": repository.get("resolution_status"),
                 "has_dataset": any(item["kind"] == "dataset" for item in artifacts),
                 "has_size": bool(record.get("sizes")),
             }
