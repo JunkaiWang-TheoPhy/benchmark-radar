@@ -41,9 +41,12 @@ from pathlib import Path
 from typing import Any
 
 from .external_catalog import CATALOG_SCHEMA_VERSION, ExternalCatalogError, slugify
+from .leaderboard_snapshots import DEFAULT_SNAPSHOTS_PATH, load_snapshots
 
 OPENCOMPASS_SOURCE = "opencompass_hub"
 OPENCOMPASS_KEY_PREFIX = "opencompass"
+OPENCOMPASS_SNAPSHOT_ID = "opencompass_hub_2026-08-17"
+OPENCOMPASS_ROUND2_BUNDLE_ID = "OpenCompassHub_Round2_Public_Evidence_2026-08-18"
 DEFAULT_ROUND2_PATH = Path("data/leaderboard_snapshots/opencompass_round2/opencompass_round2.jsonl")
 
 # GitHub's sentinel for "a LICENSE file is present but unidentifiable". Not a
@@ -204,11 +207,130 @@ def _publisher(record: dict[str, Any]) -> dict[str, Any] | None:
     return {"name": org, "role": "hub_publisher", "locator": "detail.basicInfo.publishOrg"}
 
 
-def normalize_opencompass(path: Path = DEFAULT_ROUND2_PATH) -> dict[str, Any]:
-    """Turn the round 2 export into catalog records in the shared schema."""
+def _catalog_snapshot(snapshot: dict[str, Any] | None) -> dict[str, Any]:
+    """The validated round-1 card snapshot that round 2 enriches.
+
+    Round 2 deliberately contains evidence extracted from GitHub, Hugging Face,
+    and card READMEs. It does not repeat the card descriptions, dimensions, and
+    tags already retained in the declared round-1 CSV. Both files describe the
+    same 461 source ids, so normalization has to join them explicitly rather
+    than publish round 2 as if its enrichment fields were the whole record.
+    """
+    if snapshot is not None:
+        if snapshot.get("id") != OPENCOMPASS_SNAPSHOT_ID:
+            raise ExternalCatalogError(
+                f"expected snapshot {OPENCOMPASS_SNAPSHOT_ID!r}, got {snapshot.get('id')!r}"
+            )
+        return snapshot
+    loaded = load_snapshots(DEFAULT_SNAPSHOTS_PATH)
+    matches = [item for item in loaded["snapshots"] if item["id"] == OPENCOMPASS_SNAPSHOT_ID]
+    if len(matches) != 1:
+        raise ExternalCatalogError(
+            f"expected one {OPENCOMPASS_SNAPSHOT_ID!r} snapshot, found {len(matches)}"
+        )
+    return matches[0]
+
+
+def _description(row: dict[str, str]) -> dict[str, str]:
+    descriptions: dict[str, str] = {}
+    for language, fields in (
+        ("en", ("detail_description_en", "card_description_en")),
+        ("zh", ("detail_description_cn", "card_description_cn")),
+    ):
+        value = next(
+            (row.get(field, "").strip() for field in fields if row.get(field, "").strip()), ""
+        )
+        if value:
+            descriptions[language] = value
+    return descriptions
+
+
+def _provenance(snapshot: dict[str, Any], row: dict[str, Any], round2_path: Path) -> dict[str, Any]:
+    """Retain the source lineage for both halves of the joined record."""
+    return {
+        "source_url": row.get("source_url"),
+        "crawled_at": "2026-08-18T00:00:00+00:00",
+        "crawl_bundle": OPENCOMPASS_ROUND2_BUNDLE_ID,
+        "inputs": {
+            "catalog_snapshot": {
+                "id": snapshot["id"],
+                "source_url": snapshot.get("source_url"),
+                "crawled_at": snapshot.get("crawled_at"),
+                "file": "data/leaderboard_snapshots/opencompass_hub_catalog_2026-08-17.csv",
+            },
+            "round2_evidence": {
+                "id": OPENCOMPASS_ROUND2_BUNDLE_ID,
+                "file": str(round2_path),
+                "crawled_at": "2026-08-18T00:00:00+00:00",
+            },
+        },
+    }
+
+
+def _categories(row: dict[str, str]) -> list[str]:
+    """Source-authored tags and dimensions, deduplicated but not inferred."""
+    categories: list[str] = []
+    seen: set[str] = set()
+    for field in ("dimensions", "basic_tags", "topic_tags", "card_tags"):
+        for raw in row.get(field, "").split("|"):
+            value = raw.strip()
+            folded = value.casefold()
+            if value and folded not in seen:
+                seen.add(folded)
+                categories.append(value)
+    return categories
+
+
+def _modality(row: dict[str, str]) -> str | None:
+    """Normalize only explicit English values from the Hub's dimensions."""
+    dimensions = {
+        value.strip().casefold() for value in row.get("dimensions", "").split("|") if value.strip()
+    }
+    if "multimodal" in dimensions:
+        return "multimodal"
+    if "video-understanding" in dimensions:
+        return "video"
+    if dimensions & {"visual-qa", "visual-localization", "spatial-understanding"}:
+        return "image"
+    return None
+
+
+def normalize_opencompass(
+    path: Path = DEFAULT_ROUND2_PATH,
+    *,
+    catalog_snapshot: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Join the card snapshot and round-2 evidence into shared catalog records."""
     if not path.exists():
         raise ExternalCatalogError(f"{path}: OpenCompass round 2 export not found")
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+
+    snapshot = _catalog_snapshot(catalog_snapshot)
+    catalog_rows: dict[str, dict[str, str]] = {}
+    for row in snapshot["benchmark_rows"]:
+        source_id = str(row.get("benchmark_id") or "").strip()
+        if not source_id:
+            raise ExternalCatalogError("OpenCompass card snapshot contains an empty benchmark_id")
+        if source_id in catalog_rows:
+            raise ExternalCatalogError(
+                f"OpenCompass card snapshot repeats benchmark_id {source_id!r}"
+            )
+        catalog_rows[source_id] = row
+
+    round2_id_values = [str(row.get("benchmark_id") or "").strip() for row in rows]
+    if not all(round2_id_values):
+        raise ExternalCatalogError("OpenCompass round-2 export contains an empty benchmark_id")
+    if len(round2_id_values) != len(set(round2_id_values)):
+        raise ExternalCatalogError("OpenCompass round-2 export repeats a benchmark_id")
+    round2_ids = set(round2_id_values)
+    catalog_ids = set(catalog_rows)
+    if round2_ids != catalog_ids:
+        missing_round2 = sorted(catalog_ids - round2_ids)
+        missing_catalog = sorted(round2_ids - catalog_ids)
+        raise ExternalCatalogError(
+            "OpenCompass card and round-2 benchmark ids differ: "
+            f"missing_round2={missing_round2[:5]}, missing_catalog={missing_catalog[:5]}"
+        )
 
     records: list[dict[str, Any]] = []
     used: dict[str, int] = {}
@@ -220,6 +342,7 @@ def normalize_opencompass(path: Path = DEFAULT_ROUND2_PATH) -> dict[str, Any]:
         used[base] = count
         readme = row.get("readme_extraction") or {}
         identity = row.get("identity_evidence") or {}
+        card = catalog_rows[source_id]
         records.append(
             {
                 "key": key,
@@ -228,24 +351,20 @@ def normalize_opencompass(path: Path = DEFAULT_ROUND2_PATH) -> dict[str, Any]:
                 "source": OPENCOMPASS_SOURCE,
                 "source_benchmark_id": source_id,
                 "name": (row.get("name") or source_id).strip(),
-                "description": {},
+                "description": _description(card),
                 "publisher": _publisher(row),
                 "artifacts": _artifacts(row),
                 "openness": _openness(row),
                 "sizes": _sizes(row),
                 "released": ((row.get("hub_metadata") or {}).get("release_date") or None),
-                "modality": None,
-                "categories": [],
+                "modality": _modality(card),
+                "categories": _categories(card),
                 "languages": [item.get("value") for item in readme.get("languages") or []],
                 "version_reported": (
                     identity.get("version_reported") or readme.get("version_reported")
                 ),
                 "possible_variant": bool(identity.get("possible_variant")),
-                "provenance": {
-                    "source_url": row.get("source_url"),
-                    "crawled_at": "2026-08-18T00:00:00+00:00",
-                    "crawl_bundle": "OpenCompassHub_Round2_Public_Evidence_2026-08-18",
-                },
+                "provenance": _provenance(snapshot, row, path),
             }
         )
 
@@ -266,6 +385,9 @@ def _validation(records: list[dict[str, Any]]) -> dict[str, Any]:
         "source_record_count": len(records),
         "openness_status_counts": dict(sorted(status.items())),
         "with_publisher": count(lambda item: item["publisher"] is not None),
+        "with_description": count(lambda item: bool(item["description"])),
+        "with_categories": count(lambda item: bool(item["categories"])),
+        "with_modality": count(lambda item: bool(item["modality"])),
         "with_paper": count(lambda i: any(a["kind"] == "paper" for a in i["artifacts"])),
         "with_repo": count(lambda i: any(a["kind"] == "repo" for a in i["artifacts"])),
         "with_dataset": count(lambda i: any(a["kind"] == "dataset" for a in i["artifacts"])),

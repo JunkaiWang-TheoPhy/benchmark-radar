@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import json
+import logging
+import math
 import re
 import unicodedata
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from .snapshots import REQUIRED_SOURCES, load_snapshots
 
-QUERY_SCHEMA_VERSION = 1
+QUERY_SCHEMA_VERSION = 6
 DEFAULT_INDEX_PATH = Path("site/data/benchmark-index.json")
 DEFAULT_SHARD_DIR = Path("site/data/benchmarks")
 DEFAULT_SNAPSHOT_DIR = Path("data/snapshots")
@@ -27,14 +30,20 @@ _FIELD_ORDER = (
     "source",
 )
 _FIELD_WEIGHTS = {
-    "name": 100,
-    "description": 30,
-    "categories": 25,
-    "publisher": 15,
-    "modality": 15,
-    "languages": 5,
-    "source": 5,
+    "name": 5.0,
+    "description": 1.0,
+    "categories": 2.5,
+    "publisher": 0.6,
+    "modality": 1.2,
+    "languages": 0.3,
+    "source": 0.2,
 }
+_BM25_K1 = 1.2
+_BM25_B = 0.75
+_NAME_MATCH_MULTIPLIERS = (3.0, 1.5, 0.75)
+_PHRASE_MULTIPLIER = 0.5
+
+LOGGER = logging.getLogger(__name__)
 
 
 class QueryError(RuntimeError):
@@ -116,10 +125,6 @@ def _tokens(value: Any) -> tuple[str, ...]:
     return tuple(re.findall(r"[a-z0-9]+", normalized))
 
 
-def _fold(value: Any) -> str:
-    return "".join(_tokens(value))
-
-
 def _field_text(value: Any) -> str:
     if isinstance(value, list):
         return " ".join(str(item) for item in value)
@@ -142,61 +147,182 @@ def _matches_filter(record: dict[str, Any], filters: dict[str, Any]) -> bool:
     return True
 
 
-def _match(
-    record: dict[str, Any],
-    *,
-    query: str,
+@dataclass(frozen=True, slots=True)
+class _SearchDocument:
+    record: dict[str, Any]
+    field_tokens: dict[str, tuple[str, ...]]
+    field_counts: dict[str, Counter[str]]
+    all_tokens: frozenset[str]
+
+
+@dataclass(frozen=True, slots=True)
+class _SearchCorpus:
+    documents: tuple[_SearchDocument, ...]
+    document_frequency: Counter[str]
+    average_field_lengths: dict[str, float]
+
+
+def _build_search_corpus(records: list[dict[str, Any]]) -> _SearchCorpus:
+    documents: list[_SearchDocument] = []
+    document_frequency: Counter[str] = Counter()
+    total_field_lengths: Counter[str] = Counter()
+    for record in records:
+        field_tokens = {field: _tokens(_field_text(record.get(field))) for field in _FIELD_ORDER}
+        field_counts = {field: Counter(tokens) for field, tokens in field_tokens.items()}
+        all_tokens = frozenset().union(*(set(tokens) for tokens in field_tokens.values()))
+        document_frequency.update(all_tokens)
+        total_field_lengths.update({field: len(tokens) for field, tokens in field_tokens.items()})
+        documents.append(
+            _SearchDocument(
+                record=record,
+                field_tokens=field_tokens,
+                field_counts=field_counts,
+                all_tokens=all_tokens,
+            )
+        )
+    count = len(documents)
+    averages = {
+        field: total_field_lengths[field] / count if count else 0.0 for field in _FIELD_ORDER
+    }
+    return _SearchCorpus(tuple(documents), document_frequency, averages)
+
+
+def _idf(term: str, corpus: _SearchCorpus) -> float:
+    count = len(corpus.documents)
+    frequency = corpus.document_frequency[term]
+    return math.log(1.0 + (count - frequency + 0.5) / (frequency + 0.5))
+
+
+def _contains_tokens(haystack: tuple[str, ...], needle: tuple[str, ...]) -> bool:
+    if not needle or len(needle) > len(haystack):
+        return False
+    size = len(needle)
+    return any(
+        haystack[index : index + size] == needle for index in range(len(haystack) - size + 1)
+    )
+
+
+def _name_match(
+    name_tokens: tuple[str, ...], query_tokens: tuple[str, ...]
+) -> tuple[int, str] | None:
+    if name_tokens == query_tokens:
+        return 0, "exact name match"
+    if name_tokens[: len(query_tokens)] == query_tokens:
+        return 1, "name prefix match"
+    if _contains_tokens(name_tokens, query_tokens):
+        return 2, "name token-sequence match"
+    return None
+
+
+def _bm25f_score(
+    document: _SearchDocument,
     query_tokens: tuple[str, ...],
+    corpus: _SearchCorpus,
+) -> float:
+    score = 0.0
+    for term in query_tokens:
+        weighted_frequency = 0.0
+        for field in _FIELD_ORDER:
+            frequency = document.field_counts[field][term]
+            if not frequency:
+                continue
+            average_length = corpus.average_field_lengths[field] or 1.0
+            length_normalization = (
+                1.0 - _BM25_B + _BM25_B * (len(document.field_tokens[field]) / average_length)
+            )
+            weighted_frequency += _FIELD_WEIGHTS[field] * frequency / length_normalization
+        if weighted_frequency:
+            score += _idf(term, corpus) * (
+                weighted_frequency * (_BM25_K1 + 1.0) / (_BM25_K1 + weighted_frequency)
+            )
+    return score
+
+
+def _match(
+    document: _SearchDocument,
+    *,
+    query_tokens: tuple[str, ...],
+    corpus: _SearchCorpus,
 ) -> tuple[tuple[Any, ...], dict[str, Any]] | None:
-    field_tokens = {field: set(_tokens(_field_text(record.get(field)))) for field in _FIELD_ORDER}
+    query_token_set = set(query_tokens)
+    if document.all_tokens.isdisjoint(query_token_set):
+        return None
+
     matched_fields: list[str] = []
     matched_tokens: set[str] = set()
     for field in _FIELD_ORDER:
-        hits = set(query_tokens) & field_tokens[field]
+        hits = query_token_set.intersection(document.field_counts[field])
         if hits:
             matched_fields.append(field)
             matched_tokens.update(hits)
-    phrase = _fold(query)
-    name = _fold(record.get("name"))
-    if not matched_tokens and phrase not in name:
-        return None
+    name_match = _name_match(document.field_tokens["name"], query_tokens)
 
     coverage = len(matched_tokens) / len(query_tokens)
-    if name == phrase:
-        tier = 0
-        reason = "exact name match"
-    elif name.startswith(phrase):
-        tier = 1
-        reason = "name prefix match"
-    elif phrase and phrase in name:
-        tier = 2
-        reason = "name substring match"
+    query_weight = sum(_idf(term, corpus) for term in query_tokens)
+    matched_weight = sum(_idf(term, corpus) for term in matched_tokens)
+    idf_coverage = matched_weight / query_weight if query_weight else 0.0
+
+    if name_match is not None:
+        name_tier, reason = name_match
     elif len(matched_tokens) == len(query_tokens):
-        tier = 3
+        name_tier = 3
         reason = "all query tokens matched across fields"
     else:
-        tier = 4
-        reason = f"{len(matched_tokens)} of {len(query_tokens)} query tokens matched"
+        name_tier = 4
+        reason = (
+            f"{len(matched_tokens)} of {len(query_tokens)} unique query tokens matched "
+            f"across fields; IDF coverage {idf_coverage:.2f}"
+        )
 
-    field_score = sum(_FIELD_WEIGHTS[field] for field in matched_fields)
+    bm25f_score = _bm25f_score(document, query_tokens, corpus)
+    phrase_fields = [
+        field
+        for field in _FIELD_ORDER
+        if _contains_tokens(document.field_tokens[field], query_tokens)
+    ]
+    # BM25F already rewards matching more query terms, so IDF coverage is
+    # only a tie-breaker and explanation. Exactness and phrase proximity are the
+    # two conventional secondary signals. Scale both by query IDF instead of
+    # mixing giant fixed constants into a corpus-dependent lexical score.
+    non_name_phrase = any(field != "name" for field in phrase_fields)
+    phrase_bonus = query_weight * _PHRASE_MULTIPLIER if non_name_phrase else 0.0
+    name_bonus = (
+        query_weight * _NAME_MATCH_MULTIPLIERS[name_match[0]] if name_match is not None else 0.0
+    )
+    retrieval_score = bm25f_score + phrase_bonus + name_bonus
+
+    record = document.record
     completeness = sum(
         1 for field in ("publisher", "released", "modality") if record.get(field) not in (None, "")
     ) + sum(1 for field in ("has_paper", "has_repo", "has_dataset") if record.get(field))
     sort_key = (
-        tier,
-        -coverage,
-        -field_score,
+        -retrieval_score,
+        -idf_coverage,
+        name_tier,
         -completeness,
         len(str(record.get("name") or "")),
         str(record.get("name") or "").casefold(),
         str(record.get("key") or ""),
     )
-    return sort_key, {
-        "matched_fields": matched_fields,
-        "matched_tokens": sorted(matched_tokens),
-        "query_coverage": round(coverage, 4),
-        "reason": reason,
-    }
+    return (
+        sort_key,
+        {
+            "ranking_algorithm": "bm25f_v3",
+            "retrieval_score": round(retrieval_score, 6),
+            "score_components": {
+                "bm25f": round(bm25f_score, 6),
+                "phrase_bonus": round(phrase_bonus, 6),
+                "name_bonus": round(name_bonus, 6),
+            },
+            "matched_fields": matched_fields,
+            "matched_tokens": sorted(matched_tokens),
+            "missing_tokens": sorted(set(query_tokens) - matched_tokens),
+            "query_coverage": round(coverage, 4),
+            "idf_coverage": round(idf_coverage, 4),
+            "phrase_fields": phrase_fields,
+            "reason": reason,
+        },
+    )
 
 
 class QueryService:
@@ -401,27 +527,62 @@ class QueryService:
         if scope in {"radar", "all"}:
             candidates.extend(self._radar_candidates())
 
+        corpus = _build_search_corpus(candidates)
         scored: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
-        for record in candidates:
+        candidate_count = 0
+        for document in corpus.documents:
+            record = document.record
             if not _matches_filter(record, filters):
                 continue
-            match = _match(record, query=query, query_tokens=query_tokens)
+            match = _match(document, query_tokens=query_tokens, corpus=corpus)
             if match is None:
                 continue
+            candidate_count += 1
             sort_key, explanation = match
             scored.append((sort_key, {**record, "match": explanation}))
         scored.sort(key=lambda value: value[0])
+        full_match_count = sum(not record["match"]["missing_tokens"] for _, record in scored)
+        partial_match_count = len(scored) - full_match_count
         results = [
             {**record, "rank": rank} for rank, (_, record) in enumerate(scored[:limit], start=1)
         ]
+        if full_match_count:
+            status = "full_matches_found"
+        elif partial_match_count:
+            status = "partial_candidates_only"
+        else:
+            status = "no_lexical_candidates"
+        LOGGER.info(
+            "lexical search query=%r scope=%s documents=%d candidates=%d full=%d partial=%d "
+            "returned=%d status=%s",
+            query,
+            scope,
+            len(corpus.documents),
+            candidate_count,
+            full_match_count,
+            partial_match_count,
+            len(results),
+            status,
+        )
         return {
             "schema_version": QUERY_SCHEMA_VERSION,
             "query": query,
             "scope": scope,
             "retrieval_mode": "lexical",
+            "search_status": status,
+            "matching_policy": {
+                "name": "lexical_candidates_v1",
+                "ranking": "bm25f_v3",
+                "minimum_should_match": "one unique query term",
+                "query_coverage": "tie-breaker and explanation",
+                "idf_coverage": "tie-breaker and explanation using smoothed query IDF",
+            },
             "filters": filters,
             "limit": limit,
+            "candidate_count": candidate_count,
             "total_matches": len(scored),
+            "full_match_count": full_match_count,
+            "partial_match_count": partial_match_count,
             "count": len(results),
             "data": self._data_summary(scope=scope),
             "results": results,

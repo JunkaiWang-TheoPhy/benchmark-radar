@@ -309,6 +309,34 @@ def test_opencompass_publisher_is_labelled_as_the_hub_publisher() -> None:
             assert record["publisher"]["role"] == "hub_publisher"
 
 
+def test_opencompass_card_metadata_survives_round2_enrichment() -> None:
+    """Round 2 enriches the card crawl; it must not replace its search text."""
+    from benchmark_radar.external_opencompass import normalize_opencompass
+
+    result = normalize_opencompass()
+    records = {record["name"]: record for record in result["source_records"]}
+
+    assert result["validation"]["with_description"] == 458
+    assert result["validation"]["with_categories"] == 461
+    assert result["validation"]["with_modality"] == 138
+    climate = records["ClimateViz"]
+    assert "scientific fact-checking" in climate["description"]["en"]
+    assert "Multimodal" in climate["categories"]
+    assert "Fact-Checking" in climate["categories"]
+    assert climate["modality"] == "multimodal"
+    provenance = climate["provenance"]
+    assert provenance["crawl_bundle"] == "OpenCompassHub_Round2_Public_Evidence_2026-08-18"
+    assert provenance["inputs"]["catalog_snapshot"] == {
+        "id": "opencompass_hub_2026-08-17",
+        "source_url": "https://hub.opencompass.org.cn/home",
+        "crawled_at": "2026-08-17T18:57:37.200294+00:00",
+        "file": "data/leaderboard_snapshots/opencompass_hub_catalog_2026-08-17.csv",
+    }
+    assert provenance["inputs"]["round2_evidence"]["id"] == (
+        "OpenCompassHub_Round2_Public_Evidence_2026-08-18"
+    )
+
+
 def test_index_has_one_row_per_source_record(normalized: dict) -> None:
     """Merging two sources into one row is a claim identity.yml has to make."""
     from benchmark_radar.external_catalog import build_benchmark_index

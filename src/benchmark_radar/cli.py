@@ -324,7 +324,13 @@ def main() -> None:
             if snapshot["id"] in SOURCES
         ]
 
-        opencompass = normalize_opencompass()
+        opencompass_snapshot = next(
+            (item for item in crawled["snapshots"] if item["id"] == "opencompass_hub_2026-08-17"),
+            None,
+        )
+        if opencompass_snapshot is None:
+            raise ValueError("OpenCompass catalog snapshot is missing from the registry")
+        opencompass = normalize_opencompass(catalog_snapshot=opencompass_snapshot)
         (DEFAULT_OUTPUT_DIR / "opencompass_source_records.jsonl").write_text(
             "".join(
                 json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n"

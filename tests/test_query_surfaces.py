@@ -140,13 +140,100 @@ def test_catalog_search_is_deterministic_and_explains_matches(tmp_path: Path) ->
         "llm-stats:agent-workbench-extended",
     ]
     assert result["retrieval_mode"] == "lexical"
+    assert result["search_status"] == "full_matches_found"
+    assert result["candidate_count"] == 2
+    assert result["total_matches"] == 2
+    assert result["full_match_count"] == 2
+    assert result["partial_match_count"] == 0
+    assert result["matching_policy"]["name"] == "lexical_candidates_v1"
+    assert result["matching_policy"]["ranking"] == "bm25f_v3"
     assert result["results"][0]["match"]["matched_fields"] == [
         "name",
         "description",
         "categories",
     ]
     assert result["results"][0]["match"]["reason"] == "exact name match"
+    assert result["results"][0]["match"]["retrieval_score"] > 0
+    assert result["results"][0]["match"]["idf_coverage"] == pytest.approx(1.0)
     assert result["data"]["catalog_count"] == 3
+
+
+def test_search_returns_partial_candidates_with_evidence_for_agent_judgment(
+    tmp_path: Path,
+) -> None:
+    service = QueryService(_catalog(tmp_path))
+
+    result = service.search("protein agent prediction", scope="catalog", limit=10)
+
+    assert result["search_status"] == "partial_candidates_only"
+    assert result["candidate_count"] == 2
+    assert result["total_matches"] == 2
+    assert result["full_match_count"] == 0
+    assert result["partial_match_count"] == 2
+    assert [item["key"] for item in result["results"]] == [
+        "opencompass:agent-workbench",
+        "llm-stats:agent-workbench-extended",
+    ]
+    assert all(item["match"]["matched_tokens"] == ["agent"] for item in result["results"])
+    assert all(
+        item["match"]["missing_tokens"] == ["prediction", "protein"] for item in result["results"]
+    )
+    assert all(
+        item["match"]["query_coverage"] == pytest.approx(1 / 3, abs=0.0001)
+        for item in result["results"]
+    )
+    assert all(
+        item["match"]["retrieval_score"] > 0 and 0 < item["match"]["idf_coverage"] < 1
+        for item in result["results"]
+    )
+    assert all(
+        set(item["match"]["score_components"]) == {"bm25f", "name_bonus", "phrase_bonus"}
+        for item in result["results"]
+    )
+
+
+def test_exact_name_and_phrase_are_controlled_boosts(tmp_path: Path) -> None:
+    # Regression: hard-coded giant bonuses hid BM25 relevance and double-counted
+    # a name phrase, making the score impossible to reason about or tune.
+    service = QueryService(_catalog(tmp_path))
+
+    exact = service.search("agent workbench", scope="catalog", limit=1)["results"][0]
+    phrase = service.search("scientific discovery", scope="catalog", limit=1)["results"][0]
+
+    assert exact["match"]["score_components"]["name_bonus"] > 0
+    assert exact["match"]["score_components"]["phrase_bonus"] == 0
+    assert phrase["key"] == "opencompass:science-discovery"
+    assert phrase["match"]["score_components"]["phrase_bonus"] > 0
+
+
+def test_full_coverage_is_a_soft_ranking_signal_not_an_eligibility_gate(tmp_path: Path) -> None:
+    # Regression: deleting partial rows made retrieval look precise while hiding
+    # candidates the consuming agent needed to compare with a full-coverage row.
+    service = QueryService(_catalog(tmp_path))
+
+    result = service.search("agent coding", scope="catalog", limit=10)
+
+    assert result["total_matches"] == 2
+    assert [item["key"] for item in result["results"]] == [
+        "opencompass:agent-workbench",
+        "llm-stats:agent-workbench-extended",
+    ]
+    assert [item["match"]["query_coverage"] for item in result["results"]] == [1.0, 0.5]
+    assert [item["match"]["missing_tokens"] for item in result["results"]] == [[], ["coding"]]
+
+
+def test_name_matching_does_not_cross_token_boundaries(tmp_path: Path) -> None:
+    # `ntwo` exists only after concatenating "agent" + "workbench". The old
+    # folded substring matcher treated that accidental character sequence as a
+    # name hit and even returned an empty matched_tokens explanation.
+    result = QueryService(_catalog(tmp_path)).search("ntwo", scope="catalog")
+
+    assert result["search_status"] == "no_lexical_candidates"
+    assert result["candidate_count"] == 0
+    assert result["total_matches"] == 0
+    assert result["full_match_count"] == 0
+    assert result["partial_match_count"] == 0
+    assert result["results"] == []
 
 
 def test_search_filters_before_ranking(tmp_path: Path) -> None:
@@ -181,7 +268,7 @@ def test_all_scope_keeps_catalog_and_radar_identity_separate(tmp_path: Path) -> 
     # Regression: same-looking names from two evidence layers are not proven identities.
     service = QueryService(_catalog(tmp_path))
 
-    result = service.search("long running coding agent", scope="all", limit=10)
+    result = service.search("coding", scope="all", limit=10)
 
     assert {item["kind"] for item in result["results"]} == {"catalog", "radar"}
     assert len({item["key"] for item in result["results"]}) == len(result["results"])
@@ -286,6 +373,35 @@ def test_cli_and_http_return_the_same_search_contract(tmp_path: Path, capsys) ->
     assert cli_payload == http_payload
 
 
+def test_cli_labels_partial_candidates_without_hiding_them(tmp_path: Path, capsys) -> None:
+    # Regression: the terminal rendered weak one-token evidence as ordinary
+    # matches, so an agent had no top-level signal that no full lexical match existed.
+    paths = _catalog(tmp_path)
+
+    exit_code = run_query_cli(
+        [
+            "search",
+            "protein agent prediction",
+            "--scope",
+            "catalog",
+            "--limit",
+            "2",
+            "--index",
+            str(paths.index),
+            "--shards",
+            str(paths.shards),
+            "--snapshots",
+            str(paths.snapshots),
+        ]
+    )
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert "2 of 2 partial lexical candidates" in output
+    assert "none matched every query token" in output
+    assert "Agent Workbench" in output
+
+
 def test_cli_and_http_return_the_same_non_search_contracts(tmp_path: Path, capsys) -> None:
     # Regression: shared search alone did not prevent detail/status serializers drifting.
     paths = _catalog(tmp_path)
@@ -344,7 +460,7 @@ def test_healthz_identifies_local_health_check_contract(tmp_path: Path) -> None:
         thread.join(timeout=5)
 
     assert payload == {
-        "schema_version": 1,
+        "schema_version": 6,
         "retrieval_mode": "health_check",
         "data": {"source": "local"},
         "status": "ok",
@@ -426,6 +542,6 @@ def test_http_errors_are_machine_readable(tmp_path: Path) -> None:
 
     assert captured.value.code == 400
     assert payload == {
-        "schema_version": 1,
+        "schema_version": 6,
         "error": {"code": "invalid_request", "message": "q is required"},
     }

@@ -134,3 +134,12 @@ def test_readmes_expose_the_consumer_skill():
     skill_path = "skills/benchmark-radar/SKILL.md"
     assert skill_path in README.read_text(encoding="utf-8")
     assert skill_path in README_ZH.read_text(encoding="utf-8")
+
+
+def test_consumer_skill_keeps_acceptance_with_the_agent() -> None:
+    text = SKILL.read_text(encoding="utf-8")
+    assert "retrieval_score" in text
+    assert "idf_coverage" in text
+    assert "remove conversational wrapper text" in text
+    assert "no confident match" in text
+    assert "call `show`" in text

@@ -1,0 +1,152 @@
+schema_version: 1
+name: benchmark-radar-llm-judge-v1
+description: >-
+  Twenty qualitative search intents for manual or LLM-assisted review. These cases
+  do not encode ranking exceptions or CI thresholds. A judge reviews the shared
+  QueryService output, status, token evidence, and Catalog record metadata.
+
+rubric:
+  - Judge whether the leading candidates address the stated intent.
+  - Treat full_matches_found as lexical coverage, not proof of suitability.
+  - Treat partial_candidates_only as evidence for further agent inspection, not an answer.
+  - Verify that missing tokens and matched fields make weak candidates obvious.
+  - Do not infer that a benchmark is globally absent from a local Catalog gap.
+
+cases:
+  - id: navigate-gpqa-diamond
+    category: navigational
+    query: GPQA Diamond
+    scope: catalog
+    intent: Find the benchmark published under the name GPQA Diamond.
+
+  - id: navigate-swe-bench-verified
+    category: navigational
+    query: SWE-bench Verified
+    scope: catalog
+    intent: Find the verified SWE-bench benchmark identity.
+
+  - id: navigate-chartqa
+    category: navigational
+    query: ChartQA
+    scope: catalog
+    intent: Find the benchmark named ChartQA.
+
+  - id: navigate-livecodebench
+    category: navigational
+    query: LiveCodeBench
+    scope: catalog
+    intent: Find the benchmark named LiveCodeBench.
+
+  - id: navigate-wrapped-gpqa
+    category: navigational
+    query: find GPQA Diamond
+    scope: catalog
+    intent: Strip the conversational request wrapper and resolve the exact GPQA Diamond name.
+
+  - id: navigate-wrapped-swe-bench
+    category: navigational
+    query: SWE bench verified please
+    scope: catalog
+    intent: Ignore the conversational politeness wrapper and resolve SWE-bench Verified.
+
+  - id: topic-multilingual-grade-school-math
+    category: topical
+    query: multilingual grade school math
+    scope: catalog
+    intent: Find multilingual benchmarks for grade-school mathematical reasoning.
+
+  - id: topic-repository-code-repair
+    category: topical
+    query: repository level code repair agents
+    scope: catalog
+    intent: Find benchmarks for agents repairing code in real repositories.
+
+  - id: topic-computer-use-agents
+    category: topical
+    query: computer use agent benchmark
+    scope: catalog
+    intent: Find benchmarks for agents operating desktop or browser interfaces.
+
+  - id: topic-long-context-retrieval
+    category: topical
+    query: long context retrieval
+    scope: catalog
+    intent: Find benchmarks that test retrieval from long contexts.
+
+  - id: topic-medical-image-qa
+    category: topical
+    query: medical image question answering
+    scope: catalog
+    intent: Find question-answering benchmarks grounded in medical images.
+
+  - id: topic-wrapped-medical-vqa
+    category: topical
+    query: I need a medical VQA benchmark
+    scope: catalog
+    intent: Extract the medical VQA task from a natural-language request before judging candidates.
+
+  - id: topic-scientific-chart-understanding
+    category: topical
+    query: scientific chart understanding
+    scope: catalog
+    intent: Find benchmarks for understanding charts in scientific material.
+
+  - id: topic-audio-reasoning
+    category: topical
+    query: audio reasoning benchmark
+    scope: catalog
+    intent: Find benchmarks requiring reasoning over audio.
+
+  - id: topic-video-temporal-reasoning
+    category: topical
+    query: video temporal reasoning
+    scope: catalog
+    intent: Find benchmarks that test temporal reasoning over video.
+
+  - id: ambiguous-agent-benchmark
+    category: ambiguous
+    query: agent benchmark
+    scope: catalog
+    intent: Check whether a broad agent query still produces inspectable, well-ranked candidates.
+
+  - id: ambiguous-multimodal-evaluation
+    category: ambiguous
+    query: multimodal evaluation
+    scope: catalog
+    intent: Check ranking behavior for a broad multimodal evaluation request.
+
+  - id: ambiguous-reasoning-dataset
+    category: ambiguous
+    query: reasoning dataset
+    scope: catalog
+    intent: Check whether broad reasoning candidates expose enough evidence for refinement.
+
+  - id: gap-protein-folding
+    category: out_of_catalog
+    query: protein folding benchmark
+    scope: catalog
+    intent: Check that adjacent lexical evidence is not presented as a verified protein-folding answer.
+
+  - id: gap-weather-forecast
+    category: out_of_catalog
+    query: weather forecast evaluation
+    scope: catalog
+    intent: Check the honest status for a likely Catalog coverage gap.
+
+  - id: gap-stock-market-forecasting
+    category: out_of_catalog
+    query: stock market forecasting
+    scope: catalog
+    intent: Check that generic forecasting evidence is not presented as a stock-market benchmark.
+
+  - id: gap-robot-grasp-trajectory
+    category: out_of_catalog
+    query: robot grasp trajectory planning
+    scope: catalog
+    intent: Check that nearby robotics or planning records remain labelled partial candidates.
+
+  - id: gap-earthquake-prediction
+    category: out_of_catalog
+    query: earthquake prediction benchmark
+    scope: catalog
+    intent: Check the honest status for a likely out-of-catalog scientific task.

@@ -1,0 +1,180 @@
+schema_version: 1
+name: benchmark-radar-catalog-search-v1
+description: >-
+  Sparse positive relevance judgments for deterministic local Catalog search.
+  Unlisted records are unjudged, not negative, so this dataset measures Hit@K,
+  MRR@K, and Recall@K rather than precision or NDCG.
+
+cutoffs:
+  hit: 5
+  recall: 20
+
+thresholds:
+  minimum:
+    hit_rate_at_5: 1.0
+    mrr_at_20: 0.95
+    macro_recall_at_20: 0.95
+    navigational_hit_rate_at_1: 1.0
+    catalog_gap_partial_retention_at_20: 1.0
+  maximum:
+    catalog_gap_full_match_rate_at_20: 0.0
+
+queries:
+  - id: navigate-math
+    kind: navigational
+    query: MATH
+    intent: Resolve the benchmark whose published name is MATH.
+    scope: catalog
+    relevant_keys: ["opencompass:534", "llm-stats:math"]
+
+  - id: navigate-mmmu-pro
+    kind: navigational
+    query: MMMU-Pro
+    intent: Resolve the exact MMMU-Pro benchmark identity across known sources.
+    scope: catalog
+    relevant_keys: ["llm-stats:mmmu-pro", "artificial-analysis:mmmu-pro"]
+
+  - id: navigate-vqa-rad
+    kind: navigational
+    query: VQA-Rad
+    intent: Resolve the medical VQA benchmark named VQA-Rad.
+    scope: catalog
+    relevant_keys: ["llm-stats:vqa-rad"]
+
+  - id: navigate-climateviz
+    kind: navigational
+    query: ClimateViz
+    intent: Resolve the opaque benchmark name ClimateViz.
+    scope: catalog
+    relevant_keys: ["opencompass:1954"]
+
+  - id: topic-math-reasoning
+    kind: topical
+    query: math reasoning
+    intent: Retrieve benchmarks that evaluate mathematical reasoning.
+    scope: catalog
+    relevant_keys:
+      - "llm-stats:math"
+      - "llm-stats:math-500"
+      - "llm-stats:sat-math"
+      - "llm-stats:gsm8k"
+      - "llm-stats:we-math"
+
+  - id: topic-visual-reasoning
+    kind: topical
+    query: visual reasoning
+    intent: Retrieve benchmarks that evaluate reasoning over visual inputs.
+    scope: catalog
+    relevant_keys:
+      - "artificial-analysis:mmmu-pro"
+      - "opencompass:2233"
+      - "llm-stats:v-star"
+      - "llm-stats:ai2d"
+
+  - id: topic-long-horizon-agent
+    kind: topical
+    query: long horizon agent
+    intent: Retrieve benchmarks for agents operating over extended task horizons.
+    scope: catalog
+    relevant_keys:
+      - "llm-stats:coworkbench"
+      - "llm-stats:legal-agent-benchmark"
+      - "llm-stats:yc-bench"
+      - "artificial-analysis:apex-agents-aa"
+
+  - id: topic-coding-benchmark
+    kind: topical
+    query: coding benchmark
+    intent: Retrieve benchmarks that evaluate code generation or coding agents.
+    scope: catalog
+    relevant_keys:
+      - "llm-stats:wildclawbench"
+      - "llm-stats:octocodingbench"
+      - "llm-stats:seedclawbench"
+      - "llm-stats:aider-polyglot-edit"
+      - "llm-stats:scicode"
+      - "llm-stats:aethercode"
+
+  - id: topic-medical-vqa
+    kind: topical
+    query: medical VQA
+    intent: Retrieve visual question answering benchmarks in medical domains.
+    scope: catalog
+    relevant_keys:
+      - "opencompass:1920"
+      - "llm-stats:pmc-vqa"
+      - "llm-stats:vqa-rad"
+
+  - id: topic-robotics-manipulation
+    kind: topical
+    query: robotics manipulation
+    intent: Retrieve benchmarks for robotic or embodied manipulation.
+    scope: catalog
+    relevant_keys: ["llm-stats:robospatialhome"]
+
+  - id: topic-scientific-chart-fact-checking
+    kind: topical
+    query: scientific fact checking charts
+    intent: Retrieve benchmarks for checking scientific claims against charts.
+    scope: catalog
+    relevant_keys: ["opencompass:1954"]
+
+  - id: topic-code-editing
+    kind: topical
+    query: code editing benchmark
+    intent: Retrieve benchmarks that evaluate code editing.
+    scope: catalog
+    relevant_keys:
+      - "llm-stats:aider"
+      - "llm-stats:aider-polyglot-edit"
+      - "llm-stats:aider-polyglot"
+
+  - id: topic-multimodal-reasoning
+    kind: topical
+    query: multimodal reasoning
+    intent: Retrieve benchmarks that require reasoning across multiple modalities.
+    scope: catalog
+    relevant_keys:
+      - "llm-stats:emma"
+      - "llm-stats:videoholmes"
+      - "llm-stats:v-star"
+      - "artificial-analysis:mmmu-pro"
+
+  - id: topic-long-running-coding-agents
+    kind: topical
+    query: long running coding agents
+    intent: Retrieve coding-agent benchmarks with extended execution horizons.
+    scope: catalog
+    relevant_keys: ["llm-stats:nl2repo"]
+
+  - id: gap-protein-structure-prediction
+    kind: catalog_gap
+    query: protein structure prediction
+    intent: Detect whether the Catalog gains a full lexical match for this missing task.
+    scope: catalog
+    relevant_keys: []
+    expected_partial_keys: ["opencompass:2082", "opencompass:1542"]
+
+  - id: gap-weather-forecasting
+    kind: catalog_gap
+    query: weather forecasting
+    intent: Detect whether the Catalog gains a full lexical match for this missing task.
+    scope: catalog
+    relevant_keys: []
+    expected_partial_keys: []
+
+  - id: gap-stock-prediction
+    kind: catalog_gap
+    query: stock prediction
+    intent: Detect whether the Catalog gains a full lexical match for this missing task.
+    scope: catalog
+    relevant_keys: []
+    expected_partial_keys: ["llm-stats:cruxeval-output-cot"]
+
+  - id: gap-robot-grasp-planning
+    kind: catalog_gap
+    query: robot grasp planning
+    intent: Detect whether the Catalog gains a full lexical match for this missing task.
+    scope: catalog
+    relevant_keys: []
+    expected_partial_keys: ["opencompass:2151", "opencompass:1251"]
