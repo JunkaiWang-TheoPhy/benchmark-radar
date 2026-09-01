@@ -11,11 +11,15 @@ from pathlib import Path
 import pytest
 import yaml
 
+from benchmark_radar.query import QueryPaths, QueryService
+
 SCRIPT_PATH = Path("scripts/analyze_agent_weaknesses.py")
 DATA_PATH = Path("data/agent_weakness_evidence.yml")
 GUIDE_PATH = Path("docs/technical-report/agent-weakness-coding-guide.md")
 REVIEW_REPORT_PATH = Path("docs/technical-report/agent-weakness-independent-review.md")
 BLIND_PACKET_PATH = Path("docs/technical-report/agent-weakness-blinded-sample.md")
+BENCHMARK_INDEX_PATH = Path("site/data/benchmark-index.json")
+BENCHMARK_SHARDS_PATH = Path("site/data/benchmarks")
 
 FINE_CODES = [
     "goal_plan_drift",
@@ -237,6 +241,40 @@ def test_repository_task2_report_records_blind_review_and_adjudication_state():
             assert disagreement["secondary_code"] in report_text
     else:
         assert "No disagreements required adjudication." in report_text
+
+
+def test_repository_non_null_radar_record_ids_match_catalog_keys_when_generated():
+    if not BENCHMARK_INDEX_PATH.exists():
+        pytest.skip("requires generated site/data/benchmark-index.json from normalize-external")
+    if not BENCHMARK_SHARDS_PATH.exists():
+        pytest.skip("requires generated site/data/benchmarks shards from normalize-external")
+
+    module = _load_module()
+    study = module.load_study(DATA_PATH)
+    service = QueryService(
+        QueryPaths(
+            index=BENCHMARK_INDEX_PATH,
+            shards=BENCHMARK_SHARDS_PATH,
+            snapshots=Path("data/snapshots"),
+        )
+    )
+    expected_ids = {
+        "OSWorld 2.0": "llm-stats:osworld-2.0",
+        "WebArena": "llm-stats:webarena-verified",
+        "Mind2Web": "opencompass:1125",
+        "GAIA2": "llm-stats:gaia2",
+        "SWE-bench Verified": "llm-stats:swe-bench-verified",
+        "SciCode": "llm-stats:scicode",
+    }
+
+    non_null_rows = [row for row in study["rows"] if row["radar_record_id"] is not None]
+    assert non_null_rows
+    for row in non_null_rows:
+        expected_identifier = expected_ids.get(row["benchmark_family_name"], row["radar_record_id"])
+        assert row["radar_record_id"] == expected_identifier
+        result = service.show(row["radar_record_id"])
+        assert result["identifier"] == row["radar_record_id"]
+        assert result["benchmark"]["record"]["key"] == row["radar_record_id"]
 
 
 def test_load_study_rejects_missing_evidence_location(tmp_path):

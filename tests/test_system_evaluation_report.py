@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
 import types
 from pathlib import Path
@@ -507,3 +508,15 @@ def test_story_places_agent_weakness_subsection_before_use_it_and_adds_primary_s
     assert section_flowables[1].style == "body"
     assert isinstance(section_flowables[2], _FakeParagraph)
     assert section_flowables[2].style == "small"
+
+
+def test_story_uses_stable_ci_wording_without_hardcoded_test_counts():
+    module = _load_module()
+
+    story = module.story("10.5281/zenodo.22167102")
+    report_text = "\n".join(_collect_text(story))
+
+    assert "The current full CI suite passed." in report_text
+    assert "All 1,028 tests passed." not in report_text
+    assert re.search(r"\bAll\s+\d[\d,]*\s+tests\s+passed\b", report_text) is None
+    assert re.search(r"\b\d[\d,]*\s+passing tests\b", report_text) is None

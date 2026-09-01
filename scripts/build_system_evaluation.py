@@ -688,7 +688,7 @@ def story(doi: str) -> list:
                     ],
                     [
                         p("Verification", st["small_bold"]),
-                        p("Clean-worktree rebuild plus 1,028 passing tests.", st["small"]),
+                        p("Clean-worktree rebuild plus a passing full CI suite.", st["small"]),
                         p("Source coverage still depends on public endpoints.", st["small"]),
                     ],
                 ],
@@ -1143,7 +1143,7 @@ def story(doi: str) -> list:
             PageBreak(),
             p("7. Reproducibility, access, and citation", st["section"]),
             p(
-                "This report evaluates Benchmark Radar v0.9.0 at Git commit 98c7de3 and data cutoff 2026-08-29. The clean worktree ran the CI sequence: lint and formatting checks, external normalization, KW-Bench classification, checksummed data-release construction, and the full test suite. All 1,028 tests passed.",
+                "This report evaluates Benchmark Radar v0.9.0 at Git commit 98c7de3 and data cutoff 2026-08-29. The clean worktree ran the CI sequence: lint and formatting checks, external normalization, KW-Bench classification, checksummed data-release construction, and the full test suite. The current full CI suite passed.",
                 st["body"],
             ),
             table(

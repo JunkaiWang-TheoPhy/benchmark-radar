@@ -43,7 +43,7 @@ rows:
     benchmark_family_id: osworld_2_0
     benchmark_family_name: OSWorld 2.0
     radar_query: OSWorld 2.0
-    radar_record_id: osworld-2.0
+    radar_record_id: llm-stats:osworld-2.0
     task_or_protocol: Long-horizon computer-use workflows under 500-step binary completion
     status: demonstrated
     primary_code: environment_grounding_state_tracking
@@ -64,7 +64,7 @@ rows:
     benchmark_family_id: webarena
     benchmark_family_name: WebArena
     radar_query: WebArena
-    radar_record_id: webarena-verified
+    radar_record_id: llm-stats:webarena-verified
     task_or_protocol: Realistic web tasks with achievable and unachievable cases
     status: demonstrated
     primary_code: verification_completion
@@ -85,7 +85,7 @@ rows:
     benchmark_family_id: mind2web
     benchmark_family_name: Mind2Web
     radar_query: Mind2Web
-    radar_record_id: mind2web
+    radar_record_id: opencompass:1125
     task_or_protocol: Step-level action prediction across cross-task, cross-website, and cross-domain splits
     status: demonstrated
     primary_code: environment_grounding_state_tracking
@@ -106,7 +106,7 @@ rows:
     benchmark_family_id: gaia2
     benchmark_family_name: GAIA2
     radar_query: GAIA2
-    radar_record_id: gaia2
+    radar_record_id: llm-stats:gaia2
     task_or_protocol: Dynamic and asynchronous agent tasks with capability splits
     status: demonstrated
     primary_code: loop_stagnation_recovery
@@ -127,7 +127,7 @@ rows:
     benchmark_family_id: swe_bench_verified
     benchmark_family_name: SWE-bench Verified
     radar_query: SWE-bench Verified
-    radar_record_id: swe_bench_verified
+    radar_record_id: llm-stats:swe-bench-verified
     task_or_protocol: Automated issue solving failure analysis over failed benchmark instances
     status: demonstrated
     primary_code: loop_stagnation_recovery
@@ -148,7 +148,7 @@ rows:
     benchmark_family_id: swe_bench_science
     benchmark_family_name: SWE-bench Science
     radar_query: SWE-bench Science
-    radar_record_id: swe_bench_science
+    radar_record_id: null
     task_or_protocol: Repository-level scientific software engineering tasks across issue, exploratory, and integration paradigms
     status: demonstrated
     primary_code: tool_selection_execution
@@ -232,7 +232,7 @@ rows:
     benchmark_family_id: mind2web
     benchmark_family_name: Mind2Web
     radar_query: Mind2Web
-    radar_record_id: mind2web
+    radar_record_id: opencompass:1125
     task_or_protocol: Generalization gap as a possible action-selection signal
     status: design_implied
     primary_code: tool_selection_execution
@@ -253,7 +253,7 @@ rows:
     benchmark_family_id: scicode
     benchmark_family_name: SciCode
     radar_query: SciCode
-    radar_record_id: scicode
+    radar_record_id: llm-stats:scicode
     task_or_protocol: Benchmark-defect audit of scientific coding evaluation
     status: unmeasured
     primary_code: verification_completion
