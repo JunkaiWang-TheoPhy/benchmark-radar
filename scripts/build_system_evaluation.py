@@ -52,12 +52,16 @@ FROZEN_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf")
 NEXT_DRAFT_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-next-draft.pdf")
 FROZEN_AUTHORS = ("Koutian Wu",)
 NEXT_DRAFT_AUTHORS = ("Koutian Wu", "Junjie Zhou")
-NEXT_DRAFT_AFFILIATIONS = (
-    "Koutian Wu — Independent researcher",
-    "Koutian Wu — Tacite AI",
-    "Junjie Zhou — Hangzhou Dianzi University",
+NEXT_DRAFT_BYLINE = (
+    "Koutian Wu<super>1,2,*</super>",
+    "Junjie Zhou<super>3</super>",
 )
-NEXT_DRAFT_CORRESPONDING_AUTHOR = "Koutian Wu — k@tacite.ai"
+NEXT_DRAFT_AFFILIATIONS = (
+    "<super>1</super> Independent researcher",
+    "<super>2</super> Tacite AI",
+    "<super>3</super> Hangzhou Dianzi University",
+)
+NEXT_DRAFT_CORRESPONDING_AUTHOR = "Koutian Wu, k@tacite.ai"
 
 
 def table(rows: list[list], widths: list[float], *, tiny: bool = False) -> Table:
@@ -295,6 +299,7 @@ def story(
     doi: str,
     *,
     authors: tuple[str, ...] = FROZEN_AUTHORS,
+    byline: tuple[str, ...] | None = None,
     affiliations: tuple[str, ...] = (),
     corresponding_author: str | None = None,
     draft: bool = False,
@@ -322,7 +327,7 @@ def story(
                 "From daily collection to benchmark search and score history",
                 st["subtitle"],
             ),
-            p(" · ".join(authors), st["author"]),
+            p(" · ".join(byline or authors), st["author"]),
             *[p(affiliation, st["meta"]) for affiliation in affiliations],
             *(
                 [p(f"Corresponding author: {corresponding_author}", st["meta"])]
@@ -1134,12 +1139,14 @@ def main() -> None:
         parser.error("--next-draft cannot overwrite the frozen v0.9.0 PDF")
     output.parent.mkdir(parents=True, exist_ok=True)
     authors = NEXT_DRAFT_AUTHORS if args.next_draft else FROZEN_AUTHORS
+    byline = NEXT_DRAFT_BYLINE if args.next_draft else None
     affiliations = NEXT_DRAFT_AFFILIATIONS if args.next_draft else ()
     corresponding_author = NEXT_DRAFT_CORRESPONDING_AUTHOR if args.next_draft else None
     EvaluationDoc(str(output), doi=args.doi, authors=authors).build(
         story(
             args.doi,
             authors=authors,
+            byline=byline,
             affiliations=affiliations,
             corresponding_author=corresponding_author,
             draft=args.next_draft,
