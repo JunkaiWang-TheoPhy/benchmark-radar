@@ -43,7 +43,7 @@ def _row(
     radar_record_id: str | None = "family-a",
     source_url: str = "https://example.com/paper",
     source_kind: str = "paper",
-    evidence_location: str = "Section 4",
+    evidence_location: str = "Table 1; paragraph p1.1",
     observed_evidence: str | None = None,
     sampled: bool = False,
     secondary_code: str | None = None,
@@ -77,7 +77,18 @@ def _row(
     }
 
 
-def _study_payload(rows: list[dict]) -> dict:
+def _study_payload(
+    rows: list[dict],
+    *,
+    demonstrated_family_scope: list[str] | None = None,
+    excluded_families: list[str] | None = None,
+    measurement_counterexample_only: list[str] | None = None,
+) -> dict:
+    demonstrated_scope = demonstrated_family_scope
+    if demonstrated_scope is None:
+        demonstrated_scope = sorted(
+            {row["benchmark_family_name"] for row in rows if row["status"] == "demonstrated"}
+        )
     return {
         "schema_version": 1,
         "study": {
@@ -99,14 +110,20 @@ def _study_payload(rows: list[dict]) -> dict:
                     "verification_completion",
                 ],
             },
+            "demonstrated_family_scope": demonstrated_scope,
+            "excluded_families": excluded_families or ["General AgentBench", "ToolFailBench"],
+            "measurement_counterexample_only": measurement_counterexample_only or ["SciCode"],
         },
         "rows": rows,
     }
 
 
-def _write_study(tmp_path: Path, rows: list[dict]) -> Path:
+def _write_study(tmp_path: Path, rows: list[dict], **kwargs) -> Path:
     path = tmp_path / "study.yml"
-    path.write_text(yaml.safe_dump(_study_payload(rows), sort_keys=False), encoding="utf-8")
+    path.write_text(
+        yaml.safe_dump(_study_payload(rows, **kwargs), sort_keys=False),
+        encoding="utf-8",
+    )
     return path
 
 
@@ -124,6 +141,10 @@ def test_repository_task1_artifacts_exist_and_load():
     assert analysis["status_counts"]["design_implied"] >= 1
     assert analysis["status_counts"]["unmeasured"] >= 1
     assert analysis["agreement"]["sampled_row_count"] >= 1
+    assert analysis["agreement"]["completed_row_count"] == 0
+    assert analysis["agreement"]["pending_row_count"] == analysis["agreement"]["sampled_row_count"]
+    assert analysis["agreement"]["percent_agreement"] is None
+    assert analysis["agreement"]["cohens_kappa"] is None
 
 
 def test_load_study_rejects_missing_evidence_location(tmp_path):
@@ -150,6 +171,37 @@ def test_load_study_rejects_missing_evidence_location(tmp_path):
     ]
 
     with pytest.raises(ValueError, match="evidence_location"):
+        module.load_study(_write_study(tmp_path, rows))
+
+
+def test_load_study_rejects_section_only_evidence_location_for_demonstrated_row(tmp_path):
+    module = _load_module()
+    rows = [
+        _row(
+            "demo-a",
+            status="demonstrated",
+            primary_code="goal_plan_drift",
+            evidence_location="Section 4",
+        ),
+        _row(
+            "design-a",
+            status="design_implied",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+        ),
+        _row(
+            "unmeasured-a",
+            status="unmeasured",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+    ]
+
+    with pytest.raises(ValueError, match="replayable|evidence_location"):
         module.load_study(_write_study(tmp_path, rows))
 
 
@@ -201,6 +253,151 @@ def test_load_study_requires_all_three_statuses_and_benchmark_family_ids(tmp_pat
 
     with pytest.raises(ValueError, match="benchmark_family_id|statuses"):
         module.load_study(_write_study(tmp_path, rows))
+
+
+def test_load_study_requires_study_scope_fields(tmp_path):
+    module = _load_module()
+    rows = [
+        _row("demo-a", status="demonstrated", primary_code="goal_plan_drift"),
+        _row(
+            "design-a",
+            status="design_implied",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+        ),
+        _row(
+            "unmeasured-a",
+            status="unmeasured",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+    ]
+    payload = _study_payload(rows)
+    payload["study"].pop("measurement_counterexample_only")
+    path = tmp_path / "study.yml"
+    path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(
+        ValueError,
+        match="demonstrated_family_scope|excluded_families|measurement_counterexample_only",
+    ):
+        module.load_study(path)
+
+
+def test_load_study_rejects_missing_demonstrated_family_from_scope(tmp_path):
+    module = _load_module()
+    rows = [
+        _row("demo-a", status="demonstrated", primary_code="goal_plan_drift"),
+        _row(
+            "demo-b",
+            status="demonstrated",
+            primary_code="verification_completion",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+        ),
+        _row(
+            "design-c",
+            status="design_implied",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+        _row(
+            "unmeasured-d",
+            status="unmeasured",
+            primary_code="loop_stagnation_recovery",
+            benchmark_family_id="family-d",
+            benchmark_family_name="Family D",
+            radar_query="Family D",
+        ),
+    ]
+
+    with pytest.raises(ValueError, match="demonstrated family scope|missing"):
+        module.load_study(_write_study(tmp_path, rows, demonstrated_family_scope=["Family A"]))
+
+
+def test_load_study_rejects_extra_demonstrated_family_outside_scope(tmp_path):
+    module = _load_module()
+    rows = [
+        _row("demo-a", status="demonstrated", primary_code="goal_plan_drift"),
+        _row(
+            "demo-b",
+            status="demonstrated",
+            primary_code="verification_completion",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+        ),
+        _row(
+            "design-c",
+            status="design_implied",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+        _row(
+            "unmeasured-d",
+            status="unmeasured",
+            primary_code="loop_stagnation_recovery",
+            benchmark_family_id="family-d",
+            benchmark_family_name="Family D",
+            radar_query="Family D",
+        ),
+    ]
+
+    with pytest.raises(ValueError, match="demonstrated family scope|extra"):
+        module.load_study(
+            _write_study(tmp_path, rows, demonstrated_family_scope=["Family A", "Family C"])
+        )
+
+
+def test_load_study_rejects_measurement_counterexample_as_demonstrated(tmp_path):
+    module = _load_module()
+    rows = [
+        _row("demo-a", status="demonstrated", primary_code="goal_plan_drift"),
+        _row(
+            "demo-b",
+            status="demonstrated",
+            primary_code="verification_completion",
+            benchmark_family_id="family-b",
+            benchmark_family_name="SciCode",
+            radar_query="SciCode",
+            radar_record_id="scicode",
+        ),
+        _row(
+            "design-c",
+            status="design_implied",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+        _row(
+            "unmeasured-d",
+            status="unmeasured",
+            primary_code="loop_stagnation_recovery",
+            benchmark_family_id="family-d",
+            benchmark_family_name="Family D",
+            radar_query="Family D",
+        ),
+    ]
+
+    with pytest.raises(ValueError, match="measurement counterexample|SciCode"):
+        module.load_study(
+            _write_study(
+                tmp_path,
+                rows,
+                demonstrated_family_scope=["Family A", "SciCode"],
+                measurement_counterexample_only=["SciCode"],
+            )
+        )
 
 
 def test_analyze_study_deduplicates_families_for_fine_and_coarse_recurrence(tmp_path):

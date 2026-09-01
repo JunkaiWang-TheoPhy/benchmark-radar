@@ -68,6 +68,8 @@ Every row must include one counterexample or limiting observation from the same 
 
 Rows marked `sampled_for_secondary_review: true` are eligible for an independent secondary code in Task 2. Until that code is filled, the row remains part of the declared sample but is treated as pending for agreement analysis. Completed secondary reviews are compared against the primary code using raw percent agreement and Cohen's kappa over the fine taxonomy.
 
+Task 1 must not pre-fill synthetic secondary-review outcomes into the shipped study data. Any completed-code examples belong only in synthetic tests used to validate the agreement calculation.
+
 ## Measurement-Gap Rule
 
 `unmeasured` rows belong in the final report as measurement gaps or audit-based cautions. They should appear in the analysis output, but they must not contribute to demonstrated family recurrence.

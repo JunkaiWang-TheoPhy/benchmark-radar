@@ -27,6 +27,9 @@ _REQUIRED_STUDY_FIELDS = (
     "statuses",
     "fine_taxonomy",
     "coarse_grouping",
+    "demonstrated_family_scope",
+    "excluded_families",
+    "measurement_counterexample_only",
 )
 _REQUIRED_ROW_FIELDS = (
     "id",
@@ -48,6 +51,19 @@ _REQUIRED_ROW_FIELDS = (
     "review",
 )
 _EXPECTED_STATUSES = ("demonstrated", "design_implied", "unmeasured")
+_REPLAYABLE_EVIDENCE_TOKENS = (
+    "table",
+    "figure",
+    "line ",
+    "lines ",
+    "paragraph",
+    "p id",
+    "abstract paragraph",
+    "caption",
+    "cell",
+    "row",
+    "page",
+)
 
 
 def _require_mapping(value: Any, *, label: str) -> dict[str, Any]:
@@ -100,6 +116,23 @@ def _coarse_lookup(grouping: dict[str, list[str]]) -> dict[str, str]:
                 raise ValueError(f"fine code {fine_code!r} appears in multiple coarse groups")
             lookup[fine_code] = coarse_group
     return lookup
+
+
+def _require_string_list(value: Any, *, label: str) -> list[str]:
+    if not isinstance(value, list) or not value:
+        raise ValueError(f"{label} must be a non-empty list")
+    normalized = [_require_nonempty_string(item, label=f"{label} entry") for item in value]
+    if len(set(normalized)) != len(normalized):
+        raise ValueError(f"{label} must not contain duplicates")
+    return normalized
+
+
+def _require_replayable_evidence_location(value: Any, *, label: str) -> str:
+    text = _require_nonempty_string(value, label=label)
+    lowered = text.lower()
+    if any(token in lowered for token in _REPLAYABLE_EVIDENCE_TOKENS):
+        return text
+    raise ValueError(f"{label} must include a replayable table/figure/line/paragraph anchor")
 
 
 def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
@@ -160,6 +193,19 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
         coarse_grouping[coarse_name] = normalized_codes
     coarse_lookup = _coarse_lookup(coarse_grouping)
 
+    demonstrated_family_scope = _require_string_list(
+        study.get("demonstrated_family_scope"),
+        label=f"{path}: demonstrated_family_scope",
+    )
+    excluded_families = _require_string_list(
+        study.get("excluded_families"),
+        label=f"{path}: excluded_families",
+    )
+    measurement_counterexample_only = _require_string_list(
+        study.get("measurement_counterexample_only"),
+        label=f"{path}: measurement_counterexample_only",
+    )
+
     rows = document.get("rows")
     if not isinstance(rows, list) or not rows:
         raise ValueError(f"{path}: rows must be a non-empty list")
@@ -213,8 +259,16 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
                 source_url, label=f"{path}: row {row_id} authoritative source"
             )
 
-        evidence_location = _require_nonempty_string(
-            row.get("evidence_location"), label=f"{path}: row {row_id} evidence_location"
+        evidence_location = (
+            _require_replayable_evidence_location(
+                row.get("evidence_location"),
+                label=f"{path}: row {row_id} evidence_location",
+            )
+            if status == "demonstrated"
+            else _require_nonempty_string(
+                row.get("evidence_location"),
+                label=f"{path}: row {row_id} evidence_location",
+            )
         )
 
         review = _require_mapping(row.get("review"), label=f"{path}: row {row_id} review")
@@ -288,6 +342,29 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
     if seen_statuses != set(normalized_statuses):
         raise ValueError(f"{path}: rows must cover all declared statuses")
 
+    demonstrated_family_names = {
+        row["benchmark_family_name"] for row in normalized_rows if row["status"] == "demonstrated"
+    }
+    declared_scope = set(demonstrated_family_scope)
+    missing_families = sorted(declared_scope - demonstrated_family_names)
+    extra_families = sorted(demonstrated_family_names - declared_scope)
+    if missing_families or extra_families:
+        parts: list[str] = []
+        if missing_families:
+            parts.append(f"missing {', '.join(missing_families)}")
+        if extra_families:
+            parts.append(f"extra {', '.join(extra_families)}")
+        raise ValueError(f"{path}: demonstrated family scope mismatch: {'; '.join(parts)}")
+
+    counterexample_demonstrated = sorted(
+        demonstrated_family_names & set(measurement_counterexample_only)
+    )
+    if counterexample_demonstrated:
+        raise ValueError(
+            f"{path}: measurement counterexample families cannot be demonstrated: "
+            f"{', '.join(counterexample_demonstrated)}"
+        )
+
     normalized_study = {
         **study,
         "snapshot_date": _require_date(study.get("snapshot_date"), label=f"{path}: snapshot_date"),
@@ -304,6 +381,9 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
         "statuses": normalized_statuses,
         "fine_taxonomy": normalized_taxonomy,
         "coarse_grouping": coarse_grouping,
+        "demonstrated_family_scope": demonstrated_family_scope,
+        "excluded_families": excluded_families,
+        "measurement_counterexample_only": measurement_counterexample_only,
     }
     return {"study": normalized_study, "rows": normalized_rows, "path": str(path)}
 
@@ -411,6 +491,9 @@ def analyze_study(study: dict[str, Any]) -> dict[str, Any]:
         "repository_commit_input": meta["repository_commit_input"],
         "study_issue": meta["issue"],
         "evidence_cutoff": meta["evidence_cutoff"],
+        "demonstrated_family_scope": meta["demonstrated_family_scope"],
+        "excluded_families": meta["excluded_families"],
+        "measurement_counterexample_only": meta["measurement_counterexample_only"],
         "status_counts": status_counts,
         "demonstrated_family_count": len(demonstrated_family_ids),
         "demonstrated_families": sorted(
