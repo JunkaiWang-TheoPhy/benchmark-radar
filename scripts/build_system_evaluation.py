@@ -48,6 +48,20 @@ from reportlab.platypus import (
 GREEN = HexColor("#16794A")
 PALE_GREEN = HexColor("#EAF7F0")
 PURPLE = HexColor("#6D4AFF")
+FROZEN_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf")
+NEXT_DRAFT_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-next-draft.pdf")
+FROZEN_AUTHORS = ("Koutian Wu",)
+NEXT_DRAFT_AUTHORS = ("Koutian Wu", "Junjie Zhou")
+NEXT_DRAFT_BYLINE = (
+    "Koutian Wu<super>1,2,*</super>",
+    "Junjie Zhou<super>3</super>",
+)
+NEXT_DRAFT_AFFILIATIONS = (
+    "<super>1</super> Independent researcher",
+    "<super>2</super> Tacite AI",
+    "<super>3</super> Hangzhou Dianzi University",
+)
+NEXT_DRAFT_CORRESPONDING_AUTHOR = "Koutian Wu, k@tacite.ai"
 
 
 def table(rows: list[list], widths: list[float], *, tiny: bool = False) -> Table:
@@ -238,7 +252,7 @@ def source_bars() -> Drawing:
 
 
 class EvaluationDoc(BaseDocTemplate):
-    def __init__(self, filename: str, *, doi: str):
+    def __init__(self, filename: str, *, doi: str, authors: tuple[str, ...] = FROZEN_AUTHORS):
         super().__init__(
             filename,
             pagesize=letter,
@@ -247,7 +261,7 @@ class EvaluationDoc(BaseDocTemplate):
             topMargin=0.58 * inch,
             bottomMargin=0.58 * inch,
             title="Benchmark Radar v0.9.0: Technical Report",
-            author="Koutian Wu",
+            author="; ".join(authors),
             subject="Benchmark Radar technical report, version 0.9.0",
             keywords="AI benchmarks, evaluation, research software, data provenance, model cards",
         )
@@ -281,7 +295,15 @@ class EvaluationDoc(BaseDocTemplate):
         canvas.restoreState()
 
 
-def story(doi: str) -> list:
+def story(
+    doi: str,
+    *,
+    authors: tuple[str, ...] = FROZEN_AUTHORS,
+    byline: tuple[str, ...] | None = None,
+    affiliations: tuple[str, ...] = (),
+    corresponding_author: str | None = None,
+    draft: bool = False,
+) -> list:
     st = styles()
     tiny = ParagraphStyle("Tiny", parent=st["small"], fontSize=6.45, leading=8.0)
     story: list = []
@@ -305,12 +327,21 @@ def story(doi: str) -> list:
                 "From daily collection to benchmark search and score history",
                 st["subtitle"],
             ),
-            p("Koutian Wu", st["author"]),
+            p(" · ".join(byline or authors), st["author"]),
+            *[p(affiliation, st["meta"]) for affiliation in affiliations],
+            *(
+                [p(f"Corresponding author: {corresponding_author}", st["meta"])]
+                if corresponding_author
+                else []
+            ),
             p(
                 "29 August 2026  |  Software v0.9.0  |  Data cutoff 2026-08-29  |  Git 98c7de3",
                 st["meta"],
             ),
-            p(f"Reserved DOI: {doi}", st["meta"]),
+            p(
+                (f"Reference DOI (frozen v0.9.0): {doi}" if draft else f"Reserved DOI: {doi}"),
+                st["meta"],
+            ),
             Spacer(1, 0.20 * inch),
             metric_strip(st),
             Spacer(1, 0.20 * inch),
@@ -1011,7 +1042,10 @@ def story(doi: str) -> list:
                 ],
                 [1.55 * inch, 5.05 * inch],
             ),
-            p("Suggested citation", st["subsection"]),
+            p(
+                "Published v0.9.0 citation" if draft else "Suggested citation",
+                st["subsection"],
+            ),
             p(
                 f"Wu, K. (2026). <i>Benchmark Radar v0.9.0: Technical Report</i>. Zenodo. https://doi.org/{doi}",
                 st["body"],
@@ -1091,13 +1125,34 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf"),
+        default=None,
     )
     parser.add_argument("--doi", default="10.5281/zenodo.22167102")
+    parser.add_argument(
+        "--next-draft",
+        action="store_true",
+        help="build the working next-draft artifact with the current contributor byline",
+    )
     args = parser.parse_args()
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    EvaluationDoc(str(args.output), doi=args.doi).build(story(args.doi))
-    print(args.output)
+    output = args.output or (NEXT_DRAFT_OUTPUT if args.next_draft else FROZEN_OUTPUT)
+    if args.next_draft and output.resolve() == FROZEN_OUTPUT.resolve():
+        parser.error("--next-draft cannot overwrite the frozen v0.9.0 PDF")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    authors = NEXT_DRAFT_AUTHORS if args.next_draft else FROZEN_AUTHORS
+    byline = NEXT_DRAFT_BYLINE if args.next_draft else None
+    affiliations = NEXT_DRAFT_AFFILIATIONS if args.next_draft else ()
+    corresponding_author = NEXT_DRAFT_CORRESPONDING_AUTHOR if args.next_draft else None
+    EvaluationDoc(str(output), doi=args.doi, authors=authors).build(
+        story(
+            args.doi,
+            authors=authors,
+            byline=byline,
+            affiliations=affiliations,
+            corresponding_author=corresponding_author,
+            draft=args.next_draft,
+        )
+    )
+    print(output)
 
 
 if __name__ == "__main__":
