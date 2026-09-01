@@ -303,6 +303,42 @@ def test_scan_date_can_be_reset_to_all_dates():
     assert 'byId("source-health-panel").hidden = showingAllDates' in script
 
 
+def test_search_defaults_to_all_dates_and_explains_the_scope():
+    """Issue #481: searching must not silently inherit the newest scan."""
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    # The scope explanation is the first row of the results area, before both
+    # registry matches and daily-discovery matches.
+    assert 'id="search-scope-banner"' in html
+    assert html.index('id="search-scope-banner"') < html.index('id="today-benchmarks"')
+    assert html.index('id="search-scope-banner"') < html.index('id="today-list"')
+    assert ".search-scope-banner" in styles
+
+    # A typed query and a bare ?q= permalink both start archive-wide. Once the
+    # reader explicitly narrows an existing query, continued typing preserves it.
+    assert 'params.get("date") || (state.q ? "all" : "")' in script
+    handler = script.split('byId("filters").addEventListener("input"', 1)[1].split("});", 1)[0]
+    assert "const hadQuery = Boolean(state.q.trim());" in handler
+    assert 'state.todayDate = "all";' in handler
+    assert "!hadQuery && state.q.trim()" in handler
+    assert "ensureFullData()" in handler
+
+    # The banner offers a real today link, and large result sets point to the
+    # public CLI setup route for a complete export.
+    banner = script.split("function renderSearchScopeBanner", 1)[1].split(
+        "function renderToday", 1
+    )[0]
+    assert 'state.todayDate !== "all"' in banner
+    assert "totalResults > 10" in banner
+    assert 'href: "https://benchmark-radar.org/#cli"' in banner
+    assert 'text: t("Search today")' in banner
+    assert "state.todayDate = state.data.latest_date;" in banner
+    assert "(state.q || state.todayDate !== state.data?.latest_date)" in script
+    assert '"This search covers all dates.": "此处搜索全部日期的结果。"' in script
+
+
 def test_dashboard_bounds_work_before_and_during_filtering():
     """Issue #222: hidden views and unbounded card lists must not block input."""
     script = Path("site/assets/app.js").read_text(encoding="utf-8")

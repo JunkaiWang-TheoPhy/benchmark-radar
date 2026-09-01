@@ -443,6 +443,10 @@
                 <span id="today-sort"></span>
               </div>
             </div>
+            <!-- Search is archive-wide by default even though browsing opens
+                 on the newest scan. This first result row makes that scope
+                 explicit and gives large result sets a practical export path. -->
+            <aside class="search-scope-banner" id="search-scope-banner" aria-live="polite" hidden></aside>
             <section class="today-benchmarks" id="today-benchmarks" hidden aria-labelledby="today-benchmarks-heading">
               <h3 class="today-benchmarks-heading" id="today-benchmarks-heading" data-i18n="Benchmarks with this name">Benchmarks with this name</h3>
               <p class="today-benchmarks-note" id="today-benchmarks-note"></p>
