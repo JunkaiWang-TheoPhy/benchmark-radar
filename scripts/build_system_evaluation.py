@@ -7,7 +7,9 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 from pathlib import Path
+from typing import Any
 
 from build_technical_report import (
     AMBER,
@@ -48,6 +50,119 @@ from reportlab.platypus import (
 GREEN = HexColor("#16794A")
 PALE_GREEN = HexColor("#EAF7F0")
 PURPLE = HexColor("#6D4AFF")
+NEXT_DRAFT_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-next-draft.pdf")
+AGENT_WEAKNESS_STUDY_PATH = Path("data/agent_weakness_evidence.yml")
+AGENT_WEAKNESS_ISSUE_NUMBER = 455
+AGENT_WEAKNESS_ISSUE_URL = (
+    "https://github.com/ktwu01/benchmark-radar/issues/455"
+)
+AGENT_WEAKNESS_CONTRIBUTOR = "Junkai Wang / @JunkaiWang-TheoPhy"
+AGENT_WEAKNESS_SECTION_TITLE = "6.5 Selected benchmark-family signal on agent weaknesses"
+
+
+def _load_agent_weakness_analysis_module():
+    module_path = Path(__file__).with_name("analyze_agent_weaknesses.py")
+    spec = importlib.util.spec_from_file_location("analyze_agent_weaknesses", module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load analysis module from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_agent_weakness_report_data(
+    source_path: Path = AGENT_WEAKNESS_STUDY_PATH,
+) -> dict[str, Any]:
+    module = _load_agent_weakness_analysis_module()
+    study = module.load_study(source_path)
+    analysis = module.analyze_study(study)
+    references: list[dict[str, str]] = []
+    seen_families: set[str] = set()
+    for row in study["rows"]:
+        family_name = row["benchmark_family_name"]
+        if family_name in seen_families:
+            continue
+        source_url = row["source_url"]
+        if not source_url:
+            continue
+        seen_families.add(family_name)
+        references.append({"family_name": family_name, "source_url": source_url})
+
+    agreement = analysis["agreement"]
+    return {
+        "issue_number": AGENT_WEAKNESS_ISSUE_NUMBER,
+        "issue_url": AGENT_WEAKNESS_ISSUE_URL,
+        "contributor": AGENT_WEAKNESS_CONTRIBUTOR,
+        "snapshot_date": analysis["snapshot_date"],
+        "evidence_cutoff": analysis["evidence_cutoff"],
+        "repository_commit_input": analysis["repository_commit_input"],
+        "demonstrated_family_count": analysis["demonstrated_family_count"],
+        "state_control_count": analysis["coarse_recurrence"]["state_control"]["family_count"],
+        "decision_execution_count": analysis["coarse_recurrence"]["decision_execution"][
+            "family_count"
+        ],
+        "completed_secondary_review_count": agreement["completed_row_count"],
+        "sampled_secondary_review_count": agreement["sampled_row_count"],
+        "design_implied_count": analysis["status_counts"]["design_implied"],
+        "unmeasured_count": analysis["status_counts"]["unmeasured"],
+        "measurement_counterexample_only": analysis["measurement_counterexample_only"],
+        "primary_source_references": references,
+    }
+
+
+def agent_weakness_section_paragraphs(report_data: dict[str, Any]) -> list[str]:
+    demonstrated = report_data["demonstrated_family_count"]
+    state_control = report_data["state_control_count"]
+    decision_execution = report_data["decision_execution_count"]
+    reviewed = report_data["completed_secondary_review_count"]
+    reviewed_total = report_data["sampled_secondary_review_count"]
+    design_implied = report_data["design_implied_count"]
+    unmeasured = report_data["unmeasured_count"]
+    measurement_counterexamples = ", ".join(report_data["measurement_counterexample_only"])
+    return [
+        (
+            f"Across {demonstrated} demonstrated benchmark families in the issue "
+            f"#{report_data['issue_number']} selected sample, the family-deduplicated denominator "
+            f"leans toward state-control evidence: {state_control}/{demonstrated} families land in "
+            f"the coarse state-control grouping, versus {decision_execution}/{demonstrated} in "
+            "decision-execution. This is a bounded selected sample, not a field-wide prevalence "
+            "estimate."
+        ),
+        (
+            f"This subsection summarizes the issue #{report_data['issue_number']} coding study "
+            f"contributed by {report_data['contributor']} ({report_data['issue_url']}). It uses "
+            f"data/agent_weakness_evidence.yml at snapshot date {report_data['snapshot_date']}, "
+            f"evidence cutoff {report_data['evidence_cutoff']}, and repository commit input "
+            f"{report_data['repository_commit_input']}. Each included row required one benchmark-"
+            "family identity, one primary-source evidence anchor, one same-family counterexample, "
+            "and family deduplication before recurrence counts. The demonstrated denominator keeps "
+            f"{design_implied} design-implied row and {unmeasured} unmeasured row separate from "
+            "the demonstrated prevalence count."
+        ),
+        (
+            f"Measurement implications and limits: independent secondary coding matched the primary "
+            f"code on {reviewed}/{reviewed_total} blinded sampled rows, which does not establish "
+            "broad reliability beyond this packet. "
+            f"{measurement_counterexamples} is the key instrument counterexample: its audit shows "
+            "that benchmark corrections can convert an apparent verification/completion failure "
+            "into much higher measured accuracy, so it is treated as an instrument counterexample "
+            "and unmeasured rather than as demonstrated prevalence evidence. Primary-source "
+            "benchmark evidence for the demonstrated families and the SciCode instrument check "
+            "appears in the cited benchmark papers and audits [9-18]. Limits remain substantial "
+            "because the sample is benchmark-family selected, not exhaustive, and depends on what "
+            "current public benchmarks actually measure and report."
+        ),
+    ]
+
+
+def agent_weakness_reference_entries(report_data: dict[str, Any]) -> list[str]:
+    entries: list[str] = []
+    for index, reference in enumerate(report_data["primary_source_references"], start=9):
+        entries.append(
+            f"[{index}] Primary-source evidence for {reference['family_name']}. "
+            f"{reference['source_url']}"
+        )
+    return entries
 
 
 def table(rows: list[list], widths: list[float], *, tiny: bool = False) -> Table:
@@ -284,6 +399,8 @@ class EvaluationDoc(BaseDocTemplate):
 def story(doi: str) -> list:
     st = styles()
     tiny = ParagraphStyle("Tiny", parent=st["small"], fontSize=6.45, leading=8.0)
+    agent_weakness_data = load_agent_weakness_report_data()
+    agent_weakness_paragraphs = agent_weakness_section_paragraphs(agent_weakness_data)
     story: list = []
 
     story.extend(
@@ -937,6 +1054,38 @@ def story(doi: str) -> list:
                 [0.55 * inch, 3.35 * inch, 2.70 * inch],
             ),
             Spacer(1, 10),
+            p(AGENT_WEAKNESS_SECTION_TITLE, st["subsection"]),
+            table(
+                [
+                    [
+                        p("Sample", st["table_header"]),
+                        p("Demonstrated families", st["table_header"]),
+                        p("Coarse recurrence", st["table_header"]),
+                        p("Independent agreement", st["table_header"]),
+                    ],
+                    [
+                        p("Issue #455 selected sample", st["small_bold"]),
+                        p(
+                            f"{agent_weakness_data['demonstrated_family_count']} family-deduplicated demonstrated families",
+                            st["small"],
+                        ),
+                        p(
+                            f"State-control {agent_weakness_data['state_control_count']}/{agent_weakness_data['demonstrated_family_count']}; decision-execution {agent_weakness_data['decision_execution_count']}/{agent_weakness_data['demonstrated_family_count']}",
+                            st["small"],
+                        ),
+                        p(
+                            f"{agent_weakness_data['completed_secondary_review_count']}/{agent_weakness_data['sampled_secondary_review_count']} blinded sampled rows",
+                            st["small"],
+                        ),
+                    ],
+                ],
+                [1.35 * inch, 1.75 * inch, 2.35 * inch, 1.15 * inch],
+                tiny=True,
+            ),
+            p(agent_weakness_paragraphs[0], st["body"]),
+            p(agent_weakness_paragraphs[1], st["body"]),
+            p(agent_weakness_paragraphs[2], st["body"]),
+            Spacer(1, 10),
             Table(
                 [
                     [
@@ -1054,6 +1203,7 @@ def story(doi: str) -> list:
                 "[8] L. Xiaopai. BuilderPulse: AI-powered daily intelligence for indie hackers and builders. GitHub, 2026. https://github.com/BuilderPulse/BuilderPulse",
                 st["reference"],
             ),
+            *[p(entry, st["reference"]) for entry in agent_weakness_reference_entries(agent_weakness_data)],
             Spacer(1, 9),
             Table(
                 [
@@ -1086,15 +1236,19 @@ def story(doi: str) -> list:
     return story
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf"),
+        default=NEXT_DRAFT_OUTPUT,
     )
     parser.add_argument("--doi", default="10.5281/zenodo.22167102")
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> None:
+    args = build_parser().parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     EvaluationDoc(str(args.output), doi=args.doi).build(story(args.doi))
     print(args.output)
