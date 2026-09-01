@@ -14,6 +14,7 @@ SCRIPT_PATH = Path("scripts/analyze_agent_weaknesses.py")
 DATA_PATH = Path("data/agent_weakness_evidence.yml")
 GUIDE_PATH = Path("docs/technical-report/agent-weakness-coding-guide.md")
 REVIEW_REPORT_PATH = Path("docs/technical-report/agent-weakness-independent-review.md")
+BLIND_PACKET_PATH = Path("docs/technical-report/agent-weakness-blinded-sample.md")
 
 FINE_CODES = [
     "goal_plan_drift",
@@ -157,6 +158,7 @@ def test_repository_task1_artifacts_exist_and_load():
 
 def test_repository_task2_secondary_review_is_complete():
     assert REVIEW_REPORT_PATH.exists(), f"missing independent review report: {REVIEW_REPORT_PATH}"
+    assert BLIND_PACKET_PATH.exists(), f"missing blind packet: {BLIND_PACKET_PATH}"
     module = _load_module()
 
     study = module.load_study(DATA_PATH)
@@ -184,23 +186,34 @@ def test_repository_task2_secondary_review_is_complete():
 
 def test_repository_task2_report_records_blind_review_and_adjudication_state():
     assert REVIEW_REPORT_PATH.exists(), f"missing independent review report: {REVIEW_REPORT_PATH}"
+    assert BLIND_PACKET_PATH.exists(), f"missing blind packet: {BLIND_PACKET_PATH}"
     module = _load_module()
 
     study = module.load_study(DATA_PATH)
     analysis = module.analyze_study(study)
     report_text = REVIEW_REPORT_PATH.read_text(encoding="utf-8")
+    blind_packet_text = BLIND_PACKET_PATH.read_text(encoding="utf-8")
 
     assert "independent Codex analyst" in report_text
     assert "blinded" in report_text
     assert "## Raw assignments" in report_text
     assert "## Disagreement and adjudication log" in report_text
+    assert str(BLIND_PACKET_PATH) in report_text
+    assert ".superpowers/" not in report_text
+    assert ".superpowers/" not in blind_packet_text
 
     sampled_rows = [row for row in study["rows"] if row["review"]["sampled_for_secondary_review"]]
     for row in sampled_rows:
         assert row["id"] in report_text
+        assert row["id"] in blind_packet_text
         assert row["primary_code"] in report_text
         assert row["review"]["secondary_code"] in report_text
         assert row["review"]["secondary_note"] in report_text
+        assert row["observed_evidence"] in blind_packet_text
+        assert row["evidence_location"] in blind_packet_text
+        assert row["limitations"] in blind_packet_text
+        assert row["plausible_counter_reading"] in blind_packet_text
+        assert row["primary_code"] not in blind_packet_text
 
     disagreements = analysis["agreement"]["disagreements"]
     if disagreements:
@@ -299,6 +312,148 @@ def test_load_study_rejects_demonstrated_row_without_authoritative_source(tmp_pa
     ]
 
     with pytest.raises(ValueError, match="authoritative source"):
+        module.load_study(_write_study(tmp_path, rows))
+
+
+@pytest.mark.parametrize("status", ["demonstrated", "design_implied", "unmeasured"])
+def test_load_study_rejects_rows_without_authoritative_source_url(tmp_path, status):
+    module = _load_module()
+    rows = [
+        _row(
+            "target-row",
+            status=status,
+            primary_code="goal_plan_drift",
+            source_url="",
+        ),
+        _row(
+            "other-design",
+            status="design_implied",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+        ),
+        _row(
+            "other-unmeasured",
+            status="unmeasured",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+    ]
+    if status == "design_implied":
+        rows[1] = _row(
+            "other-demonstrated",
+            status="demonstrated",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+        )
+    if status == "unmeasured":
+        rows[2] = _row(
+            "other-demonstrated",
+            status="demonstrated",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        )
+
+    with pytest.raises(ValueError, match="authoritative source URL"):
+        module.load_study(_write_study(tmp_path, rows))
+
+
+@pytest.mark.parametrize("status", ["demonstrated", "design_implied", "unmeasured"])
+def test_load_study_rejects_non_http_authoritative_source_url_for_all_statuses(tmp_path, status):
+    module = _load_module()
+    rows = [
+        _row(
+            "target-row",
+            status=status,
+            primary_code="goal_plan_drift",
+            source_url="doi:10.1234/example",
+        ),
+        _row(
+            "demo-support",
+            status="demonstrated",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+        ),
+        _row(
+            "design-support",
+            status="design_implied",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+        _row(
+            "unmeasured-support",
+            status="unmeasured",
+            primary_code="environment_grounding_state_tracking",
+            benchmark_family_id="family-d",
+            benchmark_family_name="Family D",
+            radar_query="Family D",
+        ),
+    ]
+    support_ids_by_status = {
+        "demonstrated": {"demo-support"},
+        "design_implied": {"design-support"},
+        "unmeasured": {"unmeasured-support"},
+    }
+    rows = [row for row in rows if row["id"] not in support_ids_by_status[status]]
+
+    with pytest.raises(ValueError, match="HTTP|http"):
+        module.load_study(_write_study(tmp_path, rows))
+
+
+@pytest.mark.parametrize("status", ["demonstrated", "design_implied", "unmeasured"])
+def test_load_study_rejects_section_only_evidence_location_for_all_statuses(tmp_path, status):
+    module = _load_module()
+    rows = [
+        _row(
+            "target-row",
+            status=status,
+            primary_code="goal_plan_drift",
+            evidence_location="Section 4",
+        ),
+        _row(
+            "demo-support",
+            status="demonstrated",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+        ),
+        _row(
+            "design-support",
+            status="design_implied",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+        _row(
+            "unmeasured-support",
+            status="unmeasured",
+            primary_code="environment_grounding_state_tracking",
+            benchmark_family_id="family-d",
+            benchmark_family_name="Family D",
+            radar_query="Family D",
+        ),
+    ]
+    support_ids_by_status = {
+        "demonstrated": {"demo-support"},
+        "design_implied": {"design-support"},
+        "unmeasured": {"unmeasured-support"},
+    }
+    rows = [row for row in rows if row["id"] not in support_ids_by_status[status]]
+
+    with pytest.raises(ValueError, match="replayable|evidence_location"):
         module.load_study(_write_study(tmp_path, rows))
 
 

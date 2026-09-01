@@ -245,30 +245,17 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
                 radar_record_id, label=f"{path}: row {row_id} radar_record_id"
             )
 
-        source_url = str(row.get("source_url") or "").strip()
-        if status == "demonstrated":
-            if not source_url:
-                raise ValueError(
-                    f"{path}: row {row_id} demonstrated rows require an authoritative source URL"
-                )
-            source_url = _require_http_url(
-                source_url, label=f"{path}: row {row_id} authoritative source"
-            )
-        elif source_url:
-            source_url = _require_http_url(
-                source_url, label=f"{path}: row {row_id} authoritative source"
-            )
+        source_url = _require_http_url(
+            _require_nonempty_string(
+                row.get("source_url"),
+                label=f"{path}: row {row_id} authoritative source URL",
+            ),
+            label=f"{path}: row {row_id} authoritative source",
+        )
 
-        evidence_location = (
-            _require_replayable_evidence_location(
-                row.get("evidence_location"),
-                label=f"{path}: row {row_id} evidence_location",
-            )
-            if status == "demonstrated"
-            else _require_nonempty_string(
-                row.get("evidence_location"),
-                label=f"{path}: row {row_id} evidence_location",
-            )
+        evidence_location = _require_replayable_evidence_location(
+            row.get("evidence_location"),
+            label=f"{path}: row {row_id} evidence_location",
         )
 
         review = _require_mapping(row.get("review"), label=f"{path}: row {row_id} review")
