@@ -5,7 +5,10 @@ import sys
 import types
 from pathlib import Path
 
+import yaml
+
 SCRIPT_PATH = Path("scripts/build_system_evaluation.py")
+DATA_PATH = Path("data/agent_weakness_evidence.yml")
 
 
 class _FakeParagraph:
@@ -168,6 +171,14 @@ def _load_module():
     return module
 
 
+def _write_modified_study(tmp_path: Path, transform) -> Path:
+    study = yaml.safe_load(DATA_PATH.read_text(encoding="utf-8"))
+    transform(study)
+    path = tmp_path / "study.yml"
+    path.write_text(yaml.safe_dump(study, sort_keys=False), encoding="utf-8")
+    return path
+
+
 def _collect_text(node) -> list[str]:
     if isinstance(node, _FakeParagraph):
         return [node.text]
@@ -183,6 +194,23 @@ def _collect_text(node) -> list[str]:
             texts.extend(_collect_text(item))
         return texts
     return []
+
+
+def _agent_section_flowables(story) -> list[object]:
+    start = None
+    end = None
+    for index, item in enumerate(story):
+        if isinstance(item, _FakeParagraph) and item.text == (
+            "6.5 Selected benchmark-family signal on agent weaknesses"
+        ):
+            start = index + 1
+            continue
+        if start is not None and isinstance(item, _FakeTable) and "Use it" in _collect_text(item):
+            end = index
+            break
+    assert start is not None
+    assert end is not None
+    return story[start:end]
 
 
 def test_default_output_targets_next_draft():
@@ -215,6 +243,7 @@ def test_agent_weakness_section_reports_bounded_result_and_method():
     assert report_data["demonstrated_family_count"] == 9
     assert report_data["state_control_count"] == 7
     assert report_data["decision_execution_count"] == 2
+    assert report_data["agreement_match_count"] == 4
     assert report_data["completed_secondary_review_count"] == 4
     assert report_data["sampled_secondary_review_count"] == 4
     assert report_data["design_implied_count"] == 1
@@ -240,13 +269,52 @@ def test_agent_weakness_section_reports_bounded_result_and_method():
     assert "does not establish broad reliability" in section_text
     assert "SciCode" in section_text
     assert "instrument counterexample" in section_text
-    assert "measurement implications and limits" in section_text.lower()
+    assert "not exhaustive" in section_text
+    assert len(paragraphs) == 2
+
+
+def test_disagreement_fixture_uses_agreement_match_count_not_completed_count(tmp_path):
+    module = _load_module()
+
+    def transform(study):
+        sampled_ids = {
+            "osworld2_hidden_state",
+            "swe_science_misguided_exploration",
+            "researchclawbench_protocol_drift",
+        }
+        for row in study["rows"]:
+            review = row["review"]
+            review["sampled_for_secondary_review"] = row["id"] in sampled_ids
+            if row["id"] == "osworld2_hidden_state":
+                review["secondary_code"] = row["primary_code"]
+                review["secondary_note"] = "Match."
+            elif row["id"] == "swe_science_misguided_exploration":
+                review["secondary_code"] = "goal_plan_drift"
+                review["secondary_note"] = "Disagreement."
+            elif row["id"] == "researchclawbench_protocol_drift":
+                review["secondary_code"] = row["primary_code"]
+                review["secondary_note"] = "Match."
+            else:
+                review["secondary_code"] = None
+                review["secondary_note"] = None
+
+    study_path = _write_modified_study(tmp_path, transform)
+    report_data = module.load_agent_weakness_report_data(study_path)
+    paragraphs = module.agent_weakness_section_paragraphs(report_data)
+    section_text = "\n".join(paragraphs)
+
+    assert report_data["sampled_secondary_review_count"] == 3
+    assert report_data["completed_secondary_review_count"] == 3
+    assert report_data["agreement_match_count"] == 2
+    assert "2/3" in section_text
+    assert "3/3" not in section_text
 
 
 def test_story_places_agent_weakness_subsection_before_use_it_and_adds_primary_sources():
     module = _load_module()
 
-    texts = _collect_text(module.story("10.5281/zenodo.22167102"))
+    story = module.story("10.5281/zenodo.22167102")
+    texts = _collect_text(story)
 
     subsection_index = texts.index("6.5 Selected benchmark-family signal on agent weaknesses")
     use_it_index = texts.index("Use it")
@@ -260,3 +328,11 @@ def test_story_places_agent_weakness_subsection_before_use_it_and_adds_primary_s
         "[18] Primary-source evidence for SciCode. https://arxiv.org/abs/2608.04975"
         in texts
     )
+
+    section_flowables = _agent_section_flowables(story)
+    assert len(section_flowables) == 3
+    assert isinstance(section_flowables[0], _FakeTable)
+    assert isinstance(section_flowables[1], _FakeParagraph)
+    assert section_flowables[1].style == "body"
+    assert isinstance(section_flowables[2], _FakeParagraph)
+    assert section_flowables[2].style == "small"

@@ -89,6 +89,8 @@ def load_agent_weakness_report_data(
         references.append({"family_name": family_name, "source_url": source_url})
 
     agreement = analysis["agreement"]
+    disagreement_count = len(agreement["disagreements"])
+    agreement_match_count = agreement["completed_row_count"] - disagreement_count
     return {
         "issue_number": AGENT_WEAKNESS_ISSUE_NUMBER,
         "issue_url": AGENT_WEAKNESS_ISSUE_URL,
@@ -101,6 +103,8 @@ def load_agent_weakness_report_data(
         "decision_execution_count": analysis["coarse_recurrence"]["decision_execution"][
             "family_count"
         ],
+        "agreement_match_count": agreement_match_count,
+        "agreement_disagreement_count": disagreement_count,
         "completed_secondary_review_count": agreement["completed_row_count"],
         "sampled_secondary_review_count": agreement["sampled_row_count"],
         "design_implied_count": analysis["status_counts"]["design_implied"],
@@ -114,6 +118,7 @@ def agent_weakness_section_paragraphs(report_data: dict[str, Any]) -> list[str]:
     demonstrated = report_data["demonstrated_family_count"]
     state_control = report_data["state_control_count"]
     decision_execution = report_data["decision_execution_count"]
+    agreement_matches = report_data["agreement_match_count"]
     reviewed = report_data["completed_secondary_review_count"]
     reviewed_total = report_data["sampled_secondary_review_count"]
     design_implied = report_data["design_implied_count"]
@@ -123,34 +128,27 @@ def agent_weakness_section_paragraphs(report_data: dict[str, Any]) -> list[str]:
         (
             f"Across {demonstrated} demonstrated benchmark families in the issue "
             f"#{report_data['issue_number']} selected sample, the family-deduplicated denominator "
-            f"leans toward state-control evidence: {state_control}/{demonstrated} families land in "
+            f"shows a state-control-heavy pattern: {state_control}/{demonstrated} families fall in "
             f"the coarse state-control grouping, versus {decision_execution}/{demonstrated} in "
-            "decision-execution. This is a bounded selected sample, not a field-wide prevalence "
+            "decision-execution. This bounded selected sample is not a field-wide prevalence "
             "estimate."
         ),
         (
-            f"This subsection summarizes the issue #{report_data['issue_number']} coding study "
-            f"contributed by {report_data['contributor']} ({report_data['issue_url']}). It uses "
+            f"Method and limits: {report_data['contributor']} coded issue "
+            f"#{report_data['issue_number']} ({report_data['issue_url']}) from "
             f"data/agent_weakness_evidence.yml at snapshot date {report_data['snapshot_date']}, "
-            f"evidence cutoff {report_data['evidence_cutoff']}, and repository commit input "
-            f"{report_data['repository_commit_input']}. Each included row required one benchmark-"
-            "family identity, one primary-source evidence anchor, one same-family counterexample, "
-            "and family deduplication before recurrence counts. The demonstrated denominator keeps "
-            f"{design_implied} design-implied row and {unmeasured} unmeasured row separate from "
-            "the demonstrated prevalence count."
-        ),
-        (
-            f"Measurement implications and limits: independent secondary coding matched the primary "
-            f"code on {reviewed}/{reviewed_total} blinded sampled rows, which does not establish "
-            "broad reliability beyond this packet. "
-            f"{measurement_counterexamples} is the key instrument counterexample: its audit shows "
-            "that benchmark corrections can convert an apparent verification/completion failure "
-            "into much higher measured accuracy, so it is treated as an instrument counterexample "
-            "and unmeasured rather than as demonstrated prevalence evidence. Primary-source "
-            "benchmark evidence for the demonstrated families and the SciCode instrument check "
-            "appears in the cited benchmark papers and audits [9-18]. Limits remain substantial "
-            "because the sample is benchmark-family selected, not exhaustive, and depends on what "
-            "current public benchmarks actually measure and report."
+            f"evidence cutoff {report_data['evidence_cutoff']}, and commit input "
+            f"{report_data['repository_commit_input']}. The demonstrated denominator excludes "
+            f"{design_implied} design-implied row and {unmeasured} unmeasured row; each included "
+            f"family needed a primary-source anchor, a same-family counterexample, and family "
+            f"deduplication. Independent secondary coding matched on {agreement_matches}/{reviewed} "
+            f"completed blinded sampled rows out of {reviewed_total} sampled rows; the 4/4 sample-"
+            "local result in the main packet does not establish broad reliability. "
+            f"{measurement_counterexamples} remains the instrument counterexample rather than "
+            "demonstrated prevalence evidence, because its audit shows that benchmark correction can "
+            "reverse an apparent verification/completion failure signal. Primary-source benchmark "
+            "evidence and the SciCode audit are cited in [9-18]. The sample is benchmark-family "
+            "selected, not exhaustive, and limited by what current public benchmarks measure."
         ),
     ]
 
@@ -1053,39 +1051,26 @@ def story(doi: str) -> list:
                 ],
                 [0.55 * inch, 3.35 * inch, 2.70 * inch],
             ),
-            Spacer(1, 10),
             p(AGENT_WEAKNESS_SECTION_TITLE, st["subsection"]),
             table(
                 [
                     [
-                        p("Sample", st["table_header"]),
-                        p("Demonstrated families", st["table_header"]),
-                        p("Coarse recurrence", st["table_header"]),
-                        p("Independent agreement", st["table_header"]),
+                        p("Scope", st["table_header"]),
+                        p("Result", st["table_header"]),
                     ],
                     [
-                        p("Issue #455 selected sample", st["small_bold"]),
+                        p("Issue #455 selected sample", tiny),
                         p(
-                            f"{agent_weakness_data['demonstrated_family_count']} family-deduplicated demonstrated families",
-                            st["small"],
-                        ),
-                        p(
-                            f"State-control {agent_weakness_data['state_control_count']}/{agent_weakness_data['demonstrated_family_count']}; decision-execution {agent_weakness_data['decision_execution_count']}/{agent_weakness_data['demonstrated_family_count']}",
-                            st["small"],
-                        ),
-                        p(
-                            f"{agent_weakness_data['completed_secondary_review_count']}/{agent_weakness_data['sampled_secondary_review_count']} blinded sampled rows",
-                            st["small"],
+                            f"{agent_weakness_data['demonstrated_family_count']} demonstrated families; {agent_weakness_data['state_control_count']}/{agent_weakness_data['demonstrated_family_count']} state-control; {agent_weakness_data['decision_execution_count']}/{agent_weakness_data['demonstrated_family_count']} decision-execution; {agent_weakness_data['agreement_match_count']}/{agent_weakness_data['completed_secondary_review_count']} agreement matches across {agent_weakness_data['sampled_secondary_review_count']} blinded sampled rows",
+                            tiny,
                         ),
                     ],
                 ],
-                [1.35 * inch, 1.75 * inch, 2.35 * inch, 1.15 * inch],
+                [1.55 * inch, 5.05 * inch],
                 tiny=True,
             ),
             p(agent_weakness_paragraphs[0], st["body"]),
-            p(agent_weakness_paragraphs[1], st["body"]),
-            p(agent_weakness_paragraphs[2], st["body"]),
-            Spacer(1, 10),
+            p(agent_weakness_paragraphs[1], st["small"]),
             Table(
                 [
                     [
