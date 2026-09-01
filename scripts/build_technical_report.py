@@ -234,8 +234,8 @@ def metric_strip(st: dict[str, ParagraphStyle]) -> Table:
         "model cards and<br/>release documents",
     ]
     cells = []
-    for value, label in zip(values, labels, strict=True):
-        cells.append([p(value, st["metric"]), p(label, st["metric_label"])])
+    for index, value in enumerate(values):
+        cells.append([p(value, st["metric"]), p(labels[index], st["metric_label"])])
     table = Table([cells], colWidths=[1.65 * inch] * 4, rowHeights=[0.76 * inch])
     table.setStyle(
         TableStyle(
@@ -264,7 +264,8 @@ def pipeline_figure() -> Drawing:
         ("QUERY", "offline CLI + HTTP"),
     ]
     x_positions = [2, 103, 204, 305, 406]
-    for index, ((title, caption), x) in enumerate(zip(labels, x_positions, strict=True)):
+    for index, x in enumerate(x_positions):
+        title, caption = labels[index]
         fill = SKY if index % 2 == 0 else PALE_TEAL
         stroke = BLUE if index % 2 == 0 else TEAL
         drawing.add(Rect(x, 18, 90, 56, 7, 7, fillColor=fill, strokeColor=stroke, strokeWidth=1))

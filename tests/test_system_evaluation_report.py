@@ -402,6 +402,88 @@ def test_partial_review_fixture_reports_completed_agreement_and_pending_rows(tmp
     assert "2/4" not in section_text
 
 
+def test_pending_only_review_fixture_reports_no_completed_secondary_reviews(tmp_path, monkeypatch):
+    module = _load_module()
+
+    def transform(study):
+        sampled_ids = {
+            "osworld2_hidden_state",
+            "swe_science_misguided_exploration",
+            "researchclawbench_protocol_drift",
+            "scicode_instrument_gap",
+        }
+        for row in study["rows"]:
+            review = row["review"]
+            review["sampled_for_secondary_review"] = row["id"] in sampled_ids
+            review["secondary_code"] = None
+            review["secondary_note"] = None
+
+    study_path = _write_modified_study(tmp_path, transform)
+    report_data = module.load_agent_weakness_report_data(study_path)
+    paragraphs = module.agent_weakness_section_paragraphs(report_data)
+    section_text = "\n".join(paragraphs)
+
+    assert report_data["sampled_secondary_review_count"] == 4
+    assert report_data["completed_secondary_review_count"] == 0
+    assert report_data["pending_secondary_review_count"] == 4
+    assert "0/0" not in section_text
+    assert (
+        "No completed blinded sampled rows yet; 4 pending sampled rows out of 4 sampled rows."
+        in section_text
+    )
+
+    monkeypatch.setattr(
+        module, "load_agent_weakness_report_data", lambda source_path=study_path: report_data
+    )
+    story = module.story("10.5281/zenodo.22167102")
+    table_text = "\n".join(_collect_text(_agent_section_flowables(story)[0]))
+
+    assert "0/0" not in table_text
+    assert (
+        "No completed secondary reviews yet; 4 pending sampled rows out of 4 sampled rows"
+        in table_text
+    )
+
+
+def test_no_sampled_review_fixture_reports_zero_pending_without_zero_fraction(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+
+    def transform(study):
+        for row in study["rows"]:
+            review = row["review"]
+            review["sampled_for_secondary_review"] = False
+            review["secondary_code"] = None
+            review["secondary_note"] = None
+
+    study_path = _write_modified_study(tmp_path, transform)
+    report_data = module.load_agent_weakness_report_data(study_path)
+    paragraphs = module.agent_weakness_section_paragraphs(report_data)
+    section_text = "\n".join(paragraphs)
+
+    assert report_data["sampled_secondary_review_count"] == 0
+    assert report_data["completed_secondary_review_count"] == 0
+    assert report_data["pending_secondary_review_count"] == 0
+    assert "0/0" not in section_text
+    assert (
+        "No completed blinded sampled rows yet; 0 pending sampled rows out of 0 sampled rows."
+        in section_text
+    )
+
+    monkeypatch.setattr(
+        module, "load_agent_weakness_report_data", lambda source_path=study_path: report_data
+    )
+    story = module.story("10.5281/zenodo.22167102")
+    table_text = "\n".join(_collect_text(_agent_section_flowables(story)[0]))
+
+    assert "0/0" not in table_text
+    assert (
+        "No completed secondary reviews yet; 0 pending sampled rows out of 0 sampled rows"
+        in table_text
+    )
+
+
 def test_story_places_agent_weakness_subsection_before_use_it_and_adds_primary_sources():
     module = _load_module()
 

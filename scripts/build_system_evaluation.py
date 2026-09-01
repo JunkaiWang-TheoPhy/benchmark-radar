@@ -113,22 +113,60 @@ def load_agent_weakness_report_data(
     }
 
 
-def agent_weakness_section_paragraphs(report_data: dict[str, Any]) -> list[str]:
-    demonstrated = report_data["demonstrated_family_count"]
-    state_control = report_data["state_control_count"]
-    decision_execution = report_data["decision_execution_count"]
+def _pending_sampled_rows_text(pending_reviews: int, reviewed_total: int) -> str:
+    return (
+        f"{pending_reviews} pending sampled row{'' if pending_reviews == 1 else 's'} "
+        f"out of {reviewed_total} sampled row{'' if reviewed_total == 1 else 's'}"
+    )
+
+
+def _agreement_summary_table_text(report_data: dict[str, Any]) -> str:
     agreement_matches = report_data["agreement_match_count"]
     reviewed = report_data["completed_secondary_review_count"]
     reviewed_total = report_data["sampled_secondary_review_count"]
     pending_reviews = report_data["pending_secondary_review_count"]
-    design_implied = report_data["design_implied_count"]
-    unmeasured = report_data["unmeasured_count"]
-    measurement_counterexamples = ", ".join(report_data["measurement_counterexample_only"])
+    if reviewed == 0:
+        return (
+            "No completed secondary reviews yet; "
+            f"{_pending_sampled_rows_text(pending_reviews, reviewed_total)}"
+        )
+    return (
+        f"{agreement_matches}/{reviewed} agreement matches across {reviewed_total} "
+        "blinded sampled rows"
+    )
+
+
+def _agreement_summary_paragraph_text(report_data: dict[str, Any]) -> str:
+    agreement_matches = report_data["agreement_match_count"]
+    reviewed = report_data["completed_secondary_review_count"]
+    reviewed_total = report_data["sampled_secondary_review_count"]
+    pending_reviews = report_data["pending_secondary_review_count"]
+    if reviewed == 0:
+        return (
+            "No completed blinded sampled rows yet; "
+            f"{_pending_sampled_rows_text(pending_reviews, reviewed_total)}."
+        )
+
     pending_clause = (
         f" and {pending_reviews} pending sampled row{'' if pending_reviews == 1 else 's'}"
         if pending_reviews
         else ""
     )
+    return (
+        f"Independent secondary coding matched on {agreement_matches}/{reviewed} completed "
+        f"blinded sampled rows{pending_clause} out of {reviewed_total} sampled rows; "
+        f"the {agreement_matches}/{reviewed} sample-local result among completed rows in the "
+        "main packet does not establish broad reliability."
+    )
+
+
+def agent_weakness_section_paragraphs(report_data: dict[str, Any]) -> list[str]:
+    demonstrated = report_data["demonstrated_family_count"]
+    state_control = report_data["state_control_count"]
+    decision_execution = report_data["decision_execution_count"]
+    design_implied = report_data["design_implied_count"]
+    unmeasured = report_data["unmeasured_count"]
+    measurement_counterexamples = ", ".join(report_data["measurement_counterexample_only"])
     return [
         (
             f"Across {demonstrated} demonstrated benchmark families in the issue "
@@ -146,11 +184,7 @@ def agent_weakness_section_paragraphs(report_data: dict[str, Any]) -> list[str]:
             f"{report_data['repository_commit_input']}. The demonstrated denominator excludes "
             f"{design_implied} design-implied row and {unmeasured} unmeasured row; each included "
             f"family needed a primary-source anchor, a same-family counterexample, and family "
-            f"deduplication. Independent secondary coding matched on {agreement_matches}/{reviewed} "
-            f"completed blinded sampled rows{pending_clause} out of {reviewed_total} sampled rows; "
-            f"the {agreement_matches}/{reviewed} sample-local result among completed rows in the "
-            "main packet does not "
-            "establish broad reliability. "
+            f"deduplication. {_agreement_summary_paragraph_text(report_data)} "
             f"{measurement_counterexamples} remains the instrument counterexample rather than "
             "demonstrated prevalence evidence, because its audit shows that benchmark correction can "
             "reverse an apparent verification/completion failure signal. Primary-source benchmark "
@@ -201,8 +235,8 @@ def metric_strip(st) -> Table:
         "public collection<br/>sources monitored",
     ]
     cells = [
-        [p(value, st["metric"]), p(label, st["metric_label"])]
-        for value, label in zip(values, labels, strict=True)
+        [p(value, st["metric"]), p(labels[index], st["metric_label"])]
+        for index, value in enumerate(values)
     ]
     return Table(
         [cells],
@@ -1068,7 +1102,7 @@ def story(doi: str) -> list:
                     [
                         p("Issue #455 selected sample", tiny),
                         p(
-                            f"{agent_weakness_data['demonstrated_family_count']} demonstrated families; {agent_weakness_data['state_control_count']}/{agent_weakness_data['demonstrated_family_count']} state-control; {agent_weakness_data['decision_execution_count']}/{agent_weakness_data['demonstrated_family_count']} decision-execution; {agent_weakness_data['agreement_match_count']}/{agent_weakness_data['completed_secondary_review_count']} agreement matches across {agent_weakness_data['sampled_secondary_review_count']} blinded sampled rows",
+                            f"{agent_weakness_data['demonstrated_family_count']} demonstrated families; {agent_weakness_data['state_control_count']}/{agent_weakness_data['demonstrated_family_count']} state-control; {agent_weakness_data['decision_execution_count']}/{agent_weakness_data['demonstrated_family_count']} decision-execution; {_agreement_summary_table_text(agent_weakness_data)}",
                             tiny,
                         ),
                     ],

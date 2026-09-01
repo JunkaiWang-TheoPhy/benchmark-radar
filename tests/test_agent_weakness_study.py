@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import csv
 import importlib.util
 import json
@@ -46,6 +47,7 @@ def _row(
     source_url: str = "https://example.com/paper",
     source_kind: str = "paper",
     evidence_location: str = "Table 1; paragraph p1.1",
+    published_date: str = "2026-08-01",
     observed_evidence: str | None = None,
     sampled: bool = False,
     secondary_code: str | None = None,
@@ -62,7 +64,7 @@ def _row(
         "authoritative_source_kind": source_kind,
         "source_url": source_url,
         "evidence_location": evidence_location,
-        "published_date": "2026-08-01",
+        "published_date": published_date,
         "observed_evidence": observed_evidence
         or f"Observed evidence for {primary_code} in {benchmark_family_name}.",
         "limitations": "Single benchmark family; not a field-wide estimate.",
@@ -682,6 +684,123 @@ def test_load_study_rejects_measurement_counterexample_as_demonstrated(tmp_path)
                 rows,
                 demonstrated_family_scope=["Family A", "SciCode"],
                 measurement_counterexample_only=["SciCode"],
+            )
+        )
+
+
+@pytest.mark.parametrize("status", ["demonstrated", "design_implied", "unmeasured"])
+def test_load_study_enforces_evidence_cutoff_boundary_and_preserves_date_strings(tmp_path, status):
+    module = _load_module()
+    rows = [
+        _row(
+            "target-row",
+            status=status,
+            primary_code="goal_plan_drift",
+            published_date="2026-09-01",
+        ),
+        _row(
+            "demo-support",
+            status="demonstrated",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+            radar_record_id="family-b",
+        ),
+        _row(
+            "design-support",
+            status="design_implied",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+            radar_record_id="family-c",
+        ),
+        _row(
+            "unmeasured-support",
+            status="unmeasured",
+            primary_code="environment_grounding_state_tracking",
+            benchmark_family_id="family-d",
+            benchmark_family_name="Family D",
+            radar_query="Family D",
+            radar_record_id="family-d",
+        ),
+    ]
+    support_ids_by_status = {
+        "demonstrated": {"demo-support"},
+        "design_implied": {"design-support"},
+        "unmeasured": {"unmeasured-support"},
+    }
+    rows = [row for row in rows if row["id"] not in support_ids_by_status[status]]
+
+    study = module.load_study(_write_study(tmp_path, rows))
+    loaded_row = next(row for row in study["rows"] if row["id"] == "target-row")
+    assert loaded_row["published_date"] == "2026-09-01"
+    assert study["study"]["evidence_cutoff"] == "2026-09-01"
+
+    late_rows = copy.deepcopy(rows)
+    late_rows[0]["published_date"] = "2026-09-02"
+
+    with pytest.raises(ValueError, match="published_date|evidence_cutoff|2026-09-02|2026-09-01"):
+        module.load_study(_write_study(tmp_path, late_rows))
+
+
+@pytest.mark.parametrize("status", ["demonstrated", "design_implied", "unmeasured"])
+def test_load_study_rejects_excluded_family_in_any_coded_status(tmp_path, status):
+    module = _load_module()
+    rows = [
+        _row(
+            "target-row",
+            status=status,
+            primary_code="goal_plan_drift",
+            benchmark_family_id="excluded-family",
+            benchmark_family_name="ToolFailBench",
+            radar_query="ToolFailBench",
+            radar_record_id="excluded-family",
+        ),
+        _row(
+            "demo-support",
+            status="demonstrated",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+            radar_record_id="family-b",
+        ),
+        _row(
+            "design-support",
+            status="design_implied",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+            radar_record_id="family-c",
+        ),
+        _row(
+            "unmeasured-support",
+            status="unmeasured",
+            primary_code="environment_grounding_state_tracking",
+            benchmark_family_id="family-d",
+            benchmark_family_name="Family D",
+            radar_query="Family D",
+            radar_record_id="family-d",
+        ),
+    ]
+    support_ids_by_status = {
+        "demonstrated": {"demo-support"},
+        "design_implied": {"design-support"},
+        "unmeasured": {"unmeasured-support"},
+    }
+    rows = [row for row in rows if row["id"] not in support_ids_by_status[status]]
+    demonstrated_scope = ["ToolFailBench"] if status == "demonstrated" else ["Family B"]
+
+    with pytest.raises(ValueError, match="excluded_families|ToolFailBench"):
+        module.load_study(
+            _write_study(
+                tmp_path,
+                rows,
+                demonstrated_family_scope=demonstrated_scope,
+                excluded_families=["ToolFailBench", "General AgentBench"],
             )
         )
 

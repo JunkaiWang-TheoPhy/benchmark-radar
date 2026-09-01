@@ -92,6 +92,10 @@ def _require_date(value: Any, *, label: str) -> str:
     return text
 
 
+def _date_value(value: str) -> date:
+    return date.fromisoformat(value)
+
+
 def _require_http_url(value: Any, *, label: str) -> str:
     text = str(value or "").strip()
     if not text.startswith(("https://", "http://")):
@@ -215,6 +219,10 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
         coarse_grouping[coarse_name] = normalized_codes
     coarse_lookup = _coarse_lookup(coarse_grouping)
 
+    snapshot_date = _require_date(study.get("snapshot_date"), label=f"{path}: snapshot_date")
+    evidence_cutoff = _require_date(study.get("evidence_cutoff"), label=f"{path}: evidence_cutoff")
+    evidence_cutoff_value = _date_value(evidence_cutoff)
+
     demonstrated_family_scope = _require_string_list(
         study.get("demonstrated_family_scope"),
         label=f"{path}: demonstrated_family_scope",
@@ -279,6 +287,14 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
             row.get("evidence_location"),
             label=f"{path}: row {row_id} evidence_location",
         )
+        published_date = _require_date(
+            row.get("published_date"), label=f"{path}: row {row_id} published_date"
+        )
+        if _date_value(published_date) > evidence_cutoff_value:
+            raise ValueError(
+                f"{path}: row {row_id} published_date {published_date} is later than "
+                f"evidence_cutoff {evidence_cutoff}"
+            )
 
         review = _require_mapping(row.get("review"), label=f"{path}: row {row_id} review")
         sampled = review.get("sampled_for_secondary_review")
@@ -316,9 +332,7 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
                 ),
                 "source_url": source_url,
                 "evidence_location": evidence_location,
-                "published_date": _require_date(
-                    row.get("published_date"), label=f"{path}: row {row_id} published_date"
-                ),
+                "published_date": published_date,
                 "observed_evidence": _require_nonempty_string(
                     row.get("observed_evidence"), label=f"{path}: row {row_id} observed_evidence"
                 ),
@@ -353,6 +367,15 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
 
     _validate_benchmark_family_identity(normalized_rows, path=path)
 
+    excluded_family_overlap = sorted(
+        set(excluded_families) & {row["benchmark_family_name"] for row in normalized_rows}
+    )
+    if excluded_family_overlap:
+        raise ValueError(
+            f"{path}: excluded_families must be disjoint from coded row families: "
+            f"{', '.join(excluded_family_overlap)}"
+        )
+
     demonstrated_family_names = {
         row["benchmark_family_name"] for row in normalized_rows if row["status"] == "demonstrated"
     }
@@ -378,10 +401,8 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
 
     normalized_study = {
         **study,
-        "snapshot_date": _require_date(study.get("snapshot_date"), label=f"{path}: snapshot_date"),
-        "evidence_cutoff": _require_date(
-            study.get("evidence_cutoff"), label=f"{path}: evidence_cutoff"
-        ),
+        "snapshot_date": snapshot_date,
+        "evidence_cutoff": evidence_cutoff,
         "repository_commit_input": _require_nonempty_string(
             study.get("repository_commit_input"),
             label=f"{path}: repository_commit_input",
@@ -402,9 +423,11 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
 def _cohens_kappa(primary: list[str], secondary: list[str], categories: list[str]) -> float | None:
     if not primary:
         return None
-    observed = sum(
-        1 for left, right in zip(primary, secondary, strict=True) if left == right
-    ) / len(primary)
+    if len(primary) != len(secondary):
+        raise ValueError("agreement inputs must have the same length")
+    observed = sum(1 for index, left in enumerate(primary) if left == secondary[index]) / len(
+        primary
+    )
     primary_distribution = Counter(primary)
     secondary_distribution = Counter(secondary)
     expected = sum(
@@ -458,7 +481,7 @@ def analyze_study(study: dict[str, Any]) -> dict[str, Any]:
     primary_codes = [row["primary_code"] for row in completed_rows]
     secondary_codes = [row["review"]["secondary_code"] for row in completed_rows]
     percent_agreement = (
-        sum(1 for left, right in zip(primary_codes, secondary_codes, strict=True) if left == right)
+        sum(1 for index, left in enumerate(primary_codes) if left == secondary_codes[index])
         / len(completed_rows)
         if completed_rows
         else None
