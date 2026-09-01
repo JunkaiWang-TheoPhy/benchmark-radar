@@ -120,6 +120,17 @@ def test_registry_content_must_match_the_pre_registered_source_hash(tmp_path):
         )
 
 
+def test_absolute_registry_argument_emits_the_canonical_source_path():
+    module = _load_module()
+
+    result = module.generate_vendor_attention_audit(
+        registry_path=REGISTRY.resolve(),
+        spec_path=SPEC,
+    )
+
+    assert result["claim_audit"]["source_path"] == "data/model_cards.yml"
+
+
 def test_source_commit_must_be_an_immutable_oid_resolving_to_the_registry_bytes():
     module = _load_module()
     audit = yaml.safe_load(SPEC.read_text(encoding="utf-8"))["audit"]

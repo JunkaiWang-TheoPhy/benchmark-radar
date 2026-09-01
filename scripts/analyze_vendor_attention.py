@@ -729,7 +729,7 @@ def generate_vendor_attention_audit(
         "issue_url": audit["issue_url"],
         "preregistration_url": audit["preregistration_url"],
         "contributor": audit["contributor"],
-        "source_path": str(registry_path),
+        "source_path": str(audit["source_path"]),
         "source_commit": audit["source_commit"],
         "source_sha256": actual_registry_sha256,
         "source_commit_verified": True,
