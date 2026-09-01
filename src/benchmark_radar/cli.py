@@ -590,10 +590,10 @@ def main() -> None:
 
     if args.command == "export":
         dashboard_url = config.get("publish", {}).get("dashboard_url")
-        # `?view=leaderboard` rather than the dashboard root: a reader arriving
-        # from a cited CSV is looking for the ranking, and the root opens on the
-        # daily Today list instead.
-        source_url = f"{dashboard_url}?view=leaderboard" if dashboard_url else None
+        # The leaderboard page rather than the dashboard root: a reader
+        # arriving from a cited CSV is looking for the ranking, and the root
+        # opens on the daily Today list instead.
+        source_url = f"{dashboard_url}leaderboard/" if dashboard_url else None
         written = write_exports(
             args.export_dir,
             registry_path=args.model_cards,

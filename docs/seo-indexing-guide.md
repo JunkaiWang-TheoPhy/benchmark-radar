@@ -129,19 +129,24 @@ JSON-LD. Validate the live HTML with Google's
 [Rich Results Test](https://search.google.com/test/rich-results) after every
 metadata change.
 
-The dashboard views remain query states in the JavaScript application:
+Each dashboard view is a real page at its own path:
 
 ```text
-/?view=leaderboard
-/?view=trends
-/?view=map
+/leaderboard/
+/trends/
+/explore/
 ```
 
-The generated site now gives those search intents stable, server-delivered
-paths: `/leaderboard/`, `/trends/`, and `/explore/`. Each returns useful text,
-data highlights, caveats, metadata, and its canonical in the initial HTML. The
-interactive query state canonicalizes to its matching static path. Filter
-permutations stay out of the sitemap so they do not create thin duplicates.
+These are the dashboard, not summaries of it. Each one is written from
+`site/index.html`, so it carries the same design and the same controls, and it
+arrives with its own title, summary, canonical, breadcrumb, and a first screen
+of real rows before any script runs. The script then takes over and the page
+behaves like the rest of the dashboard.
+
+The old `/?view=leaderboard` style of link still works and is rewritten to the
+matching path in the browser, keeping any filters the reader arrived with. Those
+query URLs are not listed in the sitemap, and neither are filter permutations:
+a second URL for a page that already has one is a duplicate, not a second page.
 
 The same rule applies to the evidence blog. `/blog/` shows recent briefs,
 `/blog/archive/` lists the full history, and `/blog/YYYY-MM-DD/` gives every

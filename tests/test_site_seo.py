@@ -95,15 +95,17 @@ def test_published_head_and_robots_match_the_generated_sitemap():
     assert 'link[rel="canonical"]' in script
     assert 'new URL(seo.canonical, "https://benchmark-radar.org")' in script
 
-    # Dashboard query states consolidate onto the static paths published in
-    # the sitemap; a view added to one side must land on the other.
+    # Each view is published at the path its canonical names; a view added to
+    # one side must land on the other.
     for _, path in INDEXABLE_VIEWS:
         assert f'canonical: "{path}"' in script
 
-    assert 'href="https://benchmark-radar.org/leaderboard/"' in html
-    assert 'href="https://benchmark-radar.org/trends/"' in html
-    assert 'href="https://benchmark-radar.org/explore/"' in html
-    assert 'href="https://benchmark-radar.org/blog/"' in html
+    # Root-relative in the dashboard: the same document is served at each of
+    # these paths, so the links must resolve identically from all of them.
+    assert 'href="/leaderboard/"' in html
+    assert 'href="/trends/"' in html
+    assert 'href="/explore/"' in html
+    assert 'href="/blog/"' in html
 
     # robots.txt points at the sitemap URL the build actually writes.
     sitemap_url = f"{SITE_URL}/sitemap.xml"
@@ -127,7 +129,7 @@ def test_structured_data_describes_a_searchable_site_and_a_dataset():
     target = website["potentialAction"]["target"]["urlTemplate"]
     # The search endpoint is the leaderboard's real lq filter, not a pretend one.
     assert "{search_term_string}" in target
-    assert "?view=leaderboard&lq={search_term_string}" in target
+    assert "/leaderboard/?lq={search_term_string}" in target
     assert website["potentialAction"]["query-input"] == "required name=search_term_string"
 
     dataset = next(block for block in blocks if block["@type"] == "Dataset")
