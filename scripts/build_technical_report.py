@@ -45,6 +45,7 @@ PAGE_W, PAGE_H = letter
 MARGIN_X = 0.68 * inch
 TOP = 0.62 * inch
 BOTTOM = 0.62 * inch
+NEXT_DRAFT_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-next-draft.pdf")
 
 
 def register_fonts() -> tuple[str, str, str]:
@@ -697,19 +698,23 @@ def report_story(doi: str) -> list:
     return story
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf"),
+        default=NEXT_DRAFT_OUTPUT,
     )
     parser.add_argument(
         "--doi",
         default="10.5281/zenodo.22167102",
         help="Reserved DOI without the https://doi.org/ prefix.",
     )
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> None:
+    args = build_parser().parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     # Keep the original entry point working while the expanded system audit
     # lives in its own readable source module.

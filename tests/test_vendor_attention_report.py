@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 REPORT_BUILDER = Path("scripts/build_system_evaluation.py")
+LEGACY_REPORT_BUILDER = Path("scripts/build_technical_report.py")
 REPORT_README = Path("docs/technical-report/README.md")
 REPORT_NARRATIVE = Path("docs/technical-report/vendor-attention-audit.md")
 CLAIM_AUDIT = Path("docs/technical-report/vendor-attention-audit/claim-audit.json")
@@ -69,6 +70,17 @@ def test_report_builder_defaults_to_the_next_draft_not_the_frozen_pdf():
     assert path_literal == "output/pdf/benchmark-radar-technical-report-next-draft.pdf"
     assert "default=NEXT_DRAFT_OUTPUT" in source
     assert 'default=Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf")' not in source
+
+    legacy_source = LEGACY_REPORT_BUILDER.read_text(encoding="utf-8")
+    assert (
+        'NEXT_DRAFT_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-next-draft.pdf")'
+        in legacy_source
+    )
+    assert "default=NEXT_DRAFT_OUTPUT" in legacy_source
+    assert (
+        'default=Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf")'
+        not in legacy_source
+    )
 
 
 def test_report_narrative_carries_the_machine_readable_replacement_claim():
