@@ -190,7 +190,7 @@ rows:
     benchmark_family_id: researchclawbench
     benchmark_family_name: ResearchClawBench
     radar_query: ResearchClawBench
-    radar_record_id: null
+    radar_record_id: llm-stats:researchclawbench
     task_or_protocol: End-to-end scientific rediscovery from raw data with hidden target papers
     status: demonstrated
     primary_code: goal_plan_drift

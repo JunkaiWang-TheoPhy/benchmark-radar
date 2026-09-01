@@ -251,6 +251,10 @@ def test_repository_non_null_radar_record_ids_match_catalog_keys_when_generated(
 
     module = _load_module()
     study = module.load_study(DATA_PATH)
+    index_payload = json.loads(BENCHMARK_INDEX_PATH.read_text(encoding="utf-8"))
+    exact_name_keys: dict[str, list[str]] = {}
+    for record in index_payload["benchmarks"]:
+        exact_name_keys.setdefault(str(record["name"]).strip().casefold(), []).append(record["key"])
     service = QueryService(
         QueryPaths(
             index=BENCHMARK_INDEX_PATH,
@@ -263,18 +267,23 @@ def test_repository_non_null_radar_record_ids_match_catalog_keys_when_generated(
         "WebArena": "llm-stats:webarena-verified",
         "Mind2Web": "opencompass:1125",
         "GAIA2": "llm-stats:gaia2",
+        "ResearchClawBench": "llm-stats:researchclawbench",
         "SWE-bench Verified": "llm-stats:swe-bench-verified",
         "SciCode": "llm-stats:scicode",
     }
 
     non_null_rows = [row for row in study["rows"] if row["radar_record_id"] is not None]
+    null_rows = [row for row in study["rows"] if row["radar_record_id"] is None]
     assert non_null_rows
+    assert null_rows
     for row in non_null_rows:
         expected_identifier = expected_ids.get(row["benchmark_family_name"], row["radar_record_id"])
         assert row["radar_record_id"] == expected_identifier
         result = service.show(row["radar_record_id"])
         assert result["identifier"] == row["radar_record_id"]
         assert result["benchmark"]["record"]["key"] == row["radar_record_id"]
+    for row in null_rows:
+        assert exact_name_keys.get(row["benchmark_family_name"].casefold(), []) == []
 
 
 def test_load_study_rejects_missing_evidence_location(tmp_path):
