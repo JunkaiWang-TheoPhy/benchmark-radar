@@ -413,7 +413,7 @@ def _cohens_kappa(primary: list[str], secondary: list[str], categories: list[str
         for category in categories
     )
     if expected == 1.0:
-        return 1.0 if observed == 1.0 else 0.0
+        return None
     return (observed - expected) / (1.0 - expected)
 
 

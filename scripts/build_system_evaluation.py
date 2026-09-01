@@ -105,6 +105,7 @@ def load_agent_weakness_report_data(
         "agreement_disagreement_count": disagreement_count,
         "completed_secondary_review_count": agreement["completed_row_count"],
         "sampled_secondary_review_count": agreement["sampled_row_count"],
+        "pending_secondary_review_count": agreement["pending_row_count"],
         "design_implied_count": analysis["status_counts"]["design_implied"],
         "unmeasured_count": analysis["status_counts"]["unmeasured"],
         "measurement_counterexample_only": analysis["measurement_counterexample_only"],
@@ -119,9 +120,15 @@ def agent_weakness_section_paragraphs(report_data: dict[str, Any]) -> list[str]:
     agreement_matches = report_data["agreement_match_count"]
     reviewed = report_data["completed_secondary_review_count"]
     reviewed_total = report_data["sampled_secondary_review_count"]
+    pending_reviews = report_data["pending_secondary_review_count"]
     design_implied = report_data["design_implied_count"]
     unmeasured = report_data["unmeasured_count"]
     measurement_counterexamples = ", ".join(report_data["measurement_counterexample_only"])
+    pending_clause = (
+        f" and {pending_reviews} pending sampled row{'' if pending_reviews == 1 else 's'}"
+        if pending_reviews
+        else ""
+    )
     return [
         (
             f"Across {demonstrated} demonstrated benchmark families in the issue "
@@ -140,8 +147,9 @@ def agent_weakness_section_paragraphs(report_data: dict[str, Any]) -> list[str]:
             f"{design_implied} design-implied row and {unmeasured} unmeasured row; each included "
             f"family needed a primary-source anchor, a same-family counterexample, and family "
             f"deduplication. Independent secondary coding matched on {agreement_matches}/{reviewed} "
-            f"completed blinded sampled rows out of {reviewed_total} sampled rows; the "
-            f"{agreement_matches}/{reviewed_total} sample-local result in the main packet does not "
+            f"completed blinded sampled rows{pending_clause} out of {reviewed_total} sampled rows; "
+            f"the {agreement_matches}/{reviewed} sample-local result among completed rows in the "
+            "main packet does not "
             "establish broad reliability. "
             f"{measurement_counterexamples} remains the instrument counterexample rather than "
             "demonstrated prevalence evidence, because its audit shows that benchmark correction can "

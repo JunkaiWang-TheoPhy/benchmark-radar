@@ -293,6 +293,7 @@ def test_agent_weakness_section_reports_bounded_result_and_method():
     assert report_data["agreement_match_count"] == 4
     assert report_data["completed_secondary_review_count"] == 4
     assert report_data["sampled_secondary_review_count"] == 4
+    assert report_data["pending_secondary_review_count"] == 0
     assert report_data["design_implied_count"] == 1
     assert report_data["unmeasured_count"] == 1
     assert report_data["measurement_counterexample_only"] == ["SciCode"]
@@ -313,7 +314,7 @@ def test_agent_weakness_section_reports_bounded_result_and_method():
     assert "design-implied" in section_text
     assert "unmeasured" in section_text
     assert "4/4" in section_text
-    assert "sample-local result in the main packet" in section_text
+    assert "sample-local result among completed rows in the main packet" in section_text
     assert "does not establish broad reliability" in section_text
     assert "SciCode" in section_text
     assert "instrument counterexample" in section_text
@@ -353,10 +354,52 @@ def test_disagreement_fixture_uses_agreement_match_count_not_completed_count(tmp
 
     assert report_data["sampled_secondary_review_count"] == 3
     assert report_data["completed_secondary_review_count"] == 3
+    assert report_data["pending_secondary_review_count"] == 0
     assert report_data["agreement_match_count"] == 2
     assert "2/3" in section_text
     assert "3/3" not in section_text
     assert "4/4 sample-local result" not in section_text
+
+
+def test_partial_review_fixture_reports_completed_agreement_and_pending_rows(tmp_path):
+    module = _load_module()
+
+    def transform(study):
+        sampled_ids = {
+            "osworld2_hidden_state",
+            "swe_science_misguided_exploration",
+            "researchclawbench_protocol_drift",
+            "scicode_instrument_gap",
+        }
+        completed_ids = {
+            "osworld2_hidden_state",
+            "researchclawbench_protocol_drift",
+        }
+        for row in study["rows"]:
+            review = row["review"]
+            review["sampled_for_secondary_review"] = row["id"] in sampled_ids
+            if row["id"] in completed_ids:
+                review["secondary_code"] = row["primary_code"]
+                review["secondary_note"] = "Match."
+            else:
+                review["secondary_code"] = None
+                review["secondary_note"] = None
+
+    study_path = _write_modified_study(tmp_path, transform)
+    report_data = module.load_agent_weakness_report_data(study_path)
+    paragraphs = module.agent_weakness_section_paragraphs(report_data)
+    section_text = "\n".join(paragraphs)
+
+    assert report_data["sampled_secondary_review_count"] == 4
+    assert report_data["completed_secondary_review_count"] == 2
+    assert report_data["pending_secondary_review_count"] == 2
+    assert report_data["agreement_match_count"] == 2
+    assert (
+        "matched on 2/2 completed blinded sampled rows "
+        "and 2 pending sampled rows out of 4 sampled rows" in section_text
+    )
+    assert "2/2 sample-local result among completed rows" in section_text
+    assert "2/4" not in section_text
 
 
 def test_story_places_agent_weakness_subsection_before_use_it_and_adds_primary_sources():

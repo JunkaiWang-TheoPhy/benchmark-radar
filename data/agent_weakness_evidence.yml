@@ -111,7 +111,7 @@ rows:
     status: demonstrated
     primary_code: loop_stagnation_recovery
     authoritative_source_kind: paper
-    source_url: https://arxiv.org/pdf/2602.11964
+    source_url: https://arxiv.org/html/2602.11964v1
     evidence_location: HTML abstract paragraph id abstract1.1 on 42% pass@1 and time-sensitive failures; HTML paragraph id S5.SS2.p1.1 and Figure 8 caption id S5.F8 on default-versus-instant Time behavior
     published_date: "2026-02-18"
     observed_evidence: The abstract reports GPT-5 at 42.1% pass@1 overall but failing on time-sensitive tasks, and the paper links weaker Time performance to longer thinking and stale action timing in dynamic environments.

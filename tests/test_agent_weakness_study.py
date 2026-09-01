@@ -153,7 +153,10 @@ def test_repository_task1_artifacts_exist_and_load():
         assert agreement["cohens_kappa"] is None
     else:
         assert 0.0 <= agreement["percent_agreement"] <= 1.0
-        assert agreement["cohens_kappa"] is not None
+        if agreement["percent_agreement"] == pytest.approx(1.0):
+            assert agreement["cohens_kappa"] in (None, pytest.approx(1.0))
+        else:
+            assert agreement["cohens_kappa"] is not None
 
 
 def test_repository_task2_secondary_review_is_complete():
@@ -806,6 +809,154 @@ def test_analyze_study_computes_agreement_and_lists_disagreements(tmp_path):
             "secondary_code": "verification_completion",
         }
     ]
+
+
+def test_analyze_study_returns_none_kappa_for_single_completed_match(tmp_path):
+    module = _load_module()
+    rows = [
+        _row(
+            "demo-a",
+            status="demonstrated",
+            primary_code="goal_plan_drift",
+            sampled=True,
+            secondary_code="goal_plan_drift",
+        ),
+        _row(
+            "design-b",
+            status="design_implied",
+            primary_code="verification_completion",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+            radar_record_id="family-b",
+        ),
+        _row(
+            "unmeasured-c",
+            status="unmeasured",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+            radar_record_id="family-c",
+        ),
+    ]
+
+    study = module.load_study(_write_study(tmp_path, rows))
+    analysis = module.analyze_study(study)
+    agreement = analysis["agreement"]
+
+    assert agreement["sampled_row_count"] == 1
+    assert agreement["completed_row_count"] == 1
+    assert agreement["pending_row_count"] == 0
+    assert agreement["percent_agreement"] == pytest.approx(1.0)
+    assert agreement["cohens_kappa"] is None
+    assert agreement["disagreements"] == []
+
+
+def test_analyze_study_returns_none_kappa_for_same_category_matches(tmp_path):
+    module = _load_module()
+    rows = [
+        _row(
+            "demo-a",
+            status="demonstrated",
+            primary_code="goal_plan_drift",
+            sampled=True,
+            secondary_code="goal_plan_drift",
+        ),
+        _row(
+            "demo-b",
+            status="demonstrated",
+            primary_code="goal_plan_drift",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+            radar_record_id="family-b",
+            sampled=True,
+            secondary_code="goal_plan_drift",
+        ),
+        _row(
+            "unmeasured-c",
+            status="unmeasured",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+            radar_record_id="family-c",
+        ),
+        _row(
+            "design-d",
+            status="design_implied",
+            primary_code="verification_completion",
+            benchmark_family_id="family-d",
+            benchmark_family_name="Family D",
+            radar_query="Family D",
+            radar_record_id="family-d",
+        ),
+    ]
+
+    study = module.load_study(_write_study(tmp_path, rows))
+    analysis = module.analyze_study(study)
+    agreement = analysis["agreement"]
+
+    assert agreement["sampled_row_count"] == 2
+    assert agreement["completed_row_count"] == 2
+    assert agreement["pending_row_count"] == 0
+    assert agreement["percent_agreement"] == pytest.approx(1.0)
+    assert agreement["cohens_kappa"] is None
+    assert agreement["disagreements"] == []
+
+
+def test_analyze_study_keeps_nondegenerate_perfect_agreement_kappa(tmp_path):
+    module = _load_module()
+    rows = [
+        _row(
+            "demo-a",
+            status="demonstrated",
+            primary_code="goal_plan_drift",
+            sampled=True,
+            secondary_code="goal_plan_drift",
+        ),
+        _row(
+            "demo-b",
+            status="demonstrated",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+            radar_record_id="family-b",
+            sampled=True,
+            secondary_code="tool_selection_execution",
+        ),
+        _row(
+            "unmeasured-c",
+            status="unmeasured",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+            radar_record_id="family-c",
+        ),
+        _row(
+            "design-d",
+            status="design_implied",
+            primary_code="verification_completion",
+            benchmark_family_id="family-d",
+            benchmark_family_name="Family D",
+            radar_query="Family D",
+            radar_record_id="family-d",
+        ),
+    ]
+
+    study = module.load_study(_write_study(tmp_path, rows))
+    analysis = module.analyze_study(study)
+    agreement = analysis["agreement"]
+
+    assert agreement["sampled_row_count"] == 2
+    assert agreement["completed_row_count"] == 2
+    assert agreement["pending_row_count"] == 0
+    assert agreement["percent_agreement"] == pytest.approx(1.0)
+    assert agreement["cohens_kappa"] == pytest.approx(1.0)
+    assert agreement["disagreements"] == []
 
 
 def test_analysis_exposes_counterexamples_and_missing_measurements(tmp_path):
