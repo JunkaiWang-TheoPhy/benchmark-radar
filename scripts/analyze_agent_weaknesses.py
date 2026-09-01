@@ -423,11 +423,9 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
 def _cohens_kappa(primary: list[str], secondary: list[str], categories: list[str]) -> float | None:
     if not primary:
         return None
-    if len(primary) != len(secondary):
-        raise ValueError("agreement inputs must have the same length")
-    observed = sum(1 for index, left in enumerate(primary) if left == secondary[index]) / len(
-        primary
-    )
+    observed = sum(
+        1 for left, right in zip(primary, secondary, strict=True) if left == right
+    ) / len(primary)
     primary_distribution = Counter(primary)
     secondary_distribution = Counter(secondary)
     expected = sum(
@@ -481,7 +479,7 @@ def analyze_study(study: dict[str, Any]) -> dict[str, Any]:
     primary_codes = [row["primary_code"] for row in completed_rows]
     secondary_codes = [row["review"]["secondary_code"] for row in completed_rows]
     percent_agreement = (
-        sum(1 for index, left in enumerate(primary_codes) if left == secondary_codes[index])
+        sum(1 for left, right in zip(primary_codes, secondary_codes, strict=True) if left == right)
         / len(completed_rows)
         if completed_rows
         else None
