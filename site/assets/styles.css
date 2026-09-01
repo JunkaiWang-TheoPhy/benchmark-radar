@@ -446,17 +446,22 @@ button.repo-badge svg {
   color: white;
 }
 
-/* Rubric is a dialog trigger rather than a page link, so its inactive blue is
-   kept separate from the shared active treatment above. */
-#rubric-nav:not(.nav-active) {
+/* Rubric and CLI are dialog triggers rather than page links, so their inactive
+   blue is kept separate from the shared active treatment above. A reader should
+   be able to tell before clicking that these two open a sheet over the page
+   instead of changing the view under it. */
+#rubric-nav:not(.nav-active),
+#cli-nav:not(.nav-active) {
   color: var(--blue-deep);
 }
 
-#rubric-nav::after {
+#rubric-nav::after,
+#cli-nav::after {
   content: " ⓘ";
 }
 
-#rubric-nav:not(.nav-active):hover {
+#rubric-nav:not(.nav-active):hover,
+#cli-nav:not(.nav-active):hover {
   background: var(--panel);
 }
 
@@ -3821,16 +3826,16 @@ dialog::backdrop {
   word-break: break-all;
 }
 
-/* The citation sheet at /#cite. Three formats stacked in one column: a reader
-   wants exactly one of them and should be able to tell which is which before
-   reading a character of the citation itself. */
-.cite-blocks {
+/* Shared by the citation sheet at /#cite and the CLI sheet at /#cli: blocks of
+   text a reader came to copy, stacked in one column so each one's label is
+   readable before a character of the block itself is. */
+.copy-blocks {
   display: grid;
   gap: 1.5rem;
   margin: 1.5rem 0;
 }
 
-.cite-label {
+.copy-label {
   margin: 0 0 0.5rem;
   color: var(--muted);
   font-family: var(--utility);
@@ -3838,10 +3843,10 @@ dialog::backdrop {
   letter-spacing: 0.05em;
 }
 
-/* The whole citation is the copy control, so the hit area matches the thing
-   the reader is looking at. Left-aligned and full width because it holds a
-   block of text, not a label. */
-.cite-copy {
+/* The whole block is the copy control, so the hit area matches the thing the
+   reader is looking at. Left-aligned and full width because it holds a block of
+   text, not a label. */
+.copy-target {
   display: block;
   width: 100%;
   padding: 0.9rem 1rem;
@@ -3853,19 +3858,19 @@ dialog::backdrop {
   cursor: pointer;
 }
 
-.cite-copy:hover,
-.cite-copy:focus-visible {
+.copy-target:hover,
+.copy-target:focus-visible {
   border-color: var(--blue);
 }
 
-.cite-copy.is-copied {
+.copy-target.is-copied {
   border-color: var(--sea);
 }
 
-/* BibTeX is written line by line and stays that way; APA and the .cff URL are
-   single runs with no break opportunity, so they need `anywhere` to keep the
-   dialog from growing wider than the viewport. */
-.cite-text {
+/* BibTeX and the agent prompt are written line by line and stay that way; APA
+   and the bare URLs are single runs with no break opportunity, so they need
+   `anywhere` to keep the dialog from growing wider than the viewport. */
+.copy-text {
   display: block;
   font-family: var(--utility);
   font-size: 0.78rem;
@@ -3874,7 +3879,7 @@ dialog::backdrop {
   overflow-wrap: anywhere;
 }
 
-.cite-status {
+.copy-status {
   display: block;
   margin-top: 0.6rem;
   color: var(--blue);
@@ -3883,11 +3888,11 @@ dialog::backdrop {
   letter-spacing: 0.05em;
 }
 
-.cite-copy.is-copied .cite-status {
+.copy-target.is-copied .copy-status {
   color: var(--sea);
 }
 
-.cite-view {
+.dialog-link {
   display: inline-block;
 }
 

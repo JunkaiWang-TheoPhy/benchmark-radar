@@ -838,6 +838,12 @@ const I18N = {
     "Copy it with your keyboard": "请用键盘复制",
     "Citation file (.cff)": "引用文件 (.cff)",
     "View the citation file": "查看引用文件",
+    CLI: "命令行",
+    "Query it locally (CLI version)": "在本地查询（命令行版本）",
+    "This website is the hosted view. The CLI version runs on your own computer: it installs the command-line tool, downloads the searchable data, and answers from those local files.":
+      "本网站是在线版本。命令行版本在你自己的电脑上运行：它会安装命令行工具、下载可搜索的数据，并从这些本地文件中给出答案。",
+    "Give this prompt to your coding agent": "把这段提示词交给你的编程助手",
+    "Read the setup guide": "查看安装指南",
     "Share Benchmark Radar": "分享 Benchmark Radar",
     Share: "分享",
     Copied: "已复制",
@@ -1039,6 +1045,7 @@ const state = {
   rubric: "",
   contact: false,
   cite: false,
+  cli: false,
   trendReleasedOnly: false,
   // Leaderboard filters carry their own prefixed keys so a shared permalink can
   // hold a Today filter and a Leaderboard filter at once without either view
@@ -1188,6 +1195,7 @@ function readUrl() {
   const hashParams = new URLSearchParams(rawHash);
   state.contact = rawHash === "contact" || hashParams.has("contact");
   state.cite = rawHash === "cite" || hashParams.has("cite");
+  state.cli = rawHash === "cli" || hashParams.has("cli");
   state.rubric = rawHash === "rubric"
     ? "current"
     : hashParams.get("rubric") || "";
@@ -1248,6 +1256,7 @@ function writeUrl(mode = "replace") {
   let hash = "";
   if (state.contact) hash = "contact";
   else if (state.cite) hash = "cite";
+  else if (state.cli) hash = "cli";
   else if (state.rubric === "current") hash = "rubric";
   else if (state.rubric) hash = `rubric=${encodeURIComponent(state.rubric)}`;
   const url = `${window.location.pathname}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
@@ -1281,6 +1290,12 @@ async function onPopState() {
     if (!citeDialog?.open) openCite(false);
   } else if (citeDialog?.open) {
     citeDialog.close();
+  }
+  const cliDialog = byId("cli-dialog");
+  if (state.cli) {
+    if (!cliDialog?.open) openCli(false);
+  } else if (cliDialog?.open) {
+    cliDialog.close();
   }
   if (!state.data) return;
   await ensureDataForState();
@@ -1369,7 +1384,7 @@ function applyViewSeo(view) {
 function syncNavState() {
   const rubricActive = Boolean(state.rubric);
   document.querySelectorAll("[data-view]").forEach((item) => {
-    const active = !rubricActive && item.dataset.view === state.view;
+    const active = !rubricActive && !state.cli && item.dataset.view === state.view;
     item.classList.toggle("nav-active", active);
     if (active) {
       item.setAttribute("aria-current", "page");
@@ -1380,6 +1395,9 @@ function syncNavState() {
   const rubricNav = byId("rubric-nav");
   rubricNav.classList.toggle("nav-active", rubricActive);
   rubricNav.setAttribute("aria-expanded", String(rubricActive));
+  const cliNav = byId("cli-nav");
+  cliNav.classList.toggle("nav-active", state.cli);
+  cliNav.setAttribute("aria-expanded", String(state.cli));
 }
 
 // `update` false is for restoring a view that is already in the URL (boot and
@@ -3178,8 +3196,10 @@ function openRubric(item = null, versionOverride = null) {
   const version = Number(data.scoring_version) || 1;
   const current = Number(state.data?.rubric?.scoring_version) || version;
   const isLegacy = version !== current;
+  closeOtherSheets("rubric-dialog");
   state.contact = false;
   state.cite = false;
+  state.cli = false;
   state.rubric = isLegacy ? String(version) : "current";
   syncNavState();
   writeUrl();
@@ -7590,8 +7610,10 @@ function brandIcon(name) {
 // dataset and the repository.
 function openContact(updateUrl = true) {
   const dialog = byId("contact-dialog");
+  closeOtherSheets("contact-dialog");
   state.rubric = "";
   state.cite = false;
+  state.cli = false;
   state.contact = true;
   if (updateUrl) writeUrl("push");
   replaceChildren(byId("contact-content"), [
@@ -7674,16 +7696,17 @@ const CITE_BIBTEX = [
   "}",
 ].join("\n");
 
-// One block per citation format. The block itself is the button: a reader who
-// came for a citation wants it on the clipboard, so clicking the text copies
-// it rather than making them select eight wrapped lines by hand.
-function citeBlock(label, value, hint) {
-  const status = element("span", { className: "cite-status", text: t(hint) });
-  const text = element("code", { className: "cite-text", text: value });
+// One labelled block of copyable text, shared by the citation sheet and the CLI
+// sheet. The block itself is the button: a reader who came for a citation or a
+// setup prompt wants it on the clipboard, so clicking the text copies it rather
+// than making them select eight wrapped lines by hand.
+function copyBlock(label, value, hint) {
+  const status = element("span", { className: "copy-status", text: t(hint) });
+  const text = element("code", { className: "copy-text", text: value });
   const copy = element(
     "button",
     {
-      className: "cite-copy",
+      className: "copy-target",
       attrs: { type: "button", "aria-label": `${t(hint)}: ${t(label)}` },
     },
     [text, status],
@@ -7699,7 +7722,7 @@ function citeBlock(label, value, hint) {
       }, 1600);
     } catch (error) {
       // Clipboard access is refused outright in some browsers and embedded
-      // webviews. Selecting the citation leaves the reader one keystroke from
+      // webviews. Selecting the text leaves the reader one keystroke from
       // copying it by hand, rather than a click that visibly did nothing.
       const range = document.createRange();
       range.selectNodeContents(text);
@@ -7709,8 +7732,8 @@ function citeBlock(label, value, hint) {
       status.textContent = t("Copy it with your keyboard");
     }
   });
-  return element("section", { className: "cite-block" }, [
-    element("h3", { className: "cite-label", text: t(label) }),
+  return element("section", { className: "copy-block" }, [
+    element("h3", { className: "copy-label", text: t(label) }),
     copy,
   ]);
 }
@@ -7720,12 +7743,29 @@ function citeBlock(label, value, hint) {
 // step back: the entry behind them belongs to whatever site sent them here.
 let citeOwnsHistoryEntry = false;
 
+// One sheet at a time. showModal() stacks a dialog on top of an open one rather
+// than replacing it, so opening the rubric over the CLI card would leave the CLI
+// card waiting underneath to reappear when the rubric closed. Ownership is
+// dropped first: the sheet being replaced must not step history back, because
+// the entry it pushed is the one the reader came through.
+function closeOtherSheets(keep) {
+  citeOwnsHistoryEntry = false;
+  cliOwnsHistoryEntry = false;
+  for (const id of ["rubric-dialog", "contact-dialog", "cite-dialog", "cli-dialog"]) {
+    if (id === keep) continue;
+    const other = byId(id);
+    if (other?.open) other.close();
+  }
+}
+
 // Reachable at /#cite, so the card has a short link that can be pasted into a
 // paper, a README or a message instead of a reader hunting the footer for it.
 function openCite(updateUrl = true) {
   const dialog = byId("cite-dialog");
+  closeOtherSheets("cite-dialog");
   state.rubric = "";
   state.contact = false;
+  state.cli = false;
   state.cite = true;
   citeOwnsHistoryEntry = updateUrl;
   if (updateUrl) writeUrl("push");
@@ -7740,15 +7780,79 @@ function openCite(updateUrl = true) {
       className: "detail-summary",
       text: t("Pick the format your paper or repository needs, then click it to copy."),
     }),
-    element("div", { className: "cite-blocks" }, [
-      citeBlock("APA", CITE_APA, "Click to copy"),
-      citeBlock("BibTeX", CITE_BIBTEX, "Click to copy"),
-      citeBlock("Citation file (.cff)", CITE_CFF_URL, "Click to copy link"),
+    element("div", { className: "copy-blocks" }, [
+      copyBlock("APA", CITE_APA, "Click to copy"),
+      copyBlock("BibTeX", CITE_BIBTEX, "Click to copy"),
+      copyBlock("Citation file (.cff)", CITE_CFF_URL, "Click to copy link"),
     ]),
     element("a", {
-      className: "secondary-link cite-view",
+      className: "secondary-link dialog-link",
       text: t("View the citation file"),
       attrs: { href: CITE_CFF_URL, target: "_blank", rel: "noopener noreferrer" },
+    }),
+  ]);
+  if (!dialog.open) dialog.showModal();
+}
+
+// The setup route published in the README under "Query it locally (CLI
+// version)". The prompt is held verbatim: it names the Skill file a coding
+// agent has to read, and a prompt this page paraphrases is a prompt that can
+// drift from the instructions it points at.
+const CLI_SKILL_URL =
+  "https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md";
+// The README wraps its last sentence across two lines at 80 columns; the card
+// is narrower than that, so keeping the break would re-wrap into ragged text.
+// Only the URL needs a line of its own, and it keeps one.
+const CLI_AGENT_PROMPT = [
+  "Set up Benchmark Radar for local benchmark search. Follow",
+  CLI_SKILL_URL,
+  "to install the CLI and consumer Skill, initialize the local data, and verify the" +
+    " setup. Use only consumer commands.",
+].join("\n");
+
+// True only while the open card owns a history entry this page pushed, for the
+// same reason the citation card tracks it: closing a directly-opened /#cli must
+// not step a reader back off the site.
+let cliOwnsHistoryEntry = false;
+
+// Reachable at /#cli from the view bar, so the offline route is one click from
+// every view rather than a section of the README a reader has to scroll to.
+function openCli(updateUrl = true) {
+  const dialog = byId("cli-dialog");
+  closeOtherSheets("cli-dialog");
+  state.rubric = "";
+  state.contact = false;
+  state.cite = false;
+  state.cli = true;
+  cliOwnsHistoryEntry = updateUrl;
+  syncNavState();
+  if (updateUrl) writeUrl("push");
+  replaceChildren(byId("cli-content"), [
+    element("p", { className: "detail-source", text: "Benchmark Radar" }),
+    element("h2", {
+      className: "detail-title cli-title",
+      text: t("Query it locally (CLI version)"),
+      attrs: { id: "cli-title" },
+    }),
+    element("p", {
+      className: "detail-summary",
+      text: t(
+        "This website is the hosted view. The CLI version runs on your own computer: " +
+          "it installs the command-line tool, downloads the searchable data, and answers " +
+          "from those local files.",
+      ),
+    }),
+    element("div", { className: "copy-blocks" }, [
+      copyBlock(
+        "Give this prompt to your coding agent",
+        CLI_AGENT_PROMPT,
+        "Click to copy",
+      ),
+    ]),
+    element("a", {
+      className: "secondary-link dialog-link",
+      text: t("Read the setup guide"),
+      attrs: { href: CLI_SKILL_URL, target: "_blank", rel: "noopener noreferrer" },
     }),
   ]);
   if (!dialog.open) dialog.showModal();
@@ -7993,6 +8097,28 @@ function bindEvents() {
     }
     writeUrl();
   });
+  // The view bar entry is an anchor to the same short link, so /#cli reads as a
+  // link to a crawler and can be copied out of the context menu; the handler
+  // keeps the click itself on the page.
+  byId("cli-nav").addEventListener("click", (event) => {
+    event.preventDefault();
+    openCli();
+  });
+  byId("cli-close").addEventListener("click", () => byId("cli-dialog").close());
+  byId("cli-dialog").addEventListener("click", (event) => {
+    if (event.target === byId("cli-dialog")) byId("cli-dialog").close();
+  });
+  byId("cli-dialog").addEventListener("close", () => {
+    state.cli = false;
+    syncNavState();
+    const owned = cliOwnsHistoryEntry;
+    cliOwnsHistoryEntry = false;
+    if (owned && window.location.hash === "#cli") {
+      window.history.back();
+      return;
+    }
+    writeUrl();
+  });
   byId("share-radar").addEventListener("click", async (event) => {
     const button = event.currentTarget;
     const shareData = {
@@ -8227,10 +8353,12 @@ async function initialize() {
   bindEvents();
   // Independent of the data file, so badges still render on an error state.
   renderRepoBadges();
-  // The citation is fixed text, not a reading of the corpus. Someone arriving
-  // from a paper's reference link should still get it on a build whose data
-  // file is broken, so it opens before the fetch rather than after it.
+  // The citation and the CLI setup route are fixed text, not readings of the
+  // corpus. Someone arriving from a paper's reference link or looking for the
+  // offline route should still get them on a build whose data file is broken,
+  // so they open before the fetch rather than after it.
   if (state.cite) openCite(false);
+  if (state.cli) openCli(false);
   try {
     // The default payload carries the latest day, aggregate counts, and the
     // leaderboard. Trends, Explore, All dates, and historical permalinks lazily

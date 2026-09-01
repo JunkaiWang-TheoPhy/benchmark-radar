@@ -131,11 +131,11 @@ def test_citation_formats_are_one_click_away_behind_a_short_link():
     assert "function openCite(" in script
 
     # Three formats, each copied by clicking the citation itself.
-    assert 'citeBlock("APA", CITE_APA, "Click to copy")' in script
-    assert 'citeBlock("BibTeX", CITE_BIBTEX, "Click to copy")' in script
-    assert 'citeBlock("Citation file (.cff)", CITE_CFF_URL, "Click to copy link")' in script
+    assert 'copyBlock("APA", CITE_APA, "Click to copy")' in script
+    assert 'copyBlock("BibTeX", CITE_BIBTEX, "Click to copy")' in script
+    assert 'copyBlock("Citation file (.cff)", CITE_CFF_URL, "Click to copy link")' in script
     assert "navigator.clipboard.writeText(value)" in script
-    assert ".cite-copy {" in styles
+    assert ".copy-target {" in styles
 
     # The card draws no data, so a build whose payload never arrives must still
     # open it and must still close it on Back: both sides of that sit above the
@@ -156,6 +156,81 @@ def test_citation_formats_are_one_click_away_behind_a_short_link():
     for fragment in ("10.5281/zenodo.22167102", "Benchmark Radar v0.9.0: Technical Report"):
         assert fragment in cff
         assert fragment in script
+
+
+def test_offline_cli_route_is_in_the_view_bar_behind_a_short_link():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    # Same pop-out treatment as the rubric, reached from the view bar rather
+    # than from a section of the README a reader has to scroll to.
+    nav = html.split('<nav class="view-nav"', 1)[1].split("</nav>", 1)[0]
+    assert 'id="cli-nav"' in nav
+    assert 'href="https://benchmark-radar.org/#cli"' in nav
+    assert 'aria-controls="cli-dialog"' in nav
+    assert 'id="cli-dialog"' in html
+    assert 'id="cli-content"' in html
+    assert 'state.cli = rawHash === "cli" || hashParams.has("cli");' in script
+    assert 'else if (state.cli) hash = "cli";' in script
+    assert "function openCli(" in script
+
+    # One copy block, sharing the citation card's control rather than a second
+    # clipboard handler.
+    assert 'copyBlock(\n        "Give this prompt to your coding agent",' in script
+
+    # The card holds no data either, so it opens before the fetch and closes on
+    # Back above the early return, and it owns its pushed history entry.
+    assert "if (state.cli) openCli(false);" in script
+    pop_state = script.split("async function onPopState() {", 1)[1]
+    assert pop_state.index('const cliDialog = byId("cli-dialog");') < pop_state.index(
+        "if (!state.data) return;"
+    )
+    assert "cliOwnsHistoryEntry = updateUrl;" in script
+    assert 'if (owned && window.location.hash === "#cli") {' in script
+
+    # A view entry and the CLI entry must not both read as current, and the CLI
+    # entry carries the rubric's dialog-trigger treatment: both open a sheet
+    # over the page rather than changing the view under it.
+    assert 'cliNav.classList.toggle("nav-active", state.cli);' in script
+    assert "!rubricActive && !state.cli && item.dataset.view === state.view" in script
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+    assert "#cli-nav:not(.nav-active) {" in styles
+    assert "#cli-nav::after {" in styles
+
+    # The card is the README's setup route, not a second one written for the
+    # site: the prompt it hands out has to be the prompt the README publishes.
+    readme_cli = readme.split("## Query it locally (CLI version)", 1)[1].split("## More", 1)[0]
+    skill_url = (
+        "https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md"
+    )
+    assert skill_url in readme_cli
+    assert skill_url in script
+    for line in (
+        "Set up Benchmark Radar for local benchmark search. Follow",
+        "to install the CLI and consumer Skill, initialize the local data, and verify the",
+        "setup. Use only consumer commands.",
+    ):
+        assert line in readme_cli
+        assert line in script
+
+
+def test_only_one_sheet_is_open_at_a_time():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # showModal() stacks a dialog on top of an open one instead of replacing it,
+    # so every opener has to close the others first or the previous sheet waits
+    # underneath and reappears when the new one is dismissed.
+    assert "function closeOtherSheets(" in script
+    for keep in ("rubric-dialog", "contact-dialog", "cite-dialog", "cli-dialog"):
+        assert f'closeOtherSheets("{keep}");' in script
+    guard = script.split("function closeOtherSheets(", 1)[1].split("\n}", 1)[0]
+    for dialog in ("rubric-dialog", "contact-dialog", "cite-dialog", "cli-dialog"):
+        assert dialog in guard
+    # Dropped before closing, so the sheet being replaced does not step history
+    # back through the entry the reader arrived on.
+    assert guard.index("citeOwnsHistoryEntry = false;") < guard.index("other.close();")
+    assert guard.index("cliOwnsHistoryEntry = false;") < guard.index("other.close();")
 
 
 def test_every_navigation_item_uses_the_same_active_state():
@@ -625,13 +700,14 @@ def test_records_expand_inline_without_an_exclusive_accordion_or_record_modal():
     assert "attrs: { name:" not in script
     # The dialogs on the page are non-record chrome: the scoring rubric, the
     # contact sheet (the export dialog went with the export button, issue
-    # #311), and the citation card. Record detail must stay inline, so a
-    # showModal() the list below does not name is a regression to a record
-    # modal.
-    assert script.count(".showModal()") == 3
+    # #311), the citation card, and the CLI setup card. Record detail must stay
+    # inline, so a showModal() the list below does not name is a regression to a
+    # record modal.
+    assert script.count(".showModal()") == 4
     assert 'byId("rubric-dialog")' in script
     assert 'byId("contact-dialog")' in script
     assert 'byId("cite-dialog")' in script
+    assert 'byId("cli-dialog")' in script
 
 
 def test_hugging_face_expansion_links_to_the_full_card():
