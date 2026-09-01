@@ -986,8 +986,14 @@ def test_leaderboard_degrades_when_the_curated_registry_is_absent():
     # No registry means no ranking. Hiding the nav entry and redirecting a
     # ?view=leaderboard permalink beats offering a tab that opens blank.
     assert "document.querySelector('[data-view=\"leaderboard\"]')" in script
-    assert "navButton.hidden = true" in script
+    assert "navButton.hidden = !state.data?.model_card_leaderboard;" in script
     assert 'state.view === "leaderboard" && !state.data.model_card_leaderboard' in script
+    # The entry has to reflect the data from every view, not only from the one
+    # being rendered. Boot settles it before it picks a view to draw, so Today
+    # cannot leave a dead tab on screen for a click to push /leaderboard/ over.
+    boot = script.split("renderTodayDateOptions();\n    syncLeaderboardNav();", 1)
+    assert len(boot) == 2, "boot does not sync the leaderboard nav"
+    assert 'if (state.view === "leaderboard") renderLeaderboard();' in boot[1]
 
 
 def test_leaderboard_names_an_unadopted_benchmark_rather_than_showing_a_bare_zero():

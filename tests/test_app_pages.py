@@ -283,14 +283,40 @@ def test_a_failed_boot_keeps_the_seeded_rows_and_leads_with_the_error():
     catch = next(
         block
         for block in script.split("} catch (error) {")[1:]
-        if 'byId("error-state")' in block.split("\n  }", 1)[0]
+        if "banner.hidden = false;" in block.split("\n  }", 1)[0]
     ).split("\n  }", 1)[0]
 
     # A view survives only when it is the one being shown and it carries a seed.
     assert 'section.id === `${state.view}-view` && section.querySelector("[data-seed]")' in catch
     assert "section.hidden = !seeded;" in catch
     assert "banner.hidden = false;" in catch
-    assert "if (survivor) survivor.before(banner);" in catch
+    # Above every view, not above the one that survived: the reader can still
+    # navigate, and a banner parked in front of one section would sit below the
+    # next one they open.
+    assert "if (survivor) banner.parentElement.prepend(banner);" in catch
+
+
+def test_only_a_working_refresh_retires_the_boot_error_banner():
+    """The banner says to refresh, so a refresh that works is what retires it.
+
+    Navigating is not recovering. A boot that threw stopped before it settled
+    the date filter, so Today can come up filtered to a date the payload does
+    not carry and list nothing. Dropping the warning on a view change would
+    call that page healthy. refreshData refetches, revalidates, resettles the
+    date and redraws, and only then is "Dashboard unavailable" no longer true.
+    """
+    script = (SITE / "assets" / "app.js").read_text(encoding="utf-8")
+    refresh = script.split("async function refreshData() {", 1)[1].split("\n}", 1)[0]
+    hide = 'byId("error-state").hidden = true;'
+
+    assert script.count(hide) == 1, "something other than a successful refresh hides the banner"
+    assert hide in refresh
+    # Inside the try, after the redraw: a refresh that throws leaves it standing.
+    assert refresh.index(hide) > refresh.index("rerenderCurrentView();")
+    assert refresh.index(hide) < refresh.index("} catch (error) {")
+
+    handler = script.split("const view = button.dataset.view;", 1)[1].split("\n    });", 1)[0]
+    assert "error-state" not in handler
 
 
 def test_every_seeded_container_is_one_the_renderer_already_owns(tmp_path):

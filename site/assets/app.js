@@ -6943,12 +6943,16 @@ function renderLeaderboardTop(board) {
   // ranking. They are one (i) beside the heading now: a reader who wants the
   // caveat opens it, and a reader who wants the ranking sees the ranking.
   const infoHost = byId("leaderboard-top-info");
-  if (infoHost && !infoHost.firstChild) {
+  if (infoHost) {
     // `board.measures` is published data, not a string restated here. A reader
     // who takes this order as a quality ranking draws the opposite of the
     // intended conclusion, and the correction has to travel with the payload
     // that produced the order rather than drift from it in the browser.
-    infoHost.append(
+    //
+    // Rebuilt rather than appended once: the published page ships this
+    // disclosure in its first response, and a seed that survived the render
+    // would stay in English after a switch to Chinese.
+    replaceChildren(infoHost, [
       infoDisclosure(
         [
           board.measures,
@@ -6959,7 +6963,7 @@ function renderLeaderboardTop(board) {
           .filter(Boolean)
           .join(" "),
       ),
-    );
+    ]);
   }
   const ranked = (board.entries || []).filter((entry) => entry.card_count > 0);
   const entries = state.leaderboardTopExpanded ? ranked : ranked.slice(0, LEADERBOARD_TOP_LIMIT);
@@ -7010,17 +7014,22 @@ function renderLeaderboardTop(board) {
   }
 }
 
+// A checkout without the curated registry publishes no ranking. Hiding the nav
+// entry is the honest response: offering a tab that opens an empty page reads
+// as a broken feature rather than as absent data. This runs on every boot, not
+// only when the leaderboard is the view being rendered: renderLeaderboard()
+// runs for the active view alone, so from Today the entry would stay clickable
+// on a build with no ranking and the click would push /leaderboard/ over an
+// empty section.
+function syncLeaderboardNav() {
+  const navButton = document.querySelector('[data-view="leaderboard"]');
+  if (navButton) navButton.hidden = !state.data?.model_card_leaderboard;
+}
+
 function renderLeaderboard() {
   const board = state.data?.model_card_leaderboard;
-  const navButton = document.querySelector('[data-view="leaderboard"]');
-  // A checkout without the curated registry publishes no ranking. Hiding the
-  // nav entry is the honest response: offering a tab that opens an empty page
-  // reads as a broken feature rather than as absent data.
-  if (!board) {
-    if (navButton) navButton.hidden = true;
-    return;
-  }
-  if (navButton) navButton.hidden = false;
+  syncLeaderboardNav();
+  if (!board) return;
 
   byId("leaderboard-measures").textContent = board.measures || "";
   renderLeaderboardTop(board);
@@ -8106,6 +8115,12 @@ async function refreshData() {
     }
     closeFiltersDrawer();
     rerenderCurrentView();
+    // The banner tells the reader to try refreshing. This is that refresh
+    // working, so the warning it printed is no longer true. It is the only
+    // path that retires the banner: navigating after a failed boot only moves
+    // between views built from the payload that failed, and a boot that threw
+    // never settled the date filter, so a view can come up empty and look fine.
+    byId("error-state").hidden = true;
   } catch (error) {
     console.error(error);
   }
@@ -8139,6 +8154,7 @@ async function initialize() {
       state.todayDate = state.data.latest_date;
     }
     renderTodayDateOptions();
+    syncLeaderboardNav();
     // A link to the leaderboard on a build without the curated registry has
     // nothing to show, so fall back to Today rather than opening a blank
     // section behind a navigation entry that has no data. The URL has to follow
@@ -8180,8 +8196,9 @@ async function initialize() {
     banner.hidden = false;
     // The banner sits last in the document, which is the right place when it is
     // all that is left. When content survives, the reader has to be told the
-    // numbers are the ones the page shipped with before they read them.
-    if (survivor) survivor.before(banner);
+    // numbers are the ones the page shipped with before they read them, and
+    // that stays true for whichever view they open next.
+    if (survivor) banner.parentElement.prepend(banner);
     console.error(error);
   }
 }
