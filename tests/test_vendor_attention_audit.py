@@ -33,6 +33,9 @@ def test_shipped_audit_reproduces_primary_counts_and_sensitivity():
     scenarios = {row["scenario_id"]: row for row in result["scenario_summaries"]}
 
     assert audit["source_commit"] == "98c8cf6fb5d1d69c66d438ea9f92242b2205c9ae"
+    assert audit["source_sha256"] == (
+        "8b3c59a0d4c236c06e106fca474e27df665ecc33b339bca57799258805fd6e6d"
+    )
     assert audit["analysis_end"] == "2026-08-31"
     assert audit["registry_counts"] == {
         "documents": 37,
@@ -92,6 +95,18 @@ def test_alias_collisions_must_resolve_through_an_explicit_reviewed_family(tmp_p
     loaded = module.load_audit_spec(path)
     with pytest.raises(module.VendorAttentionAuditError, match="ambiguous aliases"):
         module.compile_family_projection(registry, loaded)
+
+
+def test_registry_content_must_match_the_pre_registered_source_hash(tmp_path):
+    module = _load_module()
+    changed_registry = tmp_path / "model_cards.yml"
+    changed_registry.write_bytes(REGISTRY.read_bytes() + b"\n")
+
+    with pytest.raises(module.VendorAttentionAuditError, match="registry SHA-256"):
+        module.generate_vendor_attention_audit(
+            registry_path=changed_registry,
+            spec_path=SPEC,
+        )
 
 
 def test_time_window_is_inclusive_and_uses_revised_date():

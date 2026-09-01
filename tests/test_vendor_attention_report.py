@@ -19,6 +19,11 @@ def test_report_replaces_the_unreproducible_eight_benchmark_claim():
     assert "Junkai Wang / @JunkaiWang-TheoPhy" in source
     assert "Eight benchmarks appear in documents from at least six organizations" not in source
     assert "form the rest of the top eight" not in source
+    assert "audit tables [9-10]" in source
+    assert '"[9] Benchmark Radar contributors.' in source
+    assert '"[10] J. Wang.' in source
+    assert "[19]" not in source
+    assert "[20]" not in source
 
 
 def test_report_build_instructions_regenerate_the_audit_and_next_draft():

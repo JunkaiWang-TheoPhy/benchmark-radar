@@ -5,6 +5,7 @@ audit:
   preregistration_url: https://github.com/ktwu01/benchmark-radar/issues/456#issuecomment-5496051366
   source_path: data/model_cards.yml
   source_commit: 98c8cf6fb5d1d69c66d438ea9f92242b2205c9ae
+  source_sha256: 8b3c59a0d4c236c06e106fca474e27df665ecc33b339bca57799258805fd6e6d
   as_of: 2026-08-31
   contributor: Junkai Wang / @JunkaiWang-TheoPhy
   primary_scenario: canonical_all_t6

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import statistics
 import unicodedata
@@ -49,6 +50,7 @@ def load_audit_spec(path: Path = DEFAULT_SPEC) -> dict[str, Any]:
         "issue_url",
         "preregistration_url",
         "source_commit",
+        "source_sha256",
         "as_of",
         "contributor",
         "primary_scenario",
@@ -446,9 +448,16 @@ def decide_recommendation(
 def generate_vendor_attention_audit(
     *, registry_path: Path = DEFAULT_REGISTRY, spec_path: Path = DEFAULT_SPEC
 ) -> dict[str, Any]:
-    registry = load_registry(registry_path)
     spec = load_audit_spec(spec_path)
     audit = spec["audit"]
+    actual_registry_sha256 = hashlib.sha256(registry_path.read_bytes()).hexdigest()
+    expected_registry_sha256 = str(audit["source_sha256"])
+    if actual_registry_sha256 != expected_registry_sha256:
+        raise VendorAttentionAuditError(
+            "registry SHA-256 does not match the pre-registered source: "
+            f"expected {expected_registry_sha256}, got {actual_registry_sha256}"
+        )
+    registry = load_registry(registry_path)
     analysis_end = _iso_date(audit["as_of"], label="audit.as_of")
     family_projection, family_names, reviewed_families = compile_family_projection(registry, spec)
     canonical_names = {str(row["id"]): str(row["name"]) for row in registry["benchmarks"]}
@@ -565,6 +574,7 @@ def generate_vendor_attention_audit(
         "contributor": audit["contributor"],
         "source_path": str(registry_path),
         "source_commit": audit["source_commit"],
+        "source_sha256": actual_registry_sha256,
         "analysis_end": analysis_end.isoformat(),
         "registry_counts": {
             "documents": len(registry["model_cards"]),

@@ -125,7 +125,7 @@ def vendor_attention_section_paragraphs(report_data: dict[str, Any]) -> list[str
             "registry is a reviewed convenience sample rather than a census: a not-observed "
             "cell can mean an unread or missing report and is not evidence of vendor omission. "
             "Every aggregate links back to model-card IDs and URLs in the issue #456 machine-readable "
-            "audit tables [19-20]."
+            "audit tables [9-10]."
         ),
     ]
 
@@ -1174,11 +1174,11 @@ def story(doi: str) -> list:
                 st["reference"],
             ),
             p(
-                "[19] Benchmark Radar contributors. Reviewed model-card benchmark registry. 2026. https://github.com/ktwu01/benchmark-radar/blob/main/data/model_cards.yml",
+                "[9] Benchmark Radar contributors. Reviewed model-card benchmark registry. 2026. https://github.com/ktwu01/benchmark-radar/blob/main/data/model_cards.yml",
                 st["reference"],
             ),
             p(
-                "[20] J. Wang. Vendor-attention sensitivity audit for issue #456. 2026. https://github.com/ktwu01/benchmark-radar/tree/main/docs/technical-report/vendor-attention-audit",
+                "[10] J. Wang. Vendor-attention sensitivity audit for issue #456. 2026. https://github.com/ktwu01/benchmark-radar/tree/main/docs/technical-report/vendor-attention-audit",
                 st["reference"],
             ),
             Spacer(1, 3),

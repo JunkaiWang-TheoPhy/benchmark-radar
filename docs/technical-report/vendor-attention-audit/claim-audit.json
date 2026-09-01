@@ -677,5 +677,6 @@
   ],
   "schema_version": 1,
   "source_commit": "98c8cf6fb5d1d69c66d438ea9f92242b2205c9ae",
-  "source_path": "data/model_cards.yml"
+  "source_path": "data/model_cards.yml",
+  "source_sha256": "8b3c59a0d4c236c06e106fca474e27df665ecc33b339bca57799258805fd6e6d"
 }
