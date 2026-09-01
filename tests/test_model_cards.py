@@ -815,10 +815,11 @@ def test_shipped_registry_tracks_frontierchallenge_and_its_first_party_report():
     benchmark = next(item for item in registry["benchmarks"] if item["id"] == "frontier_challenge")
     assert benchmark["name"] == "FrontierChallenge"
     assert benchmark["domain"] == "scientific_agent"
-    assert str(benchmark["released"]) == "2026-08-27"
+    assert str(benchmark["released"]) == "2026-08-25"
     assert "97" in benchmark["caveat"]
     assert "one trajectory per system-task pair" in benchmark["caveat"]
 
     report = next(item for item in registry["model_cards"] if item["id"] == "apodex_frontierchallenge_report")
     assert report["document_type"] == "technical_report"
+    assert str(report["published"]) == "2026-08-25"
     assert report["benchmarks"] == ["frontier_challenge"]

@@ -716,7 +716,7 @@ benchmarks:
     aliases: ["FrontierChallenge", "Frontier Challenge"]
     domain: scientific_agent
     url: https://apodexai.github.io/FrontierAgent/benchmarks/FrontierChallenge/
-    released: 2026-08-27
+    released: 2026-08-25
     caveat: >-
       Pass-rate results are model-scaffold measurements over the 97 released
       tasks with one trajectory per system-task pair, so a reported percentage
@@ -2080,11 +2080,11 @@ model_cards:
     organization: ApodexAI
     model: FrontierChallenge
     document_type: technical_report
-    published: 2026-08-27
+    published: 2026-08-25
     url: https://arxiv.org/abs/2608.24979
     retrieved_at: 2026-09-01
-    # The benchmark page and dataset release on 2026-08-27 are first-party, but
-    # the tied 20.6% pass-rate rows below are read from the technical report's
-    # Table 2 and abstract text.
+    # The first public paper release is arXiv v1 on 2026-08-25. The tied 20.6%
+    # pass-rate rows below are read from the technical report's Table 2 and
+    # abstract text.
     benchmarks:
       - frontier_challenge
