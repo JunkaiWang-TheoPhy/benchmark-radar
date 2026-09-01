@@ -809,18 +809,23 @@ def test_merging_frontier_bench_did_not_double_count_terminal_bench():
     assert {"Frontier-Bench", "Terminal-Bench 3.0"} <= set(entry["aliases"])
 
 
-def test_shipped_registry_tracks_frontierchallenge_and_its_first_party_report():
+def test_shipped_registry_tracks_frontierchallenge_without_claiming_adoption():
     registry = load_registry(DEFAULT_REGISTRY_PATH)
 
     benchmark = next(item for item in registry["benchmarks"] if item["id"] == "frontier_challenge")
     assert benchmark["name"] == "FrontierChallenge"
     assert benchmark["domain"] == "scientific_agent"
     assert str(benchmark["released"]) == "2026-08-25"
+    assert (
+        str(benchmark["url"])
+        == "https://apodexai.github.io/FrontierAgent/benchmarks/FrontierChallenge/"
+    )
     assert "97" in benchmark["caveat"]
     assert "one trajectory per system-task pair" in benchmark["caveat"]
 
-    report_id = "apodex_frontierchallenge_report"
-    report = next(item for item in registry["model_cards"] if item["id"] == report_id)
-    assert report["document_type"] == "technical_report"
-    assert str(report["published"]) == "2026-08-25"
-    assert report["benchmarks"] == ["frontier_challenge"]
+    board = adoption_rank(registry)
+    entry = next(item for item in board["entries"] if item["benchmark_id"] == "frontier_challenge")
+    assert entry["card_count"] == 0
+    assert entry["organization_count"] == 0
+    assert entry["adopters"] == []
+    assert all("frontier_challenge" not in card["benchmarks"] for card in board["model_cards"])
