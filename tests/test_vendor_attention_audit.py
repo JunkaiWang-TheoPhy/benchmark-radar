@@ -62,6 +62,18 @@ def test_shipped_audit_reproduces_primary_counts_and_sensitivity():
     assert "boundary depends" in audit["replacement_claim"]
     assert audit["primary_definition"]["score_tracks_used"] is False
 
+    membership_by_scenario = {}
+    for row in result["membership_rows"]:
+        membership_by_scenario.setdefault(row["scenario_id"], []).append(row)
+    for scenario_id, scenario in scenarios.items():
+        assert len(membership_by_scenario[scenario_id]) == scenario["benchmark_count"]
+    assert len(membership_by_scenario["model_cards_only_t6"]) == 110
+    assert len(membership_by_scenario["reviewed_families_t6"]) == 97
+    assert any(
+        row["organization_count"] == 0 and row["in_core"] is False
+        for row in membership_by_scenario["model_cards_only_t6"]
+    )
+
 
 def test_document_edges_and_matrix_keep_provenance_and_unknowns_honest():
     module = _load_module()

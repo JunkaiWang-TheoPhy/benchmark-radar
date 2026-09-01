@@ -486,19 +486,23 @@ def build_leave_one_out_membership(
 
 
 def _scenario_membership_rows(
-    scenario: dict[str, Any], edges: list[dict[str, Any]], *, threshold: int
+    scenario: dict[str, Any],
+    edges: list[dict[str, Any]],
+    *,
+    threshold: int,
+    benchmark_names: dict[str, str],
 ) -> list[dict[str, Any]]:
-    org_support, doc_support, names = _support_maps(edges)
+    org_support, doc_support, _observed_names = _support_maps(edges)
     return [
         {
             "scenario_id": str(scenario["id"]),
             "benchmark_id": benchmark_id,
-            "benchmark_name": names[benchmark_id],
-            "organization_count": len(org_support[benchmark_id]),
-            "document_count": len(doc_support[benchmark_id]),
-            "in_core": len(org_support[benchmark_id]) >= threshold,
+            "benchmark_name": benchmark_names[benchmark_id],
+            "organization_count": len(org_support.get(benchmark_id, set())),
+            "document_count": len(doc_support.get(benchmark_id, set())),
+            "in_core": len(org_support.get(benchmark_id, set())) >= threshold,
         }
-        for benchmark_id in sorted(names, key=lambda value: names[value])
+        for benchmark_id in sorted(benchmark_names, key=lambda value: benchmark_names[value])
     ]
 
 
@@ -652,8 +656,21 @@ def generate_vendor_attention_audit(
             summary["core_explicit_family_count"] = ""
             summary["core_singleton_count"] = ""
         scenario_summaries.append(summary)
+        scenario_benchmark_names = (
+            {
+                benchmark_id: family_names[benchmark_id]
+                for benchmark_id in set(family_projection.values())
+            }
+            if scenario.get("identity") == "family"
+            else canonical_names
+        )
         membership_rows.extend(
-            _scenario_membership_rows(scenario, edges, threshold=int(scenario["min_organizations"]))
+            _scenario_membership_rows(
+                scenario,
+                edges,
+                threshold=int(scenario["min_organizations"]),
+                benchmark_names=scenario_benchmark_names,
+            )
         )
         scenario_payloads[str(scenario["id"])] = {"cards": cards, "edges": edges}
 
