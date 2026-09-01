@@ -3821,6 +3821,76 @@ dialog::backdrop {
   word-break: break-all;
 }
 
+/* The citation sheet at /#cite. Three formats stacked in one column: a reader
+   wants exactly one of them and should be able to tell which is which before
+   reading a character of the citation itself. */
+.cite-blocks {
+  display: grid;
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.cite-label {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+
+/* The whole citation is the copy control, so the hit area matches the thing
+   the reader is looking at. Left-aligned and full width because it holds a
+   block of text, not a label. */
+.cite-copy {
+  display: block;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--canvas);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cite-copy:hover,
+.cite-copy:focus-visible {
+  border-color: var(--blue);
+}
+
+.cite-copy.is-copied {
+  border-color: var(--sea);
+}
+
+/* BibTeX is written line by line and stays that way; APA and the .cff URL are
+   single runs with no break opportunity, so they need `anywhere` to keep the
+   dialog from growing wider than the viewport. */
+.cite-text {
+  display: block;
+  font-family: var(--utility);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.cite-status {
+  display: block;
+  margin-top: 0.6rem;
+  color: var(--blue);
+  font-family: var(--utility);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+}
+
+.cite-copy.is-copied .cite-status {
+  color: var(--sea);
+}
+
+.cite-view {
+  display: inline-block;
+}
+
 .supporting-signals {
   margin: 1.8rem 0;
   padding-top: 1.2rem;

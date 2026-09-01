@@ -830,6 +830,14 @@ const I18N = {
     "If this saved you research time, cite the work, star the repo and help other eval builders find it.":
       "如果它帮你节省了研究时间，请引用这项工作、给仓库点 Star，让更多评测开发者找到它。",
     Cite: "引用",
+    "Cite this work": "引用这项工作",
+    "Pick the format your paper or repository needs, then click it to copy.":
+      "选择你的论文或仓库需要的格式，点击即可复制。",
+    "Click to copy": "点击复制",
+    "Click to copy link": "点击复制链接",
+    "Copy it with your keyboard": "请用键盘复制",
+    "Citation file (.cff)": "引用文件 (.cff)",
+    "View the citation file": "查看引用文件",
     "Share Benchmark Radar": "分享 Benchmark Radar",
     Share: "分享",
     Copied: "已复制",
@@ -1030,6 +1038,7 @@ const state = {
   entity: "",
   rubric: "",
   contact: false,
+  cite: false,
   trendReleasedOnly: false,
   // Leaderboard filters carry their own prefixed keys so a shared permalink can
   // hold a Today filter and a Leaderboard filter at once without either view
@@ -1178,6 +1187,7 @@ function readUrl() {
   const rawHash = window.location.hash.slice(1);
   const hashParams = new URLSearchParams(rawHash);
   state.contact = rawHash === "contact" || hashParams.has("contact");
+  state.cite = rawHash === "cite" || hashParams.has("cite");
   state.rubric = rawHash === "rubric"
     ? "current"
     : hashParams.get("rubric") || "";
@@ -1237,6 +1247,7 @@ function writeUrl(mode = "replace") {
   // #rubric=2 reads as "jump to this section" rather than another filter.
   let hash = "";
   if (state.contact) hash = "contact";
+  else if (state.cite) hash = "cite";
   else if (state.rubric === "current") hash = "rubric";
   else if (state.rubric) hash = `rubric=${encodeURIComponent(state.rubric)}`;
   const url = `${window.location.pathname}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
@@ -1262,6 +1273,15 @@ async function onPopState() {
   // read here would leave it rendering whatever the reader navigated away
   // from while the address bar showed the restored entry.
   readUrl();
+  // The citation card draws no data, so it opens before the payload lands and
+  // has to close before it too. Below the early return it would survive Back
+  // on a slow or failing build: the hash would go, the dialog would stay.
+  const citeDialog = byId("cite-dialog");
+  if (state.cite) {
+    if (!citeDialog?.open) openCite(false);
+  } else if (citeDialog?.open) {
+    citeDialog.close();
+  }
   if (!state.data) return;
   await ensureDataForState();
   // A leaderboard permalink on a build with no curated registry has nothing to
@@ -3159,6 +3179,7 @@ function openRubric(item = null, versionOverride = null) {
   const current = Number(state.data?.rubric?.scoring_version) || version;
   const isLegacy = version !== current;
   state.contact = false;
+  state.cite = false;
   state.rubric = isLegacy ? String(version) : "current";
   syncNavState();
   writeUrl();
@@ -7570,6 +7591,7 @@ function brandIcon(name) {
 function openContact(updateUrl = true) {
   const dialog = byId("contact-dialog");
   state.rubric = "";
+  state.cite = false;
   state.contact = true;
   if (updateUrl) writeUrl("push");
   replaceChildren(byId("contact-content"), [
@@ -7630,6 +7652,104 @@ function openContact(updateUrl = true) {
         },
       }),
     ]),
+  ]);
+  if (!dialog.open) dialog.showModal();
+}
+
+// The published technical report. These strings are the citation itself, so
+// they are held verbatim rather than assembled from parts: a citation the page
+// rebuilds on the fly is a citation that can drift from CITATION.cff.
+const CITE_DOI_URL = "https://doi.org/10.5281/zenodo.22167102";
+const CITE_CFF_URL = "https://github.com/ktwu01/benchmark-radar/blob/main/CITATION.cff";
+const CITE_APA =
+  "Wu, K. (2026). Benchmark Radar v0.9.0: Technical Report (Version 0.9.0). " + CITE_DOI_URL;
+const CITE_BIBTEX = [
+  "@techreport{Wu_Benchmark_Radar_v0_9_0_2026,",
+  "author = {Wu, Koutian},",
+  "doi = {10.5281/zenodo.22167102},",
+  "month = aug,",
+  "title = {{Benchmark Radar v0.9.0: Technical Report}},",
+  "url = {https://zenodo.org/records/22167102},",
+  "year = {2026}",
+  "}",
+].join("\n");
+
+// One block per citation format. The block itself is the button: a reader who
+// came for a citation wants it on the clipboard, so clicking the text copies
+// it rather than making them select eight wrapped lines by hand.
+function citeBlock(label, value, hint) {
+  const status = element("span", { className: "cite-status", text: t(hint) });
+  const text = element("code", { className: "cite-text", text: value });
+  const copy = element(
+    "button",
+    {
+      className: "cite-copy",
+      attrs: { type: "button", "aria-label": `${t(hint)}: ${t(label)}` },
+    },
+    [text, status],
+  );
+  copy.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      copy.classList.add("is-copied");
+      status.textContent = t("Copied");
+      setTimeout(() => {
+        copy.classList.remove("is-copied");
+        status.textContent = t(hint);
+      }, 1600);
+    } catch (error) {
+      // Clipboard access is refused outright in some browsers and embedded
+      // webviews. Selecting the citation leaves the reader one keystroke from
+      // copying it by hand, rather than a click that visibly did nothing.
+      const range = document.createRange();
+      range.selectNodeContents(text);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      status.textContent = t("Copy it with your keyboard");
+    }
+  });
+  return element("section", { className: "cite-block" }, [
+    element("h3", { className: "cite-label", text: t(label) }),
+    copy,
+  ]);
+}
+
+// True only while the open card owns a history entry this page pushed. A
+// reader who landed on /#cite directly does not have one, so closing must not
+// step back: the entry behind them belongs to whatever site sent them here.
+let citeOwnsHistoryEntry = false;
+
+// Reachable at /#cite, so the card has a short link that can be pasted into a
+// paper, a README or a message instead of a reader hunting the footer for it.
+function openCite(updateUrl = true) {
+  const dialog = byId("cite-dialog");
+  state.rubric = "";
+  state.contact = false;
+  state.cite = true;
+  citeOwnsHistoryEntry = updateUrl;
+  if (updateUrl) writeUrl("push");
+  replaceChildren(byId("cite-content"), [
+    element("p", { className: "detail-source", text: "Benchmark Radar" }),
+    element("h2", {
+      className: "detail-title cite-title",
+      text: t("Cite this work"),
+      attrs: { id: "cite-title" },
+    }),
+    element("p", {
+      className: "detail-summary",
+      text: t("Pick the format your paper or repository needs, then click it to copy."),
+    }),
+    element("div", { className: "cite-blocks" }, [
+      citeBlock("APA", CITE_APA, "Click to copy"),
+      citeBlock("BibTeX", CITE_BIBTEX, "Click to copy"),
+      citeBlock("Citation file (.cff)", CITE_CFF_URL, "Click to copy link"),
+    ]),
+    element("a", {
+      className: "secondary-link cite-view",
+      text: t("View the citation file"),
+      attrs: { href: CITE_CFF_URL, target: "_blank", rel: "noopener noreferrer" },
+    }),
   ]);
   if (!dialog.open) dialog.showModal();
 }
@@ -7845,6 +7965,32 @@ function bindEvents() {
   });
   byId("contact-dialog").addEventListener("close", () => {
     state.contact = false;
+    writeUrl();
+  });
+  // The footer entry is an anchor to the same short link, so it still reads as
+  // a link to a crawler and to a reader copying it out of the context menu;
+  // the handler keeps the click itself on the page.
+  byId("cite-open").addEventListener("click", (event) => {
+    event.preventDefault();
+    openCite();
+  });
+  byId("cite-close").addEventListener("click", () => byId("cite-dialog").close());
+  byId("cite-dialog").addEventListener("click", (event) => {
+    if (event.target === byId("cite-dialog")) byId("cite-dialog").close();
+  });
+  byId("cite-dialog").addEventListener("close", () => {
+    state.cite = false;
+    const owned = citeOwnsHistoryEntry;
+    citeOwnsHistoryEntry = false;
+    // Replacing an entry this page pushed would leave two identical entries
+    // stacked, so the reader's next Back would look broken: same URL, same
+    // page, nothing visibly happening. Stepping back consumes it instead.
+    // When Back is what closed the card the hash is already gone, and this
+    // falls through to the ordinary rewrite.
+    if (owned && window.location.hash === "#cite") {
+      window.history.back();
+      return;
+    }
     writeUrl();
   });
   byId("share-radar").addEventListener("click", async (event) => {
@@ -8081,6 +8227,10 @@ async function initialize() {
   bindEvents();
   // Independent of the data file, so badges still render on an error state.
   renderRepoBadges();
+  // The citation is fixed text, not a reading of the corpus. Someone arriving
+  // from a paper's reference link should still get it on a build whose data
+  // file is broken, so it opens before the fetch rather than after it.
+  if (state.cite) openCite(false);
   try {
     // The default payload carries the latest day, aggregate counts, and the
     // leaderboard. Trends, Explore, All dates, and historical permalinks lazily

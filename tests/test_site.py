@@ -114,6 +114,50 @@ def test_priority_score_is_reachably_explained():
     assert "How is this scored?" in script
 
 
+def test_citation_formats_are_one_click_away_behind_a_short_link():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+    cff = Path("CITATION.cff").read_text(encoding="utf-8")
+
+    # Same pop-out treatment as the rubric, reachable at a link short enough to
+    # paste into a paper or a message.
+    assert 'id="cite-dialog"' in html
+    assert 'id="cite-content"' in html
+    assert 'href="https://benchmark-radar.org/#cite"' in html
+    assert 'aria-controls="cite-dialog"' in html
+    assert 'state.cite = rawHash === "cite" || hashParams.has("cite");' in script
+    assert 'else if (state.cite) hash = "cite";' in script
+    assert "function openCite(" in script
+
+    # Three formats, each copied by clicking the citation itself.
+    assert 'citeBlock("APA", CITE_APA, "Click to copy")' in script
+    assert 'citeBlock("BibTeX", CITE_BIBTEX, "Click to copy")' in script
+    assert 'citeBlock("Citation file (.cff)", CITE_CFF_URL, "Click to copy link")' in script
+    assert "navigator.clipboard.writeText(value)" in script
+    assert ".cite-copy {" in styles
+
+    # The card draws no data, so a build whose payload never arrives must still
+    # open it and must still close it on Back: both sides of that sit above the
+    # early return in onPopState.
+    pop_state = script.split("async function onPopState() {", 1)[1]
+    cite_sync = pop_state.index('const citeDialog = byId("cite-dialog");')
+    assert cite_sync < pop_state.index("if (!state.data) return;")
+
+    # Opening from the footer pushes an entry. Closing steps back through it
+    # rather than replacing it, or Back would land on an identical URL and
+    # look broken -- but only when this page pushed the entry, so closing a
+    # directly-opened /#cite never sends the reader off the site.
+    assert "citeOwnsHistoryEntry = updateUrl;" in script
+    assert 'if (owned && window.location.hash === "#cite") {' in script
+
+    # The rendered citations must agree with the file they claim to mirror, or
+    # the site would hand out a citation the repository does not make.
+    for fragment in ("10.5281/zenodo.22167102", "Benchmark Radar v0.9.0: Technical Report"):
+        assert fragment in cff
+        assert fragment in script
+
+
 def test_every_navigation_item_uses_the_same_active_state():
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
@@ -579,11 +623,15 @@ def test_records_expand_inline_without_an_exclusive_accordion_or_record_modal():
     assert "detail-dialog" not in script
     # A shared details[name] would force one row closed when another opens.
     assert "attrs: { name:" not in script
-    # The two dialogs on the page are non-record chrome: the scoring rubric and
-    # the contact sheet (the export dialog went with the export button,
-    # issue #311). Record detail must stay inline, so any third showModal()
-    # is a regression to a record modal.
-    assert script.count(".showModal()") == 2
+    # The dialogs on the page are non-record chrome: the scoring rubric, the
+    # contact sheet (the export dialog went with the export button, issue
+    # #311), and the citation card. Record detail must stay inline, so a
+    # showModal() the list below does not name is a regression to a record
+    # modal.
+    assert script.count(".showModal()") == 3
+    assert 'byId("rubric-dialog")' in script
+    assert 'byId("contact-dialog")' in script
+    assert 'byId("cite-dialog")' in script
 
 
 def test_hugging_face_expansion_links_to_the_full_card():
