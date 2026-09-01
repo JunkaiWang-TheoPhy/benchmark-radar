@@ -53,9 +53,7 @@ PURPLE = HexColor("#6D4AFF")
 NEXT_DRAFT_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-next-draft.pdf")
 AGENT_WEAKNESS_STUDY_PATH = Path("data/agent_weakness_evidence.yml")
 AGENT_WEAKNESS_ISSUE_NUMBER = 455
-AGENT_WEAKNESS_ISSUE_URL = (
-    "https://github.com/ktwu01/benchmark-radar/issues/455"
-)
+AGENT_WEAKNESS_ISSUE_URL = "https://github.com/ktwu01/benchmark-radar/issues/455"
 AGENT_WEAKNESS_CONTRIBUTOR = "Junkai Wang / @JunkaiWang-TheoPhy"
 AGENT_WEAKNESS_SECTION_TITLE = "6.5 Selected benchmark-family signal on agent weaknesses"
 
@@ -142,8 +140,9 @@ def agent_weakness_section_paragraphs(report_data: dict[str, Any]) -> list[str]:
             f"{design_implied} design-implied row and {unmeasured} unmeasured row; each included "
             f"family needed a primary-source anchor, a same-family counterexample, and family "
             f"deduplication. Independent secondary coding matched on {agreement_matches}/{reviewed} "
-            f"completed blinded sampled rows out of {reviewed_total} sampled rows; the 4/4 sample-"
-            "local result in the main packet does not establish broad reliability. "
+            f"completed blinded sampled rows out of {reviewed_total} sampled rows; the "
+            f"{agreement_matches}/{reviewed_total} sample-local result in the main packet does not "
+            "establish broad reliability. "
             f"{measurement_counterexamples} remains the instrument counterexample rather than "
             "demonstrated prevalence evidence, because its audit shows that benchmark correction can "
             "reverse an apparent verification/completion failure signal. Primary-source benchmark "
@@ -1188,7 +1187,10 @@ def story(doi: str) -> list:
                 "[8] L. Xiaopai. BuilderPulse: AI-powered daily intelligence for indie hackers and builders. GitHub, 2026. https://github.com/BuilderPulse/BuilderPulse",
                 st["reference"],
             ),
-            *[p(entry, st["reference"]) for entry in agent_weakness_reference_entries(agent_weakness_data)],
+            *[
+                p(entry, st["reference"])
+                for entry in agent_weakness_reference_entries(agent_weakness_data)
+            ],
             Spacer(1, 9),
             Table(
                 [

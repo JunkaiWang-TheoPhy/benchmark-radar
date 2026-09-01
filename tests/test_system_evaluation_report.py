@@ -230,16 +230,11 @@ def test_agent_weakness_section_reports_bounded_result_and_method():
     section_text = "\n".join(paragraphs)
 
     assert report_data["issue_number"] == 455
-    assert (
-        report_data["issue_url"] == "https://github.com/ktwu01/benchmark-radar/issues/455"
-    )
+    assert report_data["issue_url"] == "https://github.com/ktwu01/benchmark-radar/issues/455"
     assert report_data["contributor"] == "Junkai Wang / @JunkaiWang-TheoPhy"
     assert report_data["snapshot_date"] == "2026-09-01"
     assert report_data["evidence_cutoff"] == "2026-09-01"
-    assert (
-        report_data["repository_commit_input"]
-        == "98c8cf6fb5d1d69c66d438ea9f92242b2205c9ae"
-    )
+    assert report_data["repository_commit_input"] == "98c8cf6fb5d1d69c66d438ea9f92242b2205c9ae"
     assert report_data["demonstrated_family_count"] == 9
     assert report_data["state_control_count"] == 7
     assert report_data["decision_execution_count"] == 2
@@ -266,6 +261,7 @@ def test_agent_weakness_section_reports_bounded_result_and_method():
     assert "design-implied" in section_text
     assert "unmeasured" in section_text
     assert "4/4" in section_text
+    assert "sample-local result in the main packet" in section_text
     assert "does not establish broad reliability" in section_text
     assert "SciCode" in section_text
     assert "instrument counterexample" in section_text
@@ -308,6 +304,7 @@ def test_disagreement_fixture_uses_agreement_match_count_not_completed_count(tmp
     assert report_data["agreement_match_count"] == 2
     assert "2/3" in section_text
     assert "3/3" not in section_text
+    assert "4/4 sample-local result" not in section_text
 
 
 def test_story_places_agent_weakness_subsection_before_use_it_and_adds_primary_sources():
@@ -324,10 +321,7 @@ def test_story_places_agent_weakness_subsection_before_use_it_and_adds_primary_s
 
     assert subsection_index < use_it_index
     assert refs_index > texts.index("References")
-    assert (
-        "[18] Primary-source evidence for SciCode. https://arxiv.org/abs/2608.04975"
-        in texts
-    )
+    assert "[18] Primary-source evidence for SciCode. https://arxiv.org/abs/2608.04975" in texts
 
     section_flowables = _agent_section_flowables(story)
     assert len(section_flowables) == 3
