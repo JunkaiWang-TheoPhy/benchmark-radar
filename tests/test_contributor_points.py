@@ -133,6 +133,18 @@ def test_historical_prs_count_once_and_bots_cannot_take_a_seat():
             title="[10 points] Post-policy work",
             mergedAt="2026-09-01T00:00:00Z",
         ),
+        pull_request(
+            number=463,
+            title="[3 points] Promised post-policy work",
+            author={"login": "JiayuuWang"},
+            mergedAt="2026-08-31T03:36:33Z",
+        ),
+        pull_request(
+            number=472,
+            title="[3 points] More promised post-policy work",
+            author={"login": "JiayuuWang"},
+            mergedAt="2026-08-31T14:52:17Z",
+        ),
     ]
 
     ledger = build_ledger([], historical, {}, policy_start=START, now=START)
@@ -146,6 +158,11 @@ def test_historical_prs_count_once_and_bots_cannot_take_a_seat():
     assert ledger["collaborator_threshold"] == 12
     assert totals["app/dependabot"]["points"] == 8
     assert not totals["app/dependabot"]["eligible_for_collaborator_seat"]
+    assert totals["JiayuuWang"] == {
+        "contributor": "JiayuuWang",
+        "points": 6,
+        "eligible_for_collaborator_seat": False,
+    }
     assert "ktwu01" not in totals
 
 
