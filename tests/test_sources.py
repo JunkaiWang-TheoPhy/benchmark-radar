@@ -7,7 +7,7 @@ import yaml
 
 from benchmark_radar.http import RequestError
 from benchmark_radar.models import RadarItem
-from benchmark_radar.pipeline import score_item
+from benchmark_radar.pipeline import _score_and_select, score_item
 from benchmark_radar.sources import (
     GITHUB_RELEASE_PARSER_VERSION,
     ConnectorPayloadError,
@@ -598,6 +598,51 @@ def test_github_preserves_creation_and_update_times(monkeypatch):
     assert items[0].published_at == datetime(2026, 6, 1, tzinfo=UTC)
     assert items[0].updated_at == datetime(2026, 7, 27, 12, tzinfo=UTC)
     assert items[0].event_kind == "updated"
+
+
+def test_github_config_discovers_and_routes_rsi_exam(monkeypatch):
+    """Issue #408: the named benchmark matched no configured GitHub query."""
+    config = yaml.safe_load(Path("config.yml").read_text(encoding="utf-8"))
+    github_config = {**config["sources"]["github"], "request_delay_seconds": 0}
+    queries = []
+
+    def fake_get_json(url, params=None, headers=None):
+        query = params["q"].split(" pushed:", 1)[0]
+        queries.append(query)
+        if query != '"recursive self-improvement" in:name,description,readme':
+            return {"items": []}
+        return {
+            "items": [
+                {
+                    "full_name": "aiming-lab/RSI-Exam",
+                    "html_url": "https://github.com/aiming-lab/RSI-Exam",
+                    "created_at": "2026-08-26T06:58:55Z",
+                    "pushed_at": "2026-08-29T05:24:25Z",
+                    "description": (
+                        "RSI-Exam: Measuring Recursive Self-Improvement on Long-Horizon, "
+                        "Executable Research Tasks"
+                    ),
+                    "stargazers_count": 75,
+                    "forks_count": 3,
+                }
+            ]
+        }
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+
+    items = fetch_github(github_config, datetime(2026, 8, 27, tzinfo=UTC), 300)
+    published, _selection = _score_and_select(
+        items,
+        config,
+        now=datetime(2026, 8, 29, 12, tzinfo=UTC),
+        fetched_count=len(items),
+        suppressed_count=0,
+    )
+
+    assert '"recursive self-improvement" in:name,description,readme' in queries
+    assert [item.source_id for item in items] == ["aiming-lab/RSI-Exam"]
+    assert [item.source_id for item in published] == ["aiming-lab/RSI-Exam"]
+    assert published[0].watchlist == "RSI-Exam"
 
 
 def _github_organization_row(index, *, created="2026-07-27T12:00:00Z"):
