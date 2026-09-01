@@ -1,0 +1,192 @@
+from __future__ import annotations
+
+import csv
+import importlib.util
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+import yaml
+
+from benchmark_radar.model_cards import load_registry
+
+SCRIPT = Path("scripts/analyze_vendor_attention.py")
+SPEC = Path("data/vendor_attention_audit.yml")
+REGISTRY = Path("data/model_cards.yml")
+COMMITTED_OUTPUT = Path("docs/technical-report/vendor-attention-audit")
+
+
+def _load_module():
+    spec = importlib.util.spec_from_file_location("vendor_attention_audit", SCRIPT)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_shipped_audit_reproduces_primary_counts_and_sensitivity():
+    module = _load_module()
+    result = module.generate_vendor_attention_audit(registry_path=REGISTRY, spec_path=SPEC)
+    audit = result["claim_audit"]
+    scenarios = {row["scenario_id"]: row for row in result["scenario_summaries"]}
+
+    assert audit["source_commit"] == "98c8cf6fb5d1d69c66d438ea9f92242b2205c9ae"
+    assert audit["analysis_end"] == "2026-08-31"
+    assert audit["registry_counts"] == {
+        "documents": 37,
+        "organizations": 12,
+        "benchmarks": 110,
+    }
+    assert scenarios["canonical_all_t5"]["core_count"] == 21
+    assert scenarios["canonical_all_t6"]["core_count"] == 16
+    assert scenarios["canonical_all_t7"]["core_count"] == 10
+    assert scenarios["model_cards_only_t6"]["core_count"] == 4
+    assert scenarios["latest_per_organization_t6"]["core_count"] == 3
+    assert scenarios["trailing_365d_t6"]["core_count"] == 6
+    assert scenarios["trailing_180d_t6"]["core_count"] == 4
+    assert scenarios["trailing_90d_t6"]["core_count"] == 4
+    assert scenarios["drop_newest_per_organization_t6"]["core_count"] == 9
+    assert scenarios["reviewed_families_t6"]["core_count"] == 13
+
+    assert audit["original_list_equals_threshold_set"] is False
+    assert audit["original_list_is_subset_of_threshold_set"] is True
+    assert audit["recommendation"] == "narrow"
+    assert "boundary depends" in audit["replacement_claim"]
+    assert audit["primary_definition"]["score_tracks_used"] is False
+
+
+def test_document_edges_and_matrix_keep_provenance_and_unknowns_honest():
+    module = _load_module()
+    result = module.generate_vendor_attention_audit(registry_path=REGISTRY, spec_path=SPEC)
+
+    assert result["document_edges"]
+    assert all(row["document_id"] and row["document_url"] for row in result["document_edges"])
+    assert all(row["raw_benchmark_id"] for row in result["document_edges"])
+    assert len(result["organization_matrix"]) == 12 * 110
+    statuses = {row["reported_status"] for row in result["organization_matrix"]}
+    assert statuses == {"reported", "not_observed"}
+    assert not any(row["reported_status"] == "absent" for row in result["organization_matrix"])
+
+    repeated = [
+        row
+        for row in result["organization_matrix"]
+        if row["reported_status"] == "reported" and row["support_document_count"] > 1
+    ]
+    assert repeated, "the fixture must exercise multiple documents from one organization"
+    keys = [
+        (row["organization"], row["resolved_benchmark_id"]) for row in result["organization_matrix"]
+    ]
+    assert len(keys) == len(set(keys)), "organization support is binary per benchmark"
+
+
+def test_alias_collisions_must_resolve_through_an_explicit_reviewed_family(tmp_path):
+    module = _load_module()
+    registry = load_registry(REGISTRY)
+    spec = yaml.safe_load(SPEC.read_text(encoding="utf-8"))
+    spec["families"] = [row for row in spec["families"] if row["id"] != "mmmu_family"]
+    path = tmp_path / "audit.yml"
+    path.write_text(yaml.safe_dump(spec, sort_keys=False), encoding="utf-8")
+
+    loaded = module.load_audit_spec(path)
+    with pytest.raises(module.VendorAttentionAuditError, match="ambiguous aliases"):
+        module.compile_family_projection(registry, loaded)
+
+
+def test_time_window_is_inclusive_and_uses_revised_date():
+    module = _load_module()
+    registry = {
+        "model_cards": [
+            {
+                "id": "inside",
+                "organization": "A",
+                "model": "M1",
+                "published": "2026-08-01",
+                "revised": "2026-08-31",
+                "benchmarks": ["b"],
+            },
+            {
+                "id": "boundary",
+                "organization": "B",
+                "model": "M2",
+                "published": "2026-08-30",
+                "benchmarks": ["b"],
+            },
+            {
+                "id": "outside",
+                "organization": "C",
+                "model": "M3",
+                "published": "2026-08-29",
+                "benchmarks": ["b"],
+            },
+        ]
+    }
+
+    selected = module.select_cards(
+        registry,
+        {"trailing_days": 2},
+        analysis_end=module.date.fromisoformat("2026-08-31"),
+    )
+
+    assert [row["id"] for row in selected] == ["boundary", "inside"]
+
+
+def test_leave_one_out_results_expose_boundary_instability():
+    module = _load_module()
+    result = module.generate_vendor_attention_audit(registry_path=REGISTRY, spec_path=SPEC)
+    baseline_rows = {
+        row["benchmark_id"]: row
+        for row in result["membership_rows"]
+        if row["scenario_id"] == "canonical_all_t6" and row["in_core"]
+    }
+
+    assert len(baseline_rows) == 16
+    assert any(not row["survives_every_org_omission"] for row in baseline_rows.values())
+    assert any(not row["survives_every_document_omission"] for row in baseline_rows.values())
+    assert all(
+        row["leave_one_doc_min"] <= row["organization_count"] for row in baseline_rows.values()
+    )
+
+
+def test_cli_writes_deterministic_machine_readable_artifacts(tmp_path):
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    command = [
+        sys.executable,
+        str(SCRIPT),
+        "--registry",
+        str(REGISTRY),
+        "--spec",
+        str(SPEC),
+    ]
+    subprocess.run([*command, "--output-dir", str(first)], check=True)
+    subprocess.run([*command, "--output-dir", str(second)], check=True)
+
+    expected = {
+        "document-benchmark-edges.csv",
+        "organization-benchmark-matrix.csv",
+        "scenario-summary.csv",
+        "sensitivity-membership.csv",
+        "claim-audit.json",
+    }
+    assert {path.name for path in first.iterdir()} == expected
+    for name in expected:
+        assert (first / name).read_bytes() == (second / name).read_bytes()
+
+    audit = json.loads((first / "claim-audit.json").read_text(encoding="utf-8"))
+    assert audit["recommendation"] == "narrow"
+    with (first / "scenario-summary.csv").open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert (
+        next(row for row in rows if row["scenario_id"] == "canonical_all_t6")["core_count"] == "16"
+    )
+
+
+def test_committed_artifacts_match_a_fresh_rebuild(tmp_path):
+    module = _load_module()
+    result = module.generate_vendor_attention_audit(registry_path=REGISTRY, spec_path=SPEC)
+    module.write_vendor_attention_artifacts(result, output_dir=tmp_path)
+
+    for committed in sorted(COMMITTED_OUTPUT.iterdir()):
+        assert committed.read_bytes() == (tmp_path / committed.name).read_bytes()
