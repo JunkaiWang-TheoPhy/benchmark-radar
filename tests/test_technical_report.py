@@ -30,6 +30,7 @@ def test_next_draft_records_contributor_name_and_affiliation() -> None:
     source = BUILDER.read_text(encoding="utf-8")
     draft_authors = ast.literal_eval(_assignment("NEXT_DRAFT_AUTHORS").value)
     draft_affiliations = ast.literal_eval(_assignment("NEXT_DRAFT_AFFILIATIONS").value)
+    corresponding_author = ast.literal_eval(_assignment("NEXT_DRAFT_CORRESPONDING_AUTHOR").value)
 
     assert draft_authors == ("Koutian Wu", "Junjie Zhou")
     assert draft_affiliations == (
@@ -37,4 +38,6 @@ def test_next_draft_records_contributor_name_and_affiliation() -> None:
         "Koutian Wu — Tacite AI",
         "Junjie Zhou — Hangzhou Dianzi University",
     )
+    assert corresponding_author == "Koutian Wu — k@tacite.ai"
+    assert "Corresponding author: {corresponding_author}" in source
     assert "WORKING DRAFT — NOT THE FROZEN v0.9.0 DEPOSIT" in source

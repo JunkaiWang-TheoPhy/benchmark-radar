@@ -57,6 +57,7 @@ NEXT_DRAFT_AFFILIATIONS = (
     "Koutian Wu — Tacite AI",
     "Junjie Zhou — Hangzhou Dianzi University",
 )
+NEXT_DRAFT_CORRESPONDING_AUTHOR = "Koutian Wu — k@tacite.ai"
 
 
 def table(rows: list[list], widths: list[float], *, tiny: bool = False) -> Table:
@@ -295,6 +296,7 @@ def story(
     *,
     authors: tuple[str, ...] = FROZEN_AUTHORS,
     affiliations: tuple[str, ...] = (),
+    corresponding_author: str | None = None,
     draft: bool = False,
 ) -> list:
     st = styles()
@@ -322,6 +324,11 @@ def story(
             ),
             p(" · ".join(authors), st["author"]),
             *[p(affiliation, st["meta"]) for affiliation in affiliations],
+            *(
+                [p(f"Corresponding author: {corresponding_author}", st["meta"])]
+                if corresponding_author
+                else []
+            ),
             *(
                 [
                     p(
@@ -1144,11 +1151,13 @@ def main() -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     authors = NEXT_DRAFT_AUTHORS if args.next_draft else FROZEN_AUTHORS
     affiliations = NEXT_DRAFT_AFFILIATIONS if args.next_draft else ()
+    corresponding_author = NEXT_DRAFT_CORRESPONDING_AUTHOR if args.next_draft else None
     EvaluationDoc(str(output), doi=args.doi, authors=authors).build(
         story(
             args.doi,
             authors=authors,
             affiliations=affiliations,
+            corresponding_author=corresponding_author,
             draft=args.next_draft,
         )
     )
