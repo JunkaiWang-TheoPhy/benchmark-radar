@@ -34,7 +34,7 @@ def test_report_replaces_the_unreproducible_eight_benchmark_claim():
     assert "singleton canonical IDs" in source
     assert "blob/98c8cf6fb5d1d69c66d438ea9f92242b2205c9ae/data/model_cards.yml" in source
     assert (
-        "blob/0d9acf6f7c33d926e91ff668813a9112bbba2239/"
+        "blob/c235da3fededdc6a4728e1f0294b37f6f8554dc0/"
         "docs/technical-report/vendor-attention-audit/claim-audit.json" in source
     )
     assert "blob/main/data/model_cards.yml" not in source

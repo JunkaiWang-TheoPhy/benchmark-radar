@@ -1183,7 +1183,7 @@ def story(doi: str) -> list:
                 st["reference"],
             ),
             p(
-                "[10] J. Wang. Vendor-attention sensitivity audit for issue #456. 2026. https://github.com/ktwu01/benchmark-radar/blob/0d9acf6f7c33d926e91ff668813a9112bbba2239/docs/technical-report/vendor-attention-audit/claim-audit.json",
+                "[10] J. Wang. Vendor-attention sensitivity audit for issue #456. 2026. https://github.com/ktwu01/benchmark-radar/blob/c235da3fededdc6a4728e1f0294b37f6f8554dc0/docs/technical-report/vendor-attention-audit/claim-audit.json",
                 st["reference"],
             ),
             Spacer(1, 0),
