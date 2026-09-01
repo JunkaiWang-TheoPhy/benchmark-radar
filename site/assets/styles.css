@@ -638,6 +638,36 @@ input {
   white-space: nowrap;
 }
 
+.search-scope-banner {
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--blue) 45%, var(--edge));
+  border-left: 5px solid var(--blue);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--blue) 9%, var(--panel));
+  box-shadow: var(--shadow);
+}
+
+.search-scope-banner p {
+  margin: 0;
+}
+
+.search-scope-message {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.search-scope-banner a {
+  font-weight: 700;
+}
+
+.search-scope-export {
+  margin-top: 0.35rem !important;
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.76rem;
+}
+
 /* The day's narrative shares the right sidebar with the health and corpus
    cards, so it carries the same box treatment and the sidebar column
    constrains its width instead of an explicit cap (issue #248). */
