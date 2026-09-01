@@ -26,4 +26,4 @@ jobs:
           gh issue create \
             --title "Update WeChat group QR code — $(date -u +%Y-%m-%d)" \
             --label automated \
-            --body $'1. Paste the new WeChat group QR image directly into this issue.\n\n2. Give the agent this prompt:\n\n```text\nFetch the QR image from this issue, run `git pull --ff-only`, replace `assets/wechat-group-qr.jpg` with the image, commit the change, and push it to `main`.\n```'
+            --body $'1. Paste the new WeChat group QR image directly into this issue.\n\n2. Give the agent this prompt:\n\n```text\nFind the open issue whose title contains `qr` (case-insensitive) with `gh issue list --state open --json number,title`, fetch the QR image from that issue, run `git pull --ff-only`, replace `assets/wechat-group-qr.jpg` with the image, commit the change, and push it to `main`.\n```'
