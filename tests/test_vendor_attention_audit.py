@@ -36,6 +36,7 @@ def test_shipped_audit_reproduces_primary_counts_and_sensitivity():
     assert audit["source_sha256"] == (
         "8b3c59a0d4c236c06e106fca474e27df665ecc33b339bca57799258805fd6e6d"
     )
+    assert audit["source_commit_verified"] is True
     assert audit["analysis_end"] == "2026-08-31"
     assert audit["registry_counts"] == {
         "documents": 37,
@@ -109,6 +110,28 @@ def test_registry_content_must_match_the_pre_registered_source_hash(tmp_path):
             registry_path=changed_registry,
             spec_path=SPEC,
         )
+
+
+def test_source_commit_must_resolve_to_the_pre_registered_registry_bytes(tmp_path):
+    module = _load_module()
+    spec = yaml.safe_load(SPEC.read_text(encoding="utf-8"))
+    spec["audit"]["source_commit"] = "deadbeef" * 5
+    path = tmp_path / "audit.yml"
+    path.write_text(yaml.safe_dump(spec, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(module.VendorAttentionAuditError, match="unable to read"):
+        module.generate_vendor_attention_audit(registry_path=REGISTRY, spec_path=path)
+
+
+def test_original_claim_is_locked_to_the_pre_registered_eight_items(tmp_path):
+    module = _load_module()
+    spec = yaml.safe_load(SPEC.read_text(encoding="utf-8"))
+    spec["audit"]["original_claim"]["listed_benchmark_ids"].append("mmlu")
+    path = tmp_path / "audit.yml"
+    path.write_text(yaml.safe_dump(spec, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(module.VendorAttentionAuditError, match="preregistered claim"):
+        module.load_audit_spec(path)
 
 
 def test_spec_rejects_a_missing_implementation_scenario_before_analysis(tmp_path):

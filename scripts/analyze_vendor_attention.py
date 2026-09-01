@@ -8,6 +8,7 @@ import csv
 import hashlib
 import json
 import statistics
+import subprocess
 import unicodedata
 from collections import defaultdict
 from datetime import date, timedelta
@@ -22,6 +23,18 @@ DEFAULT_REGISTRY = Path("data/model_cards.yml")
 DEFAULT_SPEC = Path("data/vendor_attention_audit.yml")
 DEFAULT_OUTPUT_DIR = Path("docs/technical-report/vendor-attention-audit")
 PRIMARY_SCENARIO_ID = "canonical_all_t6"
+ORIGINAL_CLAIM_TEXT = "Vendor attention has converged on a small reporting core."
+ORIGINAL_SELECTION_TEXT = "Eight benchmarks appear in documents from at least six organizations."
+ORIGINAL_CLAIM_IDS = (
+    "gpqa_diamond",
+    "hle",
+    "swe_bench_verified",
+    "terminal_bench",
+    "aime",
+    "livecodebench",
+    "mmlu_pro",
+    "browsecomp",
+)
 REQUIRED_SCENARIO_DEFINITIONS = {
     "canonical_all_t5": ("canonical", 5, (), None, False, False),
     "canonical_all_t6": ("canonical", 6, (), None, False, False),
@@ -75,6 +88,17 @@ def load_audit_spec(path: Path = DEFAULT_SPEC) -> dict[str, Any]:
     if missing:
         raise VendorAttentionAuditError(f"spec audit metadata missing: {', '.join(missing)}")
     _iso_date(audit["as_of"], label="audit.as_of")
+    original_claim = audit["original_claim"]
+    if not isinstance(original_claim, dict):
+        raise VendorAttentionAuditError("original_claim must be a mapping")
+    actual_claim = (
+        str(original_claim.get("text") or ""),
+        str(original_claim.get("selection_text") or ""),
+        tuple(map(str, original_claim.get("listed_benchmark_ids") or [])),
+    )
+    expected_claim = (ORIGINAL_CLAIM_TEXT, ORIGINAL_SELECTION_TEXT, ORIGINAL_CLAIM_IDS)
+    if actual_claim != expected_claim:
+        raise VendorAttentionAuditError("original_claim does not match the preregistered claim")
     scenario_ids = [str(row.get("id") or "") for row in scenarios]
     if any(not value for value in scenario_ids) or len(scenario_ids) != len(set(scenario_ids)):
         raise VendorAttentionAuditError("scenario ids must be non-empty and unique")
@@ -508,6 +532,29 @@ def generate_vendor_attention_audit(
             "registry SHA-256 does not match the pre-registered source: "
             f"expected {expected_registry_sha256}, got {actual_registry_sha256}"
         )
+    source_path = Path(str(audit["source_path"]))
+    expected_registry_path = (Path.cwd() / source_path).resolve()
+    if registry_path.resolve() != expected_registry_path:
+        raise VendorAttentionAuditError(
+            f"registry path must match the pre-registered source_path {source_path}"
+        )
+    source_commit = str(audit["source_commit"])
+    git_result = subprocess.run(
+        ["git", "show", f"{source_commit}:{source_path.as_posix()}"],
+        cwd=Path.cwd(),
+        check=False,
+        capture_output=True,
+    )
+    if git_result.returncode != 0:
+        raise VendorAttentionAuditError(
+            f"unable to read pre-registered registry at commit {source_commit}"
+        )
+    commit_registry_sha256 = hashlib.sha256(git_result.stdout).hexdigest()
+    if commit_registry_sha256 != expected_registry_sha256:
+        raise VendorAttentionAuditError(
+            "source_commit registry bytes do not match source_sha256: "
+            f"expected {expected_registry_sha256}, got {commit_registry_sha256}"
+        )
     registry = load_registry(registry_path)
     analysis_end = _iso_date(audit["as_of"], label="audit.as_of")
     family_projection, family_names, reviewed_families = compile_family_projection(registry, spec)
@@ -637,6 +684,7 @@ def generate_vendor_attention_audit(
         "source_path": str(registry_path),
         "source_commit": audit["source_commit"],
         "source_sha256": actual_registry_sha256,
+        "source_commit_verified": True,
         "analysis_end": analysis_end.isoformat(),
         "registry_counts": {
             "documents": len(registry["model_cards"]),

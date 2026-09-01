@@ -80,6 +80,8 @@ def test_report_narrative_carries_the_machine_readable_replacement_claim():
     assert "convenience sample" in narrative
     assert "Junkai Wang /" in narrative
     assert "issues/456" in narrative
+    assert "blob/98c8cf6fb5d1d69c66d438ea9f92242b2205c9ae/data/model_cards.yml" in narrative
+    assert "../../data/model_cards.yml" not in narrative
 
     lines = REPORT_NARRATIVE.read_text(encoding="utf-8").splitlines()
     family_row = next(

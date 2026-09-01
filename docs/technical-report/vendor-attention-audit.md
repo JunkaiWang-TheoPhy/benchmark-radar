@@ -12,8 +12,8 @@ contributed the analysis, code, machine-readable tables, and report revision.
 
 The primary question is whether a fixed set of benchmarks is repeatedly
 reported across organizations, and whether that set survives reasonable changes
-to the counting rule. The source is the reviewed `model_cards` array in
-[`data/model_cards.yml`](../../data/model_cards.yml). One document is one
+to the counting rule. The source is the reviewed `model_cards` array in the
+[commit-pinned registry](https://github.com/ktwu01/benchmark-radar/blob/98c8cf6fb5d1d69c66d438ea9f92242b2205c9ae/data/model_cards.yml). One document is one
 validated model-card ID and URL. One organization observation is binary: five
 documents from the same organization mentioning one benchmark still contribute
 one organization. Models, documents, canonical benchmark IDs, reviewed
