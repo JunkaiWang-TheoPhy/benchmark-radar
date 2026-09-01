@@ -839,6 +839,11 @@ const I18N = {
     "Citation file (.cff)": "引用文件 (.cff)",
     "View the citation file": "查看引用文件",
     CLI: "命令行",
+    "This search covers all dates.": "此处搜索全部日期的结果。",
+    "Still want today's results?": "仍要搜索今天的，请",
+    "Search today": "点击这里",
+    "More than 10 results.": "结果超过 10 条。",
+    "Use the CLI version to export all data.": "使用我们的命令行版本导出全部数据。",
     "Query it locally (CLI version)": "在本地查询（命令行版本）",
     "This website is the hosted view. The CLI version runs on your own computer: it installs the command-line tool, downloads the searchable data, and answers from those local files.":
       "本网站是在线版本。命令行版本在你自己的电脑上运行：它会安装命令行工具、下载可搜索的数据，并从这些本地文件中给出答案。",
@@ -1176,8 +1181,10 @@ function readUrl() {
   const requestedView = params.get("view");
   // Legacy Explorer permalinks resolve to the filterable Today list.
   state.view = ["trends", "map", "leaderboard"].includes(requestedView) ? requestedView : "today";
-  state.todayDate = params.get("date") || "";
   state.q = params.get("q") || "";
+  // A bare search permalink has archive-wide intent. An explicit date remains
+  // a deliberate narrow search, including the "today" link in the scope banner.
+  state.todayDate = params.get("date") || (state.q ? "all" : "");
   state.kind = params.get("kind") || "";
   state.category = params.get("category") || "";
   state.source = params.get("source") || "";
@@ -1227,7 +1234,13 @@ function writeUrl(mode = "replace") {
   if (state.view === "today") {
     if (state.todayDate === "all") {
       params.set("date", "all");
-    } else if (state.todayDate && state.todayDate !== state.data?.latest_date) {
+    } else if (
+      state.todayDate &&
+      (state.q || state.todayDate !== state.data?.latest_date)
+    ) {
+      // A latest-day search must keep its date in the URL. A bare ?q= link is
+      // intentionally archive-wide, so dropping this value would widen again
+      // on reload after the reader clicked "Search today" in the scope banner.
       params.set("date", state.todayDate);
     }
     if (state.q) params.set("q", state.q);
@@ -2186,6 +2199,63 @@ function renderTodayBenchmarks() {
   return !total && indexPending ? "pending" : total;
 }
 
+function todaySearchUrl() {
+  const params = new URLSearchParams();
+  params.set("date", state.data.latest_date);
+  if (state.q) params.set("q", state.q);
+  if (state.kind) params.set("kind", state.kind);
+  if (state.category) params.set("category", state.category);
+  if (state.source) params.set("source", state.source);
+  if (state.organization) params.set("organization", state.organization);
+  if (state.event) params.set("event", state.event);
+  return `${window.location.pathname}?${params.toString()}`;
+}
+
+function renderSearchScopeBanner(observationCount, benchmarkMatches) {
+  const banner = byId("search-scope-banner");
+  const query = state.q.trim();
+  if (!query || state.todayDate !== "all") {
+    banner.hidden = true;
+    banner.replaceChildren();
+    return;
+  }
+
+  const todayLink = element("a", {
+    text: t("Search today"),
+    attrs: { href: todaySearchUrl() },
+  });
+  todayLink.addEventListener("click", (event) => {
+    event.preventDefault();
+    state.todayDate = state.data.latest_date;
+    state.todayPage = 1;
+    renderToday();
+  });
+  const sentenceGap = getLang() === "zh" ? "" : " ";
+  const sentenceEnd = getLang() === "zh" ? "。" : ".";
+  const scopeMessage = element("p", { className: "search-scope-message" });
+  scopeMessage.append(
+    document.createTextNode(`${t("This search covers all dates.")}${sentenceGap}`),
+    document.createTextNode(`${t("Still want today's results?")}${sentenceGap}`),
+    todayLink,
+    document.createTextNode(sentenceEnd),
+  );
+
+  const knownBenchmarkMatches = Number.isFinite(benchmarkMatches) ? benchmarkMatches : 0;
+  const totalResults = observationCount + knownBenchmarkMatches;
+  const cliMessage = totalResults > 10
+    ? element("p", { className: "search-scope-export" }, [
+        document.createTextNode(`${t("More than 10 results.")}${sentenceGap}`),
+        element("a", {
+          text: t("Use the CLI version to export all data."),
+          attrs: { href: "https://benchmark-radar.org/#cli" },
+        }),
+      ])
+    : null;
+
+  replaceChildren(banner, [scopeMessage, cliMessage]);
+  banner.hidden = false;
+}
+
 function renderToday({ resultsOnly = false } = {}) {
   // Events are bound before the data file resolves (initialize), so a nav
   // click or filter keystroke in the load window must no-op, not throw.
@@ -2212,6 +2282,7 @@ function renderToday({ resultsOnly = false } = {}) {
   updateFiltersCount();
   const observations = filteredObservations();
   const benchmarkMatches = renderTodayBenchmarks();
+  renderSearchScopeBanner(observations.length, benchmarkMatches);
   const resultsKey = [
     state.todayDate,
     state.q,
@@ -8000,12 +8071,24 @@ function bindEvents() {
     // state.todayDate, which then writes the OLD date back onto the
     // control and clobbers the user's just-made selection.
     if (event.target === byId("today-date")) return;
+    const hadQuery = Boolean(state.q.trim());
     state.q = byId("search-filter").value;
     state.kind = byId("kind-filter").value;
     state.category = byId("category-filter").value;
     state.source = byId("source-filter").value;
     state.organization = byId("organization-filter").value;
     state.event = byId("event-filter").value;
+    // The homepage is a newest-scan browser, but a query is a retrieval action:
+    // its default scope is the full archive. Once a query exists, a reader can
+    // still narrow it with the date select or the banner's "today" link.
+    if (!hadQuery && state.q.trim() && state.todayDate !== "all") {
+      state.todayDate = "all";
+      state.todayPage = 1;
+      ensureFullData()
+        .then(() => renderToday())
+        .catch((error) => console.error(error));
+      return;
+    }
     scheduleTodayRender();
   });
   // Both filter panels are <form>s whose state lives in the URL query we
