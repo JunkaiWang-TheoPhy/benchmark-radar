@@ -21,6 +21,20 @@ from benchmark_radar.model_cards import load_registry
 DEFAULT_REGISTRY = Path("data/model_cards.yml")
 DEFAULT_SPEC = Path("data/vendor_attention_audit.yml")
 DEFAULT_OUTPUT_DIR = Path("docs/technical-report/vendor-attention-audit")
+REQUIRED_SCENARIO_IDS = frozenset(
+    {
+        "canonical_all_t5",
+        "canonical_all_t6",
+        "canonical_all_t7",
+        "model_cards_only_t6",
+        "latest_per_organization_t6",
+        "trailing_365d_t6",
+        "trailing_180d_t6",
+        "trailing_90d_t6",
+        "reviewed_families_t6",
+        "drop_newest_per_organization_t6",
+    }
+)
 
 
 class VendorAttentionAuditError(ValueError):
@@ -64,6 +78,11 @@ def load_audit_spec(path: Path = DEFAULT_SPEC) -> dict[str, Any]:
     scenario_ids = [str(row.get("id") or "") for row in scenarios]
     if any(not value for value in scenario_ids) or len(scenario_ids) != len(set(scenario_ids)):
         raise VendorAttentionAuditError("scenario ids must be non-empty and unique")
+    missing_scenarios = sorted(REQUIRED_SCENARIO_IDS - set(scenario_ids))
+    if missing_scenarios:
+        raise VendorAttentionAuditError(
+            "spec is missing required scenarios: " + ", ".join(missing_scenarios)
+        )
     if audit["primary_scenario"] not in scenario_ids:
         raise VendorAttentionAuditError("primary_scenario must name a declared scenario")
     return payload

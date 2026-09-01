@@ -24,6 +24,11 @@ def test_report_replaces_the_unreproducible_eight_benchmark_claim():
     assert '"[10] J. Wang.' in source
     assert "[19]" not in source
     assert "[20]" not in source
+    assert "Frozen v0.9.0 population: 36 model reports" in source
+    assert "Adoption benchmark (frozen v0.9.0)" in source
+    assert "Model-card document (frozen v0.9.0)" in source
+    assert "issue #456 addendum separately audits 37 documents" in source
+    assert "Do not combine these populations" in source
 
 
 def test_report_build_instructions_regenerate_the_audit_and_next_draft():

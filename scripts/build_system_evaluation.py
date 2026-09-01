@@ -453,7 +453,7 @@ def story(doi: str) -> list:
                 st["body"],
             ),
             bullet(
-                "<b>Thirty-six model reports cover 94 curated benchmarks.</b> The same documents supply 285 scores across 69 benchmark tracks when the report includes a readable value and evaluation setup.",
+                "<b>Frozen v0.9.0 population: 36 model reports cover 94 curated benchmarks.</b> Those cutoff counts remain the deposited report baseline. The issue #456 addendum separately audits 37 reviewed documents, 12 organization labels, and 110 benchmark IDs pinned at commit 98c8cf6.",
                 st["body"],
             ),
             bullet(
@@ -695,13 +695,13 @@ def story(doi: str) -> list:
                         p("Current web-search reach.", st["small"]),
                     ],
                     [
-                        p("Adoption benchmark", st["small_bold"]),
+                        p("Adoption benchmark (frozen v0.9.0)", st["small_bold"]),
                         p("94", st["small"]),
                         p("Canonical identity in curated registry.", st["small"]),
                         p("Model-card adoption and missing adoption.", st["small"]),
                     ],
                     [
-                        p("Model-card document", st["small_bold"]),
+                        p("Model-card document (frozen v0.9.0)", st["small_bold"]),
                         p("36", st["small"]),
                         p("Curated reports from 11 organizations.", st["small"]),
                         p("Documents read for mentions.", st["small"]),
@@ -1137,7 +1137,7 @@ def story(doi: str) -> list:
             ),
             p("Data statement", st["subsection"]),
             p(
-                "Counts were recomputed from site/data/radar.json, site/data/benchmark-index.json, site/data/models.json, data/model_cards.yml, data/benchmark_scores.yml, normalized files under data/external/, and config.yml. The PDF is a dated interpretation. The rolling dashboard may change after the cutoff; cite its current number with a retrieval date.",
+                "The v0.9.0 core and frozen section 3 rows use commit 98c7de3 and cutoff 2026-08-29. The issue #456 addendum separately audits 37 documents, 12 organization labels, and 110 benchmark IDs from a SHA-256-pinned registry at commit 98c8cf6 and cutoff 2026-08-31. Do not combine these populations; cite rolling dashboard values with a retrieval date.",
                 st["body"],
             ),
             p("References", st["section"]),
@@ -1181,7 +1181,7 @@ def story(doi: str) -> list:
                 "[10] J. Wang. Vendor-attention sensitivity audit for issue #456. 2026. https://github.com/ktwu01/benchmark-radar/tree/main/docs/technical-report/vendor-attention-audit",
                 st["reference"],
             ),
-            Spacer(1, 3),
+            Spacer(1, 0),
             Table(
                 [
                     [
@@ -1191,8 +1191,8 @@ def story(doi: str) -> list:
                                 "EndCard",
                                 parent=st["body"],
                                 fontName=BOLD,
-                                fontSize=7.6,
-                                leading=9.5,
+                                fontSize=7.0,
+                                leading=8.2,
                                 textColor=NAVY,
                             ),
                         )
@@ -1203,8 +1203,8 @@ def story(doi: str) -> list:
                     [
                         ("BACKGROUND", (0, 0), (-1, -1), SKY),
                         ("BOX", (0, 0), (-1, -1), 0.7, BLUE),
-                        ("TOPPADDING", (0, 0), (-1, -1), 5),
-                        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                        ("TOPPADDING", (0, 0), (-1, -1), 3),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
                     ]
                 ),
             ),

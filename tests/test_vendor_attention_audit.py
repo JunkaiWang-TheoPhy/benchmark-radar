@@ -109,6 +109,19 @@ def test_registry_content_must_match_the_pre_registered_source_hash(tmp_path):
         )
 
 
+def test_spec_rejects_a_missing_implementation_scenario_before_analysis(tmp_path):
+    module = _load_module()
+    spec = yaml.safe_load(SPEC.read_text(encoding="utf-8"))
+    spec["scenarios"] = [
+        row for row in spec["scenarios"] if row["id"] != "drop_newest_per_organization_t6"
+    ]
+    path = tmp_path / "audit.yml"
+    path.write_text(yaml.safe_dump(spec, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(module.VendorAttentionAuditError, match="missing required scenarios"):
+        module.load_audit_spec(path)
+
+
 def test_time_window_is_inclusive_and_uses_revised_date():
     module = _load_module()
     registry = {
