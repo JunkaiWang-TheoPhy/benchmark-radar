@@ -20,6 +20,7 @@ REVIEW_REPORT_PATH = Path("docs/technical-report/agent-weakness-independent-revi
 BLIND_PACKET_PATH = Path("docs/technical-report/agent-weakness-blinded-sample.md")
 BENCHMARK_INDEX_PATH = Path("site/data/benchmark-index.json")
 BENCHMARK_SHARDS_PATH = Path("site/data/benchmarks")
+REPORT_README_PATH = Path("docs/technical-report/README.md")
 
 FINE_CODES = [
     "goal_plan_drift",
@@ -28,6 +29,54 @@ FINE_CODES = [
     "loop_stagnation_recovery",
     "verification_completion",
 ]
+
+EXPECTED_SECONDARY_REVIEW = {
+    "A": {
+        "row_id": "osworld2_hidden_state",
+        "primary_code": "environment_grounding_state_tracking",
+        "secondary_code": "environment_grounding_state_tracking",
+        "secondary_note": (
+            "The evidence explicitly says agents lose track of constraints, miss "
+            "information that arrives mid-task, and struggle with hidden-state "
+            "recovery. That points most directly to failures to stay grounded in "
+            "evolving environment state rather than a purely local execution mistake."
+        ),
+    },
+    "B": {
+        "row_id": "swe_science_misguided_exploration",
+        "primary_code": "tool_selection_execution",
+        "secondary_code": "tool_selection_execution",
+        "secondary_note": (
+            "The excerpt names misguided exploration and surface-level repair as "
+            "recurring failure mechanisms. That fits agents choosing unproductive "
+            "actions or incomplete repair operations rather than executing the "
+            "needed scientific software fix cleanly."
+        ),
+    },
+    "C": {
+        "row_id": "researchclawbench_protocol_drift",
+        "primary_code": "goal_plan_drift",
+        "secondary_code": "goal_plan_drift",
+        "secondary_note": (
+            "The error analysis centers on protocol mismatch, evidence mismatch, "
+            "and missing the scientific core. Those are strongest as departures "
+            "from the target scientific objective and intended methodology, not "
+            "just isolated tool-use errors."
+        ),
+    },
+    "D": {
+        "row_id": "scicode_instrument_gap",
+        "primary_code": "verification_completion",
+        "secondary_code": "verification_completion",
+        "secondary_note": (
+            "The audit shows the evaluation instrument rejected correct "
+            "instruction-following solutions because benchmark defects "
+            "contaminated the completion check. This makes the apparent failure "
+            "signal unusable as a clean estimate because the required end state "
+            "was not being verified reliably."
+        ),
+    },
+}
 
 
 def _load_module():
@@ -175,13 +224,28 @@ def test_repository_task2_secondary_review_is_complete():
     sampled_rows = [row for row in study["rows"] if row["review"]["sampled_for_secondary_review"]]
 
     assert [row["id"] for row in sampled_rows] == [
-        "osworld2_hidden_state",
-        "swe_science_misguided_exploration",
-        "researchclawbench_protocol_drift",
-        "scicode_instrument_gap",
+        EXPECTED_SECONDARY_REVIEW["A"]["row_id"],
+        EXPECTED_SECONDARY_REVIEW["B"]["row_id"],
+        EXPECTED_SECONDARY_REVIEW["C"]["row_id"],
+        EXPECTED_SECONDARY_REVIEW["D"]["row_id"],
     ]
-    assert all(row["review"]["secondary_code"] for row in sampled_rows)
-    assert all((row["review"]["secondary_note"] or "").strip() for row in sampled_rows)
+    assert [
+        {
+            "id": row["id"],
+            "primary_code": row["primary_code"],
+            "secondary_code": row["review"]["secondary_code"],
+            "secondary_note": row["review"]["secondary_note"],
+        }
+        for row in sampled_rows
+    ] == [
+        {
+            "id": expected["row_id"],
+            "primary_code": expected["primary_code"],
+            "secondary_code": expected["secondary_code"],
+            "secondary_note": expected["secondary_note"],
+        }
+        for expected in EXPECTED_SECONDARY_REVIEW.values()
+    ]
 
     agreement = analysis["agreement"]
     assert agreement["sampled_row_count"] == 4
@@ -210,20 +274,31 @@ def test_repository_task2_report_records_blind_review_and_adjudication_state():
         "# Agent Weakness Independent Review",
         "Date: 2026-09-01",
         "## Result",
-        "The independent review matched the primary coding on all 4 of 4 sampled rows.",
+        "The replacement independent review matched the primary coding on all 4 of 4 sampled rows.",
     ]
+    assert "earlier independent pass was discarded before use" in report_text
     assert "sample-local" in report_text
     assert "predeclared four-row sample only" in report_text
-    assert "## Raw assignments" in report_text
+    assert "## Neutral blind procedure" in report_text
+    assert "## Post-hoc mapping and raw assignments" in report_text
     assert "## Disagreement and adjudication log" in report_text
     assert str(BLIND_PACKET_PATH) in report_text
     assert ".superpowers/" not in report_text
     assert ".superpowers/" not in blind_packet_text
+    assert "## Sample `A`" in blind_packet_text
+    assert "## Sample `B`" in blind_packet_text
+    assert "## Sample `C`" in blind_packet_text
+    assert "## Sample `D`" in blind_packet_text
+    assert "## Row `" not in blind_packet_text
+    assert "row_id:" not in blind_packet_text
+    assert "sample_id: <A, B, C, or D>" in blind_packet_text
 
     sampled_rows = [row for row in study["rows"] if row["review"]["sampled_for_secondary_review"]]
-    for row in sampled_rows:
-        assert row["id"] in report_text
-        assert row["id"] in blind_packet_text
+    for sample_id, expected in EXPECTED_SECONDARY_REVIEW.items():
+        row = next(row for row in sampled_rows if row["id"] == expected["row_id"])
+        assert f"| `{sample_id}` | `{row['id']}` |" in report_text
+        assert f"| `{sample_id}` | `{row['id']}` | `{row['primary_code']}` |" in report_text
+        assert expected["secondary_note"] in report_text
         assert row["primary_code"] in report_text
         assert row["review"]["secondary_code"] in report_text
         assert row["review"]["secondary_note"] in report_text
@@ -232,6 +307,9 @@ def test_repository_task2_report_records_blind_review_and_adjudication_state():
         assert row["limitations"] in blind_packet_text
         assert row["plausible_counter_reading"] in blind_packet_text
         assert row["primary_code"] not in blind_packet_text
+        assert row["id"] not in "\n".join(
+            line for line in blind_packet_text.splitlines() if line.startswith("## ")
+        )
 
     disagreements = analysis["agreement"]["disagreements"]
     if disagreements:
@@ -534,6 +612,84 @@ def test_load_study_requires_all_three_statuses_and_benchmark_family_ids(tmp_pat
 
     with pytest.raises(ValueError, match="benchmark_family_id|statuses"):
         module.load_study(_write_study(tmp_path, rows))
+
+
+def test_load_study_rejects_coarse_grouping_that_omits_a_fine_taxonomy_code(tmp_path):
+    module = _load_module()
+    rows = [
+        _row("demo-a", status="demonstrated", primary_code="goal_plan_drift"),
+        _row(
+            "design-a",
+            status="design_implied",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+        ),
+        _row(
+            "unmeasured-a",
+            status="unmeasured",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+    ]
+    payload = _study_payload(rows)
+    payload["study"]["coarse_grouping"]["state_control"] = [
+        "environment_grounding_state_tracking",
+        "loop_stagnation_recovery",
+    ]
+    path = tmp_path / "study.yml"
+    path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="coarse_grouping|verification_completion|missing"):
+        module.load_study(path)
+
+
+def test_load_study_rejects_duplicate_fine_code_within_one_coarse_group(tmp_path):
+    module = _load_module()
+    rows = [
+        _row("demo-a", status="demonstrated", primary_code="goal_plan_drift"),
+        _row(
+            "design-a",
+            status="design_implied",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+        ),
+        _row(
+            "unmeasured-a",
+            status="unmeasured",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+    ]
+    payload = _study_payload(rows)
+    payload["study"]["coarse_grouping"]["decision_execution"] = [
+        "goal_plan_drift",
+        "goal_plan_drift",
+        "tool_selection_execution",
+    ]
+    path = tmp_path / "study.yml"
+    path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="coarse_grouping|duplicates|goal_plan_drift"):
+        module.load_study(path)
+
+
+def test_readme_distinguishes_frozen_v090_core_from_current_issue_455_study():
+    readme_text = REPORT_README_PATH.read_text(encoding="utf-8")
+
+    assert "2026-08-29" in readme_text
+    assert "98c7de3" in readme_text
+    assert "frozen v0.9.0" in readme_text
+    assert "current issue #455 study" in readme_text
+    assert "recomputed from rolling current generated files" not in readme_text
+    assert "current README and report documentation" not in readme_text
 
 
 def test_load_study_rejects_same_family_name_with_different_ids(tmp_path):

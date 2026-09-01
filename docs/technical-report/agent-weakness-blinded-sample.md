@@ -4,7 +4,7 @@ Date: 2026-09-01
 
 Use only the taxonomy in `docs/technical-report/agent-weakness-coding-guide.md`. Assign exactly one fine code to each row and explain the choice. The main YAML table, prior reports, and any earlier code assignments are intentionally out of scope until all four assignments are complete.
 
-## Row `osworld2_hidden_state`
+## Sample `A`
 
 - Benchmark: OSWorld 2.0
 - Status: demonstrated
@@ -15,7 +15,7 @@ Use only the taxonomy in `docs/technical-report/agent-weakness-coding-guide.md`.
 - Limitation: OSWorld 2.0 is a deliberately hard long-horizon benchmark with a strict binary-completion metric, so its headline failure rates are not interchangeable with shorter browser or desktop benchmarks.
 - Counter-reading: Some of the failure burden may come from the intentionally long task horizon and binary end-state scoring rather than a pure hidden-state weakness rate in ordinary deployments.
 
-## Row `swe_science_misguided_exploration`
+## Sample `B`
 
 - Benchmark: SWE-bench Science
 - Status: demonstrated
@@ -26,7 +26,7 @@ Use only the taxonomy in `docs/technical-report/agent-weakness-coding-guide.md`.
 - Limitation: The release spans 119 tasks across many scientific domains with hidden verifier tests, so the public paper supports family-level failure coding but not fine-grained per-domain prevalence estimates.
 - Counter-reading: Some apparent execution failures may partly reflect missing domain knowledge or abstraction deficits rather than pure exploration or tool-choice mistakes.
 
-## Row `researchclawbench_protocol_drift`
+## Sample `C`
 
 - Benchmark: ResearchClawBench
 - Status: demonstrated
@@ -37,7 +37,7 @@ Use only the taxonomy in `docs/technical-report/agent-weakness-coding-guide.md`.
 - Limitation: ResearchClawBench uses expert-curated rubrics over 40 tasks from 10 scientific domains, so its errors are informative about rediscovery workflows but not a generic estimate for all scientific coding tasks.
 - Counter-reading: Some low scores may reflect benchmark novelty and the hidden-target-paper setup instead of a stable tendency to drift from objectives in more scaffolded scientific tasks.
 
-## Row `scicode_instrument_gap`
+## Sample `D`
 
 - Benchmark: SciCode
 - Status: unmeasured
@@ -53,7 +53,7 @@ Use only the taxonomy in `docs/technical-report/agent-weakness-coding-guide.md`.
 For each row provide:
 
 ```text
-row_id: <id>
+sample_id: <A, B, C, or D>
 secondary_code: <one fine-taxonomy code>
 secondary_note: <one or two sentences grounded only in the evidence above>
 ```

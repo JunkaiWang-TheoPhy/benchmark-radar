@@ -403,6 +403,43 @@ def test_partial_review_fixture_reports_completed_agreement_and_pending_rows(tmp
     assert "2/4" not in section_text
 
 
+def test_partial_review_fixture_reports_pending_rows_in_summary_table(tmp_path, monkeypatch):
+    module = _load_module()
+
+    def transform(study):
+        sampled_ids = {
+            "osworld2_hidden_state",
+            "swe_science_misguided_exploration",
+            "researchclawbench_protocol_drift",
+            "scicode_instrument_gap",
+        }
+        completed_ids = {
+            "osworld2_hidden_state",
+            "researchclawbench_protocol_drift",
+        }
+        for row in study["rows"]:
+            review = row["review"]
+            review["sampled_for_secondary_review"] = row["id"] in sampled_ids
+            if row["id"] in completed_ids:
+                review["secondary_code"] = row["primary_code"]
+                review["secondary_note"] = "Match."
+            else:
+                review["secondary_code"] = None
+                review["secondary_note"] = None
+
+    study_path = _write_modified_study(tmp_path, transform)
+    report_data = module.load_agent_weakness_report_data(study_path)
+
+    monkeypatch.setattr(
+        module, "load_agent_weakness_report_data", lambda source_path=study_path: report_data
+    )
+    story = module.story("10.5281/zenodo.22167102")
+    table_text = "\n".join(_collect_text(_agent_section_flowables(story)[0]))
+
+    assert "2/2 agreement matches across 4 blinded sampled rows" in table_text
+    assert "2 pending sampled rows" in table_text
+
+
 def test_pending_only_review_fixture_reports_no_completed_secondary_reviews(tmp_path, monkeypatch):
     module = _load_module()
 
@@ -494,12 +531,21 @@ def test_story_places_agent_weakness_subsection_before_use_it_and_adds_primary_s
     subsection_index = texts.index("6.5 Selected benchmark-family signal on agent weaknesses")
     use_it_index = texts.index("Use it")
     refs_index = texts.index(
-        "[9] Primary-source evidence for OSWorld 2.0. https://arxiv.org/html/2606.29537v1"
+        "[9] Primary-source evidence for OSWorld 2.0. "
+        "https://arxiv.org/html/2606.29537v1. Evidence anchor: HTML abstract "
+        "paragraph id abstract1.1, final two sentences on 20.6% binary "
+        "completion, 54.8% partial score, and hidden-state recovery; Figure 8 "
+        "caption at figure id S3.F8"
     )
 
     assert subsection_index < use_it_index
     assert refs_index > texts.index("References")
-    assert "[18] Primary-source evidence for SciCode. https://arxiv.org/abs/2608.04975" in texts
+    assert (
+        "[18] Primary-source evidence for SciCode. https://arxiv.org/abs/2608.04975. "
+        "Evidence anchor: arXiv abs abstract paragraph on 263 defects, 192 "
+        "score-suppressing defects across 91% of main problems, and recovery "
+        "to 84-98% / 69-92%"
+    ) in texts
 
     section_flowables = _agent_section_flowables(story)
     assert len(section_flowables) == 3
@@ -508,6 +554,46 @@ def test_story_places_agent_weakness_subsection_before_use_it_and_adds_primary_s
     assert section_flowables[1].style == "body"
     assert isinstance(section_flowables[2], _FakeParagraph)
     assert section_flowables[2].style == "small"
+
+
+def test_agent_weakness_reference_entries_include_exact_evidence_anchors():
+    module = _load_module()
+
+    report_data = module.load_agent_weakness_report_data()
+    entries = module.agent_weakness_reference_entries(report_data)
+    joined_entries = "\n".join(entries)
+
+    assert "Evidence anchor:" in joined_entries
+    assert (
+        "[9] Primary-source evidence for OSWorld 2.0. https://arxiv.org/html/2606.29537v1. "
+        "Evidence anchor: HTML abstract paragraph id abstract1.1, final two sentences on "
+        "20.6% binary completion, 54.8% partial score, and hidden-state recovery; Figure 8 "
+        "caption at figure id S3.F8"
+    ) in entries
+    assert (
+        "GAIA2. https://arxiv.org/html/2602.11964v1. Evidence anchor: HTML abstract paragraph "
+        "id abstract1.1 on 42% pass@1 and time-sensitive failures; HTML paragraph id "
+        "S5.SS2.p1.1 and Figure 8 caption id S5.F8 on default-versus-instant Time behavior"
+    ) in joined_entries
+    assert (
+        "SciCode. https://arxiv.org/abs/2608.04975. Evidence anchor: arXiv abs abstract "
+        "paragraph on 263 defects, 192 score-suppressing defects across 91% of main problems, "
+        "and recovery to 84-98% / 69-92%"
+    ) in joined_entries
+
+
+def test_story_uses_frozen_core_data_statement_and_separates_current_issue_455_study():
+    module = _load_module()
+
+    story = module.story("10.5281/zenodo.22167102")
+    report_text = "\n".join(_collect_text(story))
+
+    assert "frozen v0.9.0 audit" in report_text
+    assert "98c7de3" in report_text
+    assert "2026-08-29" in report_text
+    assert "current issue #455 study is reported separately" in report_text
+    assert "Counts were recomputed from site/data/radar.json" not in report_text
+    assert "rolling dashboard may change after the cutoff" not in report_text
 
 
 def test_story_uses_stable_ci_wording_without_hardcoded_test_counts():

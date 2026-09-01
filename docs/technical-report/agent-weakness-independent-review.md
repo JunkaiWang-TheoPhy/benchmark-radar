@@ -4,7 +4,9 @@ Date: 2026-09-01
 
 ## Result
 
-The independent review matched the primary coding on all 4 of 4 sampled rows.
+The replacement independent review matched the primary coding on all 4 of 4 sampled rows.
+The earlier independent pass was discarded before use after the
+initial packet headings exposed row IDs that leaked the intended taxonomy cues.
 No disagreements required adjudication. This agreement result is explicitly
 sample-local: it applies only to the predeclared four-row blind packet and does
 not establish broader reliability beyond that bounded sample.
@@ -13,20 +15,22 @@ not establish broader reliability beyond that bounded sample.
 | --- | --- | --- | --- |
 | `4` | `4` | `0` | predeclared four-row sample only |
 
-## Raw assignments
+## Neutral blind procedure
 
-| row_id | primary_code | secondary_code | secondary_note |
-| --- | --- | --- | --- |
-| `osworld2_hidden_state` | `environment_grounding_state_tracking` | `environment_grounding_state_tracking` | The evidence explicitly centers on lost constraints, missed mid-task information, and failures when success depends on hidden state, which matches failures to ground actions in the current workflow state rather than simple local mistakes. |
-| `swe_science_misguided_exploration` | `tool_selection_execution` | `tool_selection_execution` | The abstract names misguided exploration, surface-level repair, and incomplete repair coverage as recurring mechanisms, which fits choosing or executing the wrong repair path rather than maintaining the right state. |
-| `researchclawbench_protocol_drift` | `goal_plan_drift` | `goal_plan_drift` | Experimental-protocol mismatch, evidence mismatch, and a missing scientific core indicate the agent is drifting from the target scientific objective and intended protocol, not merely failing on a narrow execution step. |
-| `scicode_instrument_gap` | `verification_completion` | `verification_completion` | This row is an audit-based measurement gap: the benchmark often rejects actually correct solutions, so apparent failure can come from unreliable checking of whether the required end state was achieved rather than from a demonstrated agent weakness prevalence claim. |
+The replacement reviewer was an independent Codex analyst working only from the
+tracked blinded packet in `docs/technical-report/agent-weakness-blinded-sample.md`.
+That packet used neutral `Sample A` through `Sample D` headings, withheld the
+main YAML table, withheld the primary codes, and withheld any prior review
+output until all four secondary assignments and notes were returned.
 
-## Reviewer and blind procedure
+## Post-hoc mapping and raw assignments
 
-The independent reviewer was an independent Codex analyst working from the tracked blinded packet in `docs/technical-report/agent-weakness-blinded-sample.md`.
-
-The blinded packet exposed only the coding guide, the benchmark identity, the evidence excerpts, limitations, and counter-readings for the predeclared four-row sample. It intentionally withheld the primary codes, the main YAML table, and prior reports until the reviewer returned all four assignments and notes.
+| sample_id | row_id | primary_code | secondary_code | secondary_note |
+| --- | --- | --- | --- | --- |
+| `A` | `osworld2_hidden_state` | `environment_grounding_state_tracking` | `environment_grounding_state_tracking` | The evidence explicitly says agents lose track of constraints, miss information that arrives mid-task, and struggle with hidden-state recovery. That points most directly to failures to stay grounded in evolving environment state rather than a purely local execution mistake. |
+| `B` | `swe_science_misguided_exploration` | `tool_selection_execution` | `tool_selection_execution` | The excerpt names misguided exploration and surface-level repair as recurring failure mechanisms. That fits agents choosing unproductive actions or incomplete repair operations rather than executing the needed scientific software fix cleanly. |
+| `C` | `researchclawbench_protocol_drift` | `goal_plan_drift` | `goal_plan_drift` | The error analysis centers on protocol mismatch, evidence mismatch, and missing the scientific core. Those are strongest as departures from the target scientific objective and intended methodology, not just isolated tool-use errors. |
+| `D` | `scicode_instrument_gap` | `verification_completion` | `verification_completion` | The audit shows the evaluation instrument rejected correct instruction-following solutions because benchmark defects contaminated the completion check. This makes the apparent failure signal unusable as a clean estimate because the required end state was not being verified reliably. |
 
 ## Disagreement and adjudication log
 

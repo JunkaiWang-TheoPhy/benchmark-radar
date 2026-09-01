@@ -115,7 +115,14 @@ def _normalized_secondary_code(value: Any, fine_taxonomy: set[str], *, label: st
 def _coarse_lookup(grouping: dict[str, list[str]]) -> dict[str, str]:
     lookup: dict[str, str] = {}
     for coarse_group, fine_codes in grouping.items():
+        seen_in_group: set[str] = set()
         for fine_code in fine_codes:
+            if fine_code in seen_in_group:
+                raise ValueError(
+                    f"coarse_grouping[{coarse_group!r}] contains duplicates, "
+                    f"including {fine_code!r}"
+                )
+            seen_in_group.add(fine_code)
             if fine_code in lookup and lookup[fine_code] != coarse_group:
                 raise ValueError(f"fine code {fine_code!r} appears in multiple coarse groups")
             lookup[fine_code] = coarse_group
@@ -218,6 +225,12 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
             )
         coarse_grouping[coarse_name] = normalized_codes
     coarse_lookup = _coarse_lookup(coarse_grouping)
+    missing_fine_codes = sorted(fine_taxonomy_set - set(coarse_lookup))
+    if missing_fine_codes:
+        raise ValueError(
+            f"{path}: coarse_grouping must cover every fine_taxonomy code exactly once; "
+            f"missing {', '.join(missing_fine_codes)}"
+        )
 
     snapshot_date = _require_date(study.get("snapshot_date"), label=f"{path}: snapshot_date")
     evidence_cutoff = _require_date(study.get("evidence_cutoff"), label=f"{path}: evidence_cutoff")

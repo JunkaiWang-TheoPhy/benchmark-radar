@@ -59,7 +59,7 @@ rows:
     review:
       sampled_for_secondary_review: true
       secondary_code: environment_grounding_state_tracking
-      secondary_note: "The evidence explicitly centers on lost constraints, missed mid-task information, and failures when success depends on hidden state, which matches failures to ground actions in the current workflow state rather than simple local mistakes."
+      secondary_note: "The evidence explicitly says agents lose track of constraints, miss information that arrives mid-task, and struggle with hidden-state recovery. That points most directly to failures to stay grounded in evolving environment state rather than a purely local execution mistake."
   - id: webarena_early_stop
     benchmark_family_id: webarena
     benchmark_family_name: WebArena
@@ -164,7 +164,7 @@ rows:
     review:
       sampled_for_secondary_review: true
       secondary_code: tool_selection_execution
-      secondary_note: "The abstract names misguided exploration, surface-level repair, and incomplete repair coverage as recurring mechanisms, which fits choosing or executing the wrong repair path rather than maintaining the right state."
+      secondary_note: "The excerpt names misguided exploration and surface-level repair as recurring failure mechanisms. That fits agents choosing unproductive actions or incomplete repair operations rather than executing the needed scientific software fix cleanly."
   - id: frontierchallenge_false_completion
     benchmark_family_id: frontierchallenge
     benchmark_family_name: FrontierChallenge
@@ -206,7 +206,7 @@ rows:
     review:
       sampled_for_secondary_review: true
       secondary_code: goal_plan_drift
-      secondary_note: "Experimental-protocol mismatch, evidence mismatch, and a missing scientific core indicate the agent is drifting from the target scientific objective and intended protocol, not merely failing on a narrow execution step."
+      secondary_note: "The error analysis centers on protocol mismatch, evidence mismatch, and missing the scientific core. Those are strongest as departures from the target scientific objective and intended methodology, not just isolated tool-use errors."
   - id: prbench_end_to_end_gap
     benchmark_family_id: prbench
     benchmark_family_name: PRBench
@@ -269,4 +269,4 @@ rows:
     review:
       sampled_for_secondary_review: true
       secondary_code: verification_completion
-      secondary_note: "This row is an audit-based measurement gap: the benchmark often rejects actually correct solutions, so apparent failure can come from unreliable checking of whether the required end state was achieved rather than from a demonstrated agent weakness prevalence claim."
+      secondary_note: "The audit shows the evaluation instrument rejected correct instruction-following solutions because benchmark defects contaminated the completion check. This makes the apparent failure signal unusable as a clean estimate because the required end state was not being verified reliably."

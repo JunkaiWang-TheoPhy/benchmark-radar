@@ -3,7 +3,10 @@
 This directory tracks the source and deposit metadata for the citable Benchmark
 Radar technical report. The report evaluates software version 0.9.0, its full
 collection and publication pipeline, all 37 public collection sources, the
-1,242-entry web search surface, and the public data snapshot dated 2026-08-29.
+1,242-entry web search surface, and the public data snapshot dated 2026-08-29
+at frozen audit commit `98c7de3`. The current issue #455 agent-weakness study
+is a separate 2026-09-01 analysis layered onto the draft report; it does not
+recompute or replace the frozen v0.9.0 core counts.
 
 Rebuild the issue #455 agent-weakness inputs from a clean checkout after
 installing the development dependencies and ReportLab. Run the full repository
@@ -39,8 +42,8 @@ newsletters, dataset packaging, or commercial product integration requires
 prior written permission from Koutian Wu. Third-party source material remains
 under its original terms.
 
-The report derives its quantitative claims from these versioned files and from
-the current README and report documentation:
+The frozen v0.9.0 core counts come from these versioned files at commit
+`98c7de3` with cutoff `2026-08-29`:
 
 - `site/data/radar.json` (generated from the dated snapshots)
 - `site/data/benchmark-index.json` (generated from normalized catalogs)
@@ -49,8 +52,14 @@ the current README and report documentation:
 - `data/benchmark_scores.yml`
 - `site/data/models.json`
 - `config.yml`
-- `docs/reports/ai-benchmark-landscape-report.md`
-- `docs/source-probe-evidence.md`
+
+The current issue #455 study is reported separately from:
+
+- `data/agent_weakness_evidence.yml`
+- `docs/technical-report/agent-weakness-blinded-sample.md`
+- `docs/technical-report/agent-weakness-independent-review.md`
+- `output/analysis/agent-weakness-study.json`
+- `output/analysis/agent-weakness-coded-table.csv`
 
 Regenerate and review the report when any of those inputs, the issue #455 study
 artifacts, or the report text changes.

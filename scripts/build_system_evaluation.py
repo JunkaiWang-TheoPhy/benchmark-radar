@@ -84,7 +84,13 @@ def load_agent_weakness_report_data(
         if not source_url:
             continue
         seen_families.add(family_name)
-        references.append({"family_name": family_name, "source_url": source_url})
+        references.append(
+            {
+                "family_name": family_name,
+                "source_url": source_url,
+                "evidence_location": row["evidence_location"],
+            }
+        )
 
     agreement = analysis["agreement"]
     disagreement_count = len(agreement["disagreements"])
@@ -130,9 +136,14 @@ def _agreement_summary_table_text(report_data: dict[str, Any]) -> str:
             "No completed secondary reviews yet; "
             f"{_pending_sampled_rows_text(pending_reviews, reviewed_total)}"
         )
+    pending_clause = (
+        f"; {pending_reviews} pending sampled row{'' if pending_reviews == 1 else 's'}"
+        if pending_reviews
+        else ""
+    )
     return (
         f"{agreement_matches}/{reviewed} agreement matches across {reviewed_total} "
-        "blinded sampled rows"
+        f"blinded sampled rows{pending_clause}"
     )
 
 
@@ -199,7 +210,7 @@ def agent_weakness_reference_entries(report_data: dict[str, Any]) -> list[str]:
     for index, reference in enumerate(report_data["primary_source_references"], start=9):
         entries.append(
             f"[{index}] Primary-source evidence for {reference['family_name']}. "
-            f"{reference['source_url']}"
+            f"{reference['source_url']}. Evidence anchor: {reference['evidence_location']}"
         )
     return entries
 
@@ -1193,7 +1204,7 @@ def story(doi: str) -> list:
             ),
             p("Data statement", st["subsection"]),
             p(
-                "Counts were recomputed from site/data/radar.json, site/data/benchmark-index.json, site/data/models.json, data/model_cards.yml, data/benchmark_scores.yml, normalized files under data/external/, and config.yml. The PDF is a dated interpretation. The rolling dashboard may change after the cutoff; cite its current number with a retrieval date.",
+                "The report's core counts are a frozen v0.9.0 audit at commit 98c7de3 with cutoff 2026-08-29, sourced from the versioned release files that back that snapshot. The current issue #455 study is reported separately as a 2026-09-01 selected-sample analysis and does not recompute or replace the frozen v0.9.0 core counts.",
                 st["body"],
             ),
             p("References", st["section"]),
