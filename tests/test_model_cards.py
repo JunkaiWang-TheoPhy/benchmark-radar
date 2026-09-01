@@ -807,3 +807,18 @@ def test_merging_frontier_bench_did_not_double_count_terminal_bench():
     )
     # The merged spellings still resolve, so a future extractor can map them.
     assert {"Frontier-Bench", "Terminal-Bench 3.0"} <= set(entry["aliases"])
+
+
+def test_shipped_registry_tracks_frontierchallenge_and_its_first_party_report():
+    registry = load_registry(DEFAULT_REGISTRY_PATH)
+
+    benchmark = next(item for item in registry["benchmarks"] if item["id"] == "frontier_challenge")
+    assert benchmark["name"] == "FrontierChallenge"
+    assert benchmark["domain"] == "scientific_agent"
+    assert str(benchmark["released"]) == "2026-08-27"
+    assert "97" in benchmark["caveat"]
+    assert "one trajectory per system-task pair" in benchmark["caveat"]
+
+    report = next(item for item in registry["model_cards"] if item["id"] == "apodex_frontierchallenge_report")
+    assert report["document_type"] == "technical_report"
+    assert report["benchmarks"] == ["frontier_challenge"]

@@ -295,6 +295,10 @@ benchmarks:
     metric: success
     direction: higher_is_better
     unit: percent
+  - benchmark_id: frontier_challenge
+    metric: strict_full_completion_pass_rate
+    direction: higher_is_better
+    unit: percent
   - benchmark_id: deepsearchqa
     metric: f1
     direction: higher_is_better
@@ -3737,6 +3741,34 @@ results:
     reported_at: 2026-08-28
     value: 32.1
     read_from: table_image
+
+  # ---------------------------------------------------------------------------
+  # FrontierChallenge technical report (arXiv 2608.24979), abstract and Table 2.
+  # The paper evaluates 97 released tasks and defines pass rate by the strict
+  # full-completion criterion (native score >= 99.9). Only the tied best 20.6%
+  # rows are added here, because those are the explicit top results printed in
+  # first-party text.
+  # ---------------------------------------------------------------------------
+
+  - benchmark_id: frontier_challenge
+    instrument: frontier_challenge_97_released_tasks
+    protocol: 97 released tasks, strict full completion (native score >= 99.9), GPT-5.6 Sol with Codex, one trajectory per system-task pair
+    model: GPT-5.6 Sol
+    organization: OpenAI
+    source_id: apodex_frontierchallenge_report
+    reported_at: 2026-08-25
+    value: 20.6
+    read_from: html_text
+
+  - benchmark_id: frontier_challenge
+    instrument: frontier_challenge_97_released_tasks
+    protocol: 97 released tasks, strict full completion (native score >= 99.9), Grok 4.6 with Claude Code, one trajectory per system-task pair
+    model: Grok 4.6
+    organization: xAI
+    source_id: apodex_frontierchallenge_report
+    reported_at: 2026-08-25
+    value: 20.6
+    read_from: html_text
 
   - benchmark_id: bankertoolbench
     instrument: bankertoolbench

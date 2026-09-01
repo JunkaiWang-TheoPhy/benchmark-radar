@@ -711,6 +711,18 @@ benchmarks:
       Published by Zapier over its own automation surface, and cards report
       different task subsets of it.
 
+  - id: frontier_challenge
+    name: FrontierChallenge
+    aliases: ["FrontierChallenge", "Frontier Challenge"]
+    domain: scientific_agent
+    url: https://apodexai.github.io/FrontierAgent/benchmarks/FrontierChallenge/
+    released: 2026-08-27
+    caveat: >-
+      Pass-rate results are model-scaffold measurements over the 97 released
+      tasks with one trajectory per system-task pair, so a reported percentage
+      is not a model-only number and does not estimate reliability beyond this
+      release or under a different scaffold.
+
   - id: bankertoolbench
     name: BankerToolBench
     aliases: ["BankerToolBench", "Banker Tool Bench", "BTB"]
@@ -2063,3 +2075,16 @@ model_cards:
       - horizonmath
       - matharena_apex_2025
       - brokenarxiv
+
+  - id: apodex_frontierchallenge_report
+    organization: ApodexAI
+    model: FrontierChallenge
+    document_type: technical_report
+    published: 2026-08-27
+    url: https://arxiv.org/abs/2608.24979
+    retrieved_at: 2026-09-01
+    # The benchmark page and dataset release on 2026-08-27 are first-party, but
+    # the tied 20.6% pass-rate rows below are read from the technical report's
+    # Table 2 and abstract text.
+    benchmarks:
+      - frontier_challenge

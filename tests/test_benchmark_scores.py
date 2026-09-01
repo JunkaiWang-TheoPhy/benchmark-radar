@@ -463,3 +463,45 @@ def test_the_shipped_file_never_claims_a_trend_it_cannot_support():
         for series in record["series"]:
             if series["dated_points"] >= 3:
                 assert record["evidence"]["id"].endswith("_trend")
+
+
+def test_frontierchallenge_scores_keep_strict_completion_and_scaffold_in_protocol():
+    progression = build_score_progression(DEFAULT_SCORES_PATH, load_registry(DEFAULT_REGISTRY_PATH))
+
+    record = progression["benchmarks"]["frontier_challenge"]
+    assert record["metric"] == "strict_full_completion_pass_rate"
+    assert record["direction"] == "higher_is_better"
+    assert record["unit"] == "percent"
+
+    observations = [
+        {
+            "model": row["model"],
+            "organization": row["organization"],
+            "protocol": row["protocol"],
+            "value": row["value"],
+            "source_id": row["source_id"],
+        }
+        for row in record["observations"]
+    ]
+    assert observations == [
+        {
+            "model": "GPT-5.6 Sol",
+            "organization": "OpenAI",
+            "protocol": (
+                "97 released tasks, strict full completion (native score >= 99.9), "
+                "GPT-5.6 Sol with Codex, one trajectory per system-task pair"
+            ),
+            "value": 20.6,
+            "source_id": "apodex_frontierchallenge_report",
+        },
+        {
+            "model": "Grok 4.6",
+            "organization": "xAI",
+            "protocol": (
+                "97 released tasks, strict full completion (native score >= 99.9), "
+                "Grok 4.6 with Claude Code, one trajectory per system-task pair"
+            ),
+            "value": 20.6,
+            "source_id": "apodex_frontierchallenge_report",
+        },
+    ]
