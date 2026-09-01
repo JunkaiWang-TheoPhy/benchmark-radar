@@ -52,7 +52,11 @@ FROZEN_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf")
 NEXT_DRAFT_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-next-draft.pdf")
 FROZEN_AUTHORS = ("Koutian Wu",)
 NEXT_DRAFT_AUTHORS = ("Koutian Wu", "Junjie Zhou")
-NEXT_DRAFT_AFFILIATIONS = ("Junjie Zhou — Hangzhou Dianzi University",)
+NEXT_DRAFT_AFFILIATIONS = (
+    "Koutian Wu — Independent researcher",
+    "Koutian Wu — Tacite AI",
+    "Junjie Zhou — Hangzhou Dianzi University",
+)
 
 
 def table(rows: list[list], widths: list[float], *, tiny: bool = False) -> Table:

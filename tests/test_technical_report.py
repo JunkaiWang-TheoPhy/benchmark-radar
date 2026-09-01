@@ -32,5 +32,9 @@ def test_next_draft_records_contributor_name_and_affiliation() -> None:
     draft_affiliations = ast.literal_eval(_assignment("NEXT_DRAFT_AFFILIATIONS").value)
 
     assert draft_authors == ("Koutian Wu", "Junjie Zhou")
-    assert draft_affiliations == ("Junjie Zhou — Hangzhou Dianzi University",)
+    assert draft_affiliations == (
+        "Koutian Wu — Independent researcher",
+        "Koutian Wu — Tacite AI",
+        "Junjie Zhou — Hangzhou Dianzi University",
+    )
     assert "WORKING DRAFT — NOT THE FROZEN v0.9.0 DEPOSIT" in source
