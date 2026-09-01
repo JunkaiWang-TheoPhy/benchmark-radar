@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from . import kw_bench
+from .app_pages import write_app_pages
 from .attention import fetch_attention_feeds
 from .benchmark_scores import DEFAULT_SCORES_PATH, load_scores, score_progression
 from .blog import write_blog
@@ -21,7 +22,6 @@ from .corpus import (
 from .feed import write_feed
 from .insights import build_insights
 from .kw_bench_tracks import classification_layer, derive_tracks
-from .landing_pages import write_landing_pages
 from .model_cards import DEFAULT_REGISTRY_PATH, adoption_rank, load_registry
 from .models import RadarRun
 from .pipeline import match_phrase, match_proximity_rule
@@ -1138,8 +1138,11 @@ def rebuild_dashboard(
     )
     slugs = benchmark_slugs(benchmark_shard_dir)
     blog_entries: list[tuple[str, str | None]] = []
+    # A data-only build writes no view pages, so it lists no view URLs.
+    view_paths: list[str] | None = None
     if feed_output is not None:
-        write_landing_pages(value, sitemap_output.parent, benchmark_count=len(slugs))
+        app_pages = write_app_pages(value, sitemap_output.parent)
+        view_paths = app_pages["paths"]
         blog_report = write_blog(snapshots, sitemap_output.parent)
         blog_entries = blog_report["sitemap_entries"]
         write_feed(snapshots, feed_output, blog_report["manual_feed_entries"])
@@ -1148,6 +1151,7 @@ def rebuild_dashboard(
         sitemap_output,
         slugs,
         blog_entries,
+        view_paths=view_paths,
     )
     return value
 

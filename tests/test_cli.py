@@ -51,8 +51,9 @@ def _real_snapshot(tmp_path: Path, date: datetime) -> None:
     write_snapshot(run, tmp_path / "snapshots")
 
 
-def test_default_dashboard_build_also_publishes_the_feed(monkeypatch, tmp_path):
+def test_default_dashboard_build_also_publishes_the_feed(monkeypatch, tmp_path, site_shell):
     _real_snapshot(tmp_path, datetime(2026, 7, 30, tzinfo=UTC))
+    site_shell(tmp_path / "site")
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
         "sys.argv",

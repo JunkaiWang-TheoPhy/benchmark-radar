@@ -1,9 +1,15 @@
 """Generate sitemap.xml for the published site (issues #236 and #424).
 
-Each major search intent has a path-based static landing page. The dashboard's
-query-string views remain interactive application states, but are not sitemap
-entries: their canonical URLs consolidate onto the corresponding static page.
-Filter permutations are deliberately left out.
+Each dashboard view is a real page at its own path, written by app_pages.py
+from the same document the dashboard is served from. The old ?view= permalinks
+still work and are rewritten to the matching path in the browser, so they are
+not listed here: a sitemap entry for a URL that immediately becomes a different
+URL is a duplicate, not a second page. Filter permutations are left out for the
+same reason.
+
+Only views that were actually written are listed. A build without the curated
+registry publishes no /leaderboard/, and a sitemap that names a page nobody can
+fetch is a 404 the site volunteered.
 """
 
 from __future__ import annotations
@@ -59,11 +65,20 @@ def sitemap_tree(
     snapshots: list[dict[str, Any]],
     benchmark_slugs: Sequence[str] = (),
     extra_entries: Sequence[tuple[str, str | None]] = (),
+    *,
+    view_paths: Sequence[str] | None = None,
 ) -> ET.ElementTree:
-    """Build one stable urlset covering views, benchmarks, and published articles."""
+    """Build one stable urlset covering views, benchmarks, and published articles.
+
+    ``view_paths`` is what the build actually wrote. Passing None lists every
+    view, which is what a caller that does not write pages at all wants.
+    """
     root = ET.Element(_q("urlset"))
     lastmod = _lastmod_date(snapshots)
-    entries = [(path, lastmod) for _, path in INDEXABLE_VIEWS]
+    published = None if view_paths is None else {"/", *view_paths}
+    entries = [
+        (path, lastmod) for _, path in INDEXABLE_VIEWS if published is None or path in published
+    ]
     entries.append((BENCHMARK_DIRECTORY_PATH, lastmod))
     entries.extend((f"/benchmarks/{slug}/", lastmod) for slug in benchmark_slugs)
     entries.extend(extra_entries)
@@ -84,10 +99,12 @@ def write_sitemap(
     output: Path,
     benchmark_slugs: Sequence[str] = (),
     extra_entries: Sequence[tuple[str, str | None]] = (),
+    *,
+    view_paths: Sequence[str] | None = None,
 ) -> Path:
     """Write a deterministic UTF-8 sitemap beside the published data."""
     output.parent.mkdir(parents=True, exist_ok=True)
-    tree = sitemap_tree(snapshots, benchmark_slugs, extra_entries)
+    tree = sitemap_tree(snapshots, benchmark_slugs, extra_entries, view_paths=view_paths)
     ET.indent(tree, space="  ")
     tree.write(output, encoding="utf-8", xml_declaration=True)
     return output
