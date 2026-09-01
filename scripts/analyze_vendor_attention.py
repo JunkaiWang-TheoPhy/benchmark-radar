@@ -21,20 +21,19 @@ from benchmark_radar.model_cards import load_registry
 DEFAULT_REGISTRY = Path("data/model_cards.yml")
 DEFAULT_SPEC = Path("data/vendor_attention_audit.yml")
 DEFAULT_OUTPUT_DIR = Path("docs/technical-report/vendor-attention-audit")
-REQUIRED_SCENARIO_IDS = frozenset(
-    {
-        "canonical_all_t5",
-        "canonical_all_t6",
-        "canonical_all_t7",
-        "model_cards_only_t6",
-        "latest_per_organization_t6",
-        "trailing_365d_t6",
-        "trailing_180d_t6",
-        "trailing_90d_t6",
-        "reviewed_families_t6",
-        "drop_newest_per_organization_t6",
-    }
-)
+REQUIRED_SCENARIO_DEFINITIONS = {
+    "canonical_all_t5": ("canonical", 5, (), None, False, False),
+    "canonical_all_t6": ("canonical", 6, (), None, False, False),
+    "canonical_all_t7": ("canonical", 7, (), None, False, False),
+    "model_cards_only_t6": ("canonical", 6, ("model_card",), None, False, False),
+    "latest_per_organization_t6": ("canonical", 6, (), None, True, False),
+    "trailing_365d_t6": ("canonical", 6, (), 365, False, False),
+    "trailing_180d_t6": ("canonical", 6, (), 180, False, False),
+    "trailing_90d_t6": ("canonical", 6, (), 90, False, False),
+    "reviewed_families_t6": ("family", 6, (), None, False, False),
+    "drop_newest_per_organization_t6": ("canonical", 6, (), None, False, True),
+}
+REQUIRED_SCENARIO_IDS = frozenset(REQUIRED_SCENARIO_DEFINITIONS)
 
 
 class VendorAttentionAuditError(ValueError):
@@ -83,6 +82,21 @@ def load_audit_spec(path: Path = DEFAULT_SPEC) -> dict[str, Any]:
         raise VendorAttentionAuditError(
             "spec is missing required scenarios: " + ", ".join(missing_scenarios)
         )
+    scenarios_by_id = {str(row["id"]): row for row in scenarios}
+    for scenario_id, expected in REQUIRED_SCENARIO_DEFINITIONS.items():
+        row = scenarios_by_id[scenario_id]
+        actual = (
+            str(row.get("identity") or "canonical"),
+            int(row.get("min_organizations") or 0),
+            tuple(map(str, row.get("document_types") or [])),
+            int(row["trailing_days"]) if row.get("trailing_days") is not None else None,
+            bool(row.get("latest_per_organization")),
+            bool(row.get("drop_newest_per_organization")),
+        )
+        if actual != expected:
+            raise VendorAttentionAuditError(
+                f"scenario {scenario_id} definition mismatch: expected {expected}, got {actual}"
+            )
     if audit["primary_scenario"] not in scenario_ids:
         raise VendorAttentionAuditError("primary_scenario must name a declared scenario")
     return payload
@@ -479,6 +493,7 @@ def generate_vendor_attention_audit(
     registry = load_registry(registry_path)
     analysis_end = _iso_date(audit["as_of"], label="audit.as_of")
     family_projection, family_names, reviewed_families = compile_family_projection(registry, spec)
+    reviewed_family_ids = {row["family_id"] for row in reviewed_families}
     canonical_names = {str(row["id"]): str(row["name"]) for row in registry["benchmarks"]}
     scenario_payloads: dict[str, dict[str, Any]] = {}
     scenarios = {str(row["id"]): row for row in spec["scenarios"]}
@@ -530,6 +545,16 @@ def generate_vendor_attention_audit(
             benchmark_count=benchmark_count,
             baseline_members=comparison_members,
         )
+        if scenario.get("identity") == "family":
+            summary["core_explicit_family_count"] = sum(
+                member in reviewed_family_ids for member in summary["core_members"]
+            )
+            summary["core_singleton_count"] = (
+                summary["core_count"] - summary["core_explicit_family_count"]
+            )
+        else:
+            summary["core_explicit_family_count"] = ""
+            summary["core_singleton_count"] = ""
         scenario_summaries.append(summary)
         membership_rows.extend(
             _scenario_membership_rows(scenario, edges, threshold=int(scenario["min_organizations"]))
@@ -661,7 +686,12 @@ def generate_vendor_attention_audit(
 def _write_csv(path: Path, rows: list[dict[str, Any]], fieldnames: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames, extrasaction="ignore")
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=fieldnames,
+            extrasaction="ignore",
+            lineterminator="\n",
+        )
         writer.writeheader()
         for row in rows:
             output = dict(row)
@@ -727,6 +757,8 @@ def write_vendor_attention_artifacts(
             "document_benchmark_edge_count",
             "organization_benchmark_edge_count",
             "core_count",
+            "core_explicit_family_count",
+            "core_singleton_count",
             "core_members",
             "core_member_names",
             "jaccard_vs_baseline",

@@ -29,6 +29,9 @@ def test_report_replaces_the_unreproducible_eight_benchmark_claim():
     assert "Model-card document (frozen v0.9.0)" in source
     assert "issue #456 addendum separately audits 37 documents" in source
     assert "Do not combine these populations" in source
+    assert "resolved identities" in source
+    assert "explicit families" in source
+    assert "singleton canonical IDs" in source
 
 
 def test_report_build_instructions_regenerate_the_audit_and_next_draft():

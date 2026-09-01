@@ -268,6 +268,7 @@
       "active_orgs_threshold_ok": true,
       "benchmark_count": 110,
       "core_count": 21,
+      "core_explicit_family_count": "",
       "core_member_names": [
         "GPQA Diamond",
         "Humanity's Last Exam",
@@ -314,6 +315,7 @@
         "automationbench",
         "mbpp"
       ],
+      "core_singleton_count": "",
       "document_benchmark_edge_count": 447,
       "document_count": 37,
       "document_types": "",
@@ -333,6 +335,7 @@
       "active_orgs_threshold_ok": true,
       "benchmark_count": 110,
       "core_count": 16,
+      "core_explicit_family_count": "",
       "core_member_names": [
         "GPQA Diamond",
         "Humanity's Last Exam",
@@ -369,6 +372,7 @@
         "gsm8k",
         "mmmlu"
       ],
+      "core_singleton_count": "",
       "document_benchmark_edge_count": 447,
       "document_count": 37,
       "document_types": "",
@@ -388,6 +392,7 @@
       "active_orgs_threshold_ok": true,
       "benchmark_count": 110,
       "core_count": 10,
+      "core_explicit_family_count": "",
       "core_member_names": [
         "GPQA Diamond",
         "Humanity's Last Exam",
@@ -412,6 +417,7 @@
         "ifeval",
         "mmlu"
       ],
+      "core_singleton_count": "",
       "document_benchmark_edge_count": 447,
       "document_count": 37,
       "document_types": "",
@@ -431,6 +437,7 @@
       "active_orgs_threshold_ok": true,
       "benchmark_count": 110,
       "core_count": 4,
+      "core_explicit_family_count": "",
       "core_member_names": [
         "GPQA Diamond",
         "Humanity's Last Exam",
@@ -443,6 +450,7 @@
         "livecodebench",
         "swe_bench_verified"
       ],
+      "core_singleton_count": "",
       "document_benchmark_edge_count": 208,
       "document_count": 15,
       "document_types": "model_card",
@@ -462,6 +470,7 @@
       "active_orgs_threshold_ok": true,
       "benchmark_count": 110,
       "core_count": 3,
+      "core_explicit_family_count": "",
       "core_member_names": [
         "Terminal-Bench",
         "GPQA Diamond",
@@ -472,6 +481,7 @@
         "gpqa_diamond",
         "hle"
       ],
+      "core_singleton_count": "",
       "document_benchmark_edge_count": 144,
       "document_count": 12,
       "document_types": "",
@@ -491,6 +501,7 @@
       "active_orgs_threshold_ok": true,
       "benchmark_count": 110,
       "core_count": 6,
+      "core_explicit_family_count": "",
       "core_member_names": [
         "Terminal-Bench",
         "Humanity's Last Exam",
@@ -507,6 +518,7 @@
         "swe_bench_verified",
         "browsecomp"
       ],
+      "core_singleton_count": "",
       "document_benchmark_edge_count": 294,
       "document_count": 21,
       "document_types": "",
@@ -526,6 +538,7 @@
       "active_orgs_threshold_ok": true,
       "benchmark_count": 110,
       "core_count": 4,
+      "core_explicit_family_count": "",
       "core_member_names": [
         "Humanity's Last Exam",
         "Terminal-Bench",
@@ -538,6 +551,7 @@
         "gpqa_diamond",
         "swe_bench_pro"
       ],
+      "core_singleton_count": "",
       "document_benchmark_edge_count": 206,
       "document_count": 15,
       "document_types": "",
@@ -557,6 +571,7 @@
       "active_orgs_threshold_ok": true,
       "benchmark_count": 110,
       "core_count": 4,
+      "core_explicit_family_count": "",
       "core_member_names": [
         "Terminal-Bench",
         "Humanity's Last Exam",
@@ -569,6 +584,7 @@
         "gpqa_diamond",
         "swe_bench_pro"
       ],
+      "core_singleton_count": "",
       "document_benchmark_edge_count": 153,
       "document_count": 12,
       "document_types": "",
@@ -588,6 +604,7 @@
       "active_orgs_threshold_ok": true,
       "benchmark_count": 97,
       "core_count": 13,
+      "core_explicit_family_count": 6,
       "core_member_names": [
         "GPQA family",
         "SWE-bench family",
@@ -618,6 +635,7 @@
         "humaneval",
         "gsm8k"
       ],
+      "core_singleton_count": 7,
       "document_benchmark_edge_count": 447,
       "document_count": 37,
       "document_types": "",
@@ -637,6 +655,7 @@
       "active_orgs_threshold_ok": true,
       "benchmark_count": 110,
       "core_count": 9,
+      "core_explicit_family_count": "",
       "core_member_names": [
         "GPQA Diamond",
         "SWE-bench Verified",
@@ -659,6 +678,7 @@
         "ifeval",
         "mmlu"
       ],
+      "core_singleton_count": "",
       "document_benchmark_edge_count": 303,
       "document_count": 25,
       "document_types": "",

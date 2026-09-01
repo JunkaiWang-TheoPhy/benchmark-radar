@@ -92,7 +92,7 @@ def vendor_attention_section_paragraphs(report_data: dict[str, Any]) -> list[str
     baseline = scenarios["canonical_all_t6"]
     recent = scenarios["trailing_365d_t6"]
     latest = scenarios["latest_per_organization_t6"]
-    families = scenarios["reviewed_families_t6"]
+    family_projection = scenarios["reviewed_families_t6"]
     model_cards_only = scenarios["model_cards_only_t6"]
     return [
         (
@@ -109,7 +109,9 @@ def vendor_attention_section_paragraphs(report_data: dict[str, Any]) -> list[str
             f"365-day window contains {recent['core_count']} IDs at the same threshold; one "
             f"latest document per organization contains {latest['core_count']}; model-card "
             f"documents alone contain {model_cards_only['core_count']}; and the explicit "
-            f"reviewed-family projection contains {families['core_count']} families. These "
+            f"reviewed-family projection contains {family_projection['core_count']} resolved "
+            f"identities: {family_projection['core_explicit_family_count']} explicit families "
+            f"and {family_projection['core_singleton_count']} singleton canonical IDs. These "
             "results support a narrower claim that a recurring reporting group exists in the "
             "reviewed sample. They do not support an exact eight-benchmark boundary or a "
             "field-wide statement that vendor attention has converged."
@@ -150,7 +152,10 @@ def vendor_attention_evidence_rows(report_data: dict[str, Any]) -> list[tuple[st
         ),
         (
             "Reviewed family projection",
-            f"{scenarios['reviewed_families_t6']['core_count']} families · score tracks unmerged",
+            f"{scenarios['reviewed_families_t6']['core_count']} resolved identities · "
+            f"{scenarios['reviewed_families_t6']['core_explicit_family_count']} families + "
+            f"{scenarios['reviewed_families_t6']['core_singleton_count']} singletons · "
+            "score tracks unmerged",
         ),
     ]
 

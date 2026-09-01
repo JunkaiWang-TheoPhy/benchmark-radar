@@ -52,6 +52,8 @@ def test_shipped_audit_reproduces_primary_counts_and_sensitivity():
     assert scenarios["trailing_90d_t6"]["core_count"] == 4
     assert scenarios["drop_newest_per_organization_t6"]["core_count"] == 9
     assert scenarios["reviewed_families_t6"]["core_count"] == 13
+    assert scenarios["reviewed_families_t6"]["core_explicit_family_count"] == 6
+    assert scenarios["reviewed_families_t6"]["core_singleton_count"] == 7
 
     assert audit["original_list_equals_threshold_set"] is False
     assert audit["original_list_is_subset_of_threshold_set"] is True
@@ -119,6 +121,18 @@ def test_spec_rejects_a_missing_implementation_scenario_before_analysis(tmp_path
     path.write_text(yaml.safe_dump(spec, sort_keys=False), encoding="utf-8")
 
     with pytest.raises(module.VendorAttentionAuditError, match="missing required scenarios"):
+        module.load_audit_spec(path)
+
+
+def test_spec_rejects_a_required_scenario_with_mislabeled_semantics(tmp_path):
+    module = _load_module()
+    spec = yaml.safe_load(SPEC.read_text(encoding="utf-8"))
+    scenario = next(row for row in spec["scenarios"] if row["id"] == "trailing_365d_t6")
+    scenario["trailing_days"] = 180
+    path = tmp_path / "audit.yml"
+    path.write_text(yaml.safe_dump(spec, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(module.VendorAttentionAuditError, match="definition mismatch"):
         module.load_audit_spec(path)
 
 

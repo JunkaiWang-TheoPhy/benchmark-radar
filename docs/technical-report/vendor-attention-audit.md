@@ -51,7 +51,11 @@ different selection procedures.
 | Trailing 365 days, threshold 6 | 21 | 11 | 6 |
 | Trailing 180 days, threshold 6 | 15 | 9 | 4 |
 | Trailing 90 days, threshold 6 | 12 | 8 | 4 |
-| Reviewed family projection, threshold 6 | 37 | 12 | 13 |
+| Reviewed family projection, threshold 6 | 37 | 12 | 13 resolved identities |
+
+The family-projection row contains six explicitly reviewed family IDs and seven
+canonical IDs that remain singletons. It does not claim that all 13 resolved
+identities are multi-benchmark families.
 | Remove every organization's newest document, threshold 6 | 25 | 9 | 9 |
 
 The full-history threshold set contains GPQA Diamond, Humanity's Last Exam,
