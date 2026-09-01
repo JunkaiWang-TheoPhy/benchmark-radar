@@ -267,3 +267,47 @@ def test_navigation_agrees_between_the_shell_and_the_dashboard():
     # Today is a button in the dashboard and a link in the article shell, so the
     # root is the one entry the two are allowed to disagree about.
     assert page_links == shell_links - {f"{SITE_URL}/"}
+
+
+def test_a_failed_boot_keeps_the_seeded_rows_and_leads_with_the_error():
+    """A data outage must not turn a published URL into an empty page.
+
+    /leaderboard/ promises a ranking in its title, its canonical and the
+    sitemap. Hiding every view on a fetch failure would leave a shell behind
+    that promise: a broken page to a reader, a missing page to a crawler. The
+    rows the page shipped with are still true, so they stay, and the banner
+    moves above them so nobody reads them as fresh.
+    """
+    script = (SITE / "assets" / "app.js").read_text(encoding="utf-8")
+    # The boot handler is the one that reveals the error state.
+    catch = next(
+        block
+        for block in script.split("} catch (error) {")[1:]
+        if 'byId("error-state")' in block.split("\n  }", 1)[0]
+    ).split("\n  }", 1)[0]
+
+    # A view survives only when it is the one being shown and it carries a seed.
+    assert 'section.id === `${state.view}-view` && section.querySelector("[data-seed]")' in catch
+    assert "section.hidden = !seeded;" in catch
+    assert "banner.hidden = false;" in catch
+    assert "if (survivor) survivor.before(banner);" in catch
+
+
+def test_every_seeded_container_is_one_the_renderer_already_owns(tmp_path):
+    """The seed has to land in the host the renderer writes to.
+
+    Seeding anywhere else would leave a second copy on screen once the data
+    loads, because the renderers replace their host's children rather than
+    merging into them.
+    """
+    _write(tmp_path, _dashboard())
+    script = (SITE / "assets" / "app.js").read_text(encoding="utf-8")
+
+    seen = set()
+    for path in ("leaderboard", "trends", "explore"):
+        page = (tmp_path / path / "index.html").read_text(encoding="utf-8")
+        ids = re.findall(r'id="([a-z-]+)"[^>]*\bdata-seed\b', page)
+        assert ids, path
+        seen.update(ids)
+    for element_id in sorted(seen):
+        assert f'byId("{element_id}")' in script or f'"{element_id}"' in script, element_id

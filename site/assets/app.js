@@ -8168,13 +8168,20 @@ async function initialize() {
     // response, before any script runs. Hiding every view here would throw that
     // away and leave an empty shell behind a URL that promises a ranking, which
     // reads as a broken page to a reader and as a missing page to a crawler.
-    // A view that was seeded stays on screen with the error above it; a view
-    // with nothing seeded has nothing worth keeping.
+    // A view that was seeded stays on screen; a view with nothing seeded has
+    // nothing worth keeping.
+    let survivor = null;
     document.querySelectorAll(".view").forEach((section) => {
       const seeded = section.id === `${state.view}-view` && section.querySelector("[data-seed]");
       section.hidden = !seeded;
+      if (seeded) survivor = section;
     });
-    byId("error-state").hidden = false;
+    const banner = byId("error-state");
+    banner.hidden = false;
+    // The banner sits last in the document, which is the right place when it is
+    // all that is left. When content survives, the reader has to be told the
+    // numbers are the ones the page shipped with before they read them.
+    if (survivor) survivor.before(banner);
     console.error(error);
   }
 }
