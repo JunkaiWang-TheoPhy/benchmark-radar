@@ -87,17 +87,13 @@ def test_document_edges_and_matrix_keep_provenance_and_unknowns_honest():
     assert len(keys) == len(set(keys)), "organization support is binary per benchmark"
 
 
-def test_alias_collisions_must_resolve_through_an_explicit_reviewed_family(tmp_path):
+def test_alias_collisions_must_resolve_through_an_explicit_reviewed_family():
     module = _load_module()
     registry = load_registry(REGISTRY)
     spec = yaml.safe_load(SPEC.read_text(encoding="utf-8"))
     spec["families"] = [row for row in spec["families"] if row["id"] != "mmmu_family"]
-    path = tmp_path / "audit.yml"
-    path.write_text(yaml.safe_dump(spec, sort_keys=False), encoding="utf-8")
-
-    loaded = module.load_audit_spec(path)
     with pytest.raises(module.VendorAttentionAuditError, match="ambiguous aliases"):
-        module.compile_family_projection(registry, loaded)
+        module.compile_family_projection(registry, spec)
 
 
 def test_registry_content_must_match_the_pre_registered_source_hash(tmp_path):
@@ -112,15 +108,17 @@ def test_registry_content_must_match_the_pre_registered_source_hash(tmp_path):
         )
 
 
-def test_source_commit_must_resolve_to_the_pre_registered_registry_bytes(tmp_path):
+def test_source_commit_must_be_an_immutable_oid_resolving_to_the_registry_bytes():
     module = _load_module()
-    spec = yaml.safe_load(SPEC.read_text(encoding="utf-8"))
-    spec["audit"]["source_commit"] = "deadbeef" * 5
-    path = tmp_path / "audit.yml"
-    path.write_text(yaml.safe_dump(spec, sort_keys=False), encoding="utf-8")
+    audit = yaml.safe_load(SPEC.read_text(encoding="utf-8"))["audit"]
+    audit["source_commit"] = "deadbeef" * 5
 
     with pytest.raises(module.VendorAttentionAuditError, match="unable to read"):
-        module.generate_vendor_attention_audit(registry_path=REGISTRY, spec_path=path)
+        module.verify_registry_provenance(REGISTRY, audit)
+
+    audit["source_commit"] = "HEAD"
+    with pytest.raises(module.VendorAttentionAuditError, match="full 40-character"):
+        module.verify_registry_provenance(REGISTRY, audit)
 
 
 def test_original_claim_is_locked_to_the_pre_registered_eight_items(tmp_path):
@@ -132,6 +130,23 @@ def test_original_claim_is_locked_to_the_pre_registered_eight_items(tmp_path):
 
     with pytest.raises(module.VendorAttentionAuditError, match="preregistered claim"):
         module.load_audit_spec(path)
+
+
+def test_cutoff_and_all_other_spec_bytes_are_locked_to_preregistration(tmp_path):
+    module = _load_module()
+    spec = yaml.safe_load(SPEC.read_text(encoding="utf-8"))
+    spec["audit"]["as_of"] = "2026-08-30"
+    cutoff_path = tmp_path / "cutoff.yml"
+    cutoff_path.write_text(yaml.safe_dump(spec, sort_keys=False), encoding="utf-8")
+    with pytest.raises(module.VendorAttentionAuditError, match="preregistered cutoff"):
+        module.load_audit_spec(cutoff_path)
+
+    spec = yaml.safe_load(SPEC.read_text(encoding="utf-8"))
+    spec["scenarios"][0]["label"] = "Unregistered editorial change"
+    hash_path = tmp_path / "hash.yml"
+    hash_path.write_text(yaml.safe_dump(spec, sort_keys=False), encoding="utf-8")
+    with pytest.raises(module.VendorAttentionAuditError, match="spec SHA-256"):
+        module.load_audit_spec(hash_path)
 
 
 def test_spec_rejects_a_missing_implementation_scenario_before_analysis(tmp_path):

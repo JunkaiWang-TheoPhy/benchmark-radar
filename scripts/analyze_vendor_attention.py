@@ -23,6 +23,8 @@ DEFAULT_REGISTRY = Path("data/model_cards.yml")
 DEFAULT_SPEC = Path("data/vendor_attention_audit.yml")
 DEFAULT_OUTPUT_DIR = Path("docs/technical-report/vendor-attention-audit")
 PRIMARY_SCENARIO_ID = "canonical_all_t6"
+ANALYSIS_END_DATE = "2026-08-31"
+EXPECTED_SPEC_SHA256 = "66b64ce9b8f423ae5f161672099ded01e5ba93e020087d91da3dd190d3b9747e"
 ORIGINAL_CLAIM_TEXT = "Vendor attention has converged on a small reporting core."
 ORIGINAL_SELECTION_TEXT = "Eight benchmarks appear in documents from at least six organizations."
 ORIGINAL_CLAIM_IDS = (
@@ -62,7 +64,8 @@ def _iso_date(value: Any, *, label: str) -> date:
 
 
 def load_audit_spec(path: Path = DEFAULT_SPEC) -> dict[str, Any]:
-    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    raw_spec = path.read_bytes()
+    payload = yaml.safe_load(raw_spec.decode("utf-8"))
     if not isinstance(payload, dict) or payload.get("schema_version") != 1:
         raise VendorAttentionAuditError("vendor-attention spec must use schema_version 1")
     audit = payload.get("audit")
@@ -88,6 +91,17 @@ def load_audit_spec(path: Path = DEFAULT_SPEC) -> dict[str, Any]:
     if missing:
         raise VendorAttentionAuditError(f"spec audit metadata missing: {', '.join(missing)}")
     _iso_date(audit["as_of"], label="audit.as_of")
+    if str(audit["as_of"]) != ANALYSIS_END_DATE:
+        raise VendorAttentionAuditError(
+            f"audit.as_of must be the preregistered cutoff {ANALYSIS_END_DATE}"
+        )
+    source_commit = str(audit["source_commit"])
+    if len(source_commit) != 40 or any(
+        character not in "0123456789abcdef" for character in source_commit
+    ):
+        raise VendorAttentionAuditError(
+            "source_commit must be a full 40-character commit object ID"
+        )
     original_claim = audit["original_claim"]
     if not isinstance(original_claim, dict):
         raise VendorAttentionAuditError("original_claim must be a mapping")
@@ -132,6 +146,12 @@ def load_audit_spec(path: Path = DEFAULT_SPEC) -> dict[str, Any]:
     if audit["primary_scenario"] != PRIMARY_SCENARIO_ID:
         raise VendorAttentionAuditError(
             f"primary_scenario must be {PRIMARY_SCENARIO_ID}, got {audit['primary_scenario']}"
+        )
+    actual_spec_sha256 = hashlib.sha256(raw_spec).hexdigest()
+    if actual_spec_sha256 != EXPECTED_SPEC_SHA256:
+        raise VendorAttentionAuditError(
+            "audit spec SHA-256 does not match the preregistered definition: "
+            f"expected {EXPECTED_SPEC_SHA256}, got {actual_spec_sha256}"
         )
     return payload
 
@@ -520,11 +540,7 @@ def decide_recommendation(
     }
 
 
-def generate_vendor_attention_audit(
-    *, registry_path: Path = DEFAULT_REGISTRY, spec_path: Path = DEFAULT_SPEC
-) -> dict[str, Any]:
-    spec = load_audit_spec(spec_path)
-    audit = spec["audit"]
+def verify_registry_provenance(registry_path: Path, audit: dict[str, Any]) -> str:
     actual_registry_sha256 = hashlib.sha256(registry_path.read_bytes()).hexdigest()
     expected_registry_sha256 = str(audit["source_sha256"])
     if actual_registry_sha256 != expected_registry_sha256:
@@ -539,6 +555,12 @@ def generate_vendor_attention_audit(
             f"registry path must match the pre-registered source_path {source_path}"
         )
     source_commit = str(audit["source_commit"])
+    if len(source_commit) != 40 or any(
+        character not in "0123456789abcdef" for character in source_commit
+    ):
+        raise VendorAttentionAuditError(
+            "source_commit must be a full 40-character commit object ID"
+        )
     git_result = subprocess.run(
         ["git", "show", f"{source_commit}:{source_path.as_posix()}"],
         cwd=Path.cwd(),
@@ -555,6 +577,15 @@ def generate_vendor_attention_audit(
             "source_commit registry bytes do not match source_sha256: "
             f"expected {expected_registry_sha256}, got {commit_registry_sha256}"
         )
+    return actual_registry_sha256
+
+
+def generate_vendor_attention_audit(
+    *, registry_path: Path = DEFAULT_REGISTRY, spec_path: Path = DEFAULT_SPEC
+) -> dict[str, Any]:
+    spec = load_audit_spec(spec_path)
+    audit = spec["audit"]
+    actual_registry_sha256 = verify_registry_provenance(registry_path, audit)
     registry = load_registry(registry_path)
     analysis_end = _iso_date(audit["as_of"], label="audit.as_of")
     family_projection, family_names, reviewed_families = compile_family_projection(registry, spec)
