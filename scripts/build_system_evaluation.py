@@ -235,8 +235,8 @@ def metric_strip(st) -> Table:
         "public collection<br/>sources monitored",
     ]
     cells = [
-        [p(value, st["metric"]), p(labels[index], st["metric_label"])]
-        for index, value in enumerate(values)
+        [p(value, st["metric"]), p(label, st["metric_label"])]
+        for value, label in zip(values, labels, strict=True)
     ]
     return Table(
         [cells],
