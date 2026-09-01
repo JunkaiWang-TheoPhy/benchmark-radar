@@ -329,22 +329,6 @@ def story(
                 if corresponding_author
                 else []
             ),
-            *(
-                [
-                    p(
-                        "WORKING DRAFT — NOT THE FROZEN v0.9.0 DEPOSIT",
-                        ParagraphStyle(
-                            "DraftNotice",
-                            parent=st["meta"],
-                            fontName=BOLD,
-                            textColor=AMBER,
-                            spaceAfter=4,
-                        ),
-                    )
-                ]
-                if draft
-                else []
-            ),
             p(
                 "29 August 2026  |  Software v0.9.0  |  Data cutoff 2026-08-29  |  Git 98c7de3",
                 st["meta"],

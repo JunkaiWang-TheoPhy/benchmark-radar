@@ -40,4 +40,4 @@ def test_next_draft_records_contributor_name_and_affiliation() -> None:
     )
     assert corresponding_author == "Koutian Wu — k@tacite.ai"
     assert "Corresponding author: {corresponding_author}" in source
-    assert "WORKING DRAFT — NOT THE FROZEN v0.9.0 DEPOSIT" in source
+    assert "WORKING DRAFT — NOT THE FROZEN v0.9.0 DEPOSIT" not in source
