@@ -2,7 +2,7 @@
   "date": "2026-08-31",
   "briefing": {
     "bullets": [
-      "A benchmark release added executable graders. Why it matters: Readers can inspect the supporting dataset directly. Evidence: E001. Medium confidence."
+      "A benchmark release added executable graders. Why it matters: Readers can inspect the supporting dataset directly. Evidence: E001, E404. Medium confidence."
     ],
     "caveat": "One source supports this bounded briefing item.",
     "citations": [

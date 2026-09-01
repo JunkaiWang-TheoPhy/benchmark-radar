@@ -1723,15 +1723,14 @@ function briefingParts(line) {
   // the split and the fallback shapes, so the IDs never stay in the running
   // sentences a scan of the findings has to wade through.
   const evidenceIds = [...new Set(text.match(/\bE\d{3}\b/g) || [])];
-  const sources = evidenceIds.length;
   text = text.replace(/\s*\.?\s*Evidence:\s*((?:E\d{3}\s*,\s*)*E\d{3})\.?\s*/i, "").trim();
   const whyIndex = text.search(/\bWhy it matters:\s*/i);
-  if (whyIndex === -1) return { head: text, body: "", confidence, sources, evidenceIds };
+  if (whyIndex === -1) return { head: text, body: "", confidence, evidenceIds };
   const head = text.slice(0, whyIndex).trim();
   const body = text
     .slice(whyIndex + "Why it matters:".length)
     .trim();
-  return { head, body, confidence, sources, evidenceIds };
+  return { head, body, confidence, evidenceIds };
 }
 
 function briefingMeta(parts, citations) {
@@ -1742,11 +1741,15 @@ function briefingMeta(parts, citations) {
       text: `${parts.confidence} ${t("confidence")}`,
     }));
   }
-  if (parts.sources > 0) {
-    const sourceText = `${parts.sources} ${parts.sources === 1 ? t("source") : t("sources")}`;
-    const citation = parts.sources === 1
-      ? citations.find((entry) => entry.id === parts.evidenceIds[0])
-      : null;
+  const citedSources = parts.evidenceIds.flatMap((id) => {
+    const citation = citations.find((entry) => entry.id === id);
+    return citation ? [citation] : [];
+  });
+  if (citedSources.length > 0) {
+    const sourceText = `${citedSources.length} ${
+      citedSources.length === 1 ? t("source") : t("sources")
+    }`;
+    const citation = citedSources.length === 1 ? citedSources[0] : null;
     chips.push(citation
       ? element("a", {
           className: "briefing-chip briefing-chip-sources",
@@ -1833,7 +1836,9 @@ function briefingDetails(briefing, citations) {
   if (!provenance && !caveat && !evidence) return null;
 
   const label = citations.length
-    ? `${t("Evidence & briefing details")} · ${citations.length.toLocaleString()} ${t("sources")}`
+    ? `${t("Evidence & briefing details")} · ${citations.length.toLocaleString()} ${
+        citations.length === 1 ? t("source") : t("sources")
+      }`
     : t("Briefing details");
   return element("details", { className: "daily-briefing-details" }, [
     element("summary", { text: label }),

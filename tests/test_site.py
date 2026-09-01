@@ -1305,10 +1305,7 @@ def test_daily_briefing_collapses_verbose_evidence_details_by_default():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     assert 'element("details", { className: "daily-briefing-details" }' in script
-    assert (
-        '{t("Evidence & briefing details")} · ${citations.length.toLocaleString()} '
-        '${t("sources")}' in script
-    )
+    assert 'citations.length === 1 ? t("source") : t("sources")' in script
     assert "briefingDetails(briefing, citations)" in script
     assert 'attrs: { open: "" }' not in script
 
@@ -1415,12 +1412,14 @@ def test_rendered_single_source_chip_links_to_its_evidence():
         node for node in nodes if "briefing-chip-sources" in node["className"].split()
     )
     confidence_chip = next(node for node in nodes if "briefing-chip-medium" in node["className"])
+    details_summary = next(node for node in nodes if node["tag"] == "summary")
 
     assert source_chip["tag"] == "a"
     assert source_chip["text"] == "1 source"
     assert source_chip["href"] == "https://github.com/example/benchmark-release"
     assert confidence_chip["tag"] == "span"
     assert confidence_chip["href"] == ""
+    assert details_summary["text"] == "Evidence & briefing details · 1 source"
 
 
 def test_rendered_briefing_shows_chinese_when_the_snapshot_has_it():
