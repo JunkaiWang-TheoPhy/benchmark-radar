@@ -58,8 +58,8 @@ rows:
     counterexample_location: Abstract lines 135-136; Section 4.4 model-profile comparison
     review:
       sampled_for_secondary_review: true
-      secondary_code: null
-      secondary_note: null
+      secondary_code: environment_grounding_state_tracking
+      secondary_note: "The evidence explicitly centers on lost constraints, missed mid-task information, and failures when success depends on hidden state, which matches failures to ground actions in the current workflow state rather than simple local mistakes."
   - id: webarena_early_stop
     benchmark_family_id: webarena
     benchmark_family_name: WebArena
@@ -163,8 +163,8 @@ rows:
     counterexample_location: Abstract line 19
     review:
       sampled_for_secondary_review: true
-      secondary_code: null
-      secondary_note: null
+      secondary_code: tool_selection_execution
+      secondary_note: "The abstract names misguided exploration, surface-level repair, and incomplete repair coverage as recurring mechanisms, which fits choosing or executing the wrong repair path rather than maintaining the right state."
   - id: frontierchallenge_false_completion
     benchmark_family_id: frontierchallenge
     benchmark_family_name: FrontierChallenge
@@ -205,8 +205,8 @@ rows:
     counterexample_location: Abstract lines 50-52; metric description in Section 3.4
     review:
       sampled_for_secondary_review: true
-      secondary_code: null
-      secondary_note: null
+      secondary_code: goal_plan_drift
+      secondary_note: "Experimental-protocol mismatch, evidence mismatch, and a missing scientific core indicate the agent is drifting from the target scientific objective and intended protocol, not merely failing on a narrow execution step."
   - id: prbench_end_to_end_gap
     benchmark_family_id: prbench
     benchmark_family_name: PRBench
@@ -268,5 +268,5 @@ rows:
     counterexample_location: Abstract lines 16-19
     review:
       sampled_for_secondary_review: true
-      secondary_code: null
-      secondary_note: null
+      secondary_code: verification_completion
+      secondary_note: "This row is an audit-based measurement gap: the benchmark often rejects actually correct solutions, so apparent failure can come from unreliable checking of whether the required end state was achieved rather than from a demonstrated agent weakness prevalence claim."

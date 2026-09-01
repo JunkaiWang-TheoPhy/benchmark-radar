@@ -13,6 +13,7 @@ import yaml
 SCRIPT_PATH = Path("scripts/analyze_agent_weaknesses.py")
 DATA_PATH = Path("data/agent_weakness_evidence.yml")
 GUIDE_PATH = Path("docs/technical-report/agent-weakness-coding-guide.md")
+REVIEW_REPORT_PATH = Path("docs/technical-report/agent-weakness-independent-review.md")
 
 FINE_CODES = [
     "goal_plan_drift",
@@ -140,11 +141,75 @@ def test_repository_task1_artifacts_exist_and_load():
     assert analysis["status_counts"]["demonstrated"] >= 1
     assert analysis["status_counts"]["design_implied"] >= 1
     assert analysis["status_counts"]["unmeasured"] >= 1
-    assert analysis["agreement"]["sampled_row_count"] >= 1
-    assert analysis["agreement"]["completed_row_count"] == 0
-    assert analysis["agreement"]["pending_row_count"] == analysis["agreement"]["sampled_row_count"]
-    assert analysis["agreement"]["percent_agreement"] is None
-    assert analysis["agreement"]["cohens_kappa"] is None
+    agreement = analysis["agreement"]
+    assert agreement["sampled_row_count"] >= 1
+    assert (
+        agreement["completed_row_count"] + agreement["pending_row_count"]
+        == agreement["sampled_row_count"]
+    )
+    if agreement["completed_row_count"] == 0:
+        assert agreement["percent_agreement"] is None
+        assert agreement["cohens_kappa"] is None
+    else:
+        assert 0.0 <= agreement["percent_agreement"] <= 1.0
+        assert agreement["cohens_kappa"] is not None
+
+
+def test_repository_task2_secondary_review_is_complete():
+    assert REVIEW_REPORT_PATH.exists(), f"missing independent review report: {REVIEW_REPORT_PATH}"
+    module = _load_module()
+
+    study = module.load_study(DATA_PATH)
+    analysis = module.analyze_study(study)
+    sampled_rows = [row for row in study["rows"] if row["review"]["sampled_for_secondary_review"]]
+
+    assert [row["id"] for row in sampled_rows] == [
+        "osworld2_hidden_state",
+        "swe_science_misguided_exploration",
+        "researchclawbench_protocol_drift",
+        "scicode_instrument_gap",
+    ]
+    assert all(row["review"]["secondary_code"] for row in sampled_rows)
+    assert all((row["review"]["secondary_note"] or "").strip() for row in sampled_rows)
+
+    agreement = analysis["agreement"]
+    assert agreement["sampled_row_count"] == 4
+    assert agreement["completed_row_count"] == 4
+    assert agreement["pending_row_count"] == 0
+    assert agreement["pending_row_ids"] == []
+    assert agreement["percent_agreement"] == pytest.approx(1.0)
+    assert agreement["cohens_kappa"] == pytest.approx(1.0)
+    assert agreement["disagreements"] == []
+
+
+def test_repository_task2_report_records_blind_review_and_adjudication_state():
+    assert REVIEW_REPORT_PATH.exists(), f"missing independent review report: {REVIEW_REPORT_PATH}"
+    module = _load_module()
+
+    study = module.load_study(DATA_PATH)
+    analysis = module.analyze_study(study)
+    report_text = REVIEW_REPORT_PATH.read_text(encoding="utf-8")
+
+    assert "independent Codex analyst" in report_text
+    assert "blinded" in report_text
+    assert "## Raw assignments" in report_text
+    assert "## Disagreement and adjudication log" in report_text
+
+    sampled_rows = [row for row in study["rows"] if row["review"]["sampled_for_secondary_review"]]
+    for row in sampled_rows:
+        assert row["id"] in report_text
+        assert row["primary_code"] in report_text
+        assert row["review"]["secondary_code"] in report_text
+        assert row["review"]["secondary_note"] in report_text
+
+    disagreements = analysis["agreement"]["disagreements"]
+    if disagreements:
+        for disagreement in disagreements:
+            assert disagreement["id"] in report_text
+            assert disagreement["primary_code"] in report_text
+            assert disagreement["secondary_code"] in report_text
+    else:
+        assert "No disagreements required adjudication." in report_text
 
 
 def test_load_study_rejects_missing_evidence_location(tmp_path):
