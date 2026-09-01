@@ -1391,6 +1391,11 @@ def test_rendered_briefing_splits_each_bullet_into_head_body_and_meta():
     assert "Evidence:" not in subtext(body)
     assert "High confidence" in subtext(meta)
     assert "3 sources" in subtext(meta)
+    multi_source_chip = next(
+        node for node in meta["children"] if "briefing-chip-sources" in node["className"].split()
+    )
+    assert multi_source_chip["tag"] == "span"
+    assert multi_source_chip["href"] == ""
 
     # An older bullet without the "Why it matters" structure degrades to a head
     # with no body, yet its evidence and confidence still move to the metadata.
@@ -1401,6 +1406,21 @@ def test_rendered_briefing_splits_each_bullet_into_head_body_and_meta():
     assert "Evidence:" not in subtext(fbhead)
     assert "Medium confidence" in subtext(fbmeta)
     assert "2 sources" in subtext(fbmeta)
+
+
+def test_rendered_single_source_chip_links_to_its_evidence():
+    """Issue #467: the singular source count is the evidence affordance."""
+    nodes = list(_flatten(_rendered_briefing("tests/fixtures/daily_briefing_one_source.json")))
+    source_chip = next(
+        node for node in nodes if "briefing-chip-sources" in node["className"].split()
+    )
+    confidence_chip = next(node for node in nodes if "briefing-chip-medium" in node["className"])
+
+    assert source_chip["tag"] == "a"
+    assert source_chip["text"] == "1 source"
+    assert source_chip["href"] == "https://github.com/example/benchmark-release"
+    assert confidence_chip["tag"] == "span"
+    assert confidence_chip["href"] == ""
 
 
 def test_rendered_briefing_shows_chinese_when_the_snapshot_has_it():

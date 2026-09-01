@@ -1,0 +1,19 @@
+{
+  "date": "2026-08-31",
+  "briefing": {
+    "bullets": [
+      "A benchmark release added executable graders. Why it matters: Readers can inspect the supporting dataset directly. Evidence: E001. Medium confidence."
+    ],
+    "caveat": "One source supports this bounded briefing item.",
+    "citations": [
+      {
+        "id": "E001",
+        "source": "GitHub",
+        "title": "example/benchmark-release",
+        "url": "https://github.com/example/benchmark-release"
+      }
+    ],
+    "date": "2026-08-31",
+    "generator": "deterministic-fallback"
+  }
+}
