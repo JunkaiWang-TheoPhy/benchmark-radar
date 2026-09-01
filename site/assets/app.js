@@ -351,6 +351,8 @@ function rerenderCurrentView() {
 function toggleLang() {
   setLang(getLang() === "zh" ? "en" : "zh");
   applyStaticI18n();
+  // The title and canonical belong to the page, not to the language toggle.
+  applyViewSeo(state.view);
   syncLangToggle();
   rerenderCurrentView();
 }
@@ -1160,7 +1162,20 @@ function readUrl() {
   const params = new URLSearchParams(window.location.search);
   const requestedView = params.get("view");
   // Legacy Explorer permalinks resolve to the filterable Today list.
-  state.view = ["trends", "map", "leaderboard"].includes(requestedView) ? requestedView : "today";
+  const legacyView = ["trends", "map", "leaderboard"].includes(requestedView)
+    ? requestedView
+    : "";
+  // The path is the view, and that is what keeps Back and Forward honest: the
+  // address bar is the only record of which view the reader is on, so restoring
+  // an entry restores the view it describes. Reading a marker written into the
+  // page at build time instead would hand back the generated view every time,
+  // whichever entry the reader went back to.
+  //
+  // At the root, ?view= is the old permalink shape and still decides; boot
+  // rewrites it onto the matching path so it stops existing as a second URL
+  // for the same page.
+  const pathView = viewFromPath(window.location.pathname);
+  state.view = (pathView && pathView !== "today" ? pathView : legacyView) || "today";
   state.todayDate = params.get("date") || "";
   state.q = params.get("q") || "";
   state.kind = params.get("kind") || "";
@@ -1201,7 +1216,6 @@ function readUrl() {
 //           a filter, moving the date, toggling a facet, closing a dialog
 function writeUrl(mode = "replace") {
   const params = new URLSearchParams();
-  if (state.view !== "today") params.set("view", state.view);
   // Every filter below belongs to exactly one view, so only that view may write
   // it. Serializing all of them unconditionally is what leaked `lfrontier` onto
   // Today/Trends/Map links and `date` onto Leaderboard links (issue #123): the
@@ -1240,7 +1254,11 @@ function writeUrl(mode = "replace") {
   if (state.contact) hash = "contact";
   else if (state.rubric === "current") hash = "rubric";
   else if (state.rubric) hash = `rubric=${encodeURIComponent(state.rubric)}`;
-  const url = `${window.location.pathname}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
+  // The view decides the path. Reusing window.location.pathname kept whichever
+  // page loaded first, so switching to Trends from /leaderboard/ wrote
+  // /leaderboard/ back and the address bar disagreed with the screen.
+  const path = VIEW_PATHS[state.view] || "/";
+  const url = `${path}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   // Pushing a URL identical to the current one would make Back a no-op that
   // looks broken: the reader presses it, the address bar does not change, and
   // they press it again. Re-selecting the benchmark already shown is the
@@ -1269,9 +1287,14 @@ async function onPopState() {
   // show, same fallback initialize() applies. Without it, Back into such an
   // entry opens an empty section behind a hidden nav button.
   if (state.view === "leaderboard" && !state.data.model_card_leaderboard) {
+    // Replace rather than restore: the entry being restored says /leaderboard/,
+    // and leaving it there would publish Today under the leaderboard's URL and
+    // canonical.
     state.view = "today";
+    setView("today", true, "replace");
+  } else {
+    setView(state.view, false);
   }
-  setView(state.view, false);
   // The renderers read their own controls back from state (the date picker at
   // renderToday, the leaderboard search at renderLeaderboardFilters), so this
   // restores the form values as well as the content.
@@ -1324,6 +1347,24 @@ const VIEW_SEO = {
     canonical: "/explore/",
   },
 };
+
+// One list, not two: a view whose canonical says /trends/ is reachable at
+// /trends/ and nowhere else, so the URL a reader shares and the URL a crawler
+// indexes cannot drift apart.
+const VIEW_PATHS = Object.fromEntries(
+  Object.entries(VIEW_SEO).map(([view, seo]) => [view, seo.canonical]),
+);
+const PATH_VIEWS = Object.fromEntries(
+  Object.entries(VIEW_PATHS).map(([view, path]) => [path, view]),
+);
+
+// "/leaderboard", "/leaderboard/" and "/leaderboard/index.html" are one page. A
+// reader who trims the trailing slash should not silently land on Today.
+function viewFromPath(pathname) {
+  const trimmed = pathname.replace(/index\.html$/, "");
+  const path = trimmed.endsWith("/") ? trimmed : `${trimmed}/`;
+  return PATH_VIEWS[path] || "";
+}
 
 function applyViewSeo(view) {
   const seo = VIEW_SEO[view] || VIEW_SEO.today;
@@ -3923,7 +3964,7 @@ let benchmarkIndexPromise = null;
 
 function loadBenchmarkIndex() {
   if (!benchmarkIndexPromise) {
-    benchmarkIndexPromise = fetch("data/benchmark-index.json")
+    benchmarkIndexPromise = fetch("/data/benchmark-index.json")
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
@@ -4293,7 +4334,7 @@ function loadBenchmarkShard(slug) {
   if (!benchmarkShardCache.has(slug)) {
     benchmarkShardCache.set(
       slug,
-      fetch(`data/benchmarks/${slug}.json`)
+      fetch(`/data/benchmarks/${slug}.json`)
         .then((response) => {
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           return response.json();
@@ -7615,7 +7656,7 @@ function openContact(updateUrl = true) {
       element("a", {
         className: "primary-link",
         text: t("Download"),
-        attrs: { href: "data/radar.json" },
+        attrs: { href: "/data/radar.json" },
       }),
       element("a", {
         className: "secondary-link",
@@ -8027,7 +8068,7 @@ async function ensureFullData(cache = "default") {
   if (state.fullDataLoaded) return state.data;
   if (state.fullDataPromise) return state.fullDataPromise;
   state.fullDataPromise = (async () => {
-    const response = await fetch("data/radar.json", { cache });
+    const response = await fetch("/data/radar.json", { cache });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     if (!compatibleDashboard(data)) throw new Error("No compatible snapshots");
@@ -8053,7 +8094,7 @@ async function ensureDataForState() {
 // already upgraded refresh the full public corpus.
 async function refreshData() {
   try {
-    const path = state.fullDataLoaded ? "data/radar.json" : "data/radar-bootstrap.json";
+    const path = state.fullDataLoaded ? "/data/radar.json" : "/data/radar-bootstrap.json";
     const response = await fetch(path, { cache: "reload" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
@@ -8075,6 +8116,12 @@ async function initialize() {
   applyStaticI18n();
   syncLangToggle();
   readUrl();
+  // An old ?view=leaderboard permalink still works, but it should stop being a
+  // second URL for a page that has its own. Rewriting it here keeps every
+  // filter the reader arrived with and costs them no history entry. It is a
+  // rewrite, not a redirect: a crawler that does not run scripts sees the
+  // homepage and the homepage's canonical, which is the right answer for it.
+  if (new URLSearchParams(window.location.search).has("view")) writeUrl("replace");
   bindEvents();
   // Independent of the data file, so badges still render on an error state.
   renderRepoBadges();
@@ -8082,7 +8129,7 @@ async function initialize() {
     // The default payload carries the latest day, aggregate counts, and the
     // leaderboard. Trends, Explore, All dates, and historical permalinks lazily
     // upgrade to the full public corpus only when the reader asks for them.
-    const response = await fetch("data/radar-bootstrap.json");
+    const response = await fetch("/data/radar-bootstrap.json");
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     state.data = await response.json();
     if (!compatibleDashboard(state.data)) throw new Error("No compatible snapshots");
@@ -8092,13 +8139,17 @@ async function initialize() {
       state.todayDate = state.data.latest_date;
     }
     renderTodayDateOptions();
-    // A permalink to ?view=leaderboard on a build without the curated registry
-    // has nothing to show, so fall back to Today rather than opening a blank
-    // section behind a navigation entry that has no data.
+    // A link to the leaderboard on a build without the curated registry has
+    // nothing to show, so fall back to Today rather than opening a blank
+    // section behind a navigation entry that has no data. The URL has to follow
+    // the content: /leaderboard/ carries the leaderboard's title and canonical,
+    // and Today under that URL would describe a page nobody is looking at.
     if (state.view === "leaderboard" && !state.data.model_card_leaderboard) {
       state.view = "today";
+      setView("today", true, "replace");
+    } else {
+      setView(state.view, false);
     }
-    setView(state.view, false);
 
     // Rendering all four views up front made the reader wait for charts and
     // thousands of hidden nodes. Build only the requested view; the navigation
@@ -8113,8 +8164,15 @@ async function initialize() {
     if (state.rubric) openRubric(null, state.rubric === "current" ? null : state.rubric);
     if (state.contact) openContact(false);
   } catch (error) {
+    // /leaderboard/, /trends/ and /explore/ ship real content in their first
+    // response, before any script runs. Hiding every view here would throw that
+    // away and leave an empty shell behind a URL that promises a ranking, which
+    // reads as a broken page to a reader and as a missing page to a crawler.
+    // A view that was seeded stays on screen with the error above it; a view
+    // with nothing seeded has nothing worth keeping.
     document.querySelectorAll(".view").forEach((section) => {
-      section.hidden = true;
+      const seeded = section.id === `${state.view}-view` && section.querySelector("[data-seed]");
+      section.hidden = !seeded;
     });
     byId("error-state").hidden = false;
     console.error(error);

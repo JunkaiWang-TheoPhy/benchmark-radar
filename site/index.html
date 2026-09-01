@@ -3,19 +3,27 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+
+    <!-- Issue #236. Everything between these two markers is the part that
+         changes from one page to the next: the title, the summary, the social
+         card text, and the canonical URL. Each view is a real page at its own
+         path, so src/benchmark_radar/app_pages.py swaps this whole block when
+         it writes /leaderboard/, /trends/ and /explore/ from this file, and
+         raises if a marker is missing rather than shipping a page that claims
+         to be the homepage. app.js restates the same strings when a reader
+         changes view without a page load, so a shared link and a crawled page
+         describe the same thing. Nothing outside the markers is
+         page-specific. -->
+    <!-- br:head-seo -->
     <meta
       name="description"
       content="Track new AI benchmarks, compare model-card adoption and reported scores, explore trends, and download an open, evidence-linked dataset updated daily."
     >
-    <meta name="robots" content="index,follow,max-image-preview:large">
-    <title data-i18n="Benchmark Radar">Benchmark Radar: AI Benchmark Tracker &amp; Dataset</title>
-
-    <!-- Without these, every share of this dashboard renders as a grey
-         placeholder with a URL under it. The card is generated from the same
-         score-frontier data as the saturation view (scripts/generate_og_image.py),
-         so a share shows reported scores over time rather than a leaderboard. -->
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Benchmark Radar">
+    <!-- No data-i18n here. applyViewSeo in app.js owns the title, so a
+         translation key on this element fought it: switching language
+         replaced the leaderboard's title with the homepage's. -->
+    <title>Benchmark Radar: AI Benchmark Tracker &amp; Dataset</title>
     <meta
       property="og:title"
       content="Benchmark Radar: AI Benchmark Tracker &amp; Dataset"
@@ -25,6 +33,20 @@
       content="Track new AI benchmarks, compare model-card adoption and reported scores, explore trends, and download an open, evidence-linked dataset updated daily."
     >
     <meta property="og:url" content="https://benchmark-radar.org/">
+    <meta name="twitter:title" content="Benchmark Radar: AI Benchmark Tracker &amp; Dataset">
+    <meta
+      name="twitter:description"
+      content="Track new AI benchmarks, model-card adoption, reported scores, and trends in one open dataset updated daily."
+    >
+    <link rel="canonical" href="https://benchmark-radar.org/">
+    <!-- /br:head-seo -->
+
+    <!-- Without these, every share of this dashboard renders as a grey
+         placeholder with a URL under it. The card is generated from the same
+         score-frontier data as the saturation view (scripts/generate_og_image.py),
+         so a share shows reported scores over time rather than a leaderboard. -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Benchmark Radar">
     <meta property="og:locale" content="en_US">
     <!-- Absolute, because Open Graph consumers do not resolve relative URLs. -->
     <meta property="og:image" content="https://benchmark-radar.org/assets/og-card.png">
@@ -37,20 +59,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <!-- Mirrors og:image for consumers that read the Twitter namespace only
          and do not fall back to the Open Graph tags. -->
-    <meta name="twitter:title" content="Benchmark Radar: AI Benchmark Tracker &amp; Dataset">
-    <meta
-      name="twitter:description"
-      content="Track new AI benchmarks, model-card adoption, reported scores, and trends in one open dataset updated daily."
-    >
     <meta name="twitter:image" content="https://benchmark-radar.org/assets/og-card.png">
-
-    <!-- Issue #236. Every view is a query-string variant of this one path, so
-         each view restates its own canonical (VIEW_SEO in assets/app.js) and
-         filter permutations consolidate into these four clean URLs rather
-         than fragmenting ranking signals across every ?view=...&lq=... state.
-         The static default below is what crawlers fetch before any script
-         runs; app.js rewrites it per view on navigation. -->
-    <link rel="canonical" href="https://benchmark-radar.org/">
 
     <!-- Structured data for the three things this project actually is: a
          named publisher, a searchable site, and a dataset. Each block is one
@@ -105,7 +114,7 @@
           "@type": "SearchAction",
           "target": {
             "@type": "EntryPoint",
-            "urlTemplate": "https://benchmark-radar.org/?view=leaderboard&lq={search_term_string}"
+            "urlTemplate": "https://benchmark-radar.org/leaderboard/?lq={search_term_string}"
           },
           "query-input": "required name=search_term_string"
         }
@@ -171,6 +180,12 @@
       }
     </script>
 
+    <!-- Each generated page adds its own WebPage and BreadcrumbList here, so a
+         search result can show where the page sits in the site. The homepage
+         leaves it empty: the Organization, WebSite and Dataset blocks above
+         already describe it. -->
+    <!-- br:page-jsonld -->
+
     <!-- Machine-readable citation hints: Highwire tags are the convention
          academic indexers and reference managers look for; cite-as points at
          the canonical thing to cite (the repo, which carries CITATION.cff
@@ -181,17 +196,20 @@
     <meta name="citation_dataset_url" content="https://benchmark-radar.org/data/radar.json">
     <link rel="cite-as" href="https://github.com/ktwu01/benchmark-radar">
 
-    <link rel="icon" href="icon.svg" type="image/svg+xml">
-    <link rel="alternate" type="application/rss+xml" title="Benchmark Radar RSS" href="feed.xml">
-    <link rel="stylesheet" href="assets/styles.css">
-    <script src="assets/clarity.js" defer></script>
-    <script src="assets/app.js" type="module"></script>
+    <!-- Root-absolute, not relative. This document is also served at
+         /leaderboard/, /trends/ and /explore/, where "assets/app.js" would
+         resolve to /leaderboard/assets/app.js and 404. -->
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="alternate" type="application/rss+xml" title="Benchmark Radar RSS" href="/feed.xml">
+    <link rel="stylesheet" href="/assets/styles.css">
+    <script src="/assets/clarity.js" defer></script>
+    <script src="/assets/app.js" type="module"></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content" data-i18n="Skip to content">Skip to content</a>
 
     <header class="masthead">
-      <a class="brand" href="https://benchmark-radar.org/" aria-label="Benchmark Radar home">
+      <a class="brand" href="/" aria-label="Benchmark Radar home">
         <span class="brand-mark" aria-hidden="true">
           <span></span>
         </span>
@@ -321,16 +339,17 @@
 
     <nav class="view-nav" aria-label="Dashboard views" data-i18n-aria="Dashboard views">
       <button type="button" data-view="today" aria-controls="today-view" data-i18n="Today">Today</button>
-      <!-- The non-default views point at static, content-rich pages so crawlers
-         and no-JavaScript readers receive a useful first response. app.js
-         intercepts the click for dashboard users and keeps navigation
-         client-side. -->
-      <a href="https://benchmark-radar.org/leaderboard/" data-view="leaderboard" aria-controls="leaderboard-view" data-i18n="Leaderboard">
+      <!-- Real links, not tab buttons. Each one is this same dashboard served
+         at its own path with that view already open and its rows already in the
+         HTML, so a crawler and a reader with a slow connection both get content
+         from the first response. app.js intercepts the click and keeps the
+         navigation client-side for anyone whose script has loaded. -->
+      <a href="/leaderboard/" data-view="leaderboard" aria-controls="leaderboard-view" data-i18n="Leaderboard">
         Leaderboard
       </a>
-      <a href="https://benchmark-radar.org/trends/" data-view="trends" aria-controls="trends-view" data-i18n="Trends">Trends</a>
-      <a href="https://benchmark-radar.org/explore/" data-view="map" aria-controls="map-view" data-i18n="Explore">Explore</a>
-      <a href="https://benchmark-radar.org/blog/" data-i18n="Blog">Blog</a>
+      <a href="/trends/" data-view="trends" aria-controls="trends-view" data-i18n="Trends">Trends</a>
+      <a href="/explore/" data-view="map" aria-controls="map-view" data-i18n="Explore">Explore</a>
+      <a href="/blog/" data-i18n="Blog">Blog</a>
       <button
         type="button"
         id="rubric-nav"
@@ -444,7 +463,7 @@
             <div class="footer-dataset">
               <strong data-i18n="Free dataset. No crawler needed.">Free dataset. No crawler needed.</strong>
               <span class="footer-dataset-actions">
-                <a href="data/radar.json" data-i18n="Download">Download</a>
+                <a href="/data/radar.json" data-i18n="Download">Download</a>
               </span>
             </div>
           </div>
@@ -488,12 +507,7 @@
         </div>
       </section>
 
-      <section
-        class="view"
-        id="leaderboard-view"
-        aria-labelledby="leaderboard-heading"
-        hidden
-      >
+      <section class="view" id="leaderboard-view" aria-labelledby="leaderboard-heading" hidden>
         <!-- One title, not three. "Which benchmarks do model cards report?",
              "How many curated model cards report each benchmark..." and "Most
              reported in model cards" were the same sentence written three ways,
@@ -501,7 +515,7 @@
              name, and the (i) beside it carries the caveat. -->
         <section class="leaderboard-top" aria-labelledby="leaderboard-heading">
           <div class="leaderboard-top-heading">
-            <h2 id="leaderboard-heading" data-i18n="Most reported benchmarks in model cards">Most reported benchmarks in model cards</h2>
+            <h1 id="leaderboard-heading" data-i18n="Most reported benchmarks in model cards">Most reported benchmarks in model cards</h1>
             <span id="leaderboard-top-info"></span>
             <!-- Written but not shown: the visible copy is in the (i). A screen
                  reader announces it with the heading. -->
@@ -702,7 +716,7 @@
         <header class="view-heading">
           <div>
             <p class="eyebrow" data-i18n="Big picture">Big picture</p>
-            <h2 id="map-heading" data-i18n="What we found">What we found</h2>
+            <h1 id="map-heading" data-i18n="What we found">What we found</h1>
           </div>
           <p class="heading-note" data-i18n="map.heading.note">
             See what shows up most often and where it came from. Open the connections view
@@ -746,7 +760,7 @@
         <header class="view-heading">
           <div>
             <p class="eyebrow" data-i18n="Recent activity">Recent activity</p>
-            <h2 id="trends-heading" data-i18n="Signals over time">Signals over time</h2>
+            <h1 id="trends-heading" data-i18n="Signals over time">Signals over time</h1>
           </div>
           <p class="heading-note" data-i18n="trends.heading.note">Counts describe discovery volume, not scientific quality.</p>
         </header>

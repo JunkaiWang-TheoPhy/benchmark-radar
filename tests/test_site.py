@@ -1,3 +1,4 @@
+import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
@@ -69,7 +70,14 @@ def test_every_html_entry_point_loads_clarity_once_and_discloses_analytics():
     for path in html_paths:
         html = path.read_text(encoding="utf-8")
         head = html.split("<head>", 1)[1].split("</head>", 1)[0]
-        assert head.count('src="assets/clarity.js"') == 1, path
+        assert head.count("assets/clarity.js") == 1, path
+
+    # The dashboard is also served at /leaderboard/, /trends/ and /explore/,
+    # where a relative src resolves one directory down and 404s. logos.html is
+    # only ever served from the root, so it may stay relative.
+    dashboard = Path("site/index.html").read_text(encoding="utf-8")
+    dashboard_head = dashboard.split("<head>", 1)[1].split("</head>")[0]
+    assert 'src="/assets/clarity.js"' in dashboard_head
 
     loader = Path("site/assets/clarity.js").read_text(encoding="utf-8")
     assert loader.count("ya4h95jvfj") == 1
@@ -371,10 +379,10 @@ def test_initial_page_uses_small_bootstrap_and_lazy_loads_history():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     initialize = script.split("async function initialize()", 1)[1]
-    assert 'fetch("data/radar-bootstrap.json")' in initialize
+    assert 'fetch("/data/radar-bootstrap.json")' in initialize
     assert "await ensureDataForState();" in initialize
     loader = script.split("async function ensureFullData(", 1)[1].split("\nasync function ", 1)[0]
-    assert 'fetch("data/radar.json", { cache })' in loader
+    assert 'fetch("/data/radar.json", { cache })' in loader
     assert '["trends", "map"].includes(state.view)' in script
     assert 'state.todayDate === "all"' in script
 
@@ -448,7 +456,7 @@ def test_today_toolbar_keeps_secondary_filters_in_a_popover():
     assert "function updateFiltersCount()" in script
     assert "function closeFiltersDrawer()" in script
     assert "function refreshData()" in script
-    assert 'state.fullDataLoaded ? "data/radar.json" : "data/radar-bootstrap.json"' in script
+    assert 'state.fullDataLoaded ? "/data/radar.json" : "/data/radar-bootstrap.json"' in script
     assert 'const response = await fetch(path, { cache: "reload" });' in script
     assert "drawer.hidden = true" in script
 
@@ -707,10 +715,22 @@ def test_static_html_references_existing_local_assets():
     # radar.json is the dashboard bundle the "Download the dataset" link points
     # at. Pages writes it during the build, before the artifact upload, so the
     # published link resolves; it is absent from a clean checkout by design.
-    generated_assets = {"feed.xml", "data/radar.json"}
+    # The view paths are this same document republished by app_pages.py, also
+    # during the build.
+    generated_assets = {
+        "feed.xml",
+        "data/radar.json",
+        "leaderboard/",
+        "trends/",
+        "explore/",
+        "blog/",
+    }
     missing = []
     for reference in parser.local_refs:
-        path = urlsplit(reference).path
+        # References are root-absolute because this document is also served at
+        # /leaderboard/, /trends/ and /explore/. Strip the leading slash so the
+        # target resolves inside site/ rather than at the filesystem root.
+        path = urlsplit(reference).path.lstrip("/")
         target = Path("site") if path in {"", ".", "./"} else Path("site") / path
         if not target.exists() and path not in generated_assets:
             missing.append(reference)
@@ -2166,7 +2186,7 @@ def test_issue_311_the_today_list_loads_one_page_at_a_time():
     assert pager_end < dataset_card < page_footer
     dataset = html.split('<div class="footer-dataset">', 1)[1].split("</div>", 1)[0]
     assert "Free dataset. No crawler needed." in dataset
-    assert 'href="data/radar.json"' in dataset
+    assert 'href="/data/radar.json"' in dataset
     assert "Star the repository" not in dataset
     assert "Contact" not in dataset
     footer = html.split("<footer>", 1)[1].split("</footer>", 1)[0]
@@ -2175,7 +2195,7 @@ def test_issue_311_the_today_list_loads_one_page_at_a_time():
     assert 'id="share-radar"' in footer
     contact = script.split("function openContact(", 1)[1].split("dialog.showModal();", 1)[0]
     assert "The complete dataset is free to download" in contact
-    assert 'href: "data/radar.json"' in contact
+    assert 'href: "/data/radar.json"' in contact
     assert 'className: "contact-dataset"' in contact
 
 
@@ -2186,24 +2206,36 @@ def _css_rule(styles: str, selector: str) -> str:
 
 
 def test_heading_outline_and_scale_stay_quiet():
-    """Regression guard for the single-h1 retagging and its typography.
+    """Regression guard for the per-view h1 outline and its typography.
 
-    The page keeps one document h1 ("Today's radar"), rendered as the muted
-    caption it always was; every other view heading is an h2 at the compact
-    leaderboard scale. Before this rule existed the per-view headings carried
-    the display-scale h1 treatment (3rem uppercase), which drowned the content
-    they named.
+    Each view is served at its own URL, so each one owns an h1 naming what that
+    page is. Only one view is on screen at a time, so only one h1 ever renders.
+    They keep the quiet leaderboard scale rather than the display scale, so
+    promoting them changed the document outline and not the design: before this
+    rule existed the headings carried the 3rem uppercase h1 treatment, which
+    drowned the content they named.
     """
     html = Path("site/index.html").read_text(encoding="utf-8")
     styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
 
-    # One h1 in the static document, and it is the today view's caption.
-    assert html.count("<h1") == 1
-    assert '<h1 class="today-heading" data-i18n="Today\'s radar">' in html
-    for old_h1_id in ("leaderboard-heading", "map-heading", "trends-heading"):
-        assert f'<h2 id="{old_h1_id}"' in html
+    # One h1 per view, and exactly one of them sits in a section the reader can
+    # see. The other three stay behind `hidden` until routing opens them.
+    sections = re.findall(
+        r'<section class="view" id="([a-z]+)-view"([^>]*)>(.*?)\n      </section>',
+        html,
+        re.S,
+    )
+    assert {name for name, _, _ in sections} == {"today", "leaderboard", "map", "trends"}
+    for name, _, body in sections:
+        assert body.count("<h1") == 1, name
+    visible = [name for name, attrs, _ in sections if " hidden" not in attrs]
+    assert visible == ["today"], visible
 
-    # The h1 renders exactly like the counts caption beside it: the shared
+    assert '<h1 class="today-heading" data-i18n="Today\'s radar">' in html
+    for heading_id in ("leaderboard-heading", "map-heading", "trends-heading"):
+        assert f'<h1 id="{heading_id}"' in html
+
+    # The today h1 renders exactly like the counts caption beside it: the shared
     # small-caps utility group supplies face/size/case, and this rule only
     # mutes color and weight. No font-size override may reappear here.
     marker = "#today-view .section-title h1,"
@@ -2226,9 +2258,10 @@ def test_heading_outline_and_scale_stay_quiet():
     assert "align-items: flex-start;" in footer_block
 
     # View and detail headings share the compact leaderboard scale; none of
-    # them may reintroduce the uppercase display treatment.
+    # them may reintroduce the uppercase display treatment. h1 and h2 are styled
+    # by the same rule, so retagging a heading cannot change how it looks.
     compact = "clamp(1.25rem, 2vw, 1.5rem);"
-    view_rule = _css_rule(styles, ".view-heading h2 {")
+    view_rule = _css_rule(styles, ".view-heading h1,\n.view-heading h2 {")
     assert f"font-size: {compact}" in view_rule
     assert "line-height: 1.2;" in view_rule
     assert "text-transform" not in view_rule
@@ -2236,9 +2269,11 @@ def test_heading_outline_and_scale_stay_quiet():
     assert f"font-size: {compact}" in detail_rule
     assert "line-height: 1.2;" in detail_rule
 
-    # The mobile h1 clamp must not reach the quiet h2 headings.
+    # The mobile h1 clamp must not reach the quiet view headings, in either tag.
     mobile_block = styles.split("@media (max-width: 760px)", 1)[1]
-    assert ".view-heading h2," not in mobile_block.split("}", 1)[0]
+    first_rule = mobile_block.split("}", 1)[0]
+    assert ".view-heading h1," not in first_rule
+    assert ".view-heading h2," not in first_rule
 
 
 def test_issue_332_a_release_outranks_a_same_day_update():

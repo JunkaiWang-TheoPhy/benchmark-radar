@@ -82,5 +82,5 @@ def test_site_advertises_and_visibly_links_the_feed():
 
     assert 'rel="alternate" type="application/rss+xml"' in html
     assert 'class="repo-badge feed-badge"' in html
-    assert 'href="feed.xml"' in html
+    assert 'href="/feed.xml"' in html
     assert "Subscribe to Benchmark Radar via RSS" in html

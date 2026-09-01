@@ -477,9 +477,12 @@ main {
   padding-top: clamp(1.25rem, 2vw, 1.75rem);
 }
 
-/* View headings are h2s under the page's single h1, and they share the
-   quiet leaderboard-heading scale rather than the display scale the old
-   per-view h1s used. */
+/* Each view is its own page (/, /leaderboard/, /trends/, /explore/) and
+   carries its own h1, but only one view is visible at a time so only one h1
+   ever renders. They keep the quiet leaderboard-heading scale rather than the
+   display scale, so promoting the heading changed the document outline and
+   not the design. */
+.view-heading h1,
 .view-heading h2 {
   margin: 0;
   max-width: none;
