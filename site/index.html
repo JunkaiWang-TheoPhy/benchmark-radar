@@ -837,6 +837,16 @@
       <div id="rubric-content"></div>
     </dialog>
 
+    <dialog id="cite-dialog" aria-labelledby="cite-title">
+      <button
+        class="dialog-close"
+        id="cite-close"
+        type="button"
+        aria-label="Close citation formats"
+      >×</button>
+      <div id="cite-content"></div>
+    </dialog>
+
     <dialog id="contact-dialog" aria-labelledby="contact-title">
       <button
         class="dialog-close"
@@ -854,11 +864,15 @@
           If this saved you research time, cite the work, star the repo and help other eval builders find it.
         </p>
         <span class="adoption-actions">
+          <!-- A real anchor, so the citation card has a short link a reader can
+               copy out of the address bar and paste into a paper's repo notes.
+               app.js opens it as the same pop-out the Rubric uses. -->
           <a
             class="primary-link"
-            href="https://github.com/ktwu01/benchmark-radar/blob/main/CITATION.cff"
-            target="_blank"
-            rel="noopener noreferrer"
+            id="cite-open"
+            href="https://benchmark-radar.org/#cite"
+            aria-haspopup="dialog"
+            aria-controls="cite-dialog"
             data-i18n="Cite"
           >Cite</a>
           <a
