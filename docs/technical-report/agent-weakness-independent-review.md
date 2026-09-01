@@ -2,11 +2,16 @@
 
 Date: 2026-09-01
 
-## Reviewer and blind procedure
+## Result
 
-The independent reviewer was an independent Codex analyst working from the tracked blinded packet in `docs/technical-report/agent-weakness-blinded-sample.md`.
+The independent review matched the primary coding on all 4 of 4 sampled rows.
+No disagreements required adjudication. This agreement result is explicitly
+sample-local: it applies only to the predeclared four-row blind packet and does
+not establish broader reliability beyond that bounded sample.
 
-The blinded packet exposed only the coding guide, the benchmark identity, the evidence excerpts, limitations, and counter-readings for the predeclared four-row sample. It intentionally withheld the primary codes, the main YAML table, and prior reports until the reviewer returned all four assignments and notes.
+| sampled rows | completed secondary rows | disagreements | limit |
+| --- | --- | --- | --- |
+| `4` | `4` | `0` | predeclared four-row sample only |
 
 ## Raw assignments
 
@@ -17,15 +22,11 @@ The blinded packet exposed only the coding guide, the benchmark identity, the ev
 | `researchclawbench_protocol_drift` | `goal_plan_drift` | `goal_plan_drift` | Experimental-protocol mismatch, evidence mismatch, and a missing scientific core indicate the agent is drifting from the target scientific objective and intended protocol, not merely failing on a narrow execution step. |
 | `scicode_instrument_gap` | `verification_completion` | `verification_completion` | This row is an audit-based measurement gap: the benchmark often rejects actually correct solutions, so apparent failure can come from unreliable checking of whether the required end state was achieved rather than from a demonstrated agent weakness prevalence claim. |
 
-## Agreement
+## Reviewer and blind procedure
 
-- Sampled rows: `4`
-- Completed secondary rows: `4`
-- Pending secondary rows: `0`
-- Percent agreement: `1.0`
-- Cohen's kappa: `1.0`
+The independent reviewer was an independent Codex analyst working from the tracked blinded packet in `docs/technical-report/agent-weakness-blinded-sample.md`.
 
-Every sampled row received a completed secondary code and note. The secondary review matched the primary code on all four rows.
+The blinded packet exposed only the coding guide, the benchmark identity, the evidence excerpts, limitations, and counter-readings for the predeclared four-row sample. It intentionally withheld the primary codes, the main YAML table, and prior reports until the reviewer returned all four assignments and notes.
 
 ## Disagreement and adjudication log
 

@@ -135,6 +135,28 @@ def _require_replayable_evidence_location(value: Any, *, label: str) -> str:
     raise ValueError(f"{label} must include a replayable table/figure/line/paragraph anchor")
 
 
+def _validate_benchmark_family_identity(rows: list[dict[str, Any]], *, path: Path) -> None:
+    family_name_by_id: dict[str, str] = {}
+    family_id_by_name: dict[str, str] = {}
+    for row in rows:
+        family_id = row["benchmark_family_id"]
+        family_name = row["benchmark_family_name"]
+
+        prior_name = family_name_by_id.setdefault(family_id, family_name)
+        if prior_name != family_name:
+            raise ValueError(
+                f"{path}: benchmark family identity mismatch: id {family_id!r} maps to both "
+                f"{prior_name!r} and {family_name!r}"
+            )
+
+        prior_id = family_id_by_name.setdefault(family_name, family_id)
+        if prior_id != family_id:
+            raise ValueError(
+                f"{path}: benchmark family identity mismatch: name {family_name!r} maps to both "
+                f"{prior_id!r} and {family_id!r}"
+            )
+
+
 def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
     if not path.exists():
         raise ValueError(f"{path}: study file not found")
@@ -328,6 +350,8 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
 
     if seen_statuses != set(normalized_statuses):
         raise ValueError(f"{path}: rows must cover all declared statuses")
+
+    _validate_benchmark_family_identity(normalized_rows, path=path)
 
     demonstrated_family_names = {
         row["benchmark_family_name"] for row in normalized_rows if row["status"] == "demonstrated"

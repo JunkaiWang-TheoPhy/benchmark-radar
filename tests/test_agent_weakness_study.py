@@ -193,9 +193,18 @@ def test_repository_task2_report_records_blind_review_and_adjudication_state():
     analysis = module.analyze_study(study)
     report_text = REVIEW_REPORT_PATH.read_text(encoding="utf-8")
     blind_packet_text = BLIND_PACKET_PATH.read_text(encoding="utf-8")
+    report_lines = [line.strip() for line in report_text.splitlines() if line.strip()]
 
     assert "independent Codex analyst" in report_text
     assert "blinded" in report_text
+    assert report_lines[:4] == [
+        "# Agent Weakness Independent Review",
+        "Date: 2026-09-01",
+        "## Result",
+        "The independent review matched the primary coding on all 4 of 4 sampled rows.",
+    ]
+    assert "sample-local" in report_text
+    assert "predeclared four-row sample only" in report_text
     assert "## Raw assignments" in report_text
     assert "## Disagreement and adjudication log" in report_text
     assert str(BLIND_PACKET_PATH) in report_text
@@ -472,6 +481,60 @@ def test_load_study_requires_all_three_statuses_and_benchmark_family_ids(tmp_pat
     ]
 
     with pytest.raises(ValueError, match="benchmark_family_id|statuses"):
+        module.load_study(_write_study(tmp_path, rows))
+
+
+def test_load_study_rejects_same_family_name_with_different_ids(tmp_path):
+    module = _load_module()
+    rows = [
+        _row("demo-a", status="demonstrated", primary_code="goal_plan_drift"),
+        _row(
+            "design-a",
+            status="design_implied",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family A",
+            radar_query="Family A",
+            radar_record_id="family-b",
+        ),
+        _row(
+            "unmeasured-a",
+            status="unmeasured",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+    ]
+
+    with pytest.raises(ValueError, match="identity mismatch|Family A|family-a|family-b"):
+        module.load_study(_write_study(tmp_path, rows))
+
+
+def test_load_study_rejects_same_family_id_with_different_names(tmp_path):
+    module = _load_module()
+    rows = [
+        _row("demo-a", status="demonstrated", primary_code="goal_plan_drift"),
+        _row(
+            "design-a",
+            status="design_implied",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-a",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+            radar_record_id="family-a",
+        ),
+        _row(
+            "unmeasured-a",
+            status="unmeasured",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+    ]
+
+    with pytest.raises(ValueError, match="identity mismatch|family-a|Family A|Family B"):
         module.load_study(_write_study(tmp_path, rows))
 
 

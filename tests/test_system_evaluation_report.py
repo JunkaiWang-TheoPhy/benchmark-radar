@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 
 SCRIPT_PATH = Path("scripts/build_system_evaluation.py")
+LEGACY_SCRIPT_PATH = Path("scripts/build_technical_report.py")
 DATA_PATH = Path("data/agent_weakness_evidence.yml")
 
 
@@ -54,6 +55,12 @@ class _FakeDrawing:
 
 
 class _FakeShape:
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+
+class _FakeTTFont:
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
@@ -135,17 +142,34 @@ def _install_report_builder_stubs():
     lib = types.ModuleType("reportlab.lib")
     colors = types.ModuleType("reportlab.lib.colors")
     colors.HexColor = lambda value: value
+    colors.white = "#WHITE"
+    enums = types.ModuleType("reportlab.lib.enums")
+    enums.TA_CENTER = 1
+    enums.TA_LEFT = 0
     pagesizes = types.ModuleType("reportlab.lib.pagesizes")
     pagesizes.letter = (612, 792)
     styles = types.ModuleType("reportlab.lib.styles")
     styles.ParagraphStyle = _FakeParagraphStyle
+    styles.getSampleStyleSheet = lambda: {
+        "Title": "Title",
+        "Normal": "Normal",
+        "Heading1": "Heading1",
+        "Heading2": "Heading2",
+        "BodyText": "BodyText",
+    }
     units = types.ModuleType("reportlab.lib.units")
     units.inch = 72
+    pdfbase = types.ModuleType("reportlab.pdfbase")
+    pdfmetrics = types.ModuleType("reportlab.pdfbase.pdfmetrics")
+    pdfmetrics.registerFont = lambda font: None
+    ttfonts = types.ModuleType("reportlab.pdfbase.ttfonts")
+    ttfonts.TTFont = _FakeTTFont
     platypus = types.ModuleType("reportlab.platypus")
     platypus.BaseDocTemplate = _FakeBaseDocTemplate
     platypus.Frame = _FakeFrame
     platypus.PageBreak = _FakePageBreak
     platypus.PageTemplate = _FakePageTemplate
+    platypus.Paragraph = _FakeParagraph
     platypus.Spacer = _FakeSpacer
     platypus.Table = _FakeTable
     platypus.TableStyle = _FakeTableStyle
@@ -155,9 +179,13 @@ def _install_report_builder_stubs():
     sys.modules["reportlab.graphics.shapes"] = shapes
     sys.modules["reportlab.lib"] = lib
     sys.modules["reportlab.lib.colors"] = colors
+    sys.modules["reportlab.lib.enums"] = enums
     sys.modules["reportlab.lib.pagesizes"] = pagesizes
     sys.modules["reportlab.lib.styles"] = styles
     sys.modules["reportlab.lib.units"] = units
+    sys.modules["reportlab.pdfbase"] = pdfbase
+    sys.modules["reportlab.pdfbase.pdfmetrics"] = pdfmetrics
+    sys.modules["reportlab.pdfbase.ttfonts"] = ttfonts
     sys.modules["reportlab.platypus"] = platypus
 
 
@@ -165,6 +193,18 @@ def _load_module():
     assert SCRIPT_PATH.exists(), f"missing report builder: {SCRIPT_PATH}"
     _install_report_builder_stubs()
     spec = importlib.util.spec_from_file_location("build_system_evaluation", SCRIPT_PATH)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_legacy_module():
+    assert LEGACY_SCRIPT_PATH.exists(), f"missing legacy report builder: {LEGACY_SCRIPT_PATH}"
+    _install_report_builder_stubs()
+    spec = importlib.util.spec_from_file_location(
+        "legacy_build_technical_report", LEGACY_SCRIPT_PATH
+    )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -220,6 +260,18 @@ def test_default_output_targets_next_draft():
 
     assert args.output == Path("output/pdf/benchmark-radar-technical-report-next-draft.pdf")
     assert args.output.name != "benchmark-radar-technical-report-v0.9.0.pdf"
+
+
+def test_legacy_builder_defaults_to_next_draft_but_allows_explicit_frozen_output():
+    module = _load_legacy_module()
+
+    default_args = module.build_parser().parse_args([])
+    explicit_args = module.build_parser().parse_args(
+        ["--output", "output/pdf/benchmark-radar-technical-report-v0.9.0.pdf"]
+    )
+
+    assert default_args.output == Path("output/pdf/benchmark-radar-technical-report-next-draft.pdf")
+    assert explicit_args.output == Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf")
 
 
 def test_agent_weakness_section_reports_bounded_result_and_method():

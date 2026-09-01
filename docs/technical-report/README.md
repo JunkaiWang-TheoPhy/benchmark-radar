@@ -5,9 +5,18 @@ Radar technical report. The report evaluates software version 0.9.0, its full
 collection and publication pipeline, all 37 public collection sources, the
 1,242-entry web search surface, and the public data snapshot dated 2026-08-29.
 
-Rebuild the issue #455 agent-weakness inputs, verify the report text, then build the next draft after installing ReportLab:
+Rebuild the issue #455 agent-weakness inputs from a clean checkout after
+installing the development dependencies and ReportLab. Run the full repository
+verification sequence before the issue-specific analysis, then keep the focused
+tests as an additional check:
 
 ```bash
+uv run ruff check .
+uv run ruff format --check .
+uv run benchmark-radar normalize-external
+uv run benchmark-radar classify
+uv run benchmark-radar build-data-release
+uv run pytest -q
 uv run pytest -q tests/test_agent_weakness_study.py tests/test_system_evaluation_report.py
 uv run python scripts/analyze_agent_weaknesses.py \
   --source data/agent_weakness_evidence.yml \
