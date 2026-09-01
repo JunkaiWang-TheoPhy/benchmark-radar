@@ -1138,7 +1138,11 @@ def rebuild_dashboard(
     )
     slugs = benchmark_slugs(benchmark_shard_dir)
     blog_entries: list[tuple[str, str | None]] = []
-    # A data-only build writes no view pages, so it lists no view URLs.
+    # A data-only build writes no view pages, so it has no list of published
+    # ones, and None asks for every view. That is right rather than empty: this
+    # sitemap describes the deployed site, not this build's output directory,
+    # the same way it lists benchmark pages this build did not write either.
+    # The Pages build, which does write the pages, passes what it wrote.
     view_paths: list[str] | None = None
     if feed_output is not None:
         app_pages = write_app_pages(value, sitemap_output.parent)

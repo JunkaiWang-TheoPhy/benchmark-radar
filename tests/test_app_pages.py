@@ -69,7 +69,16 @@ def _dashboard() -> dict:
                     "person": 13907,
                     "source": 12,
                     "topic": 5,
-                }
+                },
+                "topics": [
+                    {"topic": "data_quality", "entity_count": 8, "source_breadth": 1},
+                    {"topic": "agentic", "entity_count": 40, "source_breadth": 6},
+                ],
+                # "arXiv" against "OpenAI" is the tie the browser and Python
+                # order differently: localeCompare folds case, a codepoint sort
+                # does not, so the seed would list them the other way round.
+                "sources": {"arXiv": 9, "OpenAI": 9, "Hugging Face": 30},
+                "organizations": {"Anthropic": 12, "Google": 4},
             }
         },
     }
@@ -317,6 +326,72 @@ def test_only_a_working_refresh_retires_the_boot_error_banner():
 
     handler = script.split("const view = button.dataset.view;", 1)[1].split("\n    });", 1)[0]
     assert "error-state" not in handler
+
+
+def test_explore_ships_every_card_the_renderer_draws(tmp_path):
+    """Four cards on screen and one in the first response is a page with two faces.
+
+    renderMapInsights always draws coverage, topics, sources and organizations.
+    A seed carrying only the first would hand a crawler a quarter of the page,
+    under a canonical claiming to be the page itself.
+    """
+    _write(tmp_path, _dashboard())
+    page = (tmp_path / "explore" / "index.html").read_text(encoding="utf-8")
+    insights = page.split('id="map-insights"', 1)[1].split("</div>", 1)[0]
+
+    assert insights.count('<article class="map-insight-card">') == 4
+    for title in ("At a glance", "What it is about", "Where we found it", "Who appears most"):
+        assert f"<h2>{title}</h2>" in insights
+
+    # Ranked by count, ties broken the way the browser breaks them.
+    assert "AI agents" in insights and "data quality" in insights
+    assert insights.index("AI agents") < insights.index("data quality")
+    assert "40 items · 6 sources" in insights
+    assert "8 items · 1 source" in insights
+    assert insights.index("arXiv") < insights.index("OpenAI")
+    assert "30 times found" in insights
+
+
+def test_trends_names_the_scan_its_cards_count(tmp_path):
+    """The domain cards are one day's numbers, so the page has to say which day."""
+    _write(tmp_path, _dashboard())
+    page = (tmp_path / "trends" / "index.html").read_text(encoding="utf-8")
+
+    assert '<span id="domain-date" data-seed>Aug 30, 2026</span>' in page
+
+
+def test_the_ranking_ships_with_the_caveat_that_keeps_it_honest(tmp_path):
+    """An adoption count read as a quality score is the opposite conclusion.
+
+    The (i) beside the ranking carries the correction. A page that shipped the
+    five rows without it would publish the misreading and withhold the fix.
+    """
+    _write(tmp_path, _dashboard())
+    page = (tmp_path / "leaderboard" / "index.html").read_text(encoding="utf-8")
+    info = page.split('id="leaderboard-top-info"', 1)[1].split("</span>", 1)[0]
+
+    assert 'class="info-disclosure"' in info
+    assert "How many curated model cards report each benchmark." in info
+    assert "A report counts once per test" in info
+
+
+def test_a_view_that_lost_its_data_loses_its_page(tmp_path):
+    """A dropped view must not stay servable at the URL this build stopped listing.
+
+    Skipping the write is not enough: the previous build's copy is still on
+    disk, still carrying the leaderboard's canonical, and still answering a
+    request that the sitemap no longer advertises.
+    """
+    _write(tmp_path, _dashboard())
+    assert (tmp_path / "leaderboard" / "index.html").exists()
+
+    without = _dashboard()
+    without["model_card_leaderboard"] = {"entries": []}
+    report = _write(tmp_path, without)
+
+    assert "/leaderboard/" not in report["paths"]
+    assert not (tmp_path / "leaderboard" / "index.html").exists()
+    assert (tmp_path / "trends" / "index.html").exists()
 
 
 def test_every_seeded_container_is_one_the_renderer_already_owns(tmp_path):

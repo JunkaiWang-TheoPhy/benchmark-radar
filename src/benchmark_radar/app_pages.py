@@ -37,6 +37,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from .app_seeds import view_seeds
 from .feed import SITE_URL
 from .site_shell import breadcrumb_schema, esc, json_ld, webpage_schema
 
@@ -173,162 +174,6 @@ def _open_on(document: str, view: str) -> str:
     return opening.sub(rf'<section class="view" id="{view}-view"\1>', document, count=1)
 
 
-def _num(value: Any) -> str:
-    """Match Number.toLocaleString() for the en locale these seeds are written in."""
-    try:
-        return f"{int(value):,}"
-    except (TypeError, ValueError):
-        return "0"
-
-
-def _metric_label(value: Any, singular: str, plural: str | None = None) -> str:
-    count = int(value or 0)
-    noun = singular if count == 1 else (plural or f"{singular}s")
-    return f"{count:,} {noun}"
-
-
-LEADERBOARD_TOP_LIMIT = 5
-
-
-def _leaderboard_seed(dashboard: dict[str, Any]) -> dict[str, str]:
-    """The top rows and the measures note, in the markup renderLeaderboardTop emits."""
-    board = dashboard.get("model_card_leaderboard") or {}
-    ranked = [entry for entry in (board.get("entries") or []) if (entry.get("card_count") or 0) > 0]
-    entries = ranked[:LEADERBOARD_TOP_LIMIT]
-    if not entries:
-        return {}
-    # Scaled against the top row on screen rather than the top row overall,
-    # because that is what the renderer scales against.
-    top = max(int(entry["card_count"]) for entry in entries)
-    rows = "".join(
-        '<li class="leaderboard-top-row">'
-        f'<span class="leaderboard-top-rank">{esc(str(entry.get("rank", "")).zfill(2))}</span>'
-        f'<span class="leaderboard-top-name">{esc(entry.get("name") or "")}</span>'
-        '<span class="leaderboard-top-bar">'
-        '<span class="leaderboard-top-bar-fill" '
-        f'style="width:{int(entry["card_count"]) / top * 100:.1f}%"></span>'
-        "</span>"
-        '<span class="leaderboard-top-count">'
-        f"{esc(_metric_label(entry.get('card_count'), 'model card'))}</span>"
-        "</li>"
-        for entry in entries
-    )
-    seed = {
-        '<ol class="leaderboard-top-list" id="leaderboard-top-list"></ol>': (
-            f'<ol class="leaderboard-top-list" id="leaderboard-top-list" data-seed>{rows}</ol>'
-        )
-    }
-    measures = board.get("measures")
-    if measures:
-        seed['<p class="leaderboard-deck visually-hidden" id="leaderboard-measures"></p>'] = (
-            '<p class="leaderboard-deck visually-hidden" id="leaderboard-measures" data-seed>'
-            f"{esc(measures)}</p>"
-        )
-    return seed
-
-
-def _domain_rows(trend: dict[str, Any]) -> list[tuple[str, str]]:
-    """The stat rows domainCard builds, in its order and with its wording."""
-    delta = trend.get("delta")
-    if delta is None:
-        change = "not comparable"
-    else:
-        change = "no change" if not int(delta) else f"{int(delta):+d}"
-    baseline = trend.get("baseline")
-    rows: list[tuple[str, str]] = [
-        ("vs previous scan", change),
-        (
-            "recent daily average",
-            "not enough history" if baseline is None else f"{float(baseline):.2f}",
-        ),
-    ]
-    momentum = trend.get("momentum")
-    if momentum is not None:
-        percent = round(float(momentum) * 100)
-        rows.append(("vs its average", f"{'+' if percent > 0 else ''}{percent}%"))
-    rows.append(("cumulative", _num(trend.get("cumulative"))))
-    updated_only = max(0, int(trend.get("total_count") or 0) - int(trend.get("count") or 0))
-    if updated_only:
-        rows.append(("also updated (not counted above)", _num(updated_only)))
-    return rows
-
-
-def _trends_seed(
-    dashboard: dict[str, Any], palette: tuple[dict[str, str], list[str]]
-) -> dict[str, str]:
-    """The latest day's domain cards, in the markup renderDomainMetrics emits."""
-    days = dashboard.get("days") or []
-    if not days:
-        return {}
-    trends = days[-1].get("category_trends") or {}
-    entries = sorted(trends.items(), key=lambda item: (-int(item[1].get("count") or 0), item[0]))
-    if not entries:
-        return {}
-    colors, fallbacks = palette
-    cards = []
-    for index, (category, trend) in enumerate(entries):
-        delta = trend.get("delta")
-        direction = ""
-        if delta is not None:
-            direction = " is-up" if int(delta) > 0 else (" is-down" if int(delta) < 0 else "")
-        swatch = colors.get(category, fallbacks[index % len(fallbacks)])
-        stats = "".join(
-            f"<dt>{esc(label)}</dt><dd>{esc(value)}</dd>" for label, value in _domain_rows(trend)
-        )
-        cards.append(
-            f'<article class="domain-card{direction}">'
-            '<div class="domain-head">'
-            f'<span class="legend-swatch" style="--swatch: {esc(swatch)};"></span>'
-            f"<h3>{esc(category.replace('_', ' '))}</h3>"
-            "</div>"
-            '<p class="domain-count" '
-            'title="New releases only. Re-announced updates are tracked separately.">'
-            f"{esc(int(trend.get('count') or 0))}</p>"
-            f'<dl class="domain-stats">{stats}</dl>'
-            "</article>"
-        )
-    return {
-        '<div class="domain-grid" id="domain-grid" aria-labelledby="domain-heading"></div>': (
-            '<div class="domain-grid" id="domain-grid" aria-labelledby="domain-heading" data-seed>'
-            f"{''.join(cards)}</div>"
-        )
-    }
-
-
-# The five entity kinds renderMapInsights counts, with its labels.
-MAP_COVERAGE_ROWS = (
-    ("Items", "artifact"),
-    ("Organizations", "organization"),
-    ("Authors", "person"),
-    ("Sources", "source"),
-    ("Topics", "topic"),
-)
-
-
-def _map_seed(dashboard: dict[str, Any]) -> dict[str, str]:
-    """The "At a glance" card, in the markup mapInsightCard emits.
-
-    Only the first of the four cards. The other three rank sources, topics and
-    organizations, and a seed would have to re-implement that ranking to stay
-    truthful. One exact card beats four approximate ones.
-    """
-    aggregates = (dashboard.get("corpus") or {}).get("aggregates") or {}
-    entity_types = aggregates.get("entity_types") or {}
-    if not entity_types:
-        return {}
-    items = "".join(
-        f"<li><span>{esc(label)}</span><strong>{esc(_num(entity_types.get(key)))}</strong></li>"
-        for label, key in MAP_COVERAGE_ROWS
-    )
-    return {
-        '<div class="map-insights" id="map-insights" aria-label="Overview"></div>': (
-            '<div class="map-insights" id="map-insights" aria-label="Overview" data-seed>'
-            '<article class="map-insight-card"><h2>At a glance</h2>'
-            f"<ul>{items}</ul></article></div>"
-        )
-    }
-
-
 def render_app_page(
     template: str,
     view: str,
@@ -364,18 +209,18 @@ def write_app_pages(
     template = (site_dir / "index.html").read_text(encoding="utf-8")
     seo = load_view_seo(site_dir / "assets" / "app.js")
     palette = load_category_colors(site_dir / "assets" / "glyphs.js")
-    seeds = {
-        "leaderboard": _leaderboard_seed(dashboard),
-        "trends": _trends_seed(dashboard, palette),
-        "map": _map_seed(dashboard),
-    }
+    seeds = view_seeds(dashboard, palette)
     written: list[Path] = []
     published: list[str] = []
     for view in APP_VIEWS:
-        if not seeds[view]:
-            continue
         path = seo[view]["canonical"]
         output = site_dir / path.strip("/") / "index.html"
+        if not seeds[view]:
+            # A view that lost its data has to lose its page too. Leaving the
+            # last build's copy on disk would keep serving a URL this build
+            # dropped from the sitemap, under a canonical still claiming it.
+            output.unlink(missing_ok=True)
+            continue
         output.parent.mkdir(parents=True, exist_ok=True)
         staging = output.with_name("index.html.tmp")
         staging.write_text(
