@@ -50,6 +50,7 @@ from reportlab.platypus import (
 GREEN = HexColor("#16794A")
 PALE_GREEN = HexColor("#EAF7F0")
 PURPLE = HexColor("#6D4AFF")
+NEXT_DRAFT_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-next-draft.pdf")
 VENDOR_ATTENTION_SPEC_PATH = Path("data/vendor_attention_audit.yml")
 VENDOR_ATTENTION_REGISTRY_PATH = Path("data/model_cards.yml")
 VENDOR_ATTENTION_ISSUE_NUMBER = 456
@@ -1212,15 +1213,19 @@ def story(doi: str) -> list:
     return story
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf"),
+        default=NEXT_DRAFT_OUTPUT,
     )
     parser.add_argument("--doi", default="10.5281/zenodo.22167102")
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> None:
+    args = build_parser().parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     EvaluationDoc(str(args.output), doi=args.doi).build(story(args.doi))
     print(args.output)

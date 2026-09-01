@@ -190,3 +190,53 @@ def test_committed_artifacts_match_a_fresh_rebuild(tmp_path):
 
     for committed in sorted(COMMITTED_OUTPUT.iterdir()):
         assert committed.read_bytes() == (tmp_path / committed.name).read_bytes()
+
+
+def test_pre_registered_decision_rule_controls_the_recommendation():
+    module = _load_module()
+    rule = {
+        "exact_membership_median_jaccard": 0.8,
+        "retain_requires_every_single_document_omission": True,
+        "narrow_when_group_persists_but_membership_changes": True,
+    }
+    stable_scenarios = [{"active_orgs_threshold_ok": True, "core_count": 2}]
+
+    retained, retained_state = module.decide_recommendation(
+        original_members={"a", "b"},
+        baseline_members={"a", "b"},
+        median_jaccard=0.9,
+        every_document_survives=True,
+        scenario_summaries=stable_scenarios,
+        decision_rule=rule,
+    )
+    narrowed, narrowed_state = module.decide_recommendation(
+        original_members={"a"},
+        baseline_members={"a", "b"},
+        median_jaccard=0.5,
+        every_document_survives=False,
+        scenario_summaries=stable_scenarios,
+        decision_rule=rule,
+    )
+    replaced, _ = module.decide_recommendation(
+        original_members={"a"},
+        baseline_members={"a", "b"},
+        median_jaccard=0.5,
+        every_document_survives=False,
+        scenario_summaries=[{"active_orgs_threshold_ok": True, "core_count": 0}],
+        decision_rule=rule,
+    )
+    removed, _ = module.decide_recommendation(
+        original_members=set(),
+        baseline_members=set(),
+        median_jaccard=0.0,
+        every_document_survives=False,
+        scenario_summaries=[{"active_orgs_threshold_ok": True, "core_count": 0}],
+        decision_rule=rule,
+    )
+
+    assert retained == "retain"
+    assert retained_state["exact_membership_is_robust"] is True
+    assert narrowed == "narrow"
+    assert narrowed_state["high_support_group_persists"] is True
+    assert replaced == "replace"
+    assert removed == "remove"

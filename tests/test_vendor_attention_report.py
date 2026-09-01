@@ -1,3 +1,4 @@
+import ast
 import json
 import re
 from pathlib import Path
@@ -28,6 +29,27 @@ def test_report_build_instructions_regenerate_the_audit_and_next_draft():
     assert "docs/technical-report/vendor-attention-audit/claim-audit.json" in readme
     assert "output/pdf/benchmark-radar-technical-report-next-draft.pdf" in readme
     assert "must not overwrite" in readme
+
+
+def test_report_builder_defaults_to_the_next_draft_not_the_frozen_pdf():
+    source = REPORT_BUILDER.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    path_literal = None
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        if not any(
+            isinstance(target, ast.Name) and target.id == "NEXT_DRAFT_OUTPUT"
+            for target in node.targets
+        ):
+            continue
+        assert isinstance(node.value, ast.Call)
+        assert isinstance(node.value.args[0], ast.Constant)
+        path_literal = node.value.args[0].value
+
+    assert path_literal == "output/pdf/benchmark-radar-technical-report-next-draft.pdf"
+    assert "default=NEXT_DRAFT_OUTPUT" in source
+    assert 'default=Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf")' not in source
 
 
 def test_report_narrative_carries_the_machine_readable_replacement_claim():

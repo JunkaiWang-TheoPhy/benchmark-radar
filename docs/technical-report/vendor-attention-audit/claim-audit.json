@@ -252,6 +252,8 @@
   ],
   "robustness": {
     "every_baseline_member_survives_single_document_omission": false,
+    "exact_membership_is_robust": false,
+    "high_support_group_persists": true,
     "median_jaccard": 0.4062,
     "required_median_jaccard": 0.8,
     "scenario_ids": [

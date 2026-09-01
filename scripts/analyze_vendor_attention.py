@@ -405,6 +405,44 @@ def _scenario_membership_rows(
     ]
 
 
+def decide_recommendation(
+    *,
+    original_members: set[str],
+    baseline_members: set[str],
+    median_jaccard: float,
+    every_document_survives: bool,
+    scenario_summaries: list[dict[str, Any]],
+    decision_rule: dict[str, Any],
+) -> tuple[str, dict[str, bool]]:
+    exact_membership_is_robust = (
+        original_members == baseline_members
+        and median_jaccard >= float(decision_rule["exact_membership_median_jaccard"])
+        and (
+            every_document_survives
+            or not decision_rule["retain_requires_every_single_document_omission"]
+        )
+    )
+    adequately_observed = [row for row in scenario_summaries if row["active_orgs_threshold_ok"]]
+    high_support_group_persists = bool(adequately_observed) and all(
+        row["core_count"] > 0 for row in adequately_observed
+    )
+    if exact_membership_is_robust:
+        recommendation = "retain"
+    elif (
+        high_support_group_persists
+        and decision_rule["narrow_when_group_persists_but_membership_changes"]
+    ):
+        recommendation = "narrow"
+    elif baseline_members:
+        recommendation = "replace"
+    else:
+        recommendation = "remove"
+    return recommendation, {
+        "exact_membership_is_robust": exact_membership_is_robust,
+        "high_support_group_persists": high_support_group_persists,
+    }
+
+
 def generate_vendor_attention_audit(
     *, registry_path: Path = DEFAULT_REGISTRY, spec_path: Path = DEFAULT_SPEC
 ) -> dict[str, Any]:
@@ -501,7 +539,14 @@ def generate_vendor_attention_audit(
     every_document_survives = all(row["survives_every_document_omission"] for row in loo.values())
     original_ids = set(audit["original_claim"]["listed_benchmark_ids"])
     primary_threshold = int(scenarios[primary_id]["min_organizations"])
-    recommendation = "narrow"
+    recommendation, decision_state = decide_recommendation(
+        original_members=original_ids,
+        baseline_members=baseline_members,
+        median_jaccard=median_jaccard,
+        every_document_survives=every_document_survives,
+        scenario_summaries=scenario_summaries,
+        decision_rule=audit["decision_rule"],
+    )
     replacement_claim = (
         f"In the reviewed sample through {analysis_end.isoformat()}, "
         f"{primary_summary['core_count']} canonical benchmark IDs were reported by at least "
@@ -545,6 +590,7 @@ def generate_vendor_attention_audit(
             "median_jaccard": round(median_jaccard, 4),
             "required_median_jaccard": audit["decision_rule"]["exact_membership_median_jaccard"],
             "every_baseline_member_survives_single_document_omission": every_document_survives,
+            **decision_state,
         },
         "recommendation": recommendation,
         "replacement_claim": replacement_claim,
