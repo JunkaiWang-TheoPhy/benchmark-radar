@@ -1179,11 +1179,11 @@ def story(doi: str) -> list:
                 st["reference"],
             ),
             p(
-                "[9] Benchmark Radar contributors. Reviewed model-card benchmark registry. 2026. https://github.com/ktwu01/benchmark-radar/blob/main/data/model_cards.yml",
+                "[9] Benchmark Radar contributors. Reviewed model-card benchmark registry. 2026. https://github.com/ktwu01/benchmark-radar/blob/98c8cf6fb5d1d69c66d438ea9f92242b2205c9ae/data/model_cards.yml",
                 st["reference"],
             ),
             p(
-                "[10] J. Wang. Vendor-attention sensitivity audit for issue #456. 2026. https://github.com/ktwu01/benchmark-radar/tree/main/docs/technical-report/vendor-attention-audit",
+                "[10] J. Wang. Vendor-attention sensitivity audit for issue #456. 2026. https://github.com/ktwu01/benchmark-radar/blob/0d9acf6f7c33d926e91ff668813a9112bbba2239/docs/technical-report/vendor-attention-audit/claim-audit.json",
                 st["reference"],
             ),
             Spacer(1, 0),

@@ -136,6 +136,31 @@ def test_spec_rejects_a_required_scenario_with_mislabeled_semantics(tmp_path):
         module.load_audit_spec(path)
 
 
+def test_spec_requires_the_canonical_t6_scenario_as_primary(tmp_path):
+    module = _load_module()
+    spec = yaml.safe_load(SPEC.read_text(encoding="utf-8"))
+    spec["audit"]["primary_scenario"] = "canonical_all_t5"
+    path = tmp_path / "audit.yml"
+    path.write_text(yaml.safe_dump(spec, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(module.VendorAttentionAuditError, match="primary_scenario must be"):
+        module.load_audit_spec(path)
+
+
+def test_family_ids_are_unique_and_disjoint_from_canonical_ids():
+    module = _load_module()
+    registry = load_registry(REGISTRY)
+    spec = yaml.safe_load(SPEC.read_text(encoding="utf-8"))
+    spec["families"][0]["id"] = "mmlu"
+    with pytest.raises(module.VendorAttentionAuditError, match="canonical benchmark id"):
+        module.compile_family_projection(registry, spec)
+
+    spec = yaml.safe_load(SPEC.read_text(encoding="utf-8"))
+    spec["families"].append(dict(spec["families"][0]))
+    with pytest.raises(module.VendorAttentionAuditError, match="duplicate family id"):
+        module.compile_family_projection(registry, spec)
+
+
 def test_time_window_is_inclusive_and_uses_revised_date():
     module = _load_module()
     registry = {

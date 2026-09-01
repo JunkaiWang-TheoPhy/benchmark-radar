@@ -21,6 +21,7 @@ from benchmark_radar.model_cards import load_registry
 DEFAULT_REGISTRY = Path("data/model_cards.yml")
 DEFAULT_SPEC = Path("data/vendor_attention_audit.yml")
 DEFAULT_OUTPUT_DIR = Path("docs/technical-report/vendor-attention-audit")
+PRIMARY_SCENARIO_ID = "canonical_all_t6"
 REQUIRED_SCENARIO_DEFINITIONS = {
     "canonical_all_t5": ("canonical", 5, (), None, False, False),
     "canonical_all_t6": ("canonical", 6, (), None, False, False),
@@ -99,6 +100,10 @@ def load_audit_spec(path: Path = DEFAULT_SPEC) -> dict[str, Any]:
             )
     if audit["primary_scenario"] not in scenario_ids:
         raise VendorAttentionAuditError("primary_scenario must name a declared scenario")
+    if audit["primary_scenario"] != PRIMARY_SCENARIO_ID:
+        raise VendorAttentionAuditError(
+            f"primary_scenario must be {PRIMARY_SCENARIO_ID}, got {audit['primary_scenario']}"
+        )
     return payload
 
 
@@ -137,6 +142,7 @@ def compile_family_projection(
     names = {str(row["id"]): str(row["name"]) for row in registry["benchmarks"]}
     reviewed_families: list[dict[str, Any]] = []
     assigned: dict[str, str] = {}
+    family_ids: set[str] = set()
     for family in spec["families"]:
         family_id = str(family.get("id") or "")
         family_name = str(family.get("name") or "")
@@ -146,6 +152,13 @@ def compile_family_projection(
             raise VendorAttentionAuditError(
                 "every reviewed family requires id, name, benchmark_ids, and evidence"
             )
+        if family_id in benchmark_ids:
+            raise VendorAttentionAuditError(
+                f"family id {family_id} collides with a canonical benchmark id"
+            )
+        if family_id in family_ids:
+            raise VendorAttentionAuditError(f"duplicate family id: {family_id}")
+        family_ids.add(family_id)
         unknown = sorted(set(members) - benchmark_ids)
         if unknown:
             raise VendorAttentionAuditError(

@@ -32,6 +32,12 @@ def test_report_replaces_the_unreproducible_eight_benchmark_claim():
     assert "resolved identities" in source
     assert "explicit families" in source
     assert "singleton canonical IDs" in source
+    assert "blob/98c8cf6fb5d1d69c66d438ea9f92242b2205c9ae/data/model_cards.yml" in source
+    assert (
+        "blob/0d9acf6f7c33d926e91ff668813a9112bbba2239/"
+        "docs/technical-report/vendor-attention-audit/claim-audit.json" in source
+    )
+    assert "blob/main/data/model_cards.yml" not in source
 
 
 def test_report_build_instructions_regenerate_the_audit_and_next_draft():
@@ -74,3 +80,12 @@ def test_report_narrative_carries_the_machine_readable_replacement_claim():
     assert "convenience sample" in narrative
     assert "Junkai Wang /" in narrative
     assert "issues/456" in narrative
+
+    lines = REPORT_NARRATIVE.read_text(encoding="utf-8").splitlines()
+    family_row = next(
+        index for index, line in enumerate(lines) if "Reviewed family projection" in line
+    )
+    removal_row = next(
+        index for index, line in enumerate(lines) if "Remove every organization" in line
+    )
+    assert removal_row == family_row + 1
