@@ -83,6 +83,11 @@ def load_audit_spec(path: Path = DEFAULT_SPEC) -> dict[str, Any]:
         raise VendorAttentionAuditError(
             "spec is missing required scenarios: " + ", ".join(missing_scenarios)
         )
+    extra_scenarios = sorted(set(scenario_ids) - REQUIRED_SCENARIO_IDS)
+    if extra_scenarios:
+        raise VendorAttentionAuditError(
+            "spec contains unregistered scenarios: " + ", ".join(extra_scenarios)
+        )
     scenarios_by_id = {str(row["id"]): row for row in scenarios}
     for scenario_id, expected in REQUIRED_SCENARIO_DEFINITIONS.items():
         row = scenarios_by_id[scenario_id]

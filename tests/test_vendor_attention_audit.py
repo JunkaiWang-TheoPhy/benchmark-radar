@@ -136,6 +136,24 @@ def test_spec_rejects_a_required_scenario_with_mislabeled_semantics(tmp_path):
         module.load_audit_spec(path)
 
 
+def test_spec_rejects_an_extra_scenario_that_could_change_the_decision(tmp_path):
+    module = _load_module()
+    spec = yaml.safe_load(SPEC.read_text(encoding="utf-8"))
+    spec["scenarios"].append(
+        {
+            "id": "unregistered_threshold_12",
+            "label": "Unregistered threshold",
+            "identity": "canonical",
+            "min_organizations": 12,
+        }
+    )
+    path = tmp_path / "audit.yml"
+    path.write_text(yaml.safe_dump(spec, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(module.VendorAttentionAuditError, match="unregistered scenarios"):
+        module.load_audit_spec(path)
+
+
 def test_spec_requires_the_canonical_t6_scenario_as_primary(tmp_path):
     module = _load_module()
     spec = yaml.safe_load(SPEC.read_text(encoding="utf-8"))
