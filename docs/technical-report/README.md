@@ -34,6 +34,25 @@ the frozen `output/pdf/benchmark-radar-technical-report-v0.9.0.pdf`. The reserve
 DOI appears in the PDF itself. Upload only a reviewed release PDF to the Zenodo
 record described by `zenodo-metadata.json`, then publish the record.
 
+The published v0.9.0 PDF is frozen. Do not overwrite it when preparing a new
+manuscript or adding a contributor. Build the working next draft explicitly:
+
+```bash
+python3 scripts/build_system_evaluation.py \
+  --next-draft \
+  --doi 10.5281/zenodo.22167102
+```
+
+This writes `output/pdf/benchmark-radar-technical-report-next-draft.pdf` and
+uses the draft byline and contributor affiliations. Do not change the frozen
+`zenodo-metadata.json` for draft work; prepare release metadata only when the
+next report version is approved for deposit.
+
+The draft byline is provisional until the contributor has reviewed and approved
+the integrated manuscript, supplied a contribution statement, and accepted
+accountability for the work, as described in
+`docs/designs/technical-report-collaboration-scoring.md` and issue #447.
+
 The software remains under the MIT License. The technical report and original
 editorial content use CC BY-NC 4.0. Commercial republication, resale, paid
 newsletters, dataset packaging, or commercial product integration requires

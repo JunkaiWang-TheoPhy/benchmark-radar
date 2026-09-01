@@ -17,6 +17,9 @@ POLICY_START = datetime(2026, 8, 30, tzinfo=UTC)
 CLAIM_WINDOW = timedelta(days=7)
 COLLABORATOR_THRESHOLD = 12
 OWNER = "ktwu01"
+# These PRs were promised title-based credit while the claim workflow was being
+# introduced, so preserve that commitment without admitting every post-policy PR.
+PROMISED_PR_BACKFILLS = frozenset({463, 472})
 
 
 def parse_points(title: str) -> int | None:
@@ -139,21 +142,23 @@ def evaluate_historical_pr(
     *,
     policy_start: datetime = POLICY_START,
     owner: str = OWNER,
+    promised_backfills: frozenset[int] = PROMISED_PR_BACKFILLS,
 ) -> dict[str, Any] | None:
-    """Credit one prefixed, pre-policy PR by someone other than the owner."""
+    """Credit one prefixed legacy or explicitly promised PR."""
     points = parse_points(pull_request.get("title", ""))
     author = (pull_request.get("author") or {}).get("login", "")
     merged_at = parse_time(pull_request.get("mergedAt"))
+    is_promised_backfill = pull_request.get("number") in promised_backfills
     if (
         points is None
         or not author
         or author == owner
         or merged_at is None
-        or merged_at >= policy_start
+        or (merged_at >= policy_start and not is_promised_backfill)
     ):
         return None
     return {
-        "kind": "historical_pr",
+        "kind": "promised_pr_backfill" if is_promised_backfill else "historical_pr",
         "number": pull_request["number"],
         "url": pull_request.get("url"),
         "title": pull_request.get("title"),
