@@ -609,7 +609,7 @@ def test_github_config_discovers_and_routes_rsi_exam(monkeypatch):
     def fake_get_json(url, params=None, headers=None):
         query = params["q"].split(" pushed:", 1)[0]
         queries.append(query)
-        if query != '"recursive self-improvement" in:name,description,readme':
+        if query != '"RSI-Exam" in:name,description,readme':
             return {"items": []}
         return {
             "items": [
@@ -624,7 +624,16 @@ def test_github_config_discovers_and_routes_rsi_exam(monkeypatch):
                     ),
                     "stargazers_count": 75,
                     "forks_count": 3,
-                }
+                },
+                {
+                    "full_name": "example/AgentQuant",
+                    "html_url": "https://github.com/example/AgentQuant",
+                    "created_at": "2026-08-26T06:58:55Z",
+                    "pushed_at": "2026-08-29T05:24:25Z",
+                    "description": "A quantitative trading platform",
+                    "stargazers_count": 75,
+                    "forks_count": 3,
+                },
             ]
         }
 
@@ -639,8 +648,11 @@ def test_github_config_discovers_and_routes_rsi_exam(monkeypatch):
         suppressed_count=0,
     )
 
-    assert '"recursive self-improvement" in:name,description,readme' in queries
-    assert [item.source_id for item in items] == ["aiming-lab/RSI-Exam"]
+    assert '"RSI-Exam" in:name,description,readme' in queries
+    assert [item.source_id for item in items] == [
+        "aiming-lab/RSI-Exam",
+        "example/AgentQuant",
+    ]
     assert [item.source_id for item in published] == ["aiming-lab/RSI-Exam"]
     assert published[0].watchlist == "RSI-Exam"
 

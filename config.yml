@@ -207,10 +207,10 @@ sources:
       - '"data contamination" in:name,description,readme'
       - '"agent benchmark" in:name,description,readme'
       - '"agentic benchmark" in:name,description,readme'
-      # Some executable research suites describe their capability target rather
-      # than using the adjacent phrase "agent benchmark". Keep that discovery
-      # surface explicit and route named suites through the watchlist.
-      - '"recursive self-improvement" in:name,description,readme'
+      # This named suite does not use the adjacent phrase "agent benchmark".
+      # Keep discovery suite-specific: the broader capability phrase also
+      # matches trading platforms, automation harnesses, and safety frameworks.
+      - '"RSI-Exam" in:name,description,readme'
 
   # Reviewed public organizations are an additional discovery surface for new
   # repositories whose names may not match generic GitHub search phrases. The
