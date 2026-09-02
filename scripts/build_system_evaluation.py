@@ -2,12 +2,18 @@
 """Build the comprehensive Benchmark Radar system and data evaluation."""
 
 # Keep ReportLab prose as readable source text.
-# ruff: noqa: E501
+# ruff: noqa: E501, E402, I001
 
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
 
 from build_technical_report import (
     AMBER,
@@ -44,6 +50,7 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
+from benchmark_radar.saturation_audit import build_saturation_audit
 
 GREEN = HexColor("#16794A")
 PALE_GREEN = HexColor("#EAF7F0")
@@ -251,6 +258,61 @@ def source_bars() -> Drawing:
     return drawing
 
 
+def _render_headroom(value: float | None) -> str:
+    return "—" if value is None else f"{value:g}"
+
+
+def saturation_audit_table(st, audit: dict) -> Table:
+    rows = [
+        [
+            p("Benchmark", st["table_header"]),
+            p("Raw", st["table_header"]),
+            p("Protocol", st["table_header"]),
+            p("Action", st["table_header"]),
+            p("Note", st["table_header"]),
+        ]
+    ]
+    for row in audit["benchmarks"]:
+        if row["protocol_best"] is None:
+            note = "single reading only" if len(row["score_ids"]) == 1 else "no connectable series"
+        else:
+            note = (
+                f"{row['protocol_best']['protocol']} · "
+                f"{_render_headroom(row['protocol_headroom'])} point headroom"
+            )
+        rows.append(
+            [
+                p(row["name"], st["small_bold"]),
+                p(_render_headroom(row["raw_headroom"]), st["small"]),
+                p(_render_headroom(row["protocol_headroom"]), st["small"]),
+                p(row["recommendation"], st["small_bold"]),
+                p(note, st["small"]),
+            ]
+        )
+    return table(rows, [1.45 * inch, 0.7 * inch, 0.92 * inch, 0.72 * inch, 2.81 * inch], tiny=True)
+
+
+def saturation_threshold_table(st, audit: dict) -> Table:
+    rows = [
+        [
+            p("Threshold", st["table_header"]),
+            p("Raw hits", st["table_header"]),
+            p("Protocol-stratified hits", st["table_header"]),
+        ]
+    ]
+    raw = audit["threshold_sensitivity"]["raw"]
+    stratified = audit["threshold_sensitivity"]["protocol_stratified"]
+    for threshold in ("<=5", "<=3", "<=2"):
+        rows.append(
+            [
+                p(threshold, st["small_bold"]),
+                p(str(raw[threshold]), st["small"]),
+                p(str(stratified[threshold]), st["small"]),
+            ]
+        )
+    return table(rows, [1.25 * inch, 1.55 * inch, 3.8 * inch], tiny=True)
+
+
 class EvaluationDoc(BaseDocTemplate):
     def __init__(self, filename: str, *, doi: str, authors: tuple[str, ...] = FROZEN_AUTHORS):
         super().__init__(
@@ -306,6 +368,7 @@ def story(
 ) -> list:
     st = styles()
     tiny = ParagraphStyle("Tiny", parent=st["small"], fontSize=6.45, leading=8.0)
+    audit = build_saturation_audit()
     story: list = []
 
     story.extend(
@@ -917,7 +980,14 @@ def story(
             ),
             p("6.2 Several bounded metrics are near their ceiling", st["subsection"]),
             p(
-                "The curated layer records five points of headroom or less for AIME, Arena-Hard, DeepSearchQA, HMMT, MATH-500, MathVision, SWE-bench Verified, and tau2-bench. Read each value with its reasoning budget, tools, attempts, and evaluator. Those settings often explain score movement between model reports.",
+                "Raw headroom is the metric bound minus the best published value. Protocol-stratified headroom keeps only connectable instrument+protocol series with at least two dates. Single readings remain facts, but they are not trend evidence. The checked-in audit table records the score IDs, source documents, conflicts, exclusions, and counterexamples for each row.",
+                st["body"],
+            ),
+            saturation_audit_table(st, audit),
+            Spacer(1, 7),
+            saturation_threshold_table(st, audit),
+            p(
+                "At the five-point threshold, the raw archive still places all eight benchmarks in scope. After protocol stratification, only HMMT remains within five points and none remain within three. The machine-readable audit lives in docs/technical-report/saturation-audit-6.2.json.",
                 st["body"],
             ),
             p("6.3 Broad search, deeper curation", st["subsection"]),
@@ -1000,6 +1070,21 @@ def story(
             p("7. Reproducibility, access, and citation", st["section"]),
             p(
                 "This report evaluates Benchmark Radar v0.9.0 at Git commit 98c7de3 and data cutoff 2026-08-29. The clean worktree ran the CI sequence: lint and formatting checks, external normalization, KW-Bench classification, checksummed data-release construction, and the full test suite. All 1,028 tests passed.",
+                st["body"],
+            ),
+            p("7.1 Methods and limitations", st["subsection"]),
+            p(
+                "The 6.2 audit uses the same curated score archive and model-card registry as the rest of the report. A score is comparable only when instrument and protocol both match; a protocol-stratified headroom is reported only when a connectable series has at least two dated points. When no such series exists, the archive keeps the raw reading but labels it as a single observation rather than trend evidence.",
+                st["body"],
+            ),
+            p("7.2 Contributor credit", st["subsection"]),
+            p(
+                "Junjie Zhou prepared the protocol audit, machine-readable table, and report revision for issue #457.",
+                st["body"],
+            ),
+            p("7.3 Issue link", st["subsection"]),
+            p(
+                "[#457](https://github.com/ktwu01/benchmark-radar/issues/457) Near-ceiling metrics under protocol controls.",
                 st["body"],
             ),
             table(

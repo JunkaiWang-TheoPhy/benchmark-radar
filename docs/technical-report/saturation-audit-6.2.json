@@ -1,0 +1,1046 @@
+{
+  "benchmark_count": 8,
+  "benchmarks": [
+    {
+      "benchmark_id": "aime",
+      "conflicts": [
+        "instruments: aime, aime_2024, aime_2025, aime_2026",
+        "protocols: AIME 2026 I, temp 1.0, top_p 0.95, GPT-5.2 (medium) judge, AIME 2026, as reported, AIME 2026, temp 1.0, top_p 0.95, max gen 163840 tokens, GPT-5.5 (medium) judge, Pass@1, extended thinking up to 64K tokens, top-p 0.95, no parallel test-time compute, no tools, thinking (temp 0.6, top_p 0.95, top_k 20), thinking mode",
+        "pass@k, majority vote and Python tool access each shift this by double digits."
+      ],
+      "counterexamples": [
+        {
+          "instrument": "aime_2024",
+          "model": "Qwen3-235B-A22B (Thinking)",
+          "observation_id": "curated\u0000aime\u0000qwen3_technical_report\u0000aime_2024\u0000thinking mode\u0000Qwen3-235B-A22B (Thinking)",
+          "organization": "Qwen",
+          "protocol": "thinking mode",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-05-14",
+          "value": 85.7
+        },
+        {
+          "instrument": "aime_2025",
+          "model": "Claude Opus 4",
+          "observation_id": "curated\u0000aime\u0000anthropic_claude_4_system_card\u0000aime_2025\u0000extended thinking up to 64K tokens, top-p 0.95, no parallel test-time compute\u0000Claude Opus 4",
+          "organization": "Anthropic",
+          "protocol": "extended thinking up to 64K tokens, top-p 0.95, no parallel test-time compute",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-05-22",
+          "value": 75.5
+        },
+        {
+          "instrument": "aime_2025",
+          "model": "Claude Sonnet 4",
+          "observation_id": "curated\u0000aime\u0000anthropic_claude_4_system_card\u0000aime_2025\u0000extended thinking up to 64K tokens, top-p 0.95, no parallel test-time compute\u0000Claude Sonnet 4",
+          "organization": "Anthropic",
+          "protocol": "extended thinking up to 64K tokens, top-p 0.95, no parallel test-time compute",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-05-22",
+          "value": 70.5
+        }
+      ],
+      "direction": "higher_is_better",
+      "exclusions": [
+        {
+          "instrument": "aime_2024",
+          "model": "Qwen3-235B-A22B (Thinking)",
+          "observation_id": "curated\u0000aime\u0000qwen3_technical_report\u0000aime_2024\u0000thinking mode\u0000Qwen3-235B-A22B (Thinking)",
+          "organization": "Qwen",
+          "protocol": "thinking mode",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-05-14",
+          "value": 85.7
+        },
+        {
+          "instrument": "aime_2025",
+          "model": "Claude Opus 4",
+          "observation_id": "curated\u0000aime\u0000anthropic_claude_4_system_card\u0000aime_2025\u0000extended thinking up to 64K tokens, top-p 0.95, no parallel test-time compute\u0000Claude Opus 4",
+          "organization": "Anthropic",
+          "protocol": "extended thinking up to 64K tokens, top-p 0.95, no parallel test-time compute",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-05-22",
+          "value": 75.5
+        },
+        {
+          "instrument": "aime_2025",
+          "model": "Claude Sonnet 4",
+          "observation_id": "curated\u0000aime\u0000anthropic_claude_4_system_card\u0000aime_2025\u0000extended thinking up to 64K tokens, top-p 0.95, no parallel test-time compute\u0000Claude Sonnet 4",
+          "organization": "Anthropic",
+          "protocol": "extended thinking up to 64K tokens, top-p 0.95, no parallel test-time compute",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-05-22",
+          "value": 70.5
+        },
+        {
+          "instrument": "aime",
+          "model": "GLM-5",
+          "observation_id": "curated\u0000aime\u0000zai_glm_5_model_card\u0000aime\u0000AIME 2026 I, temp 1.0, top_p 0.95, GPT-5.2 (medium) judge\u0000GLM-5",
+          "organization": "Z.ai",
+          "protocol": "AIME 2026 I, temp 1.0, top_p 0.95, GPT-5.2 (medium) judge",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-02-11",
+          "value": 92.7
+        },
+        {
+          "instrument": "aime_2026",
+          "model": "Qwen3.5-397B-A17B",
+          "observation_id": "curated\u0000aime\u0000qwen3_5_model_card\u0000aime_2026\u0000thinking (temp 0.6, top_p 0.95, top_k 20)\u0000Qwen3.5-397B-A17B",
+          "organization": "Qwen",
+          "protocol": "thinking (temp 0.6, top_p 0.95, top_k 20)",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-02-16",
+          "value": 91.3
+        },
+        {
+          "instrument": "aime_2026",
+          "model": "Gemma 4 (31B)",
+          "observation_id": "curated\u0000aime\u0000google_gemma_4_model_card\u0000aime_2026\u0000no tools\u0000Gemma 4 (31B)",
+          "organization": "Google",
+          "protocol": "no tools",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-03-11",
+          "value": 89.2
+        },
+        {
+          "instrument": "aime",
+          "model": "GLM-5.1",
+          "observation_id": "curated\u0000aime\u0000zai_glm_5_1_model_card\u0000aime\u0000AIME 2026, as reported\u0000GLM-5.1",
+          "organization": "Z.ai",
+          "protocol": "AIME 2026, as reported",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-04-03",
+          "value": 95.3
+        },
+        {
+          "instrument": "aime",
+          "model": "GLM-5.2",
+          "observation_id": "curated\u0000aime\u0000zai_glm_5_2_model_card\u0000aime\u0000AIME 2026, temp 1.0, top_p 0.95, max gen 163840 tokens, GPT-5.5 (medium) judge\u0000GLM-5.2",
+          "organization": "Z.ai",
+          "protocol": "AIME 2026, temp 1.0, top_p 0.95, max gen 163840 tokens, GPT-5.5 (medium) judge",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-06-16",
+          "value": 99.2
+        }
+      ],
+      "metric": "pass@1",
+      "name": "AIME",
+      "protocol_best": {
+        "best_observation_id": "curated\u0000aime\u0000deepseek_r1_report\u0000aime_2024\u0000Pass@1\u0000DeepSeek-R1",
+        "best_value": 79.8,
+        "dated_points": 2,
+        "first_reported_at": "2024-12-27",
+        "headroom": 20.2,
+        "instrument": "aime_2024",
+        "last_reported_at": "2025-01-22",
+        "model": "DeepSeek-R1",
+        "organization": "DeepSeek",
+        "point_count": 2,
+        "protocol": "Pass@1",
+        "reported_at": "2025-01-22"
+      },
+      "protocol_headroom": 20.2,
+      "raw_best": {
+        "instrument": "aime",
+        "model": "GLM-5.2",
+        "observation_id": "curated\u0000aime\u0000zai_glm_5_2_model_card\u0000aime\u0000AIME 2026, temp 1.0, top_p 0.95, max gen 163840 tokens, GPT-5.5 (medium) judge\u0000GLM-5.2",
+        "organization": "Z.ai",
+        "protocol": "AIME 2026, temp 1.0, top_p 0.95, max gen 163840 tokens, GPT-5.5 (medium) judge",
+        "read_from": "html_text",
+        "reported_at": "2026-06-16",
+        "reported_by": null,
+        "source_id": "zai_glm_5_2_model_card",
+        "value": 99.2
+      },
+      "raw_headroom": 0.8,
+      "recommendation": "replace",
+      "score_ids": [
+        "curated\u0000aime\u0000deepseek_v3_report\u0000aime_2024\u0000Pass@1\u0000DeepSeek-V3",
+        "curated\u0000aime\u0000deepseek_r1_report\u0000aime_2024\u0000Pass@1\u0000DeepSeek-R1",
+        "curated\u0000aime\u0000qwen3_technical_report\u0000aime_2024\u0000thinking mode\u0000Qwen3-235B-A22B (Thinking)",
+        "curated\u0000aime\u0000anthropic_claude_4_system_card\u0000aime_2025\u0000extended thinking up to 64K tokens, top-p 0.95, no parallel test-time compute\u0000Claude Opus 4",
+        "curated\u0000aime\u0000anthropic_claude_4_system_card\u0000aime_2025\u0000extended thinking up to 64K tokens, top-p 0.95, no parallel test-time compute\u0000Claude Sonnet 4",
+        "curated\u0000aime\u0000zai_glm_5_model_card\u0000aime\u0000AIME 2026 I, temp 1.0, top_p 0.95, GPT-5.2 (medium) judge\u0000GLM-5",
+        "curated\u0000aime\u0000qwen3_5_model_card\u0000aime_2026\u0000thinking (temp 0.6, top_p 0.95, top_k 20)\u0000Qwen3.5-397B-A17B",
+        "curated\u0000aime\u0000google_gemma_4_model_card\u0000aime_2026\u0000no tools\u0000Gemma 4 (31B)",
+        "curated\u0000aime\u0000zai_glm_5_1_model_card\u0000aime\u0000AIME 2026, as reported\u0000GLM-5.1",
+        "curated\u0000aime\u0000zai_glm_5_2_model_card\u0000aime\u0000AIME 2026, temp 1.0, top_p 0.95, max gen 163840 tokens, GPT-5.5 (medium) judge\u0000GLM-5.2"
+      ],
+      "source_documents": [
+        {
+          "caveat": "",
+          "id": "anthropic_claude_4_system_card",
+          "name": "anthropic_claude_4_system_card",
+          "url": "https://www.anthropic.com/news/claude-4"
+        },
+        {
+          "caveat": "",
+          "id": "deepseek_r1_report",
+          "name": "deepseek_r1_report",
+          "url": "https://arxiv.org/abs/2501.12948"
+        },
+        {
+          "caveat": "",
+          "id": "deepseek_v3_report",
+          "name": "deepseek_v3_report",
+          "url": "https://arxiv.org/abs/2412.19437"
+        },
+        {
+          "caveat": "",
+          "id": "google_gemma_4_model_card",
+          "name": "google_gemma_4_model_card",
+          "url": "https://huggingface.co/google/gemma-4-31B-it"
+        },
+        {
+          "caveat": "",
+          "id": "qwen3_5_model_card",
+          "name": "qwen3_5_model_card",
+          "url": "https://huggingface.co/Qwen/Qwen3.5-397B-A17B"
+        },
+        {
+          "caveat": "",
+          "id": "qwen3_technical_report",
+          "name": "qwen3_technical_report",
+          "url": "https://arxiv.org/abs/2505.09388"
+        },
+        {
+          "caveat": "",
+          "id": "zai_glm_5_1_model_card",
+          "name": "zai_glm_5_1_model_card",
+          "url": "https://huggingface.co/zai-org/GLM-5.1"
+        },
+        {
+          "caveat": "",
+          "id": "zai_glm_5_2_model_card",
+          "name": "zai_glm_5_2_model_card",
+          "url": "https://huggingface.co/zai-org/GLM-5.2"
+        },
+        {
+          "caveat": "",
+          "id": "zai_glm_5_model_card",
+          "name": "zai_glm_5_model_card",
+          "url": "https://huggingface.co/zai-org/GLM-5"
+        }
+      ],
+      "uncertainty": [
+        "Protocol-stratified comparison uses the strongest connectable instrument+protocol series."
+      ],
+      "unit": "percent"
+    },
+    {
+      "benchmark_id": "arena_hard",
+      "conflicts": [
+        "protocols: GPT-4-1106 judge, thinking mode",
+        "LLM-judge dependent, with known style and length bias."
+      ],
+      "counterexamples": [
+        {
+          "instrument": "arena_hard",
+          "model": "Qwen3-235B-A22B (Thinking)",
+          "observation_id": "curated\u0000arena_hard\u0000qwen3_technical_report\u0000arena_hard\u0000thinking mode\u0000Qwen3-235B-A22B (Thinking)",
+          "organization": "Qwen",
+          "protocol": "thinking mode",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-05-14",
+          "value": 95.6
+        }
+      ],
+      "direction": "higher_is_better",
+      "exclusions": [
+        {
+          "instrument": "arena_hard",
+          "model": "Qwen3-235B-A22B (Thinking)",
+          "observation_id": "curated\u0000arena_hard\u0000qwen3_technical_report\u0000arena_hard\u0000thinking mode\u0000Qwen3-235B-A22B (Thinking)",
+          "organization": "Qwen",
+          "protocol": "thinking mode",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-05-14",
+          "value": 95.6
+        }
+      ],
+      "metric": "win_rate",
+      "name": "Arena-Hard",
+      "protocol_best": {
+        "best_observation_id": "curated\u0000arena_hard\u0000deepseek_r1_report\u0000arena_hard\u0000GPT-4-1106 judge\u0000DeepSeek-R1",
+        "best_value": 92.3,
+        "dated_points": 2,
+        "first_reported_at": "2024-12-27",
+        "headroom": 7.7,
+        "instrument": "arena_hard",
+        "last_reported_at": "2025-01-22",
+        "model": "DeepSeek-R1",
+        "organization": "DeepSeek",
+        "point_count": 2,
+        "protocol": "GPT-4-1106 judge",
+        "reported_at": "2025-01-22"
+      },
+      "protocol_headroom": 7.7,
+      "raw_best": {
+        "instrument": "arena_hard",
+        "model": "Qwen3-235B-A22B (Thinking)",
+        "observation_id": "curated\u0000arena_hard\u0000qwen3_technical_report\u0000arena_hard\u0000thinking mode\u0000Qwen3-235B-A22B (Thinking)",
+        "organization": "Qwen",
+        "protocol": "thinking mode",
+        "read_from": "pdf_text",
+        "reported_at": "2025-05-14",
+        "reported_by": null,
+        "source_id": "qwen3_technical_report",
+        "value": 95.6
+      },
+      "raw_headroom": 4.4,
+      "recommendation": "replace",
+      "score_ids": [
+        "curated\u0000arena_hard\u0000deepseek_v3_report\u0000arena_hard\u0000GPT-4-1106 judge\u0000DeepSeek-V3",
+        "curated\u0000arena_hard\u0000deepseek_r1_report\u0000arena_hard\u0000GPT-4-1106 judge\u0000DeepSeek-R1",
+        "curated\u0000arena_hard\u0000qwen3_technical_report\u0000arena_hard\u0000thinking mode\u0000Qwen3-235B-A22B (Thinking)"
+      ],
+      "source_documents": [
+        {
+          "caveat": "",
+          "id": "deepseek_r1_report",
+          "name": "deepseek_r1_report",
+          "url": "https://arxiv.org/abs/2501.12948"
+        },
+        {
+          "caveat": "",
+          "id": "deepseek_v3_report",
+          "name": "deepseek_v3_report",
+          "url": "https://arxiv.org/abs/2412.19437"
+        },
+        {
+          "caveat": "",
+          "id": "qwen3_technical_report",
+          "name": "qwen3_technical_report",
+          "url": "https://arxiv.org/abs/2505.09388"
+        }
+      ],
+      "uncertainty": [
+        "Protocol-stratified comparison uses the strongest connectable instrument+protocol series."
+      ],
+      "unit": "percent"
+    },
+    {
+      "benchmark_id": "deepsearchqa",
+      "conflicts": [
+        "Live-web deep research; F1 grading depends on the reference answer set."
+      ],
+      "counterexamples": [],
+      "direction": "higher_is_better",
+      "exclusions": [],
+      "metric": "f1",
+      "name": "DeepSearchQA",
+      "protocol_best": null,
+      "protocol_headroom": null,
+      "raw_best": {
+        "instrument": "deepsearchqa",
+        "model": "Kimi K3",
+        "observation_id": "curated\u0000deepsearchqa\u0000moonshot_kimi_k3_model_card\u0000deepsearchqa\u0000F1, reasoning=max\u0000Kimi K3",
+        "organization": "Moonshot AI",
+        "protocol": "F1, reasoning=max",
+        "read_from": "html_text",
+        "reported_at": "2026-06-13",
+        "reported_by": null,
+        "source_id": "moonshot_kimi_k3_model_card",
+        "value": 95.0
+      },
+      "raw_headroom": 5.0,
+      "recommendation": "qualify",
+      "score_ids": [
+        "curated\u0000deepsearchqa\u0000moonshot_kimi_k3_model_card\u0000deepsearchqa\u0000F1, reasoning=max\u0000Kimi K3"
+      ],
+      "source_documents": [
+        {
+          "caveat": "",
+          "id": "moonshot_kimi_k3_model_card",
+          "name": "moonshot_kimi_k3_model_card",
+          "url": "https://huggingface.co/moonshotai/Kimi-K3"
+        }
+      ],
+      "uncertainty": [
+        "No protocol-stratified series has at least two dated points."
+      ],
+      "unit": "percent"
+    },
+    {
+      "benchmark_id": "hmmt",
+      "conflicts": [
+        "instruments: hmmt, hmmt_2026_feb, hmmt_feb_2025, hmmt_nov_2025",
+        "protocols: HMMT Nov. 2025, as reported, HMMT Nov. 2025, temp 1.0, top_p 0.95, GPT-5.2 (medium) judge, HMMT Nov. 2025, temp 1.0, top_p 0.95, max gen 163840 tokens, GPT-5.5 (medium) judge, think max, pass@1, thinking (temp 0.6, top_p 0.95, top_k 20)",
+        "A dated competition, not a fixed set: each sitting is a different instrument and contamination rises once problems are published."
+      ],
+      "counterexamples": [
+        {
+          "instrument": "hmmt",
+          "model": "GLM-5",
+          "observation_id": "curated\u0000hmmt\u0000zai_glm_5_model_card\u0000hmmt\u0000HMMT Nov. 2025, temp 1.0, top_p 0.95, GPT-5.2 (medium) judge\u0000GLM-5",
+          "organization": "Z.ai",
+          "protocol": "HMMT Nov. 2025, temp 1.0, top_p 0.95, GPT-5.2 (medium) judge",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-02-11",
+          "value": 96.9
+        },
+        {
+          "instrument": "hmmt_feb_2025",
+          "model": "Qwen3.5-397B-A17B",
+          "observation_id": "curated\u0000hmmt\u0000qwen3_5_model_card\u0000hmmt_feb_2025\u0000thinking (temp 0.6, top_p 0.95, top_k 20)\u0000Qwen3.5-397B-A17B",
+          "organization": "Qwen",
+          "protocol": "thinking (temp 0.6, top_p 0.95, top_k 20)",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-02-16",
+          "value": 94.8
+        },
+        {
+          "instrument": "hmmt_nov_2025",
+          "model": "Qwen3.5-397B-A17B",
+          "observation_id": "curated\u0000hmmt\u0000qwen3_5_model_card\u0000hmmt_nov_2025\u0000thinking (temp 0.6, top_p 0.95, top_k 20)\u0000Qwen3.5-397B-A17B",
+          "organization": "Qwen",
+          "protocol": "thinking (temp 0.6, top_p 0.95, top_k 20)",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-02-16",
+          "value": 92.7
+        }
+      ],
+      "direction": "higher_is_better",
+      "exclusions": [
+        {
+          "instrument": "hmmt",
+          "model": "GLM-5",
+          "observation_id": "curated\u0000hmmt\u0000zai_glm_5_model_card\u0000hmmt\u0000HMMT Nov. 2025, temp 1.0, top_p 0.95, GPT-5.2 (medium) judge\u0000GLM-5",
+          "organization": "Z.ai",
+          "protocol": "HMMT Nov. 2025, temp 1.0, top_p 0.95, GPT-5.2 (medium) judge",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-02-11",
+          "value": 96.9
+        },
+        {
+          "instrument": "hmmt_feb_2025",
+          "model": "Qwen3.5-397B-A17B",
+          "observation_id": "curated\u0000hmmt\u0000qwen3_5_model_card\u0000hmmt_feb_2025\u0000thinking (temp 0.6, top_p 0.95, top_k 20)\u0000Qwen3.5-397B-A17B",
+          "organization": "Qwen",
+          "protocol": "thinking (temp 0.6, top_p 0.95, top_k 20)",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-02-16",
+          "value": 94.8
+        },
+        {
+          "instrument": "hmmt_nov_2025",
+          "model": "Qwen3.5-397B-A17B",
+          "observation_id": "curated\u0000hmmt\u0000qwen3_5_model_card\u0000hmmt_nov_2025\u0000thinking (temp 0.6, top_p 0.95, top_k 20)\u0000Qwen3.5-397B-A17B",
+          "organization": "Qwen",
+          "protocol": "thinking (temp 0.6, top_p 0.95, top_k 20)",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-02-16",
+          "value": 92.7
+        },
+        {
+          "instrument": "hmmt",
+          "model": "GLM-5.1",
+          "observation_id": "curated\u0000hmmt\u0000zai_glm_5_1_model_card\u0000hmmt\u0000HMMT Nov. 2025, as reported\u0000GLM-5.1",
+          "organization": "Z.ai",
+          "protocol": "HMMT Nov. 2025, as reported",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-04-03",
+          "value": 94.0
+        },
+        {
+          "instrument": "hmmt",
+          "model": "GLM-5.2",
+          "observation_id": "curated\u0000hmmt\u0000zai_glm_5_2_model_card\u0000hmmt\u0000HMMT Nov. 2025, temp 1.0, top_p 0.95, max gen 163840 tokens, GPT-5.5 (medium) judge\u0000GLM-5.2",
+          "organization": "Z.ai",
+          "protocol": "HMMT Nov. 2025, temp 1.0, top_p 0.95, max gen 163840 tokens, GPT-5.5 (medium) judge",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-06-16",
+          "value": 94.4
+        }
+      ],
+      "metric": "accuracy",
+      "name": "HMMT",
+      "protocol_best": {
+        "best_observation_id": "curated\u0000hmmt\u0000deepseek_v4_model_card\u0000hmmt_2026_feb\u0000think max, pass@1\u0000DeepSeek-V4-Pro",
+        "best_value": 95.2,
+        "dated_points": 2,
+        "first_reported_at": "2026-04-22",
+        "headroom": 4.8,
+        "instrument": "hmmt_2026_feb",
+        "last_reported_at": "2026-06-25",
+        "model": "DeepSeek-V4-Pro",
+        "organization": "DeepSeek",
+        "point_count": 2,
+        "protocol": "think max, pass@1",
+        "reported_at": "2026-04-22"
+      },
+      "protocol_headroom": 4.8,
+      "raw_best": {
+        "instrument": "hmmt",
+        "model": "GLM-5",
+        "observation_id": "curated\u0000hmmt\u0000zai_glm_5_model_card\u0000hmmt\u0000HMMT Nov. 2025, temp 1.0, top_p 0.95, GPT-5.2 (medium) judge\u0000GLM-5",
+        "organization": "Z.ai",
+        "protocol": "HMMT Nov. 2025, temp 1.0, top_p 0.95, GPT-5.2 (medium) judge",
+        "read_from": "html_text",
+        "reported_at": "2026-02-11",
+        "reported_by": null,
+        "source_id": "zai_glm_5_model_card",
+        "value": 96.9
+      },
+      "raw_headroom": 3.1,
+      "recommendation": "qualify",
+      "score_ids": [
+        "curated\u0000hmmt\u0000zai_glm_5_model_card\u0000hmmt\u0000HMMT Nov. 2025, temp 1.0, top_p 0.95, GPT-5.2 (medium) judge\u0000GLM-5",
+        "curated\u0000hmmt\u0000qwen3_5_model_card\u0000hmmt_feb_2025\u0000thinking (temp 0.6, top_p 0.95, top_k 20)\u0000Qwen3.5-397B-A17B",
+        "curated\u0000hmmt\u0000qwen3_5_model_card\u0000hmmt_nov_2025\u0000thinking (temp 0.6, top_p 0.95, top_k 20)\u0000Qwen3.5-397B-A17B",
+        "curated\u0000hmmt\u0000zai_glm_5_1_model_card\u0000hmmt\u0000HMMT Nov. 2025, as reported\u0000GLM-5.1",
+        "curated\u0000hmmt\u0000deepseek_v4_model_card\u0000hmmt_2026_feb\u0000think max, pass@1\u0000DeepSeek-V4-Pro",
+        "curated\u0000hmmt\u0000zai_glm_5_2_model_card\u0000hmmt\u0000HMMT Nov. 2025, temp 1.0, top_p 0.95, max gen 163840 tokens, GPT-5.5 (medium) judge\u0000GLM-5.2",
+        "curated\u0000hmmt\u0000deepseek_v4_technical_report\u0000hmmt_2026_feb\u0000think max, pass@1\u0000DeepSeek-V4-Flash"
+      ],
+      "source_documents": [
+        {
+          "caveat": "",
+          "id": "deepseek_v4_model_card",
+          "name": "deepseek_v4_model_card",
+          "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro"
+        },
+        {
+          "caveat": "",
+          "id": "deepseek_v4_technical_report",
+          "name": "deepseek_v4_technical_report",
+          "url": "https://arxiv.org/abs/2606.19348"
+        },
+        {
+          "caveat": "",
+          "id": "qwen3_5_model_card",
+          "name": "qwen3_5_model_card",
+          "url": "https://huggingface.co/Qwen/Qwen3.5-397B-A17B"
+        },
+        {
+          "caveat": "",
+          "id": "zai_glm_5_1_model_card",
+          "name": "zai_glm_5_1_model_card",
+          "url": "https://huggingface.co/zai-org/GLM-5.1"
+        },
+        {
+          "caveat": "",
+          "id": "zai_glm_5_2_model_card",
+          "name": "zai_glm_5_2_model_card",
+          "url": "https://huggingface.co/zai-org/GLM-5.2"
+        },
+        {
+          "caveat": "",
+          "id": "zai_glm_5_model_card",
+          "name": "zai_glm_5_model_card",
+          "url": "https://huggingface.co/zai-org/GLM-5"
+        }
+      ],
+      "uncertainty": [
+        "Protocol-stratified comparison uses the strongest connectable instrument+protocol series."
+      ],
+      "unit": "percent"
+    },
+    {
+      "benchmark_id": "math_500",
+      "conflicts": [
+        "protocols: EM, 8K output limit, Pass@1, thinking mode",
+        "Largely saturated at the frontier."
+      ],
+      "counterexamples": [],
+      "direction": "higher_is_better",
+      "exclusions": [],
+      "metric": "accuracy",
+      "name": "MATH-500",
+      "protocol_best": null,
+      "protocol_headroom": null,
+      "raw_best": {
+        "instrument": "math_500",
+        "model": "Qwen3-235B-A22B (Thinking)",
+        "observation_id": "curated\u0000math_500\u0000qwen3_technical_report\u0000math_500\u0000thinking mode\u0000Qwen3-235B-A22B (Thinking)",
+        "organization": "Qwen",
+        "protocol": "thinking mode",
+        "read_from": "pdf_text",
+        "reported_at": "2025-05-14",
+        "reported_by": null,
+        "source_id": "qwen3_technical_report",
+        "value": 98.0
+      },
+      "raw_headroom": 2.0,
+      "recommendation": "retain",
+      "score_ids": [
+        "curated\u0000math_500\u0000deepseek_v3_report\u0000math_500\u0000EM, 8K output limit\u0000DeepSeek-V3",
+        "curated\u0000math_500\u0000deepseek_r1_report\u0000math_500\u0000Pass@1\u0000DeepSeek-R1",
+        "curated\u0000math_500\u0000qwen3_technical_report\u0000math_500\u0000thinking mode\u0000Qwen3-235B-A22B (Thinking)"
+      ],
+      "source_documents": [
+        {
+          "caveat": "",
+          "id": "deepseek_r1_report",
+          "name": "deepseek_r1_report",
+          "url": "https://arxiv.org/abs/2501.12948"
+        },
+        {
+          "caveat": "",
+          "id": "deepseek_v3_report",
+          "name": "deepseek_v3_report",
+          "url": "https://arxiv.org/abs/2412.19437"
+        },
+        {
+          "caveat": "",
+          "id": "qwen3_technical_report",
+          "name": "qwen3_technical_report",
+          "url": "https://arxiv.org/abs/2505.09388"
+        }
+      ],
+      "uncertainty": [
+        "No protocol-stratified series has at least two dated points."
+      ],
+      "unit": "percent"
+    },
+    {
+      "benchmark_id": "mathvision",
+      "conflicts": [
+        "protocols: as reported, reasoning=max, with Python, reasoning=max, without tools, thinking (temp 0.6, top_p 0.95, top_k 20), fixed boxed prompt",
+        "Prompt-format sensitive: vendors report boxed and unboxed variants and sometimes take the higher of the two."
+      ],
+      "counterexamples": [],
+      "direction": "higher_is_better",
+      "exclusions": [],
+      "metric": "accuracy",
+      "name": "MathVision",
+      "protocol_best": null,
+      "protocol_headroom": null,
+      "raw_best": {
+        "instrument": "mathvision",
+        "model": "Kimi K3",
+        "observation_id": "curated\u0000mathvision\u0000moonshot_kimi_k3_model_card\u0000mathvision\u0000reasoning=max, with Python\u0000Kimi K3",
+        "organization": "Moonshot AI",
+        "protocol": "reasoning=max, with Python",
+        "read_from": "html_text",
+        "reported_at": "2026-06-13",
+        "reported_by": null,
+        "source_id": "moonshot_kimi_k3_model_card",
+        "value": 97.8
+      },
+      "raw_headroom": 2.2,
+      "recommendation": "replace",
+      "score_ids": [
+        "curated\u0000mathvision\u0000qwen3_5_model_card\u0000mathvision\u0000thinking (temp 0.6, top_p 0.95, top_k 20), fixed boxed prompt\u0000Qwen3.5-397B-A17B",
+        "curated\u0000mathvision\u0000google_gemma_4_model_card\u0000mathvision\u0000as reported\u0000Gemma 4 (31B)",
+        "curated\u0000mathvision\u0000moonshot_kimi_k3_model_card\u0000mathvision\u0000reasoning=max, without tools\u0000Kimi K3",
+        "curated\u0000mathvision\u0000moonshot_kimi_k3_model_card\u0000mathvision\u0000reasoning=max, with Python\u0000Kimi K3"
+      ],
+      "source_documents": [
+        {
+          "caveat": "",
+          "id": "google_gemma_4_model_card",
+          "name": "google_gemma_4_model_card",
+          "url": "https://huggingface.co/google/gemma-4-31B-it"
+        },
+        {
+          "caveat": "",
+          "id": "moonshot_kimi_k3_model_card",
+          "name": "moonshot_kimi_k3_model_card",
+          "url": "https://huggingface.co/moonshotai/Kimi-K3"
+        },
+        {
+          "caveat": "",
+          "id": "qwen3_5_model_card",
+          "name": "qwen3_5_model_card",
+          "url": "https://huggingface.co/Qwen/Qwen3.5-397B-A17B"
+        }
+      ],
+      "uncertainty": [
+        "No protocol-stratified series has at least two dated points."
+      ],
+      "unit": "percent"
+    },
+    {
+      "benchmark_id": "swe_bench_verified",
+      "conflicts": [
+        "instruments: swe_bench_verified, swe_bench_verified_anthropic_489",
+        "protocols: OpenHands, tailored instruction prompt, temp 0.7, top_p 0.95, 200K context, Resolved, vendor harness, Thinking (High), Single attempt, adaptive thinking, max effort, averaged over 5 trials, multiple attempts, no extended thinking, non-think, resolved, parallel attempts plus internal ranker, 489-task infrastructure-compatible subset, single attempt, think high, resolved, think max, resolved, thinking (temp 0.6, top_p 0.95, top_k 20), vanilla pass@1, 489-task infrastructure-compatible subset",
+        "Scaffold, tool permissions and time limit are part of the result; vendors run their own harnesses."
+      ],
+      "counterexamples": [
+        {
+          "instrument": "swe_bench_verified",
+          "model": "DeepSeek-V3",
+          "observation_id": "curated\u0000swe_bench_verified\u0000deepseek_v3_report\u0000swe_bench_verified\u0000Resolved, vendor harness\u0000DeepSeek-V3",
+          "organization": "DeepSeek",
+          "protocol": "Resolved, vendor harness",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2024-12-27",
+          "value": 42.0
+        },
+        {
+          "instrument": "swe_bench_verified",
+          "model": "DeepSeek-R1",
+          "observation_id": "curated\u0000swe_bench_verified\u0000deepseek_r1_report\u0000swe_bench_verified\u0000Resolved, vendor harness\u0000DeepSeek-R1",
+          "organization": "DeepSeek",
+          "protocol": "Resolved, vendor harness",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-01-22",
+          "value": 49.2
+        },
+        {
+          "instrument": "swe_bench_verified_anthropic_489",
+          "model": "Claude 3.7 Sonnet",
+          "observation_id": "curated\u0000swe_bench_verified\u0000anthropic_claude_3_7_sonnet\u0000swe_bench_verified_anthropic_489\u0000vanilla pass@1, 489-task infrastructure-compatible subset\u0000Claude 3.7 Sonnet",
+          "organization": "Anthropic",
+          "protocol": "vanilla pass@1, 489-task infrastructure-compatible subset",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-02-24",
+          "value": 63.7
+        }
+      ],
+      "direction": "higher_is_better",
+      "exclusions": [
+        {
+          "instrument": "swe_bench_verified",
+          "model": "DeepSeek-V3",
+          "observation_id": "curated\u0000swe_bench_verified\u0000deepseek_v3_report\u0000swe_bench_verified\u0000Resolved, vendor harness\u0000DeepSeek-V3",
+          "organization": "DeepSeek",
+          "protocol": "Resolved, vendor harness",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2024-12-27",
+          "value": 42.0
+        },
+        {
+          "instrument": "swe_bench_verified",
+          "model": "DeepSeek-R1",
+          "observation_id": "curated\u0000swe_bench_verified\u0000deepseek_r1_report\u0000swe_bench_verified\u0000Resolved, vendor harness\u0000DeepSeek-R1",
+          "organization": "DeepSeek",
+          "protocol": "Resolved, vendor harness",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-01-22",
+          "value": 49.2
+        },
+        {
+          "instrument": "swe_bench_verified_anthropic_489",
+          "model": "Claude 3.7 Sonnet",
+          "observation_id": "curated\u0000swe_bench_verified\u0000anthropic_claude_3_7_sonnet\u0000swe_bench_verified_anthropic_489\u0000vanilla pass@1, 489-task infrastructure-compatible subset\u0000Claude 3.7 Sonnet",
+          "organization": "Anthropic",
+          "protocol": "vanilla pass@1, 489-task infrastructure-compatible subset",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-02-24",
+          "value": 63.7
+        },
+        {
+          "instrument": "swe_bench_verified_anthropic_489",
+          "model": "Claude 3.7 Sonnet",
+          "observation_id": "curated\u0000swe_bench_verified\u0000anthropic_claude_3_7_sonnet\u0000swe_bench_verified_anthropic_489\u0000parallel attempts plus internal ranker, 489-task infrastructure-compatible subset\u0000Claude 3.7 Sonnet",
+          "organization": "Anthropic",
+          "protocol": "parallel attempts plus internal ranker, 489-task infrastructure-compatible subset",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-02-24",
+          "value": 70.3
+        },
+        {
+          "instrument": "swe_bench_verified",
+          "model": "Claude Opus 4",
+          "observation_id": "curated\u0000swe_bench_verified\u0000anthropic_claude_4_system_card\u0000swe_bench_verified\u0000no extended thinking\u0000Claude Opus 4",
+          "organization": "Anthropic",
+          "protocol": "no extended thinking",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-05-22",
+          "value": 72.5
+        },
+        {
+          "instrument": "swe_bench_verified",
+          "model": "Claude Sonnet 4",
+          "observation_id": "curated\u0000swe_bench_verified\u0000anthropic_claude_4_system_card\u0000swe_bench_verified\u0000no extended thinking\u0000Claude Sonnet 4",
+          "organization": "Anthropic",
+          "protocol": "no extended thinking",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-05-22",
+          "value": 72.7
+        },
+        {
+          "instrument": "swe_bench_verified",
+          "model": "Gemini 2.5 Pro",
+          "observation_id": "curated\u0000swe_bench_verified\u0000google_gemini_2_5_report\u0000swe_bench_verified\u0000single attempt\u0000Gemini 2.5 Pro",
+          "organization": "Google",
+          "protocol": "single attempt",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-06-17",
+          "value": 59.6
+        },
+        {
+          "instrument": "swe_bench_verified",
+          "model": "Gemini 2.5 Pro",
+          "observation_id": "curated\u0000swe_bench_verified\u0000google_gemini_2_5_report\u0000swe_bench_verified\u0000multiple attempts\u0000Gemini 2.5 Pro",
+          "organization": "Google",
+          "protocol": "multiple attempts",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2025-06-17",
+          "value": 67.2
+        },
+        {
+          "instrument": "swe_bench_verified",
+          "model": "GLM-5",
+          "observation_id": "curated\u0000swe_bench_verified\u0000zai_glm_5_model_card\u0000swe_bench_verified\u0000OpenHands, tailored instruction prompt, temp 0.7, top_p 0.95, 200K context\u0000GLM-5",
+          "organization": "Z.ai",
+          "protocol": "OpenHands, tailored instruction prompt, temp 0.7, top_p 0.95, 200K context",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-02-11",
+          "value": 77.8
+        },
+        {
+          "instrument": "swe_bench_verified",
+          "model": "Qwen3.5-397B-A17B",
+          "observation_id": "curated\u0000swe_bench_verified\u0000qwen3_5_model_card\u0000swe_bench_verified\u0000thinking (temp 0.6, top_p 0.95, top_k 20)\u0000Qwen3.5-397B-A17B",
+          "organization": "Qwen",
+          "protocol": "thinking (temp 0.6, top_p 0.95, top_k 20)",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-02-16",
+          "value": 76.4
+        },
+        {
+          "instrument": "swe_bench_verified",
+          "model": "Gemini 3.1 Pro",
+          "observation_id": "curated\u0000swe_bench_verified\u0000google_gemini_3_1_pro_model_card\u0000swe_bench_verified\u0000Thinking (High), Single attempt\u0000Gemini 3.1 Pro",
+          "organization": "Google",
+          "protocol": "Thinking (High), Single attempt",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-02-19",
+          "value": 80.6
+        },
+        {
+          "instrument": "swe_bench_verified",
+          "model": "DeepSeek-V4-Pro",
+          "observation_id": "curated\u0000swe_bench_verified\u0000deepseek_v4_model_card\u0000swe_bench_verified\u0000non-think, resolved\u0000DeepSeek-V4-Pro",
+          "organization": "DeepSeek",
+          "protocol": "non-think, resolved",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-04-22",
+          "value": 73.6
+        },
+        {
+          "instrument": "swe_bench_verified",
+          "model": "DeepSeek-V4-Pro",
+          "observation_id": "curated\u0000swe_bench_verified\u0000deepseek_v4_model_card\u0000swe_bench_verified\u0000think high, resolved\u0000DeepSeek-V4-Pro",
+          "organization": "DeepSeek",
+          "protocol": "think high, resolved",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-04-22",
+          "value": 79.4
+        },
+        {
+          "instrument": "swe_bench_verified",
+          "model": "Claude Opus 5",
+          "observation_id": "curated\u0000swe_bench_verified\u0000anthropic_claude_opus_5_system_card\u0000swe_bench_verified\u0000adaptive thinking, max effort, averaged over 5 trials\u0000Claude Opus 5",
+          "organization": "Anthropic",
+          "protocol": "adaptive thinking, max effort, averaged over 5 trials",
+          "reason": "not in the selected protocol-stratified series",
+          "reported_at": "2026-07-24",
+          "value": 96.0
+        }
+      ],
+      "metric": "resolved",
+      "name": "SWE-bench Verified",
+      "protocol_best": {
+        "best_observation_id": "curated\u0000swe_bench_verified\u0000deepseek_v4_model_card\u0000swe_bench_verified\u0000think max, resolved\u0000DeepSeek-V4-Pro",
+        "best_value": 80.6,
+        "dated_points": 2,
+        "first_reported_at": "2026-04-22",
+        "headroom": 19.4,
+        "instrument": "swe_bench_verified",
+        "last_reported_at": "2026-06-25",
+        "model": "DeepSeek-V4-Pro",
+        "organization": "DeepSeek",
+        "point_count": 2,
+        "protocol": "think max, resolved",
+        "reported_at": "2026-04-22"
+      },
+      "protocol_headroom": 19.4,
+      "raw_best": {
+        "instrument": "swe_bench_verified",
+        "model": "Claude Opus 5",
+        "observation_id": "curated\u0000swe_bench_verified\u0000anthropic_claude_opus_5_system_card\u0000swe_bench_verified\u0000adaptive thinking, max effort, averaged over 5 trials\u0000Claude Opus 5",
+        "organization": "Anthropic",
+        "protocol": "adaptive thinking, max effort, averaged over 5 trials",
+        "read_from": "pdf_text",
+        "reported_at": "2026-07-24",
+        "reported_by": null,
+        "source_id": "anthropic_claude_opus_5_system_card",
+        "value": 96.0
+      },
+      "raw_headroom": 4.0,
+      "recommendation": "replace",
+      "score_ids": [
+        "curated\u0000swe_bench_verified\u0000deepseek_v3_report\u0000swe_bench_verified\u0000Resolved, vendor harness\u0000DeepSeek-V3",
+        "curated\u0000swe_bench_verified\u0000deepseek_r1_report\u0000swe_bench_verified\u0000Resolved, vendor harness\u0000DeepSeek-R1",
+        "curated\u0000swe_bench_verified\u0000anthropic_claude_3_7_sonnet\u0000swe_bench_verified_anthropic_489\u0000vanilla pass@1, 489-task infrastructure-compatible subset\u0000Claude 3.7 Sonnet",
+        "curated\u0000swe_bench_verified\u0000anthropic_claude_3_7_sonnet\u0000swe_bench_verified_anthropic_489\u0000parallel attempts plus internal ranker, 489-task infrastructure-compatible subset\u0000Claude 3.7 Sonnet",
+        "curated\u0000swe_bench_verified\u0000anthropic_claude_4_system_card\u0000swe_bench_verified\u0000no extended thinking\u0000Claude Opus 4",
+        "curated\u0000swe_bench_verified\u0000anthropic_claude_4_system_card\u0000swe_bench_verified\u0000no extended thinking\u0000Claude Sonnet 4",
+        "curated\u0000swe_bench_verified\u0000google_gemini_2_5_report\u0000swe_bench_verified\u0000single attempt\u0000Gemini 2.5 Pro",
+        "curated\u0000swe_bench_verified\u0000google_gemini_2_5_report\u0000swe_bench_verified\u0000multiple attempts\u0000Gemini 2.5 Pro",
+        "curated\u0000swe_bench_verified\u0000zai_glm_5_model_card\u0000swe_bench_verified\u0000OpenHands, tailored instruction prompt, temp 0.7, top_p 0.95, 200K context\u0000GLM-5",
+        "curated\u0000swe_bench_verified\u0000qwen3_5_model_card\u0000swe_bench_verified\u0000thinking (temp 0.6, top_p 0.95, top_k 20)\u0000Qwen3.5-397B-A17B",
+        "curated\u0000swe_bench_verified\u0000google_gemini_3_1_pro_model_card\u0000swe_bench_verified\u0000Thinking (High), Single attempt\u0000Gemini 3.1 Pro",
+        "curated\u0000swe_bench_verified\u0000deepseek_v4_model_card\u0000swe_bench_verified\u0000think max, resolved\u0000DeepSeek-V4-Pro",
+        "curated\u0000swe_bench_verified\u0000deepseek_v4_model_card\u0000swe_bench_verified\u0000non-think, resolved\u0000DeepSeek-V4-Pro",
+        "curated\u0000swe_bench_verified\u0000deepseek_v4_model_card\u0000swe_bench_verified\u0000think high, resolved\u0000DeepSeek-V4-Pro",
+        "curated\u0000swe_bench_verified\u0000deepseek_v4_technical_report\u0000swe_bench_verified\u0000think max, resolved\u0000DeepSeek-V4-Flash",
+        "curated\u0000swe_bench_verified\u0000anthropic_claude_opus_5_system_card\u0000swe_bench_verified\u0000adaptive thinking, max effort, averaged over 5 trials\u0000Claude Opus 5"
+      ],
+      "source_documents": [
+        {
+          "caveat": "",
+          "id": "anthropic_claude_3_7_sonnet",
+          "name": "anthropic_claude_3_7_sonnet",
+          "url": "https://www.anthropic.com/news/claude-3-7-sonnet"
+        },
+        {
+          "caveat": "",
+          "id": "anthropic_claude_4_system_card",
+          "name": "anthropic_claude_4_system_card",
+          "url": "https://www.anthropic.com/news/claude-4"
+        },
+        {
+          "caveat": "",
+          "id": "anthropic_claude_opus_5_system_card",
+          "name": "anthropic_claude_opus_5_system_card",
+          "url": "https://www.anthropic.com/news/claude-opus-5"
+        },
+        {
+          "caveat": "",
+          "id": "deepseek_r1_report",
+          "name": "deepseek_r1_report",
+          "url": "https://arxiv.org/abs/2501.12948"
+        },
+        {
+          "caveat": "",
+          "id": "deepseek_v3_report",
+          "name": "deepseek_v3_report",
+          "url": "https://arxiv.org/abs/2412.19437"
+        },
+        {
+          "caveat": "",
+          "id": "deepseek_v4_model_card",
+          "name": "deepseek_v4_model_card",
+          "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro"
+        },
+        {
+          "caveat": "",
+          "id": "deepseek_v4_technical_report",
+          "name": "deepseek_v4_technical_report",
+          "url": "https://arxiv.org/abs/2606.19348"
+        },
+        {
+          "caveat": "",
+          "id": "google_gemini_2_5_report",
+          "name": "google_gemini_2_5_report",
+          "url": "https://storage.googleapis.com/deepmind-media/gemini/gemini_v2_5_report.pdf"
+        },
+        {
+          "caveat": "",
+          "id": "google_gemini_3_1_pro_model_card",
+          "name": "google_gemini_3_1_pro_model_card",
+          "url": "https://deepmind.google/models/model-cards/gemini-3-1-pro/"
+        },
+        {
+          "caveat": "",
+          "id": "qwen3_5_model_card",
+          "name": "qwen3_5_model_card",
+          "url": "https://huggingface.co/Qwen/Qwen3.5-397B-A17B"
+        },
+        {
+          "caveat": "",
+          "id": "zai_glm_5_model_card",
+          "name": "zai_glm_5_model_card",
+          "url": "https://huggingface.co/zai-org/GLM-5"
+        }
+      ],
+      "uncertainty": [
+        "Protocol-stratified comparison uses the strongest connectable instrument+protocol series."
+      ],
+      "unit": "percent"
+    },
+    {
+      "benchmark_id": "tau2_bench",
+      "conflicts": [
+        "protocols: Retail and Telecom prompt adjustment; Airline domain fixes per Claude Opus 4.5 system card, Thinking (High), Retail, Thinking (High), Telecom, average over 3, thinking (temp 0.6, top_p 0.95, top_k 20)",
+        "Per-domain scores (Retail, Telecom, Airline) diverge sharply and several cards apply the Airline domain fixes from the Claude Opus 4.5 system card, so an average conceals both the domain mix and the patch level."
+      ],
+      "counterexamples": [],
+      "direction": "higher_is_better",
+      "exclusions": [],
+      "metric": "accuracy",
+      "name": "tau2-bench",
+      "protocol_best": null,
+      "protocol_headroom": null,
+      "raw_best": {
+        "instrument": "tau2_bench",
+        "model": "Gemini 3.1 Pro",
+        "observation_id": "curated\u0000tau2_bench\u0000google_gemini_3_1_pro_model_card\u0000tau2_bench\u0000Thinking (High), Telecom\u0000Gemini 3.1 Pro",
+        "organization": "Google",
+        "protocol": "Thinking (High), Telecom",
+        "read_from": "html_text",
+        "reported_at": "2026-02-19",
+        "reported_by": null,
+        "source_id": "google_gemini_3_1_pro_model_card",
+        "value": 99.3
+      },
+      "raw_headroom": 0.7,
+      "recommendation": "replace",
+      "score_ids": [
+        "curated\u0000tau2_bench\u0000zai_glm_5_model_card\u0000tau2_bench\u0000Retail and Telecom prompt adjustment; Airline domain fixes per Claude Opus 4.5 system card\u0000GLM-5",
+        "curated\u0000tau2_bench\u0000qwen3_5_model_card\u0000tau2_bench\u0000thinking (temp 0.6, top_p 0.95, top_k 20)\u0000Qwen3.5-397B-A17B",
+        "curated\u0000tau2_bench\u0000google_gemini_3_1_pro_model_card\u0000tau2_bench\u0000Thinking (High), Retail\u0000Gemini 3.1 Pro",
+        "curated\u0000tau2_bench\u0000google_gemini_3_1_pro_model_card\u0000tau2_bench\u0000Thinking (High), Telecom\u0000Gemini 3.1 Pro",
+        "curated\u0000tau2_bench\u0000google_gemma_4_model_card\u0000tau2_bench\u0000average over 3\u0000Gemma 4 (31B)"
+      ],
+      "source_documents": [
+        {
+          "caveat": "",
+          "id": "google_gemini_3_1_pro_model_card",
+          "name": "google_gemini_3_1_pro_model_card",
+          "url": "https://deepmind.google/models/model-cards/gemini-3-1-pro/"
+        },
+        {
+          "caveat": "",
+          "id": "google_gemma_4_model_card",
+          "name": "google_gemma_4_model_card",
+          "url": "https://huggingface.co/google/gemma-4-31B-it"
+        },
+        {
+          "caveat": "",
+          "id": "qwen3_5_model_card",
+          "name": "qwen3_5_model_card",
+          "url": "https://huggingface.co/Qwen/Qwen3.5-397B-A17B"
+        },
+        {
+          "caveat": "",
+          "id": "zai_glm_5_model_card",
+          "name": "zai_glm_5_model_card",
+          "url": "https://huggingface.co/zai-org/GLM-5"
+        }
+      ],
+      "uncertainty": [
+        "No protocol-stratified series has at least two dated points."
+      ],
+      "unit": "percent"
+    }
+  ],
+  "rules": {
+    "protocol_compatibility": "instrument and protocol must both match; otherwise rows are not comparable",
+    "protocol_stratified_headroom": "best headroom among connectable instrument+protocol series with at least two dated points",
+    "raw_headroom": "bound minus best published value for the benchmark",
+    "thresholds": [
+      5.0,
+      3.0,
+      2.0
+    ]
+  },
+  "threshold_sensitivity": {
+    "protocol_stratified": {
+      "<=2": 0,
+      "<=3": 0,
+      "<=5": 1
+    },
+    "raw": {
+      "<=2": 3,
+      "<=3": 4,
+      "<=5": 8
+    }
+  }
+}
