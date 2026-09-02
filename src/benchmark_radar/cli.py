@@ -218,8 +218,9 @@ def main() -> None:
         default=None,
         help=(
             "Curated score observations powering the saturation reading (issue "
-            "#91). Every row cites a source_id that must be a document in the "
-            "registry beside it, so the two files are a matched pair: this "
+            "#91). Every row cites either a document in the registry beside it "
+            "or a benchmark source declared inside the score file, so the two "
+            "files remain a matched pair: this "
             "defaults to data/benchmark_scores.yml only when --model-cards is "
             "also the default. Pass it explicitly to pair scores with a custom "
             "registry; omit it there for an adoption-only rebuild."

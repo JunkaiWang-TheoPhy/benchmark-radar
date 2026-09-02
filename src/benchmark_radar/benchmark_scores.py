@@ -80,6 +80,15 @@ _DIRECTIONS = ("higher_is_better", "lower_is_better")
 _BOUNDED_UNITS = {"percent": 100.0}
 
 _REQUIRED_BENCHMARK_FIELDS = ("benchmark_id", "metric", "direction", "unit")
+_REQUIRED_SOURCE_FIELDS = (
+    "id",
+    "title",
+    "publisher",
+    "document_type",
+    "url",
+    "benchmarks",
+    "retrieved_at",
+)
 _REQUIRED_RESULT_FIELDS = (
     "benchmark_id",
     "instrument",
@@ -182,6 +191,32 @@ def load_scores(path: Path = DEFAULT_SCORES_PATH) -> dict[str, Any]:
             "unit": str(benchmark["unit"]),
         }
 
+    source_rows = document.get("sources", [])
+    if not isinstance(source_rows, list):
+        raise BenchmarkScoreError(f"{path}: sources must be an array")
+    sources: dict[str, dict[str, Any]] = {}
+    for index, source in enumerate(source_rows):
+        label = f"{path}: source {index}"
+        _require(source, _REQUIRED_SOURCE_FIELDS, label=label)
+        source_id = str(source["id"])
+        if source_id in sources:
+            raise BenchmarkScoreError(f"{path}: duplicate source id {source_id!r}")
+        url = str(source["url"])
+        if not url.startswith(("https://", "http://")):
+            raise BenchmarkScoreError(f"{label} url must be HTTP(S)")
+        source_benchmarks = source["benchmarks"]
+        if not isinstance(source_benchmarks, list) or not source_benchmarks:
+            raise BenchmarkScoreError(f"{label} benchmarks must be a non-empty array")
+        sources[source_id] = {
+            "id": source_id,
+            "title": str(source["title"]),
+            "publisher": str(source["publisher"]),
+            "document_type": str(source["document_type"]),
+            "url": url,
+            "benchmarks": [str(item) for item in source_benchmarks],
+            "retrieved_at": _require_date(source["retrieved_at"], label=f"{label} retrieved_at"),
+        }
+
     seen: set[tuple[str, ...]] = set()
     rows: list[dict[str, Any]] = []
     for index, result in enumerate(results):
@@ -212,6 +247,7 @@ def load_scores(path: Path = DEFAULT_SCORES_PATH) -> dict[str, Any]:
         if read_from not in _READ_FROM:
             raise BenchmarkScoreError(f"{label} read_from must be one of {', '.join(_READ_FROM)}")
         reported_at = _require_date(result["reported_at"], label=f"{label} reported_at")
+        score_source = sources.get(str(result["source_id"]))
         row = {
             # Stable within the curated trust domain. The tuple is already the
             # loader's uniqueness contract below, so publishing it gives every
@@ -237,6 +273,9 @@ def load_scores(path: Path = DEFAULT_SCORES_PATH) -> dict[str, Any]:
             "reported_at": reported_at,
             "value": value,
             "read_from": read_from,
+            "source_title": score_source["title"] if score_source else None,
+            "source_url": score_source["url"] if score_source else None,
+            "source_document_type": score_source["document_type"] if score_source else None,
             # Present only on a third-party citation: the publisher repeated
             # someone else's self-reported figure. Weaker evidence, and the UI
             # marks it rather than mixing it in.
@@ -260,25 +299,33 @@ def load_scores(path: Path = DEFAULT_SCORES_PATH) -> dict[str, Any]:
         seen.add(key)
         rows.append(row)
 
-    return {"benchmarks": metrics, "results": rows}
+    return {"benchmarks": metrics, "sources": sources, "results": rows}
 
 
 def _cross_check_sources(scores: dict[str, Any], registry: dict[str, Any]) -> None:
-    """Every score must cite a document the registry already knows.
+    """Every score must cite a model card or declared benchmark source.
 
     Provenance is the whole basis of this layer's claim to be readable-out-of-a
     -document rather than assembled from memory. A `source_id` with no matching
-    card is a citation to nothing: it would render as a linkless number that a
-    reader cannot check, which is the one thing this dataset promises not to do.
+    card or score-source declaration is a citation to nothing: it would render
+    as a linkless number that a reader cannot check, which is the one thing this
+    dataset promises not to do.
     """
     reported: dict[str, set[str]] = {
         str(card["id"]): {str(ref) for ref in card["benchmarks"]}
         for card in registry["model_cards"]
     }
+    reported.update(
+        {
+            source_id: {str(ref) for ref in source["benchmarks"]}
+            for source_id, source in scores.get("sources", {}).items()
+        }
+    )
     unknown = sorted({row["source_id"] for row in scores["results"]} - reported.keys())
     if unknown:
         raise BenchmarkScoreError(
-            f"score rows cite source_ids absent from the model card registry: {', '.join(unknown)}"
+            "score rows cite source_ids absent from the model card registry and score source "
+            f"registry: {', '.join(unknown)}"
         )
     registry_ids = {str(benchmark["id"]) for benchmark in registry["benchmarks"]}
     stray = sorted(set(scores["benchmarks"]) - registry_ids)

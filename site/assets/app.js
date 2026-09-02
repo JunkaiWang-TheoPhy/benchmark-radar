@@ -6378,7 +6378,11 @@ function scoreTrackChart(entry, board) {
       const source = (board.model_cards || []).find(
         (card) => card.model_card_id === observation.source_id,
       );
-      const sourceLabel = source
+      const sourceLabel = observation.source_title
+        ? `${observation.source_title} (${String(
+            observation.source_document_type || t("benchmark source"),
+          ).replaceAll("_", " ")})`
+        : source
         ? `${source.organization} · ${source.model} (${String(
             source.document_type || t("model card"),
           ).replaceAll("_", " ")})`
@@ -6457,7 +6461,7 @@ function scoreTrackChart(entry, board) {
             ? [{ label: t("Cited by"), value: observation.reported_by }]
             : []),
         ],
-        url: source?.url,
+        url: observation.source_url || source?.url,
       });
       svg.append(group);
     }

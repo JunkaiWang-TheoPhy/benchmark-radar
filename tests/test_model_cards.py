@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from benchmark_radar.benchmark_scores import DEFAULT_SCORES_PATH, build_score_progression
 from benchmark_radar.model_cards import (
     DEFAULT_REGISTRY_PATH,
     ModelCardRegistryError,
@@ -829,3 +830,28 @@ def test_shipped_registry_tracks_frontierchallenge_without_claiming_adoption():
     assert entry["organization_count"] == 0
     assert entry["adopters"] == []
     assert all("frontier_challenge" not in card["benchmarks"] for card in board["model_cards"])
+
+    score_record = build_score_progression(DEFAULT_SCORES_PATH, registry)["benchmarks"][
+        "frontier_challenge"
+    ]
+    assert score_record["observation_count"] == 13
+    assert score_record["organization_count"] == 9
+    assert score_record["saturation"]["best_value"] == 20.6
+    assert {row["value"] for row in score_record["observations"]} == {
+        20.6,
+        17.5,
+        15.5,
+        13.4,
+        12.4,
+        10.3,
+        4.1,
+        3.1,
+    }
+    assert all("97 released tasks" in row["protocol"] for row in score_record["observations"])
+    assert {
+        row["protocol"].rsplit("agent scaffold: ", 1)[1] for row in score_record["observations"]
+    } == {
+        "Claude Code",
+        "Codex",
+        "Frontier Agent (Agent Team)",
+    }

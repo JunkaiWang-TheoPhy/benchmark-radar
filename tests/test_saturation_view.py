@@ -98,6 +98,20 @@ def test_a_third_party_citation_is_named_on_the_point():
     assert "citation-ring" not in styles
 
 
+def test_a_score_from_a_benchmark_leaderboard_links_to_that_source():
+    # External benchmark leaderboards are score evidence, not model cards. The
+    # point must use source metadata carried by the observation instead of
+    # degrading to a linkless source id when no model-card record exists.
+    script = source("site/assets/app.js")
+    chart = script.split("function scoreTrackChart(", 1)[1].split(
+        "\nfunction clearAdoptionFrontier", 1
+    )[0]
+
+    assert "observation.source_title" in chart
+    assert "observation.source_document_type" in chart
+    assert "url: observation.source_url || source?.url" in chart
+
+
 def test_score_points_carry_recognizable_model_family_marks():
     """Issue #195: saturation points identify models before interaction."""
     script = source("site/assets/app.js")
