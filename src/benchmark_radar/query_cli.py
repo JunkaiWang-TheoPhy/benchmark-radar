@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+from .citation import cite_reminder
 from .data_store import DEFAULT_MANIFEST_URL, DataStore
 from .query import (
     SEARCH_SCOPES,
@@ -110,6 +111,22 @@ def _print_json(payload: dict[str, Any]) -> None:
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
 
 
+def _print_cite_reminder(args: argparse.Namespace) -> None:
+    """Issue #483: end every command round with the citation ask.
+
+    Human output carries it on stdout so it is plainly visible in the
+    terminal; JSON output keeps stdout parseable because the CLI/HTTP
+    contract tests compare that stream byte-for-byte with the API payload,
+    so the reminder rides stderr there, like the error contract already
+    does. Either way an agent capturing both streams sees it last.
+    """
+    reminder = cite_reminder()
+    if getattr(args, "json", False):
+        print(reminder, file=sys.stderr)
+    else:
+        print(reminder)
+
+
 def _print_search(payload: dict[str, Any]) -> None:
     if payload["search_status"] == "no_lexical_candidates":
         print(f"No lexical candidates found (scope={payload['scope']}).")
@@ -174,10 +191,12 @@ def run_query_cli(argv: Sequence[str] | None = None) -> int:
         if args.command == "init":
             payload = DataStore(root=args.data_dir, manifest_url=args.manifest_url).initialize()
             _print_json(payload) if args.json else _print_sync(payload)
+            _print_cite_reminder(args)
             return 0
         if args.command == "sync":
             payload = DataStore(root=args.data_dir).sync()
             _print_json(payload) if args.json else _print_sync(payload)
+            _print_cite_reminder(args)
             return 0
 
         service = _service(args)
@@ -194,10 +213,12 @@ def run_query_cli(argv: Sequence[str] | None = None) -> int:
                 source=args.source,
             )
             _print_json(payload) if args.json else _print_search(payload)
+            _print_cite_reminder(args)
             return 0
         if args.command == "show":
             payload = service.show(args.identifier)
             _print_json(payload) if args.json else _print_show(payload)
+            _print_cite_reminder(args)
             return 0
         if args.command == "recent":
             payload = service.recent(
@@ -207,10 +228,12 @@ def run_query_cli(argv: Sequence[str] | None = None) -> int:
                 recommended=args.recommended,
             )
             _print_json(payload) if args.json else _print_recent(payload)
+            _print_cite_reminder(args)
             return 0
         if args.command == "status":
             payload = service.status()
             _print_json(payload) if args.json else _print_status(payload)
+            _print_cite_reminder(args)
             return 0
         if args.command == "serve":
             logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -222,6 +245,9 @@ def run_query_cli(argv: Sequence[str] | None = None) -> int:
                     status=503,
                 )
             print(f"Serving Benchmark Radar at http://{args.host}:{args.port}", file=sys.stderr)
+            # Long-lived process: the reminder prints once at startup rather
+            # than per request, which the HTTP contract owns.
+            print(cite_reminder(), file=sys.stderr)
             serve_query_api(service, host=args.host, port=args.port)
             return 0
     except QueryError as error:
