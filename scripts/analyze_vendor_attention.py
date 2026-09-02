@@ -213,6 +213,10 @@ def compile_family_projection(
             raise VendorAttentionAuditError(
                 f"family {family_id} references unknown benchmarks: {', '.join(unknown)}"
             )
+        if len(members) < 2:
+            # Single-member mappings remain canonical singletons; only multi-ID
+            # projections count as reviewed families in the sensitivity output.
+            continue
         for benchmark_id in members:
             if benchmark_id in assigned:
                 raise VendorAttentionAuditError(
@@ -694,8 +698,14 @@ def generate_vendor_attention_audit(
 
     summary_by_id = {row["scenario_id"]: row for row in scenario_summaries}
     robustness_ids = [
+        "canonical_all_t5",
+        "canonical_all_t6",
+        "canonical_all_t7",
         "model_cards_only_t6",
         "latest_per_organization_t6",
+        "trailing_365d_t6",
+        "trailing_180d_t6",
+        "trailing_90d_t6",
         "reviewed_families_t6",
         "drop_newest_per_organization_t6",
     ]

@@ -1273,7 +1273,7 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
     output = args.output
-    if args.next_draft and output.resolve() == FROZEN_OUTPUT.resolve():
+    if output.resolve() == FROZEN_OUTPUT.resolve():
         parser.error("--next-draft cannot overwrite the frozen v0.9.0 PDF")
     draft = args.next_draft or output.resolve() != FROZEN_OUTPUT.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)

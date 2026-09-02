@@ -5,6 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILDER = ROOT / "scripts" / "build_system_evaluation.py"
+LEGACY_REPORT_BUILDER = ROOT / "scripts" / "build_technical_report.py"
 
 
 def _assignment(name: str) -> ast.Assign:
@@ -46,3 +47,11 @@ def test_next_draft_records_contributor_name_and_affiliation() -> None:
     assert corresponding_author == "Koutian Wu, k@tacite.ai"
     assert "Corresponding author: {corresponding_author}" in source
     assert "WORKING DRAFT — NOT THE FROZEN v0.9.0 DEPOSIT" not in source
+
+
+def test_both_report_builders_reject_the_frozen_pdf_path() -> None:
+    source = BUILDER.read_text(encoding="utf-8")
+    legacy_source = LEGACY_REPORT_BUILDER.read_text(encoding="utf-8")
+
+    assert "if output.resolve() == FROZEN_OUTPUT.resolve():" in source
+    assert "if output.resolve() == FROZEN_OUTPUT.resolve():" in legacy_source

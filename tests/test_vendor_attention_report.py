@@ -88,6 +88,7 @@ def test_report_narrative_carries_the_machine_readable_replacement_claim():
     audit = json.loads(CLAIM_AUDIT.read_text(encoding="utf-8"))
 
     assert audit["replacement_claim"] in narrative
+    assert "5 explicit families + 8 singleton canonical IDs" in narrative
     assert "not_observed" in narrative
     assert "convenience sample" in narrative
     assert "Junkai Wang /" in narrative

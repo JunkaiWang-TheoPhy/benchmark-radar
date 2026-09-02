@@ -54,9 +54,9 @@ different selection procedures.
 | Reviewed family projection, threshold 6 | 37 | 12 | 13 resolved identities |
 | Remove every organization's newest document, threshold 6 | 25 | 9 | 9 |
 
-The family-projection row contains six explicitly reviewed family IDs and seven
-canonical IDs that remain singletons. It does not claim that all 13 resolved
-identities are multi-benchmark families.
+The family-projection row contains 5 explicit families + 8 singleton canonical
+IDs. It does not claim that all 13 resolved identities are multi-benchmark
+families.
 
 The full-history threshold set contains GPQA Diamond, Humanity's Last Exam,
 Terminal-Bench, SWE-bench Verified, AIME, LiveCodeBench, MMLU-Pro, SWE-bench

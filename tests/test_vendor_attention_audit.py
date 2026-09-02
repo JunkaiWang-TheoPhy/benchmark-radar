@@ -53,14 +53,57 @@ def test_shipped_audit_reproduces_primary_counts_and_sensitivity():
     assert scenarios["trailing_90d_t6"]["core_count"] == 4
     assert scenarios["drop_newest_per_organization_t6"]["core_count"] == 9
     assert scenarios["reviewed_families_t6"]["core_count"] == 13
-    assert scenarios["reviewed_families_t6"]["core_explicit_family_count"] == 6
-    assert scenarios["reviewed_families_t6"]["core_singleton_count"] == 7
+    assert scenarios["reviewed_families_t6"]["core_explicit_family_count"] == 5
+    assert scenarios["reviewed_families_t6"]["core_singleton_count"] == 8
+    assert scenarios["reviewed_families_t6"]["core_member_names"] == [
+        "GPQA family",
+        "SWE-bench family",
+        "Humanity's Last Exam",
+        "Terminal-Bench",
+        "MMLU family",
+        "AIME",
+        "LiveCodeBench",
+        "MMMU family",
+        "IFEval",
+        "BrowseComp family",
+        "MATH-500",
+        "HumanEval",
+        "GSM8K",
+    ]
+    assert scenarios["reviewed_families_t6"]["core_members"] == [
+        "gpqa_family",
+        "swe_bench_family",
+        "hle",
+        "terminal_bench",
+        "mmlu_family",
+        "aime",
+        "livecodebench",
+        "mmmu_family",
+        "ifeval",
+        "browsecomp_family",
+        "math_500",
+        "humaneval",
+        "gsm8k",
+    ]
 
     assert audit["original_list_equals_threshold_set"] is False
     assert audit["original_list_is_subset_of_threshold_set"] is True
     assert audit["recommendation"] == "narrow"
     assert "boundary depends" in audit["replacement_claim"]
     assert audit["primary_definition"]["score_tracks_used"] is False
+    assert audit["robustness"]["scenario_ids"] == [
+        "canonical_all_t5",
+        "canonical_all_t6",
+        "canonical_all_t7",
+        "model_cards_only_t6",
+        "latest_per_organization_t6",
+        "trailing_365d_t6",
+        "trailing_180d_t6",
+        "trailing_90d_t6",
+        "reviewed_families_t6",
+        "drop_newest_per_organization_t6",
+    ]
+    assert audit["robustness"]["median_jaccard"] == 0.4688
 
     membership_by_scenario = {}
     for row in result["membership_rows"]:
