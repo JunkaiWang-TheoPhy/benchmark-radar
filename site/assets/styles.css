@@ -748,6 +748,16 @@ input {
   font-weight: 600;
 }
 
+a.briefing-chip-sources {
+  text-decoration: none;
+}
+
+a.briefing-chip-sources:hover,
+a.briefing-chip-sources:focus-visible {
+  background: var(--ink);
+  color: white;
+}
+
 .briefing-evidence-link {
   color: var(--blue-deep);
   font-weight: 500;

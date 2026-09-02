@@ -1722,18 +1722,18 @@ function briefingParts(line) {
   // Lift the trailing "Evidence: E001, E002." clause out of the prose in both
   // the split and the fallback shapes, so the IDs never stay in the running
   // sentences a scan of the findings has to wade through.
-  const sources = (text.match(/\bE\d{3}\b/g) || []).length;
+  const evidenceIds = [...new Set(text.match(/\bE\d{3}\b/g) || [])];
   text = text.replace(/\s*\.?\s*Evidence:\s*((?:E\d{3}\s*,\s*)*E\d{3})\.?\s*/i, "").trim();
   const whyIndex = text.search(/\bWhy it matters:\s*/i);
-  if (whyIndex === -1) return { head: text, body: "", confidence, sources };
+  if (whyIndex === -1) return { head: text, body: "", confidence, evidenceIds };
   const head = text.slice(0, whyIndex).trim();
   const body = text
     .slice(whyIndex + "Why it matters:".length)
     .trim();
-  return { head, body, confidence, sources };
+  return { head, body, confidence, evidenceIds };
 }
 
-function briefingMeta(parts) {
+function briefingMeta(parts, citations) {
   const chips = [];
   if (parts.confidence) {
     chips.push(element("span", {
@@ -1741,11 +1741,31 @@ function briefingMeta(parts) {
       text: `${parts.confidence} ${t("confidence")}`,
     }));
   }
-  if (parts.sources > 0) {
-    chips.push(element("span", {
-      className: "briefing-chip briefing-chip-sources",
-      text: `${parts.sources} ${parts.sources === 1 ? t("source") : t("sources")}`,
-    }));
+  const citedSources = parts.evidenceIds.flatMap((id) => {
+    const citation = citations.find((entry) => entry.id === id);
+    return citation ? [citation] : [];
+  });
+  if (citedSources.length > 0) {
+    const sourceText = `${citedSources.length} ${
+      citedSources.length === 1 ? t("source") : t("sources")
+    }`;
+    const citation = citedSources.length === 1 ? citedSources[0] : null;
+    chips.push(citation
+      ? element("a", {
+          className: "briefing-chip briefing-chip-sources",
+          text: sourceText,
+          attrs: {
+            href: citation.href,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            title: `Open evidence: ${citation.title}`,
+            "aria-label": `${sourceText}: ${citation.title}`,
+          },
+        })
+      : element("span", {
+          className: "briefing-chip briefing-chip-sources",
+          text: sourceText,
+        }));
   }
   if (!chips.length) return null;
   return element("p", { className: "briefing-insight-meta" }, chips);
@@ -1760,7 +1780,11 @@ function briefingInsight(line, citations) {
   const body = parts.body
     ? element("p", { className: "briefing-insight-body" }, briefingContent(parts.body, citations))
     : null;
-  return element("article", { className: "briefing-insight" }, [head, body, briefingMeta(parts)]);
+  return element("article", { className: "briefing-insight" }, [
+    head,
+    body,
+    briefingMeta(parts, citations),
+  ]);
 }
 
 function briefingProvenance(briefing) {
@@ -1812,7 +1836,9 @@ function briefingDetails(briefing, citations) {
   if (!provenance && !caveat && !evidence) return null;
 
   const label = citations.length
-    ? `${t("Evidence & briefing details")} · ${citations.length.toLocaleString()} ${t("sources")}`
+    ? `${t("Evidence & briefing details")} · ${citations.length.toLocaleString()} ${
+        citations.length === 1 ? t("source") : t("sources")
+      }`
     : t("Briefing details");
   return element("details", { className: "daily-briefing-details" }, [
     element("summary", { text: label }),
