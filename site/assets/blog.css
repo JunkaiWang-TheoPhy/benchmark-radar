@@ -138,9 +138,22 @@
   color: var(--muted);
 }
 
-.blog-page .blog-list,
-.blog-page .blog-evidence {
+.blog-page .blog-list {
   padding-left: 1.25rem;
+}
+
+/* The source list is keyed by stored citation ID, not by position, so it
+   carries no marker of its own. The ID sits in its own column so a title that
+   wraps stays aligned under itself rather than under the reference. */
+.blog-page .blog-evidence {
+  padding-left: 0;
+  list-style: none;
+}
+
+.blog-page .blog-evidence li {
+  display: grid;
+  grid-template-columns: 3.2rem 1fr;
+  align-items: baseline;
 }
 
 .blog-page .blog-list li + li,

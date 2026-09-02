@@ -390,7 +390,9 @@ def _sources_section(sources: tuple[tuple[str, str, str], ...], language: str) -
         f'<li>{_cite_id(identifier)}<a href="{esc(url)}">{esc(title)}</a></li>'
         for identifier, title, url in sources
     )
-    return _section(_LABELS[language]["sources"], f'<ol class="blog-evidence">{links}</ol>')
+    # Unnumbered on purpose: the stored ID is how the prose refers to a source,
+    # and a list counter beside it reads as a second, contradictory number.
+    return _section(_LABELS[language]["sources"], f'<ul class="blog-evidence">{links}</ul>')
 
 
 def _cite_id(identifier: str) -> str:
