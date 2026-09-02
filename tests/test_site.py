@@ -2896,3 +2896,49 @@ def test_issue_332_the_freshest_releases_reach_page_one():
     )
     assert max(age_hours(i) for i in flat[:20]) > 24, "fixture no longer shows the old bug"
     assert max(age_hours(i) for i in page_one) <= 24
+
+
+# --- the blog's one and only footprint in the dashboard -------------------
+#
+# The blog is a separate set of documents. The dashboard gains exactly one
+# menubar link to it and nothing else: no view, no route, no seed, no dialog.
+# These pin that boundary, because the cheapest way to break the dashboard
+# while adding pages beside it is to let the new thing leak into its router.
+
+
+def test_the_dashboard_menubar_gains_exactly_one_blog_link():
+    nav = re.search(
+        r'<nav class="view-nav".*?</nav>', Path("site/index.html").read_text(encoding="utf-8"), re.S
+    ).group(0)
+    blog_links = re.findall(r"<a\b[^>]*href=\"/blog/\"[^>]*>", nav)
+    assert len(blog_links) == 1
+    assert "data-view" not in blog_links[0]
+
+
+def test_the_blog_link_is_not_a_client_route():
+    """app.js intercepts clicks on [data-view] only, so this must stay a real load."""
+    from benchmark_radar.app_pages import APP_VIEWS
+
+    assert "blog" not in APP_VIEWS
+    app_js = Path("site/assets/app.js").read_text(encoding="utf-8")
+    assert 'data-view="blog"' not in app_js
+    assert "VIEW_SEO" in app_js and '"/blog/"' not in app_js
+
+
+def test_the_blog_menubar_label_is_translated():
+    app_js = Path("site/assets/app.js").read_text(encoding="utf-8")
+    assert re.search(r'^\s*Blog: "[^"]+",$', app_js, re.M)
+
+
+def test_blog_styles_cannot_reach_the_dashboard():
+    """Every rule in blog.css is scoped to a class only generated blog pages carry."""
+    css = Path("site/assets/blog.css").read_text(encoding="utf-8")
+    selectors = [
+        part.strip()
+        for block in re.findall(r"([^{}]+)\{", re.sub(r"/\*.*?\*/", "", css, flags=re.S))
+        for part in block.split(",")
+        if part.strip() and not part.strip().startswith("@")
+    ]
+    assert selectors
+    assert all(selector.startswith(".blog-page") for selector in selectors)
+    assert "blog-page" not in Path("site/index.html").read_text(encoding="utf-8")
