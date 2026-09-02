@@ -58,3 +58,13 @@ if (toggle) {
   );
 }
 showLanguage(savedLanguage());
+
+// The section nav scrolls horizontally on narrow screens, and Blog is its last
+// item, so on a phone the reader lands on a brief with the active tab parked
+// off the right edge. Nudging it into view keeps the "you are here" state
+// visible; the dashboard needs no equivalent because its default view is the
+// leftmost item.
+const activeNav = document.querySelector('.view-nav [aria-current="page"]');
+if (activeNav?.scrollIntoView) {
+  activeNav.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
