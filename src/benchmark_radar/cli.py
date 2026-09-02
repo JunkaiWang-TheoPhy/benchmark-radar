@@ -6,6 +6,7 @@ import os
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from urllib.parse import urljoin
 
 import yaml
 
@@ -41,6 +42,12 @@ from .social import (
 
 DEFAULT_DASHBOARD_OUTPUT = Path("site/data/radar.json")
 DEFAULT_FEED_OUTPUT = Path("site/feed.xml")
+
+
+def _leaderboard_url(dashboard_url: str | None) -> str | None:
+    if not dashboard_url:
+        return None
+    return urljoin(f"{dashboard_url.rstrip('/')}/", "leaderboard/")
 
 
 def _emit_persistent_source_warnings(run, config: dict) -> None:
@@ -593,7 +600,7 @@ def main() -> None:
         # The leaderboard page rather than the dashboard root: a reader
         # arriving from a cited CSV is looking for the ranking, and the root
         # opens on the daily Today list instead.
-        source_url = f"{dashboard_url}leaderboard/" if dashboard_url else None
+        source_url = _leaderboard_url(dashboard_url)
         written = write_exports(
             args.export_dir,
             registry_path=args.model_cards,

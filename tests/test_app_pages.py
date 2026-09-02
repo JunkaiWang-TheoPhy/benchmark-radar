@@ -15,14 +15,15 @@ from pathlib import Path
 import pytest
 
 from benchmark_radar.app_pages import (
-    APP_VIEWS,
     AppPageError,
     load_category_colors,
+    load_utility_seo,
     load_view_seo,
     render_app_page,
     write_app_pages,
 )
 from benchmark_radar.feed import SITE_URL
+from benchmark_radar.site_shell import esc
 
 SITE = Path(__file__).resolve().parents[1] / "site"
 
@@ -59,6 +60,7 @@ def _dashboard() -> dict:
                         "cumulative": 40,
                     },
                 },
+                "selection": {"recommendation_score": 40},
             }
         ],
         "corpus": {
@@ -80,6 +82,42 @@ def _dashboard() -> dict:
                 "sources": {"arXiv": 9, "OpenAI": 9, "Hugging Face": 30},
                 "organizations": {"Anthropic": 12, "Google": 4},
             }
+        },
+        "rubric": {
+            "scoring_version": 5,
+            "score_max": 100,
+            "formula": "0.35 × relevance + 0.20 × evidence + 0.20 × recency + 0.25 × adoption",
+            "components": [
+                {
+                    "key": "relevance",
+                    "label": "Relevance",
+                    "weight": 0.35,
+                    "summary": "How squarely the record matches the taxonomy.",
+                    "bands": ["100 for a direct match", "0 for no match"],
+                },
+                {
+                    "key": "evidence",
+                    "label": "Evidence",
+                    "weight": 0.2,
+                    "summary": "How directly the record is attested.",
+                    "bands": ["Primary sources rank highest"],
+                },
+                {
+                    "key": "recency",
+                    "label": "Recency",
+                    "weight": 0.2,
+                    "summary": "How recently the artifact was published.",
+                    "bands": ["100 at first discovery"],
+                },
+                {
+                    "key": "adoption",
+                    "label": "Adoption",
+                    "weight": 0.25,
+                    "summary": "The strongest available public adoption signal.",
+                    "bands": ["Uses the strongest normalized counter"],
+                },
+            ],
+            "limits": ["Priority is not benchmark quality."],
         },
     }
 
@@ -113,9 +151,57 @@ def test_category_palette_is_read_from_the_script_the_browser_uses():
     assert fallbacks and all(color.startswith("#") for color in fallbacks)
 
 
+def test_utility_seo_is_read_from_the_script_the_browser_uses():
+    seo = load_utility_seo(SITE / "assets" / "app.js")
+    assert {page: entry["canonical"] for page, entry in seo.items()} == {
+        "cli": "/cli/",
+        "cite": "/cite/",
+        "rubric": "/rubric/",
+    }
+    assert all(entry["title"] and entry["description"] for entry in seo.values())
+
+
+def test_utility_seo_parser_does_not_depend_on_two_space_indentation(tmp_path):
+    script = tmp_path / "app.js"
+    script.write_text(
+        """const UTILITY_SEO = {
+    cli: {
+        title: "CLI",
+        description: "Local search",
+        canonical: "/cli/"
+    },
+    cite: {
+        title: "Cite",
+        description: "Citation formats",
+        canonical: "/cite/"
+    },
+    rubric: {
+        title: "Rubric",
+        description: "Scoring method",
+        canonical: "/rubric/",
+    }
+};
+""",
+        encoding="utf-8",
+    )
+    seo = load_utility_seo(script)
+    assert {page: entry["canonical"] for page, entry in seo.items()} == {
+        "cli": "/cli/",
+        "cite": "/cite/",
+        "rubric": "/rubric/",
+    }
+
+
 def test_every_view_is_published_at_its_own_path(tmp_path):
     report = _write(tmp_path, _dashboard())
-    assert report["paths"] == ["/leaderboard/", "/trends/", "/explore/"]
+    assert report["paths"] == [
+        "/leaderboard/",
+        "/trends/",
+        "/explore/",
+        "/cli/",
+        "/cite/",
+        "/rubric/",
+    ]
     for path in report["paths"]:
         assert (tmp_path / path.strip("/") / "index.html").exists()
     assert not list(tmp_path.glob("*/index.html.tmp"))
@@ -123,14 +209,18 @@ def test_every_view_is_published_at_its_own_path(tmp_path):
 
 def test_each_page_declares_the_url_it_is_served_at(tmp_path):
     _write(tmp_path, _dashboard())
-    seo = load_view_seo(SITE / "assets" / "app.js")
-    for view in APP_VIEWS:
-        path = seo[view]["canonical"]
+    view_seo = load_view_seo(SITE / "assets" / "app.js")
+    utility_seo = load_utility_seo(SITE / "assets" / "app.js")
+    generated_seo = {
+        page: seo for page, seo in {**view_seo, **utility_seo}.items() if seo["canonical"] != "/"
+    }
+    for page_name, seo in generated_seo.items():
+        path = seo["canonical"]
         page = (tmp_path / path.strip("/") / "index.html").read_text(encoding="utf-8")
         canonical = f'<link rel="canonical" href="{SITE_URL}{path}">'
         assert page.count(canonical) == 1
         assert page.count("<title>") == 1
-        assert f"<title>{seo[view]['title']}</title>" in page
+        assert f"<title>{esc(seo['title'])}</title>" in page, page_name
         assert f'<meta property="og:url" content="{SITE_URL}{path}">' in page
 
 
@@ -146,6 +236,28 @@ def test_only_the_named_view_is_open(tmp_path):
         assert sections, "no view sections found"
         visible = [name for name, attrs in sections if "hidden" not in attrs]
         assert visible == [open_id]
+
+
+def test_each_generated_page_marks_its_navigation_entry_current(tmp_path):
+    _write(tmp_path, _dashboard())
+    ids = {
+        "leaderboard": 'data-view="leaderboard"',
+        "trends": 'data-view="trends"',
+        "explore": 'data-view="map"',
+        "cli": 'id="cli-nav"',
+        "cite": 'id="cite-open"',
+        "rubric": 'id="rubric-nav"',
+    }
+    for path, identifying_attribute in ids.items():
+        page = (tmp_path / path / "index.html").read_text(encoding="utf-8")
+        opening = re.search(
+            rf"<(?:a|button)\b(?=[^>]*{re.escape(identifying_attribute)})[^>]*>", page
+        )
+        assert opening
+        assert 'class="' in opening.group(0) and "nav-active" in opening.group(0)
+        assert 'aria-current="page"' in opening.group(0)
+        if path in {"cli", "cite", "rubric"}:
+            assert 'aria-expanded="true"' in opening.group(0)
 
 
 def test_exactly_one_heading_is_visible_per_page(tmp_path):
@@ -181,9 +293,59 @@ def test_pages_carry_breadcrumb_and_webpage_schema(tmp_path):
     ]
 
 
+def test_utility_schema_names_the_clean_route(tmp_path):
+    _write(tmp_path, _dashboard())
+    for utility, label in (("cli", "CLI"), ("cite", "Cite"), ("rubric", "Scoring rubric")):
+        page = (tmp_path / utility / "index.html").read_text(encoding="utf-8")
+        blocks = [
+            json.loads(block)
+            for block in re.findall(
+                r'<script type="application/ld\+json">(.*?)</script>', page, re.DOTALL
+            )
+        ]
+        webpage = next(block for block in blocks if block.get("@type") == "WebPage")
+        breadcrumb = next(block for block in blocks if block.get("@type") == "BreadcrumbList")
+        assert webpage["url"] == f"{SITE_URL}/{utility}/"
+        assert breadcrumb["itemListElement"][-1]["name"] == label
+        assert breadcrumb["itemListElement"][-1]["item"] == f"{SITE_URL}/{utility}/"
+
+
+def test_utility_pages_ship_the_existing_dialog_open_with_content(tmp_path):
+    _write(tmp_path, _dashboard())
+    expected = {
+        "cli": ("Query it locally (CLI version)", "Give this prompt to your coding agent"),
+        "cite": ("Cite this work", "@techreport{Wu_Benchmark_Radar"),
+        "rubric": ("How priority is scored", "Priority is not benchmark quality."),
+    }
+    for utility, phrases in expected.items():
+        page = (tmp_path / utility / "index.html").read_text(encoding="utf-8")
+        dialog = re.search(
+            rf'<dialog\b(?=[^>]*id="{utility}-dialog")[^>]*>(.*?)</dialog>',
+            page,
+            re.DOTALL,
+        )
+        assert dialog
+        opening = dialog.group(0).split(">", 1)[0]
+        assert " open" in opening
+        assert " data-seed" in opening
+        assert all(phrase in dialog.group(1) for phrase in phrases)
+
+
+def test_seeded_copy_controls_have_names_values_and_fallback_hints(tmp_path):
+    _write(tmp_path, _dashboard())
+    for utility, count in (("cli", 1), ("cite", 3)):
+        page = (tmp_path / utility / "index.html").read_text(encoding="utf-8")
+        buttons = re.findall(r'<button class="copy-target"([^>]*)>(.*?)</button>', page, re.DOTALL)
+        assert len(buttons) == count
+        for attributes, content in buttons:
+            assert 'aria-label="' in attributes
+            assert '<code class="copy-text">' in content
+            assert '<span class="copy-status">' in content
+
+
 def test_no_page_ships_a_second_url_for_itself(tmp_path):
     _write(tmp_path, _dashboard())
-    for path in ("leaderboard", "trends", "explore"):
+    for path in ("leaderboard", "trends", "explore", "cli", "cite", "rubric"):
         page = (tmp_path / path / "index.html").read_text(encoding="utf-8")
         assert "?view=" not in page
 
@@ -201,6 +363,25 @@ def test_seeded_rows_match_what_the_renderer_would_draw(tmp_path):
     # Singular noun at one, same as metricLabel.
     assert "1 model card<" in rows[2]
     assert "How many curated model cards report each benchmark." in page
+
+
+def test_seeded_ranking_exposes_the_same_named_more_control_as_the_renderer(tmp_path):
+    dashboard = _dashboard()
+    dashboard["model_card_leaderboard"]["entries"].extend(
+        [
+            {"rank": 4, "name": "Delta", "card_count": 1},
+            {"rank": 5, "name": "Epsilon", "card_count": 1},
+            {"rank": 6, "name": "Zeta", "card_count": 1},
+        ]
+    )
+    _write(tmp_path, dashboard)
+    page = (tmp_path / "leaderboard" / "index.html").read_text(encoding="utf-8")
+    button = re.search(r'<button\s+class="leaderboard-top-more".*?</button>', page, re.DOTALL)
+    assert button
+    assert "hidden" not in button.group(0)
+    assert "data-seed" in button.group(0)
+    assert 'aria-label="Show all 6 benchmarks ↓"' in button.group(0)
+    assert "Show all 6 benchmarks ↓" in button.group(0)
 
 
 def test_seeded_domain_cards_match_what_the_renderer_would_draw(tmp_path):
@@ -234,8 +415,17 @@ def test_a_view_with_no_data_is_not_published(tmp_path):
     dashboard = _dashboard()
     dashboard["model_card_leaderboard"] = {}
     report = _write(tmp_path, dashboard)
-    assert report["paths"] == ["/trends/", "/explore/"]
+    assert report["paths"] == ["/trends/", "/explore/", "/cli/", "/cite/", "/rubric/"]
     assert not (tmp_path / "leaderboard").exists()
+
+
+def test_rubric_route_is_not_published_without_a_rubric(tmp_path):
+    dashboard = _dashboard()
+    dashboard["rubric"] = {}
+    report = _write(tmp_path, dashboard)
+    assert "/rubric/" not in report["paths"]
+    assert not (tmp_path / "rubric").exists()
+    assert {"/cli/", "/cite/"} <= set(report["paths"])
 
 
 def test_a_moved_anchor_fails_the_build_instead_of_shipping(tmp_path):
@@ -257,25 +447,10 @@ def test_rebuilding_the_same_data_produces_the_same_bytes(tmp_path):
     first, second = tmp_path / "first", tmp_path / "second"
     _write(first, _dashboard())
     _write(second, _dashboard())
-    for path in ("leaderboard", "trends", "explore"):
+    for path in ("leaderboard", "trends", "explore", "cli", "cite", "rubric"):
         assert (first / path / "index.html").read_bytes() == (
             second / path / "index.html"
         ).read_bytes()
-
-
-def test_navigation_agrees_between_the_shell_and_the_dashboard():
-    """site_shell.py hardcodes its own nav, which is how it drifted from the
-    dashboard in the first place. Drift should fail here, not ship."""
-    from benchmark_radar.site_shell import navigation
-
-    shell_links = set(re.findall(r'href="([^"]+)"', navigation("leaderboard")))
-    document = (SITE / "index.html").read_text(encoding="utf-8")
-    nav_block = re.search(r'<nav class="view-nav".*?</nav>', document, re.DOTALL)
-    assert nav_block
-    page_links = {SITE_URL + link for link in re.findall(r'href="(/[^"]*)"', nav_block.group(0))}
-    # Today is a button in the dashboard and a link in the article shell, so the
-    # root is the one entry the two are allowed to disagree about.
-    assert page_links == shell_links - {f"{SITE_URL}/"}
 
 
 def test_a_failed_boot_keeps_the_seeded_rows_and_leads_with_the_error():
@@ -324,7 +499,7 @@ def test_only_a_working_refresh_retires_the_boot_error_banner():
     assert refresh.index(hide) > refresh.index("rerenderCurrentView();")
     assert refresh.index(hide) < refresh.index("} catch (error) {")
 
-    handler = script.split("const view = button.dataset.view;", 1)[1].split("\n    });", 1)[0]
+    handler = script.split("const view = item.dataset.view;", 1)[1].split("\n    });", 1)[0]
     assert "error-state" not in handler
 
 

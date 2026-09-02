@@ -1,8 +1,10 @@
 """Build the HTML each dashboard view ships in its first response.
 
-``app_pages`` writes copies of ``site/index.html`` at ``/leaderboard/``,
-``/trends/`` and ``/explore/``. The seeds here are what those copies carry
-inside the containers ``assets/app.js`` renders into.
+``app_pages`` writes copies of ``site/index.html`` at the dashboard and utility
+paths. The seeds here are what those copies carry inside the containers
+``assets/app.js`` renders into. Utility pages follow the same rule as the data
+views: their open dialog contains the real CLI, citation, or rubric card in the
+first response, and the browser renderer replaces that seed after hydration.
 
 One rule governs all of them: a seed is what the renderer would produce from the
 same data, in the same markup, no more and no less. A summary written for
@@ -32,6 +34,14 @@ def _metric_label(value: Any, singular: str, plural: str | None = None) -> str:
     count = int(value or 0)
     noun = singular if count == 1 else (plural or f"{singular}s")
     return f"{count:,} {noun}"
+
+
+def _decimal(value: Any, places: int = 2) -> str:
+    """Match Number(value).toFixed(places), with a safe zero for bad source data."""
+    try:
+        return f"{float(value):.{places}f}"
+    except (TypeError, ValueError):
+        return f"{0:.{places}f}"
 
 
 def _collate(name: str) -> tuple[str, str]:
@@ -104,6 +114,27 @@ def _leaderboard_seed(dashboard: dict[str, Any]) -> dict[str, str]:
             f'<span id="leaderboard-top-info" data-seed>{_info_disclosure(note)}</span>'
         ),
     }
+    if len(ranked) > LEADERBOARD_TOP_LIMIT:
+        button = "\n".join(
+            (
+                "          <button",
+                '            class="leaderboard-top-more"',
+                '            id="leaderboard-top-more"',
+                '            type="button"',
+                '            aria-label="Show more ranked benchmarks"',
+                "            hidden",
+                "          >Show more ranked benchmarks</button>",
+            )
+        )
+        label = f"Show all {len(ranked)} benchmarks ↓"
+        seed[button] = (
+            button.replace("\n            hidden", "\n            data-seed")
+            .replace(
+                'aria-label="Show more ranked benchmarks"',
+                f'aria-label="{esc(label)}"',
+            )
+            .replace(">Show more ranked benchmarks</button>", f">{esc(label)}</button>")
+        )
     if measures:
         seed['<p class="leaderboard-deck visually-hidden" id="leaderboard-measures"></p>'] = (
             '<p class="leaderboard-deck visually-hidden" id="leaderboard-measures" data-seed>'
@@ -319,4 +350,178 @@ def view_seeds(
         "leaderboard": _leaderboard_seed(dashboard),
         "trends": _trends_seed(dashboard, palette),
         "map": _map_seed(dashboard),
+    }
+
+
+# --- Utility dialogs ----------------------------------------------------------
+
+# These are the verbatim public values used by openCite and openCli in app.js.
+# Tests compare both renderers so a change to either copy fails instead of
+# quietly giving a crawler a different setup prompt or citation than a reader.
+CITE_DOI_URL = "https://doi.org/10.5281/zenodo.22167102"
+CITE_CFF_URL = "https://github.com/ktwu01/benchmark-radar/blob/main/CITATION.cff"
+CITE_APA = (
+    f"Wu, K. (2026). Benchmark Radar v0.9.0: Technical Report (Version 0.9.0). {CITE_DOI_URL}"
+)
+CITE_BIBTEX = """@techreport{Wu_Benchmark_Radar_v0_9_0_2026,
+author = {Wu, Koutian},
+doi = {10.5281/zenodo.22167102},
+month = aug,
+title = {{Benchmark Radar v0.9.0: Technical Report}},
+url = {https://zenodo.org/records/22167102},
+year = {2026}
+}"""
+
+CLI_SKILL_URL = (
+    "https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md"
+)
+CLI_AGENT_PROMPT = "\n".join(
+    (
+        "Set up Benchmark Radar for local benchmark search. Follow",
+        CLI_SKILL_URL,
+        "to install the CLI and consumer Skill, initialize the local data, and verify the"
+        " setup. Use only consumer commands.",
+    )
+)
+
+
+def _copy_block(label: str, value: str, hint: str) -> str:
+    """The non-interactive form of copyBlock in app.js.
+
+    The button already contains its label, value and fallback instruction. The
+    runtime only has to add clipboard behavior; a failed or disabled script
+    never leaves behind an empty button.
+    """
+    return (
+        '<section class="copy-block">'
+        f'<h3 class="copy-label">{esc(label)}</h3>'
+        f'<button class="copy-target" type="button" aria-label="{esc(hint)}: {esc(label)}">'
+        f'<code class="copy-text">{esc(value)}</code>'
+        f'<span class="copy-status">{esc(hint)}</span>'
+        "</button>"
+        "</section>"
+    )
+
+
+def _cite_seed() -> dict[str, str]:
+    blocks = "".join(
+        (
+            _copy_block("APA", CITE_APA, "Click to copy"),
+            _copy_block("BibTeX", CITE_BIBTEX, "Click to copy"),
+            _copy_block("Citation file (.cff)", CITE_CFF_URL, "Click to copy link"),
+        )
+    )
+    content = (
+        '<p class="detail-source">Benchmark Radar</p>'
+        '<h2 class="detail-title cite-title" id="cite-title">Cite this work</h2>'
+        '<p class="detail-summary">'
+        "Pick the format your paper or repository needs, then click it to copy."
+        "</p>"
+        f'<div class="copy-blocks">{blocks}</div>'
+        '<a class="secondary-link dialog-link" '
+        f'href="{esc(CITE_CFF_URL)}" target="_blank" rel="noopener noreferrer">'
+        "View the citation file</a>"
+    )
+    return {'<div id="cite-content"></div>': (f'<div id="cite-content" data-seed>{content}</div>')}
+
+
+def _cli_seed() -> dict[str, str]:
+    content = (
+        '<p class="detail-source">Benchmark Radar</p>'
+        '<h2 class="detail-title cli-title" id="cli-title">'
+        "Query it locally (CLI version)</h2>"
+        '<p class="detail-summary">'
+        "This website is the hosted view. The CLI version runs on your own computer: "
+        "it installs the command-line tool, downloads the searchable data, and answers "
+        "from those local files."
+        "</p>"
+        '<div class="copy-blocks">'
+        f"{_copy_block('Give this prompt to your coding agent', CLI_AGENT_PROMPT, 'Click to copy')}"
+        "</div>"
+        '<a class="secondary-link dialog-link" '
+        f'href="{esc(CLI_SKILL_URL)}" target="_blank" rel="noopener noreferrer">'
+        "Read the setup guide</a>"
+    )
+    return {'<div id="cli-content"></div>': (f'<div id="cli-content" data-seed>{content}</div>')}
+
+
+def _rubric_seed(dashboard: dict[str, Any]) -> dict[str, str]:
+    data = dashboard.get("rubric") or {}
+    components = data.get("components") or []
+    if not data or not components:
+        return {}
+
+    version = int(data.get("scoring_version") or 1)
+    maximum = float(data.get("score_max") or 4)
+    header = (
+        f'<p class="detail-source">Scoring rubric v{version} · current</p>'
+        '<h2 class="detail-title rubric-title" id="rubric-title">How priority is scored</h2>'
+        '<p class="detail-summary">'
+        "Priority is the weighted mean of four components, each measured on a 0 to "
+        f"{maximum:.2f} scale. Every number below is read from the same definition the "
+        "pipeline applies.</p>"
+        f'<p class="rubric-formula">{esc(data.get("formula") or "")}</p>'
+    )
+    component_sections = []
+    for component in components:
+        bands = "".join(f"<li>{esc(band)}</li>" for band in (component.get("bands") or []))
+        component_sections.append(
+            '<section class="rubric-component">'
+            '<div class="rubric-component-head">'
+            f"<h3>{esc(component.get('label') or '')}</h3>"
+            f'<span class="rubric-weight">weight {_decimal(component.get("weight"))}</span>'
+            "</div>"
+            f"<p>{esc(component.get('summary') or '')}</p>"
+            f'<ul class="rubric-bands">{bands}</ul>'
+            "</section>"
+        )
+
+    limits = ""
+    if data.get("limits"):
+        items = "".join(f"<li>{esc(limit)}</li>" for limit in data["limits"])
+        limits = (
+            '<section class="rubric-limits">'
+            "<h3>What this score does not claim</h3>"
+            f"<ul>{items}</ul>"
+            "</section>"
+        )
+
+    selection = (dashboard.get("days") or [{}])[-1].get("selection") or {}
+    recommendation = selection.get("recommendation_score")
+    historical_minimum = (
+        selection.get("minimum_score") if "recommendation_score" not in selection else None
+    )
+    cutoff = ""
+    if recommendation is not None:
+        cutoff = (
+            '<p class="discovery-note">'
+            "Every record matching at least one taxonomy category is retained. A score of "
+            f"{_decimal(recommendation)} or above marks the item as recommended; it does not "
+            "control inclusion. Watchlisted artifacts are also retained.</p>"
+        )
+    elif historical_minimum is not None:
+        cutoff = (
+            '<p class="discovery-note">This historical scan used '
+            f"{_decimal(historical_minimum)} as an inclusion cutoff. Records below it were "
+            "not retained.</p>"
+        )
+
+    content = (
+        header + "".join(component_sections) + limits + cutoff + '<div class="detail-links">'
+        '<a class="secondary-link" '
+        'href="https://github.com/ktwu01/benchmark-radar/blob/main/src/benchmark_radar/rubric.py" '
+        'target="_blank" rel="noopener noreferrer">Read the scoring code ↗</a>'
+        "</div>"
+    )
+    return {
+        '<div id="rubric-content"></div>': (f'<div id="rubric-content" data-seed>{content}</div>')
+    }
+
+
+def utility_seeds(dashboard: dict[str, Any]) -> dict[str, dict[str, str]]:
+    """Initial content for every utility route's existing dashboard dialog."""
+    return {
+        "cli": _cli_seed(),
+        "cite": _cite_seed(),
+        "rubric": _rubric_seed(dashboard),
     }

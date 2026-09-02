@@ -111,10 +111,8 @@ jobs:
           # to 357 models against models.json's 355 and nothing noticed.
           python scripts/build_logo_registry.py
           pytest -q
-      - name: Minify the site stylesheets
-        run: |
-          python scripts/minify_css.py site/assets/styles.css
-          python scripts/minify_css.py site/assets/content.css
+      - name: Minify the dashboard stylesheet
+        run: python scripts/minify_css.py site/assets/styles.css
       - name: Upload CLI data release for publishing
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

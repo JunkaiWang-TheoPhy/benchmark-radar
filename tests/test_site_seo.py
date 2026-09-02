@@ -18,6 +18,24 @@ def test_sitemap_covers_every_indexable_view():
         f"{SITE_URL}/leaderboard/",
         f"{SITE_URL}/trends/",
         f"{SITE_URL}/explore/",
+        f"{SITE_URL}/cli/",
+        f"{SITE_URL}/cite/",
+        f"{SITE_URL}/rubric/",
+        f"{SITE_URL}/benchmarks/",
+    ]
+
+
+def test_sitemap_only_lists_app_routes_written_by_this_build():
+    root = sitemap_tree(
+        [{"generated_at": "2026-08-21T02:17:00+00:00"}],
+        view_paths=["/leaderboard/", "/cli/", "/cite/"],
+    ).getroot()
+    urls = [node.text for node in root.findall("sm:url/sm:loc", NS)]
+    assert urls == [
+        f"{SITE_URL}/",
+        f"{SITE_URL}/leaderboard/",
+        f"{SITE_URL}/cli/",
+        f"{SITE_URL}/cite/",
         f"{SITE_URL}/benchmarks/",
     ]
 
@@ -41,31 +59,18 @@ def test_sitemap_without_snapshots_omits_lastmod():
     assert len(root.findall("sm:url", NS)) == len(INDEXABLE_VIEWS) + 1
 
 
-def test_sitemap_accepts_dated_blog_entries_without_changing_other_lastmods():
-    root = sitemap_tree(
-        [{"generated_at": "2026-08-21T02:17:00+00:00"}],
-        extra_entries=[
-            ("/blog/", "2026-08-22"),
-            ("/blog/archive/", "2026-08-22"),
-            ("/blog/2026-08-20/", "2026-08-20"),
-        ],
-    ).getroot()
-    entries = [
-        (url.findtext("sm:loc", namespaces=NS), url.findtext("sm:lastmod", namespaces=NS))
-        for url in root.findall("sm:url", NS)
-    ]
-    assert entries[-3:] == [
-        (f"{SITE_URL}/blog/", "2026-08-22"),
-        (f"{SITE_URL}/blog/archive/", "2026-08-22"),
-        (f"{SITE_URL}/blog/2026-08-20/", "2026-08-20"),
-    ]
-
-
 def test_each_view_has_its_own_title_and_description():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
-    block = script.split("const VIEW_SEO = {", 1)[1].split("\n};", 1)[0]
-    titles = re.findall(r'title: "([^"]+)"', block)
-    descriptions = re.findall(r'description:\s*"([^"]+)"', block, flags=re.DOTALL)
+    blocks = [
+        script.split(f"const {name} = {{", 1)[1].split("\n};", 1)[0]
+        for name in ("VIEW_SEO", "UTILITY_SEO")
+    ]
+    titles = [title for block in blocks for title in re.findall(r'title: "([^"]+)"', block)]
+    descriptions = [
+        description
+        for block in blocks
+        for description in re.findall(r'description:\s*"([^"]+)"', block, flags=re.DOTALL)
+    ]
     assert len(titles) == len(INDEXABLE_VIEWS)
     assert len(set(titles)) == len(INDEXABLE_VIEWS)
     assert len(descriptions) == len(INDEXABLE_VIEWS)
@@ -74,7 +79,7 @@ def test_each_view_has_its_own_title_and_description():
     # Wired inside setView, not beside it: boot, popstate, nav clicks, and
     # fallbacks all route through one place.
     set_view = script.split("function setView(", 1)[1].split("\nfunction ", 1)[0]
-    assert "applyViewSeo(view)" in set_view
+    assert "applyCurrentSeo()" in set_view
 
 
 def test_write_sitemap_writes_valid_xml_beside_the_data(tmp_path):
@@ -105,7 +110,9 @@ def test_published_head_and_robots_match_the_generated_sitemap():
     assert 'href="/leaderboard/"' in html
     assert 'href="/trends/"' in html
     assert 'href="/explore/"' in html
-    assert 'href="/blog/"' in html
+    assert 'href="/cli/"' in html
+    assert 'href="/rubric/"' in html
+    assert 'href="/cite/"' in html
 
     # robots.txt points at the sitemap URL the build actually writes.
     sitemap_url = f"{SITE_URL}/sitemap.xml"

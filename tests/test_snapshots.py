@@ -312,11 +312,9 @@ def test_rebuild_can_publish_the_feed_from_the_same_snapshot_history(tmp_path, s
 
     root = ET.parse(feed_output).getroot()
     assert [item.findtext("title") for item in root.findall("./channel/item")] == [
-        "Daily AI benchmark brief — 2026-07-27",
-        "Daily AI benchmark brief — 2026-07-26",
+        "Benchmark Radar — 2026-07-27",
+        "Benchmark Radar — 2026-07-26",
     ]
-    assert (tmp_path / "site" / "blog" / "index.html").exists()
-    assert (tmp_path / "site" / "blog" / "2026-07-27" / "index.html").exists()
 
 
 def test_rebuild_writes_the_sitemap_at_the_site_root(tmp_path, site_shell):
@@ -342,7 +340,7 @@ def test_rebuild_writes_the_sitemap_at_the_site_root(tmp_path, site_shell):
     sitemap_output = tmp_path / "site" / "sitemap.xml"
     assert sitemap_output.exists()
     assert not (data_output.parent / "sitemap.xml").exists()
-    for slug in ("leaderboard", "trends", "explore"):
+    for slug in ("leaderboard", "trends", "explore", "cli", "cite", "rubric"):
         assert (tmp_path / "site" / slug / "index.html").exists()
     root = ET.parse(sitemap_output).getroot()
     urls = [node.text for node in root.findall("sm:url/sm:loc", ns)]
@@ -351,12 +349,12 @@ def test_rebuild_writes_the_sitemap_at_the_site_root(tmp_path, site_shell):
         f"{SITE_URL}/leaderboard/",
         f"{SITE_URL}/trends/",
         f"{SITE_URL}/explore/",
+        f"{SITE_URL}/cli/",
+        f"{SITE_URL}/cite/",
+        f"{SITE_URL}/rubric/",
         f"{SITE_URL}/benchmarks/",
         f"{SITE_URL}/benchmarks/alpha-bench/",
         f"{SITE_URL}/benchmarks/zeta-bench/",
-        f"{SITE_URL}/blog/",
-        f"{SITE_URL}/blog/archive/",
-        f"{SITE_URL}/blog/2026-07-27/",
     ]
     lastmods = [node.text for node in root.findall("sm:url/sm:lastmod", ns)]
     assert lastmods == ["2026-07-27"] * len(urls)

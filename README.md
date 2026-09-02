@@ -28,7 +28,7 @@ web. It pulls evidence from 37 public sources every day, and keeps updating.
 **Find a benchmark in seconds, then see how model scores change over time. Click
 the GIF below to watch SWE-bench Verified move toward saturation.**
 
-<a href="https://benchmark-radar.org/?view=leaderboard&lfrontier=swe_bench_verified">
+<a href="https://benchmark-radar.org/leaderboard/?lfrontier=swe_bench_verified">
   <img src="assets/swe-bench-verified.gif" alt="Animated demo of searching for SWE-bench Verified and viewing its model scores over time" width="720" />
 </a>
 
@@ -44,13 +44,14 @@ a short daily briefing that says what changed and links the evidence it used.**
 **Leaderboard: which benchmarks labs actually report in their model cards, and
 how scores on each one climb until there is almost no headroom left.**
 
-<a href="https://benchmark-radar.org/?view=leaderboard">
+<a href="https://benchmark-radar.org/leaderboard/">
   <img src="assets/intro-leaderboard-page.gif" alt="Animated tour of the Leaderboard page: benchmarks ranked by model-card adoption, a scores-over-time chart, and remaining-headroom cards" width="720" />
 </a>
 
 ## Use it
 
 - **[Open the dashboard](https://benchmark-radar.org/)** — today's insights, trends, popular benchmarks, model-card adoption, and more
+- **[Query it locally](https://benchmark-radar.org/cli/)** — install and use the offline CLI
 - **[Subscribe via RSS](https://benchmark-radar.org/feed.xml)** — get new benchmark signals every day
 - **[Download the complete dataset](https://benchmark-radar.org/data/radar.json)** — free, public, machine-readable JSON; no crawler or contact required
 - **[Contribute](CONTRIBUTING.md)** — add benchmarks, model cards, sources, or fixes
@@ -72,10 +73,10 @@ setup. Use only consumer commands.
 
 ## More
 
-- [Scoring rubric](src/benchmark_radar/rubric.py)
+- [Scoring rubric](https://benchmark-radar.org/rubric/)
 - [Model-card adoption data](data/model_cards.yml)
 - [Public corpus schema](docs/cumulative-corpus.schema.json)
-- [Citation metadata](CITATION.cff)
+- [Citation information](https://benchmark-radar.org/cite/)
 - [Technical report](https://doi.org/10.5281/zenodo.22167102)
 - [Configuration](config.yml)
 - **Developer setup:** `python -m pip install -e '.[dev]' && benchmark-radar normalize-external`

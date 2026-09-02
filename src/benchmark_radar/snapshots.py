@@ -12,7 +12,6 @@ from . import kw_bench
 from .app_pages import write_app_pages
 from .attention import fetch_attention_feeds
 from .benchmark_scores import DEFAULT_SCORES_PATH, load_scores, score_progression
-from .blog import write_blog
 from .corpus import (
     artifact_alias_map,
     build_corpus,
@@ -1137,7 +1136,6 @@ def rebuild_dashboard(
         else output.parent / "sitemap.xml"
     )
     slugs = benchmark_slugs(benchmark_shard_dir)
-    blog_entries: list[tuple[str, str | None]] = []
     # A data-only build writes no view pages, so it has no list of published
     # ones, and None asks for every view. That is right rather than empty: this
     # sitemap describes the deployed site, not this build's output directory,
@@ -1147,14 +1145,11 @@ def rebuild_dashboard(
     if feed_output is not None:
         app_pages = write_app_pages(value, sitemap_output.parent)
         view_paths = app_pages["paths"]
-        blog_report = write_blog(snapshots, sitemap_output.parent)
-        blog_entries = blog_report["sitemap_entries"]
-        write_feed(snapshots, feed_output, blog_report["manual_feed_entries"])
+        write_feed(snapshots, feed_output)
     write_sitemap(
         snapshots,
         sitemap_output,
         slugs,
-        blog_entries,
         view_paths=view_paths,
     )
     return value

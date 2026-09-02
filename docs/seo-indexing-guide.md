@@ -77,8 +77,8 @@ curl -fsS https://benchmark-radar.org/ | grep -E 'canonical|og:url'
 
 Every indexable URL should use `https://benchmark-radar.org`. There should be
 no remaining `koutian.is-a.dev/benchmark-radar` or
-`ktwu01.github.io/benchmark-radar` URLs in the live HTML, sitemap, feed, blog
-posts, or internal links.
+`ktwu01.github.io/benchmark-radar` URLs in the live HTML, sitemap, feed,
+generated pages, or internal links.
 
 Use permanent redirects from both legacy hosts. Redirects are a stronger
 canonical signal than a sitemap; combining redirects, `rel="canonical"`, and
@@ -129,12 +129,15 @@ JSON-LD. Validate the live HTML with Google's
 [Rich Results Test](https://search.google.com/test/rich-results) after every
 metadata change.
 
-Each dashboard view is a real page at its own path:
+Each dashboard view and public utility is a real page at its own path:
 
 ```text
 /leaderboard/
 /trends/
 /explore/
+/cli/
+/cite/
+/rubric/
 ```
 
 These are the dashboard, not summaries of it. Each one is written from
@@ -147,26 +150,14 @@ The old `/?view=leaderboard` style of link still works and is rewritten to the
 matching path in the browser, keeping any filters the reader arrived with. Those
 query URLs are not listed in the sitemap, and neither are filter permutations:
 a second URL for a page that already has one is a duplicate, not a second page.
-
-The same rule applies to the evidence blog. `/blog/` shows recent briefs,
-`/blog/archive/` lists the full history, and `/blog/YYYY-MM-DD/` gives every
-validated snapshot a stable evidence page. Reviewed human articles live under
-`content/blog/` and publish at `/blog/<slug>/`. All of these pages reuse the
-dashboard's original colors and typography; SEO does not introduce a second
-visual identity.
-
-Daily posts are deterministic deploy-time renders of committed snapshots. They
-show the briefing, questions, limitations, coverage disclosure, and deduplicated
-source links. Deployment does not ask a model to write new copy. Human articles
-require explicit authorship, dates, tags, citations, and draft status; raw HTML
-is escaped and unsafe links are rejected or suppressed.
+The old `/#cli`, `/#cite`, and `/#rubric` links migrate the same way;
+rubric versions use `/rubric/?version=<number>`.
 
 Google references:
 
 - [JavaScript SEO basics](https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics)
 - [Canonical URL guidance](https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls)
 - [Dataset structured data](https://developers.google.com/search/docs/appearance/structured-data/dataset)
-- [Article structured data](https://developers.google.com/search/docs/appearance/structured-data/article)
 
 ## What to monitor
 
@@ -193,7 +184,6 @@ is a quick spot check, not a complete or authoritative index count.
 - [ ] Google Search Console Domain property verified
 - [ ] Sitemap submitted successfully in Google and Bing
 - [ ] Homepage passes live URL inspection and structured-data validation
-- [ ] Landing pages, a daily blog post, and one benchmark page return useful
+- [ ] Dashboard view pages, utility pages, and one benchmark page return useful
       HTML with JavaScript disabled
-- [ ] Blog post `BlogPosting` and breadcrumb structured data validate
 - [ ] Indexing and performance reviewed after Google recrawls the site

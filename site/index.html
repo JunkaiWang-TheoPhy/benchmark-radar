@@ -7,13 +7,13 @@
 
     <!-- Issue #236. Everything between these two markers is the part that
          changes from one page to the next: the title, the summary, the social
-         card text, and the canonical URL. Each view is a real page at its own
-         path, so src/benchmark_radar/app_pages.py swaps this whole block when
-         it writes /leaderboard/, /trends/ and /explore/ from this file, and
-         raises if a marker is missing rather than shipping a page that claims
-         to be the homepage. app.js restates the same strings when a reader
-         changes view without a page load, so a shared link and a crawled page
-         describe the same thing. Nothing outside the markers is
+         card text, and the canonical URL. Each view and public utility is a
+         real page at its own path, so src/benchmark_radar/app_pages.py swaps
+         this whole block when it writes the six route copies from this file,
+         and raises if a marker is missing rather than shipping a page that
+         claims to be the homepage. app.js restates the same strings when a
+         reader changes route without a page load, so a shared link and a
+         crawled page describe the same thing. Nothing outside the markers is
          page-specific. -->
     <!-- br:head-seo -->
     <meta
@@ -196,9 +196,9 @@
     <meta name="citation_dataset_url" content="https://benchmark-radar.org/data/radar.json">
     <link rel="cite-as" href="https://github.com/ktwu01/benchmark-radar">
 
-    <!-- Root-absolute, not relative. This document is also served at
-         /leaderboard/, /trends/ and /explore/, where "assets/app.js" would
-         resolve to /leaderboard/assets/app.js and 404. -->
+    <!-- Root-absolute, not relative. This document is also served at six
+         nested route paths, where "assets/app.js" would otherwise resolve
+         beneath that route and 404. -->
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="alternate" type="application/rss+xml" title="Benchmark Radar RSS" href="/feed.xml">
     <link rel="stylesheet" href="/assets/styles.css">
@@ -338,7 +338,7 @@
     <p class="stale-banner" id="stale-banner" hidden></p>
 
     <nav class="view-nav" aria-label="Dashboard views" data-i18n-aria="Dashboard views">
-      <button type="button" data-view="today" aria-controls="today-view" data-i18n="Today">Today</button>
+      <button type="button" class="nav-active" data-view="today" aria-controls="today-view" aria-current="page" data-i18n="Today">Today</button>
       <!-- Real links, not tab buttons. Each one is this same dashboard served
          at its own path with that view already open and its rows already in the
          HTML, so a crawler and a reader with a slow connection both get content
@@ -349,9 +349,10 @@
       </a>
       <a href="/trends/" data-view="trends" aria-controls="trends-view" data-i18n="Trends">Trends</a>
       <a href="/explore/" data-view="map" aria-controls="map-view" data-i18n="Explore">Explore</a>
-      <a href="/blog/" data-i18n="Blog">Blog</a>
-      <button
-        type="button"
+      <!-- These remain the same pop-up panels readers already use, but their
+           hrefs give each one a server-rendered, indexable entry point. -->
+      <a
+        href="/rubric/"
         id="rubric-nav"
         aria-haspopup="dialog"
         aria-controls="rubric-dialog"
@@ -359,12 +360,9 @@
         data-i18n="Rubric"
       >
         Rubric
-      </button>
-      <!-- Sits beside Rubric because neither is a view: both open a sheet over
-         whatever the reader is already looking at. A real anchor, so /#cli is a
-         short link a reader can paste and a crawler can follow. -->
+      </a>
       <a
-        href="https://benchmark-radar.org/#cli"
+        href="/cli/"
         id="cli-nav"
         aria-haspopup="dialog"
         aria-controls="cli-dialog"
@@ -544,7 +542,13 @@
             <span class="leaderboard-top-columns-count" data-i18n="leaderboard.column.model_cards">Model cards</span>
           </div>
           <ol class="leaderboard-top-list" id="leaderboard-top-list"></ol>
-          <button class="leaderboard-top-more" id="leaderboard-top-more" type="button"></button>
+          <button
+            class="leaderboard-top-more"
+            id="leaderboard-top-more"
+            type="button"
+            aria-label="Show more ranked benchmarks"
+            hidden
+          >Show more ranked benchmarks</button>
         </section>
 
         <div class="benchmark-workbench">
@@ -706,7 +710,13 @@
           </p>
           <div class="leaderboard-list" id="leaderboard-list"></div>
           <div class="leaderboard-list-actions">
-            <button class="secondary-link" id="leaderboard-show-all" type="button"></button>
+            <button
+              class="secondary-link"
+              id="leaderboard-show-all"
+              type="button"
+              aria-label="Show all tracked benchmarks"
+              hidden
+            >Show all tracked benchmarks</button>
           </div>
         </details>
 
@@ -905,15 +915,15 @@
           If this saved you research time, cite the work, star the repo and help other eval builders find it.
         </p>
         <span class="adoption-actions">
-          <!-- A real anchor, so the citation card has a short link a reader can
-               copy out of the address bar and paste into a paper's repo notes.
-               app.js opens it as the same pop-out the Rubric uses. -->
+          <!-- A real path, so the citation panel is useful before JavaScript
+               and can be indexed as its own page. -->
           <a
             class="primary-link"
             id="cite-open"
-            href="https://benchmark-radar.org/#cite"
+            href="/cite/"
             aria-haspopup="dialog"
             aria-controls="cite-dialog"
+            aria-expanded="false"
             data-i18n="Cite"
           >Cite</a>
           <a

@@ -567,7 +567,7 @@ attention:
       data_quality: [data quality, contamination, deduplication, provenance, leakage]
 
 publish:
-  dashboard_url: "https://ktwu01.github.io/benchmark-radar/"
+  dashboard_url: "https://benchmark-radar.org/"
   issue_title_prefix: "📡 AI Benchmark & Data Radar"
   labels:
     - daily-radar

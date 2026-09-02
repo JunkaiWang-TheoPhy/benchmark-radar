@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: See the ranking first / 提交前先看排行榜
-    url: https://ktwu01.github.io/benchmark-radar/?view=leaderboard
+    url: https://benchmark-radar.org/leaderboard/
     about: The live ranking. Check it before reporting missing or incorrect data. / 实时排行榜；提交数据缺失或错误前请先查看。
   - name: How the ranking is built / 排名如何生成
     url: https://github.com/ktwu01/benchmark-radar/blob/main/CONTRIBUTING.md
