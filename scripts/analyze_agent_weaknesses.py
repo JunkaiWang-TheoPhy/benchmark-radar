@@ -315,8 +315,14 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
             raise ValueError(
                 f"{path}: row {row_id} review.sampled_for_secondary_review must be a boolean"
             )
+        secondary_code_raw = review.get("secondary_code")
+        if not sampled and secondary_code_raw not in (None, ""):
+            raise ValueError(
+                f"{path}: row {row_id} review.secondary_code requires "
+                f"sampled_for_secondary_review to be true"
+            )
         secondary_code = _normalized_secondary_code(
-            review.get("secondary_code"),
+            secondary_code_raw,
             fine_taxonomy_set,
             label=f"{path}: row {row_id} review.secondary_code",
         )

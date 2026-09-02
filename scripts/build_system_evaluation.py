@@ -178,6 +178,7 @@ def agent_weakness_section_paragraphs(report_data: dict[str, Any]) -> list[str]:
     design_implied = report_data["design_implied_count"]
     unmeasured = report_data["unmeasured_count"]
     measurement_counterexamples = ", ".join(report_data["measurement_counterexample_only"])
+    citation_range = agent_weakness_reference_citation_range(report_data)
     return [
         (
             f"Across {demonstrated} demonstrated benchmark families in the issue "
@@ -199,10 +200,18 @@ def agent_weakness_section_paragraphs(report_data: dict[str, Any]) -> list[str]:
             f"{measurement_counterexamples} remains the instrument counterexample rather than "
             "demonstrated prevalence evidence, because its audit shows that benchmark correction can "
             "reverse an apparent verification/completion failure signal. Primary-source benchmark "
-            "evidence and the SciCode audit are cited in [9-18]. The sample is benchmark-family "
+            f"evidence and the SciCode audit are cited in {citation_range}. The sample is benchmark-family "
             "selected, not exhaustive, and limited by what current public benchmarks measure."
         ),
     ]
+
+
+def agent_weakness_reference_citation_range(report_data: dict[str, Any]) -> str:
+    start = 9
+    end = start + len(report_data["primary_source_references"]) - 1
+    if end <= start:
+        return f"[{start}]"
+    return f"[{start}-{end}]"
 
 
 def agent_weakness_reference_entries(report_data: dict[str, Any]) -> list[str]:

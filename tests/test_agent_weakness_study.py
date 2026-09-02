@@ -454,6 +454,38 @@ def test_load_study_rejects_demonstrated_row_without_authoritative_source(tmp_pa
         module.load_study(_write_study(tmp_path, rows))
 
 
+def test_load_study_rejects_secondary_code_on_unsampled_row(tmp_path):
+    module = _load_module()
+    rows = [
+        _row(
+            "demo-a",
+            status="demonstrated",
+            primary_code="goal_plan_drift",
+            sampled=False,
+            secondary_code="tool_selection_execution",
+        ),
+        _row(
+            "design-a",
+            status="design_implied",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+        ),
+        _row(
+            "unmeasured-a",
+            status="unmeasured",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+    ]
+
+    with pytest.raises(ValueError, match="secondary_code|sampled_for_secondary_review"):
+        module.load_study(_write_study(tmp_path, rows))
+
+
 @pytest.mark.parametrize("status", ["demonstrated", "design_implied", "unmeasured"])
 def test_load_study_rejects_rows_without_authoritative_source_url(tmp_path, status):
     module = _load_module()

@@ -6,6 +6,7 @@ import sys
 import types
 from pathlib import Path
 
+import pytest
 import yaml
 
 SCRIPT_PATH = Path("scripts/build_system_evaluation.py")
@@ -263,6 +264,85 @@ def test_default_output_targets_next_draft():
     assert args.output.name != "benchmark-radar-technical-report-v0.9.0.pdf"
 
 
+def test_agent_weakness_reference_citation_range_tracks_generated_references(tmp_path, monkeypatch):
+    module = _load_module()
+
+    def fake_analyze_study(study):
+        return {
+            "snapshot_date": "2026-09-01",
+            "evidence_cutoff": "2026-09-01",
+            "repository_commit_input": "98c8cf6fb5d1d69c66d438ea9f92242b2205c9ae",
+            "demonstrated_family_count": 1,
+            "state_control_count": 1,
+            "decision_execution_count": 0,
+            "agreement_match_count": 0,
+            "completed_secondary_review_count": 0,
+            "sampled_secondary_review_count": 0,
+            "pending_secondary_review_count": 0,
+            "design_implied_count": 1,
+            "unmeasured_count": 1,
+            "measurement_counterexample_only": ["SciCode"],
+            "agreement": {
+                "completed_row_count": 0,
+                "sampled_row_count": 0,
+                "pending_row_count": 0,
+                "disagreements": [],
+            },
+            "coarse_recurrence": {
+                "state_control": {"family_count": 1},
+                "decision_execution": {"family_count": 0},
+            },
+            "status_counts": {
+                "demonstrated": 1,
+                "design_implied": 1,
+                "unmeasured": 1,
+            },
+        }
+
+    fake_analysis_module = types.SimpleNamespace(
+        load_study=lambda path: yaml.safe_load(Path(path).read_text(encoding="utf-8")),
+        analyze_study=fake_analyze_study,
+    )
+    monkeypatch.setattr(
+        module,
+        "_load_agent_weakness_analysis_module",
+        lambda: fake_analysis_module,
+    )
+
+    def transform(study):
+        selected_rows = []
+        selected_statuses = set()
+        for row in study["rows"]:
+            status = row["status"]
+            if status in selected_statuses:
+                continue
+            selected_rows.append(row)
+            selected_statuses.add(status)
+            if selected_statuses == {"demonstrated", "design_implied", "unmeasured"}:
+                break
+        study["rows"] = selected_rows
+        study["study"]["demonstrated_family_scope"] = [
+            row["benchmark_family_name"] for row in selected_rows if row["status"] == "demonstrated"
+        ]
+        study["study"]["measurement_counterexample_only"] = [
+            family
+            for family in study["study"]["measurement_counterexample_only"]
+            if family not in study["study"]["demonstrated_family_scope"]
+        ]
+
+    study_path = _write_modified_study(tmp_path, transform)
+    report_data = module.load_agent_weakness_report_data(study_path)
+    paragraphs = module.agent_weakness_section_paragraphs(report_data)
+    citation_range = module.agent_weakness_reference_citation_range(report_data)
+    references = module.agent_weakness_reference_entries(report_data)
+
+    assert len(report_data["primary_source_references"]) == 3
+    assert citation_range == "[9-11]"
+    assert "cited in [9-11]" in paragraphs[1]
+    assert references[0].startswith("[9] Primary-source evidence for ")
+    assert references[-1].startswith("[11] Primary-source evidence for ")
+
+
 def test_legacy_builder_defaults_to_next_draft_but_allows_explicit_frozen_output():
     module = _load_legacy_module()
 
@@ -273,6 +353,26 @@ def test_legacy_builder_defaults_to_next_draft_but_allows_explicit_frozen_output
 
     assert default_args.output == Path("output/pdf/benchmark-radar-technical-report-next-draft.pdf")
     assert explicit_args.output == Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf")
+
+
+def test_legacy_builder_main_delegates_to_canonical_builder(monkeypatch):
+    module = _load_legacy_module()
+    calls: list[str] = []
+
+    fake_next = types.ModuleType("build_system_evaluation")
+
+    def fake_main():
+        calls.append("main")
+
+    fake_next.main = fake_main
+    fake_next.EvaluationDoc = lambda *args, **kwargs: pytest.fail("legacy wrapper should delegate")
+    fake_next.story = lambda *args, **kwargs: pytest.fail("legacy wrapper should delegate")
+    monkeypatch.setitem(sys.modules, "build_system_evaluation", fake_next)
+    monkeypatch.setattr(sys, "argv", ["build_technical_report.py"])
+
+    module.main()
+
+    assert calls == ["main"]
 
 
 def test_agent_weakness_section_reports_bounded_result_and_method():

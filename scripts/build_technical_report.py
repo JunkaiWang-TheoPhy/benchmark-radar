@@ -700,34 +700,15 @@ def report_story(doi: str) -> list:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--output",
-        type=Path,
-        default=NEXT_DRAFT_OUTPUT,
-        help=(
-            "Write the current technical-report draft here. Rebuilding the frozen v0.9.0 PDF "
-            f"requires an explicit --output {FROZEN_RELEASE_OUTPUT}."
-        ),
-    )
-    parser.add_argument(
-        "--doi",
-        default="10.5281/zenodo.22167102",
-        help="Reserved DOI without the https://doi.org/ prefix.",
-    )
-    return parser
+    from build_system_evaluation import build_parser as canonical_build_parser
+
+    return canonical_build_parser()
 
 
 def main() -> None:
-    args = build_parser().parse_args()
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    # Keep the original entry point working while the expanded system audit
-    # lives in its own readable source module.
-    from build_system_evaluation import EvaluationDoc, story
+    from build_system_evaluation import main as canonical_main
 
-    doc = EvaluationDoc(str(args.output), doi=args.doi)
-    doc.build(story(args.doi))
-    print(args.output)
+    canonical_main()
 
 
 if __name__ == "__main__":
