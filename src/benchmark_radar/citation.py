@@ -1,11 +1,11 @@
 """Single source of truth for the project's self-citation (issue #483).
 
-The APA text follows the author order agreed in the issue thread ("Wu, K.,
-Zhou, J., et al."); CITATION.cff and the site's copy blocks still list Wu
-alone until the Zenodo record is updated, so this module is the deliberate
-CLI-side extension of those, not a mirror. The version is read from the
-package metadata so a release bumps the citation without a separate edit;
-the year and DOI are stable because the technical report is deposited once.
+The version comes from the ``__version__`` constant in
+``benchmark_radar/__init__.py`` (not importlib metadata), so a release
+bumps the citation without a separate edit; the year and DOI are stable
+because the technical report is deposited once. CITATION.cff and the
+site copy blocks in app_seeds.py keep the same author set, so every
+citation surface stays in step under this module's author list.
 """
 
 from __future__ import annotations

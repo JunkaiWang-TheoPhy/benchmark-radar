@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .citation import apa_citation
 from .site_shell import esc
 
 
@@ -360,11 +361,11 @@ def view_seeds(
 # quietly giving a crawler a different setup prompt or citation than a reader.
 CITE_DOI_URL = "https://doi.org/10.5281/zenodo.22167102"
 CITE_CFF_URL = "https://github.com/ktwu01/benchmark-radar/blob/main/CITATION.cff"
-CITE_APA = (
-    f"Wu, K. (2026). Benchmark Radar v0.9.0: Technical Report (Version 0.9.0). {CITE_DOI_URL}"
-)
+# The site dialog and the CLI reminder share citation.py's author list and
+# version, so the APA a reader copies is the APA an agent is asked for.
+CITE_APA = apa_citation()
 CITE_BIBTEX = """@techreport{Wu_Benchmark_Radar_v0_9_0_2026,
-author = {Wu, Koutian},
+author = {Wu, Koutian and Zhou, Junjie},
 doi = {10.5281/zenodo.22167102},
 month = aug,
 title = {{Benchmark Radar v0.9.0: Technical Report}},

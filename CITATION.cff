@@ -5,6 +5,8 @@ type: dataset
 authors:
   - family-names: Wu
     given-names: Koutian
+  - family-names: Zhou
+    given-names: Junjie
 repository-code: "https://github.com/ktwu01/benchmark-radar"
 url: "https://benchmark-radar.org/"
 license: MIT
@@ -19,6 +21,8 @@ preferred-citation:
   authors:
     - family-names: Wu
       given-names: Koutian
+    - family-names: Zhou
+      given-names: Junjie
   doi: "10.5281/zenodo.22167102"
   month: 8
   year: 2026
