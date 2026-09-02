@@ -69,11 +69,18 @@ def sitemap_tree(
     benchmark_slugs: Sequence[str] = (),
     *,
     view_paths: Sequence[str] | None = None,
+    blog_entries: Sequence[tuple[str, str | None]] = (),
 ) -> ET.ElementTree:
-    """Build one stable urlset covering views and benchmark pages.
+    """Build one stable urlset covering views, benchmark pages and daily briefs.
 
     ``view_paths`` is what the build actually wrote. Passing None lists every
     view, which is what a caller that does not write pages at all wants.
+
+    ``blog_entries`` is what the blog build reported, each with its own lastmod
+    rather than the site-wide one: a brief for a day three weeks ago did not
+    change when today's snapshot landed, and telling a crawler otherwise asks
+    it to refetch the whole archive on every deploy. A build that writes no
+    blog passes nothing and lists nothing, the same rule the views follow.
     """
     root = ET.Element(_q("urlset"))
     lastmod = _lastmod_date(snapshots)
@@ -83,6 +90,7 @@ def sitemap_tree(
     ]
     entries.append((BENCHMARK_DIRECTORY_PATH, lastmod))
     entries.extend((f"/benchmarks/{slug}/", lastmod) for slug in benchmark_slugs)
+    entries.extend(blog_entries)
     seen: set[str] = set()
     for path, entry_lastmod in entries:
         if path in seen:
@@ -101,10 +109,13 @@ def write_sitemap(
     benchmark_slugs: Sequence[str] = (),
     *,
     view_paths: Sequence[str] | None = None,
+    blog_entries: Sequence[tuple[str, str | None]] = (),
 ) -> Path:
     """Write a deterministic UTF-8 sitemap beside the published data."""
     output.parent.mkdir(parents=True, exist_ok=True)
-    tree = sitemap_tree(snapshots, benchmark_slugs, view_paths=view_paths)
+    tree = sitemap_tree(
+        snapshots, benchmark_slugs, view_paths=view_paths, blog_entries=blog_entries
+    )
     ET.indent(tree, space="  ")
     tree.write(output, encoding="utf-8", xml_declaration=True)
     return output
