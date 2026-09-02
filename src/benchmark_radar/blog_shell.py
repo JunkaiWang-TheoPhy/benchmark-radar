@@ -45,7 +45,7 @@ class BlogPost:
     updated: str
     kind: str
     tags: tuple[str, ...]
-    sources: tuple[tuple[str, str], ...]
+    sources: tuple[tuple[str, str, str], ...]
     body_en: str
     body_zh: str | None
     title_zh: str | None

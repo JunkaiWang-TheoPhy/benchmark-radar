@@ -89,7 +89,7 @@ def _post_page(post: BlogPost) -> str:
         "author": {"@type": "Organization", "name": "Benchmark Radar"},
         "publisher": {"@id": f"{SITE_URL}/#organization"},
         "isPartOf": {"@id": SITE_URL + BLOG_PATH},
-        "citation": [url for _, url in post.sources],
+        "citation": [url for _, _, url in post.sources],
         "keywords": list(post.tags),
     }
     return render_page(

@@ -10,6 +10,7 @@ import pytest
 
 from benchmark_radar.blog import LATEST_POST_LIMIT, blog_feed_tree, build_posts, write_blog
 from benchmark_radar.blog_content import (
+    _QUESTION_ZH,
     KIND_BRIEF,
     KIND_EVIDENCE,
     KIND_NO_CHANGE,
@@ -186,7 +187,7 @@ def test_a_source_url_that_is_not_http_is_dropped():
     snapshot = _briefed()
     snapshot["briefing"]["citations"] = [{"title": "Bad", "url": "javascript:alert(1)"}]
     snapshot["questions"]["groups"][0]["answers"][0]["cited_evidence"] = []
-    assert all(url.startswith("https://") for _, url in build_post(snapshot).sources)
+    assert all(url.startswith("https://") for _, _, url in build_post(snapshot).sources)
 
 
 # --- bilingual behavior ---------------------------------------------------
@@ -319,3 +320,96 @@ def test_the_blog_feed_is_written_into_the_published_tree(tmp_path):
     write_blog(snapshots, tmp_path)
     channel = ET.parse(tmp_path / "blog" / "feed.xml").getroot().find("channel")
     assert len(channel.findall("item")) == len(snapshots)
+
+
+def _cited_day() -> dict:
+    """The newest snapshot whose briefing cites evidence by ID."""
+    for day in reversed(_snapshot_days()):
+        snapshot = _snapshot(day)
+        citations = (snapshot.get("briefing") or {}).get("citations") or []
+        if any(citation.get("id") for citation in citations):
+            return snapshot
+    raise AssertionError("no committed snapshot cites evidence by ID")
+
+
+def test_cited_evidence_keeps_the_id_the_prose_refers_to():
+    snapshot = _cited_day()
+    citations = snapshot["briefing"]["citations"]
+    body = build_post(snapshot).body_en
+    for citation in citations:
+        identifier = citation.get("id")
+        if not identifier:
+            continue
+        assert f'<span class="blog-cite-id">{identifier}</span>' in body
+
+
+def test_cited_ids_are_not_replaced_by_list_position():
+    """A briefing can cite E011 without listing ten earlier records."""
+    snapshot = _cited_day()
+    identifiers = [
+        citation["id"] for citation in snapshot["briefing"]["citations"] if citation.get("id")
+    ]
+    positions = [f"E{index:03d}" for index in range(1, len(identifiers) + 1)]
+    if identifiers == positions:
+        pytest.skip("this day's citation IDs happen to match their list positions")
+    body = build_post(snapshot).body_en
+    assert identifiers[-1] in body
+
+
+def test_cited_statistics_show_the_registry_id():
+    for day in reversed(_snapshot_days()):
+        snapshot = _snapshot(day)
+        stats = [
+            stat
+            for _, answer in _stored_answers(snapshot)
+            for stat in answer.get("cited_stats") or []
+            if stat.get("id")
+        ]
+        if not stats:
+            continue
+        body = build_post(snapshot).body_en
+        for stat in stats:
+            assert f'<span class="blog-cite-id">{stat["id"]}</span>' in body
+        return
+    pytest.skip("no committed snapshot cites a statistic by ID")
+
+
+def _stored_answers(snapshot: dict) -> list[tuple[str, dict]]:
+    return [
+        (str(group.get("title") or ""), answer)
+        for group in (snapshot.get("questions") or {}).get("groups") or []
+        for answer in group.get("answers") or []
+    ]
+
+
+def test_a_chinese_brief_translates_the_fixed_question_prompts():
+    for day in reversed(_snapshot_days()):
+        snapshot = _snapshot(day)
+        answers = _stored_answers(snapshot)
+        post = build_post(snapshot)
+        if not answers or post.body_zh is None:
+            continue
+        translated = [
+            (title, answer)
+            for title, answer in answers
+            if title in _QUESTION_ZH or str(answer.get("question")) in _QUESTION_ZH
+        ]
+        assert translated, f"{day} stores no prompt the dashboard translates"
+        for title, answer in translated:
+            for english in (title, str(answer.get("question"))):
+                if english in _QUESTION_ZH:
+                    assert _QUESTION_ZH[english] in post.body_zh
+                    assert f"<h3>{english}</h3>" not in post.body_zh
+        return
+    pytest.skip("no committed snapshot pairs stored answers with a translation")
+
+
+def test_question_translations_match_the_dashboard_table():
+    """One prompt cannot read one way on the dashboard and another on the blog."""
+    app_js = (Path(__file__).resolve().parents[1] / "site" / "assets" / "app.js").read_text(
+        encoding="utf-8"
+    )
+    for english, chinese in _QUESTION_ZH.items():
+        match = re.search(rf'"{re.escape(english)}":\s*\n?\s*"([^"]+)"', app_js)
+        assert match, f"the dashboard does not translate {english!r}"
+        assert match.group(1) == chinese

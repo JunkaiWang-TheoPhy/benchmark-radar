@@ -67,6 +67,38 @@ _LABELS = {
     },
 }
 
+# The question and group headings are the fixed prompts in questions.py, stored
+# in English in every snapshot because that is the text the model was asked.
+# The dashboard translates them client-side against the same English keys, so a
+# Chinese brief has to do the same or it publishes English headings inside a
+# document declared zh-CN. Keys the table does not carry fall back to English,
+# which is what the dashboard does with the same string.
+# tests/test_blog.py checks every value here against the dashboard's table, so
+# the two surfaces cannot drift into translating the same prompt differently.
+_QUESTION_ZH = {
+    "What arrived": "今日新增",
+    "What is still moving": "仍在变动",
+    "What it means": "这意味着什么",
+    "What benchmarks, datasets, or evaluation methods did the radar first see today?": (
+        "雷达今天首次看到了哪些benchmark、数据集或评估方法？"
+    ),
+    "Which of today's arrivals document how they score an answer?": (
+        "今天的哪些新增条目记录了它们如何给答案评分？"
+    ),
+    "Which artifacts the radar already tracked moved measurably, and over what span?": (
+        "雷达已跟踪的哪些条目出现了可测变动，跨度如何？"
+    ),
+    "Which of that movement is corroborated by more than one data source?": (
+        "其中哪些变动得到了不止一个数据源的印证？"
+    ),
+    "What does today's evidence fail to show, and what would change the reading?": (
+        "今天的证据未能说明什么，什么会改变这一解读？"
+    ),
+    "What should someone building or evaluating AI systems do differently today?": (
+        "构建或评估 AI 系统的人今天应该做哪些不同的选择？"
+    ),
+}
+
 
 def _safe_url(value: Any) -> str | None:
     """Accept only an absolute http(s) URL, so a stored value cannot inject a scheme."""
@@ -135,8 +167,15 @@ def _description_zh(snapshot: dict[str, Any]) -> str | None:
     return _clip(str(bullets[0]), trailing="，。；：")
 
 
-def _citations(snapshot: dict[str, Any], *, allow_fallback: bool) -> tuple[tuple[str, str], ...]:
-    """The documents this day's text actually cited.
+def _citations(
+    snapshot: dict[str, Any], *, allow_fallback: bool
+) -> tuple[tuple[str, str, str], ...]:
+    """The documents this day's text actually cited, each with its stored ID.
+
+    The briefing prose cites evidence by ID ("Evidence: E011"), and the IDs are
+    not contiguous, so the list position is not the ID. Carrying the stored
+    identifier through is what lets a reader resolve a cited ID to its link;
+    without it a page can say E011 and show that document as item 3.
 
     A ``no_material_insight`` briefing cites nothing by design, but its question
     answers still cite the records they read, so those days are not left with an
@@ -145,9 +184,10 @@ def _citations(snapshot: dict[str, Any], *, allow_fallback: bool) -> tuple[tuple
     ``allow_fallback`` backfills the day's own evidence when a stored briefing
     cited nothing at all, so its claims still lead somewhere. It is off for a
     day with no briefing, because that page already lists its evidence records
-    and would otherwise print the same links twice under two headings.
+    and would otherwise print the same links twice under two headings. Those
+    backfilled records were not cited by ID, so they carry no identifier.
     """
-    citations: list[tuple[str, str]] = []
+    citations: list[tuple[str, str, str]] = []
     seen: set[str] = set()
 
     def collect(entries: Any) -> None:
@@ -159,7 +199,7 @@ def _citations(snapshot: dict[str, Any], *, allow_fallback: bool) -> tuple[tuple
                 continue
             seen.add(url)
             title = str(citation.get("title") or citation.get("source") or url).strip()
-            citations.append((title, url))
+            citations.append((str(citation.get("id") or "").strip(), title, url))
 
     collect(_briefing_of(snapshot).get("citations"))
     for _, answer in _answers(snapshot):
@@ -171,7 +211,7 @@ def _citations(snapshot: dict[str, Any], *, allow_fallback: bool) -> tuple[tuple
         if url is None or url in seen:
             continue
         seen.add(url)
-        citations.append((str(item.get("title") or item.get("source") or url), url))
+        citations.append(("", str(item.get("title") or item.get("source") or url), url))
         if len(citations) == _CITATION_FALLBACK_LIMIT:
             break
     return tuple(citations)
@@ -222,12 +262,27 @@ def _briefing_section(snapshot: dict[str, Any], language: str) -> str:
 
 
 def _stat_line(stat: dict[str, Any]) -> str:
+    """One cited figure, shown with the S### ID the answer text refers to.
+
+    The answers cite figures by registry ID rather than by name, so a line that
+    prints only the label leaves the reader unable to match "S020" in the prose
+    to the number underneath it.
+    """
     value = stat.get("value")
     rendered = f"{value:,}" if isinstance(value, (int, float)) else str(value or "—")
     unit = str(stat.get("unit") or "").strip()
     suffix = f" {unit}" if unit and unit != "count" else ""
-    label = stat.get("label") or stat.get("id") or "Statistic"
-    return f"{esc(label)}: <strong>{esc(rendered)}{esc(suffix)}</strong>"
+    identifier = str(stat.get("id") or "").strip()
+    label = str(stat.get("label") or identifier or "Statistic")
+    prefix = _cite_id(identifier) if identifier and label != identifier else ""
+    return f"{prefix}{esc(label)}: <strong>{esc(rendered)}{esc(suffix)}</strong>"
+
+
+def _prompt(text: str, language: str) -> str:
+    """A fixed question or group heading in the reading language."""
+    if language != "zh":
+        return text
+    return _QUESTION_ZH.get(text, text)
 
 
 def _answer_html(answer: dict[str, Any], language: str) -> str:
@@ -238,7 +293,7 @@ def _answer_html(answer: dict[str, Any], language: str) -> str:
         value = answer.get(translated_key) if zh else None
         return str(value or answer.get(base) or "").strip()
 
-    question = pick("question", "question_zh") or labels["questions"]
+    question = _prompt(pick("question", "question_zh"), language) or labels["questions"]
     signal = pick("signal", "signal_zh")
     plain = pick("plain_english", "plain_chinese")
     takeaway = pick("takeaway", "takeaway_zh")
@@ -271,7 +326,9 @@ def _questions_section(snapshot: dict[str, Any], language: str) -> str:
     grouped: dict[str, list[str]] = {}
     for title, answer in _answers(snapshot):
         grouped.setdefault(title, []).append(_answer_html(answer, language))
-    return "".join(_section(title, "".join(items)) for title, items in grouped.items())
+    return "".join(
+        _section(_prompt(title, language), "".join(items)) for title, items in grouped.items()
+    )
 
 
 def _provenance_section(snapshot: dict[str, Any], language: str) -> str:
@@ -326,11 +383,19 @@ def _provenance_section(snapshot: dict[str, Any], language: str) -> str:
     )
 
 
-def _sources_section(sources: tuple[tuple[str, str], ...], language: str) -> str:
+def _sources_section(sources: tuple[tuple[str, str, str], ...], language: str) -> str:
     if not sources:
         return ""
-    links = "".join(f'<li><a href="{esc(url)}">{esc(title)}</a></li>' for title, url in sources)
+    links = "".join(
+        f'<li>{_cite_id(identifier)}<a href="{esc(url)}">{esc(title)}</a></li>'
+        for identifier, title, url in sources
+    )
     return _section(_LABELS[language]["sources"], f'<ol class="blog-evidence">{links}</ol>')
+
+
+def _cite_id(identifier: str) -> str:
+    """The stored citation ID, shown so prose that says E011 can be followed."""
+    return f'<span class="blog-cite-id">{esc(identifier)}</span> ' if identifier else ""
 
 
 def _kind(snapshot: dict[str, Any]) -> str:

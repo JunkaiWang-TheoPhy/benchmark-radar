@@ -284,3 +284,13 @@
     columns: 1;
   }
 }
+
+/* The prose cites evidence and figures by stored ID, so the ID has to be
+   readable next to the thing it names. Monospaced and muted keeps it legible
+   as a reference marker without competing with the title it precedes. */
+.blog-page .blog-cite-id {
+  font-family: var(--utility);
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
