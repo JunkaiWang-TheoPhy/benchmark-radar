@@ -1413,6 +1413,17 @@ async function onPopState() {
     window.location.assign(window.location.href);
     return;
   }
+  // readUrl() restores a bare Today URL as an empty date, which only
+  // initialize() and refreshData() then default to the latest scan. A history
+  // restore skipped that step, so closing a utility sheet or pressing Back
+  // filtered every observation against snapshot_date === "" and Today rendered
+  // its empty state (issue #503). Normalize the restored date the same way.
+  if (
+    state.todayDate !== "all"
+    && !state.data.facets.dates.includes(state.todayDate)
+  ) {
+    state.todayDate = state.data.latest_date;
+  }
   // A leaderboard permalink on a build with no curated registry has nothing to
   // show, same fallback initialize() applies. Without it, Back into such an
   // entry opens an empty section behind a hidden nav button.
