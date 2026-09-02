@@ -10,6 +10,7 @@ dropped 321 models: Gemini had a record and MiMo did not.
 from __future__ import annotations
 
 import json
+import runpy
 from pathlib import Path
 
 import pytest
@@ -161,6 +162,42 @@ def test_a_retired_id_is_never_handed_to_a_different_model():
         assert high_water[prefix] >= max(issued), prefix
     # M's high-water mark exceeds its live count, which is what retirement looks like.
     assert high_water["M"] >= len(logos["models"])
+
+
+def test_the_logo_generator_preserves_a_retired_high_water_mark(tmp_path, monkeypatch):
+    """A retired maximum survives even when no live entry still carries it."""
+    script = Path("scripts/build_logo_registry.py").resolve()
+    data_dir = tmp_path / "site" / "data"
+    data_dir.mkdir(parents=True)
+    (data_dir / "models.json").write_text(
+        json.dumps(
+            {
+                "models": [
+                    {
+                        "model": "Model One",
+                        "organization": "Org One",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    (data_dir / "logo-registry.json").write_text(
+        json.dumps(
+            {
+                "high_water": {"O": 68, "M": 1048},
+                "organizations": {"Org One": "O-01"},
+                "models": {"Model One␟Org One": "M-01"},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.chdir(tmp_path)
+    runpy.run_path(str(script), run_name="__main__")
+
+    generated = json.loads((data_dir / "logo-registry.json").read_text(encoding="utf-8"))
+    assert generated["high_water"] == {"O": 68, "M": 1048}
 
 
 def test_a_missing_shard_directory_refuses_to_write_a_curated_only_registry(tmp_path):

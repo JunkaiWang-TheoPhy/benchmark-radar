@@ -446,17 +446,22 @@ button.repo-badge svg {
   color: white;
 }
 
-/* Rubric is a dialog trigger rather than a page link, so its inactive blue is
-   kept separate from the shared active treatment above. */
-#rubric-nav:not(.nav-active) {
+/* Rubric and CLI are dialog triggers rather than page links, so their inactive
+   blue is kept separate from the shared active treatment above. A reader should
+   be able to tell before clicking that these two open a sheet over the page
+   instead of changing the view under it. */
+#rubric-nav:not(.nav-active),
+#cli-nav:not(.nav-active) {
   color: var(--blue-deep);
 }
 
-#rubric-nav::after {
+#rubric-nav::after,
+#cli-nav::after {
   content: " ⓘ";
 }
 
-#rubric-nav:not(.nav-active):hover {
+#rubric-nav:not(.nav-active):hover,
+#cli-nav:not(.nav-active):hover {
   background: var(--panel);
 }
 
@@ -636,6 +641,36 @@ input {
   white-space: nowrap;
 }
 
+.search-scope-banner {
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--blue) 45%, var(--edge));
+  border-left: 5px solid var(--blue);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--blue) 9%, var(--panel));
+  box-shadow: var(--shadow);
+}
+
+.search-scope-banner p {
+  margin: 0;
+}
+
+.search-scope-message {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.search-scope-banner a {
+  font-weight: 700;
+}
+
+.search-scope-export {
+  margin-top: 0.35rem !important;
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.76rem;
+}
+
 /* The day's narrative shares the right sidebar with the health and corpus
    cards, so it carries the same box treatment and the sidebar column
    constrains its width instead of an explicit cap (issue #248). */
@@ -714,6 +749,16 @@ input {
   border-color: var(--ink);
   color: var(--ink);
   font-weight: 600;
+}
+
+a.briefing-chip-sources {
+  text-decoration: none;
+}
+
+a.briefing-chip-sources:hover,
+a.briefing-chip-sources:focus-visible {
+  background: var(--ink);
+  color: white;
 }
 
 .briefing-evidence-link {
@@ -3822,6 +3867,76 @@ dialog::backdrop {
   font-family: var(--display);
   font-size: 1.05rem;
   word-break: break-all;
+}
+
+/* Shared by the citation sheet at /#cite and the CLI sheet at /#cli: blocks of
+   text a reader came to copy, stacked in one column so each one's label is
+   readable before a character of the block itself is. */
+.copy-blocks {
+  display: grid;
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.copy-label {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+  font-family: var(--utility);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+
+/* The whole block is the copy control, so the hit area matches the thing the
+   reader is looking at. Left-aligned and full width because it holds a block of
+   text, not a label. */
+.copy-target {
+  display: block;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--canvas);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.copy-target:hover,
+.copy-target:focus-visible {
+  border-color: var(--blue);
+}
+
+.copy-target.is-copied {
+  border-color: var(--sea);
+}
+
+/* BibTeX and the agent prompt are written line by line and stay that way; APA
+   and the bare URLs are single runs with no break opportunity, so they need
+   `anywhere` to keep the dialog from growing wider than the viewport. */
+.copy-text {
+  display: block;
+  font-family: var(--utility);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.copy-status {
+  display: block;
+  margin-top: 0.6rem;
+  color: var(--blue);
+  font-family: var(--utility);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+}
+
+.copy-target.is-copied .copy-status {
+  color: var(--sea);
+}
+
+.dialog-link {
+  display: inline-block;
 }
 
 .supporting-signals {

@@ -122,6 +122,125 @@ def test_priority_score_is_reachably_explained():
     assert "How is this scored?" in script
 
 
+def test_citation_formats_are_one_click_away_behind_a_short_link():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+    cff = Path("CITATION.cff").read_text(encoding="utf-8")
+
+    # Same pop-out treatment as the rubric, reachable at a link short enough to
+    # paste into a paper or a message.
+    assert 'id="cite-dialog"' in html
+    assert 'id="cite-content"' in html
+    assert 'href="https://benchmark-radar.org/#cite"' in html
+    assert 'aria-controls="cite-dialog"' in html
+    assert 'state.cite = rawHash === "cite" || hashParams.has("cite");' in script
+    assert 'else if (state.cite) hash = "cite";' in script
+    assert "function openCite(" in script
+
+    # Three formats, each copied by clicking the citation itself.
+    assert 'copyBlock("APA", CITE_APA, "Click to copy")' in script
+    assert 'copyBlock("BibTeX", CITE_BIBTEX, "Click to copy")' in script
+    assert 'copyBlock("Citation file (.cff)", CITE_CFF_URL, "Click to copy link")' in script
+    assert "navigator.clipboard.writeText(value)" in script
+    assert ".copy-target {" in styles
+
+    # The card draws no data, so a build whose payload never arrives must still
+    # open it and must still close it on Back: both sides of that sit above the
+    # early return in onPopState.
+    pop_state = script.split("async function onPopState() {", 1)[1]
+    cite_sync = pop_state.index('const citeDialog = byId("cite-dialog");')
+    assert cite_sync < pop_state.index("if (!state.data) return;")
+
+    # Opening from the footer pushes an entry. Closing steps back through it
+    # rather than replacing it, or Back would land on an identical URL and
+    # look broken -- but only when this page pushed the entry, so closing a
+    # directly-opened /#cite never sends the reader off the site.
+    assert "citeOwnsHistoryEntry = updateUrl;" in script
+    assert 'if (owned && window.location.hash === "#cite") {' in script
+
+    # The rendered citations must agree with the file they claim to mirror, or
+    # the site would hand out a citation the repository does not make.
+    for fragment in ("10.5281/zenodo.22167102", "Benchmark Radar v0.9.0: Technical Report"):
+        assert fragment in cff
+        assert fragment in script
+
+
+def test_offline_cli_route_is_in_the_view_bar_behind_a_short_link():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    # Same pop-out treatment as the rubric, reached from the view bar rather
+    # than from a section of the README a reader has to scroll to.
+    nav = html.split('<nav class="view-nav"', 1)[1].split("</nav>", 1)[0]
+    assert 'id="cli-nav"' in nav
+    assert 'href="https://benchmark-radar.org/#cli"' in nav
+    assert 'aria-controls="cli-dialog"' in nav
+    assert 'id="cli-dialog"' in html
+    assert 'id="cli-content"' in html
+    assert 'state.cli = rawHash === "cli" || hashParams.has("cli");' in script
+    assert 'else if (state.cli) hash = "cli";' in script
+    assert "function openCli(" in script
+
+    # One copy block, sharing the citation card's control rather than a second
+    # clipboard handler.
+    assert 'copyBlock(\n        "Give this prompt to your coding agent",' in script
+
+    # The card holds no data either, so it opens before the fetch and closes on
+    # Back above the early return, and it owns its pushed history entry.
+    assert "if (state.cli) openCli(false);" in script
+    pop_state = script.split("async function onPopState() {", 1)[1]
+    assert pop_state.index('const cliDialog = byId("cli-dialog");') < pop_state.index(
+        "if (!state.data) return;"
+    )
+    assert "cliOwnsHistoryEntry = updateUrl;" in script
+    assert 'if (owned && window.location.hash === "#cli") {' in script
+
+    # A view entry and the CLI entry must not both read as current, and the CLI
+    # entry carries the rubric's dialog-trigger treatment: both open a sheet
+    # over the page rather than changing the view under it.
+    assert 'cliNav.classList.toggle("nav-active", state.cli);' in script
+    assert "!rubricActive && !state.cli && item.dataset.view === state.view" in script
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+    assert "#cli-nav:not(.nav-active) {" in styles
+    assert "#cli-nav::after {" in styles
+
+    # The card is the README's setup route, not a second one written for the
+    # site: the prompt it hands out has to be the prompt the README publishes.
+    readme_cli = readme.split("## Query it locally (CLI version)", 1)[1].split("## More", 1)[0]
+    skill_url = (
+        "https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md"
+    )
+    assert skill_url in readme_cli
+    assert skill_url in script
+    for line in (
+        "Set up Benchmark Radar for local benchmark search. Follow",
+        "to install the CLI and consumer Skill, initialize the local data, and verify the",
+        "setup. Use only consumer commands.",
+    ):
+        assert line in readme_cli
+        assert line in script
+
+
+def test_only_one_sheet_is_open_at_a_time():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+
+    # showModal() stacks a dialog on top of an open one instead of replacing it,
+    # so every opener has to close the others first or the previous sheet waits
+    # underneath and reappears when the new one is dismissed.
+    assert "function closeOtherSheets(" in script
+    for keep in ("rubric-dialog", "contact-dialog", "cite-dialog", "cli-dialog"):
+        assert f'closeOtherSheets("{keep}");' in script
+    guard = script.split("function closeOtherSheets(", 1)[1].split("\n}", 1)[0]
+    for dialog in ("rubric-dialog", "contact-dialog", "cite-dialog", "cli-dialog"):
+        assert dialog in guard
+    # Dropped before closing, so the sheet being replaced does not step history
+    # back through the entry the reader arrived on.
+    assert guard.index("citeOwnsHistoryEntry = false;") < guard.index("other.close();")
+    assert guard.index("cliOwnsHistoryEntry = false;") < guard.index("other.close();")
+
+
 def test_every_navigation_item_uses_the_same_active_state():
     html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
@@ -190,6 +309,42 @@ def test_scan_date_can_be_reset_to_all_dates():
     assert "IntersectionObserver" not in script
     assert 'byId("daily-briefing").hidden = showingAllDates' in script
     assert 'byId("source-health-panel").hidden = showingAllDates' in script
+
+
+def test_search_defaults_to_all_dates_and_explains_the_scope():
+    """Issue #481: searching must not silently inherit the newest scan."""
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
+
+    # The scope explanation is the first row of the results area, before both
+    # registry matches and daily-discovery matches.
+    assert 'id="search-scope-banner"' in html
+    assert html.index('id="search-scope-banner"') < html.index('id="today-benchmarks"')
+    assert html.index('id="search-scope-banner"') < html.index('id="today-list"')
+    assert ".search-scope-banner" in styles
+
+    # A typed query and a bare ?q= permalink both start archive-wide. Once the
+    # reader explicitly narrows an existing query, continued typing preserves it.
+    assert 'params.get("date") || (state.q ? "all" : "")' in script
+    handler = script.split('byId("filters").addEventListener("input"', 1)[1].split("});", 1)[0]
+    assert "const hadQuery = Boolean(state.q.trim());" in handler
+    assert 'state.todayDate = "all";' in handler
+    assert "!hadQuery && state.q.trim()" in handler
+    assert "ensureFullData()" in handler
+
+    # The banner offers a real today link, and large result sets point to the
+    # public CLI setup route for a complete export.
+    banner = script.split("function renderSearchScopeBanner", 1)[1].split(
+        "function renderToday", 1
+    )[0]
+    assert 'state.todayDate !== "all"' in banner
+    assert "totalResults > 10" in banner
+    assert 'href: "https://benchmark-radar.org/#cli"' in banner
+    assert 'text: t("Search today")' in banner
+    assert "state.todayDate = state.data.latest_date;" in banner
+    assert "(state.q || state.todayDate !== state.data?.latest_date)" in script
+    assert '"This search covers all dates.": "此处搜索全部日期的结果。"' in script
 
 
 def test_dashboard_bounds_work_before_and_during_filtering():
@@ -587,11 +742,16 @@ def test_records_expand_inline_without_an_exclusive_accordion_or_record_modal():
     assert "detail-dialog" not in script
     # A shared details[name] would force one row closed when another opens.
     assert "attrs: { name:" not in script
-    # The two dialogs on the page are non-record chrome: the scoring rubric and
-    # the contact sheet (the export dialog went with the export button,
-    # issue #311). Record detail must stay inline, so any third showModal()
-    # is a regression to a record modal.
-    assert script.count(".showModal()") == 2
+    # The dialogs on the page are non-record chrome: the scoring rubric, the
+    # contact sheet (the export dialog went with the export button, issue
+    # #311), the citation card, and the CLI setup card. Record detail must stay
+    # inline, so a showModal() the list below does not name is a regression to a
+    # record modal.
+    assert script.count(".showModal()") == 4
+    assert 'byId("rubric-dialog")' in script
+    assert 'byId("contact-dialog")' in script
+    assert 'byId("cite-dialog")' in script
+    assert 'byId("cli-dialog")' in script
 
 
 def test_hugging_face_expansion_links_to_the_full_card():
@@ -1171,10 +1331,7 @@ def test_daily_briefing_collapses_verbose_evidence_details_by_default():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     assert 'element("details", { className: "daily-briefing-details" }' in script
-    assert (
-        '{t("Evidence & briefing details")} · ${citations.length.toLocaleString()} '
-        '${t("sources")}' in script
-    )
+    assert 'citations.length === 1 ? t("source") : t("sources")' in script
     assert "briefingDetails(briefing, citations)" in script
     assert 'attrs: { open: "" }' not in script
 
@@ -1257,6 +1414,11 @@ def test_rendered_briefing_splits_each_bullet_into_head_body_and_meta():
     assert "Evidence:" not in subtext(body)
     assert "High confidence" in subtext(meta)
     assert "3 sources" in subtext(meta)
+    multi_source_chip = next(
+        node for node in meta["children"] if "briefing-chip-sources" in node["className"].split()
+    )
+    assert multi_source_chip["tag"] == "span"
+    assert multi_source_chip["href"] == ""
 
     # An older bullet without the "Why it matters" structure degrades to a head
     # with no body, yet its evidence and confidence still move to the metadata.
@@ -1267,6 +1429,23 @@ def test_rendered_briefing_splits_each_bullet_into_head_body_and_meta():
     assert "Evidence:" not in subtext(fbhead)
     assert "Medium confidence" in subtext(fbmeta)
     assert "2 sources" in subtext(fbmeta)
+
+
+def test_rendered_single_source_chip_links_to_its_evidence():
+    """Issue #467: the singular source count is the evidence affordance."""
+    nodes = list(_flatten(_rendered_briefing("tests/fixtures/daily_briefing_one_source.json")))
+    source_chip = next(
+        node for node in nodes if "briefing-chip-sources" in node["className"].split()
+    )
+    confidence_chip = next(node for node in nodes if "briefing-chip-medium" in node["className"])
+    details_summary = next(node for node in nodes if node["tag"] == "summary")
+
+    assert source_chip["tag"] == "a"
+    assert source_chip["text"] == "1 source"
+    assert source_chip["href"] == "https://github.com/example/benchmark-release"
+    assert confidence_chip["tag"] == "span"
+    assert confidence_chip["href"] == ""
+    assert details_summary["text"] == "Evidence & briefing details · 1 source"
 
 
 def test_rendered_briefing_shows_chinese_when_the_snapshot_has_it():

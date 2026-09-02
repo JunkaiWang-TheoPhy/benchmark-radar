@@ -39,6 +39,7 @@ jobs:
           title="$(gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --json title --jq .title)"
           assignee_count="$(gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --json assignees --jq '.assignees | length')"
 
+          shopt -s nocasematch
           if [[ ! "$title" =~ ^\[[1-9][0-9]*\ points?\] ]]; then
             gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
               --body "This issue is not scored yet. A maintainer must add a \`[N points]\` prefix before it can be claimed. / 这个 issue 还没有定分，需先由维护者添加 \`[N points]\`。"
@@ -69,6 +70,7 @@ jobs:
         run: |
           set -euo pipefail
           title="$(gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --json title --jq .title)"
+          shopt -s nocasematch
           if [[ ! "$title" =~ ^\[[1-9][0-9]*\ points?\] ]]; then
             exit 0
           fi

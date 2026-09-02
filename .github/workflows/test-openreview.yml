@@ -10,8 +10,8 @@ jobs:
       OPENREVIEW_USERNAME: ${{ secrets.OPENREVIEW_USERNAME }}
       OPENREVIEW_PASSWORD: ${{ secrets.OPENREVIEW_PASSWORD }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - run: pip install openreview-py
