@@ -847,10 +847,7 @@ const I18N = {
     "More than 10 results.": "结果超过 10 条。",
     "Use the CLI version to export all data.": "使用我们的命令行版本导出全部数据。",
     "Query it locally (CLI version)": "在本地查询（命令行版本）",
-    "Install the Agent Skill": "安装 Agent Skill",
-    "To let your agent use the CLI version, run the command below.":
-      "如果你想让 Agent 使用 CLI 版本，请运行下面的命令。",
-    "Give this prompt to your coding agent": "把这段提示词交给你的编程助手",
+    Install: "安装",
     "Read the setup guide": "查看安装指南",
     "Share Benchmark Radar": "分享 Benchmark Radar",
     Share: "分享",
@@ -8023,7 +8020,7 @@ const CITE_BIBTEX = [
 // sheet. The block itself is the button: a reader who came for a citation or a
 // setup prompt wants it on the clipboard, so clicking the text copies it rather
 // than making them select eight wrapped lines by hand.
-function copyBlock(label, value, hint) {
+function copyBlock(label, value, hint, hideLabel = false) {
   const status = element("span", { className: "copy-status", text: t(hint) });
   const text = element("code", { className: "copy-text", text: value });
   const copy = element(
@@ -8056,7 +8053,10 @@ function copyBlock(label, value, hint) {
     }
   });
   return element("section", { className: "copy-block" }, [
-    element("h3", { className: "copy-label", text: t(label) }),
+    element("h3", {
+      className: hideLabel ? "copy-label visually-hidden" : "copy-label",
+      text: t(label),
+    }),
     copy,
   ]);
 }
@@ -8173,14 +8173,6 @@ const CLI_SKILL_INSTALL = "npx skills add ktwu01/benchmark-radar";
 // The README wraps its last sentence across two lines at 80 columns; the card
 // is narrower than that, so keeping the break would re-wrap into ragged text.
 // Only the URL needs a line of its own, and it keeps one.
-const CLI_AGENT_PROMPT = [
-  "Use the installed Benchmark Radar Skill to finish local benchmark search setup. Follow",
-  CLI_SKILL_URL,
-  "to install or repair the CLI if needed, initialize the local data, and verify the setup.",
-  "You have permission to install the CLI from the official repository. Use only consumer" +
-    " commands.",
-].join("\n");
-
 // True only while the open card owns a history entry this page pushed, for the
 // same reason the citation card tracks it: closing a directly-opened /cli/ must
 // not step a reader back off the site.
@@ -8207,17 +8199,8 @@ function openCli(updateUrl = true) {
       text: t("Query it locally (CLI version)"),
       attrs: { id: "cli-title" },
     }),
-    element("p", {
-      className: "detail-summary",
-      text: t("To let your agent use the CLI version, run the command below."),
-    }),
     element("div", { className: "copy-blocks" }, [
-      copyBlock("Install the Agent Skill", CLI_SKILL_INSTALL, "Click to copy"),
-      copyBlock(
-        "Give this prompt to your coding agent",
-        CLI_AGENT_PROMPT,
-        "Click to copy",
-      ),
+      copyBlock("Install", CLI_SKILL_INSTALL, "Click to copy", true),
     ]),
     element("a", {
       className: "secondary-link dialog-link",

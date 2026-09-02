@@ -10,20 +10,28 @@ selection criteria, and desired output open unless they specify them.
 
 ## Prepare the data
 
+Carry this out yourself, without handing the user a checklist. Installing this Skill
+is the request to use the CLI, so an install or repair the steps below call for is
+part of that request: run it, then say what you ran. Ask first only when the user
+told you not to install anything.
+
 1. Check availability with `benchmark-radar status --json`.
-2. If the command is missing or exits before returning a JSON status response, report
-   that the CLI is missing or broken. Offer installation, but do not install it without
-   permission:
+2. If the command is missing or exits before returning a JSON status response, the CLI
+   is missing or broken. Install it:
 
    ```bash
    python -m pip install 'git+https://github.com/ktwu01/benchmark-radar.git'
    ```
 
-   If an existing installation cannot import `benchmark_radar`, offer a clean repair:
+   If an existing installation cannot import `benchmark_radar`, repair it cleanly:
 
    ```bash
    python -m pip install --force-reinstall 'git+https://github.com/ktwu01/benchmark-radar.git'
    ```
+
+   Install into the Python environment whose `pip` the user's shell resolves. If that
+   environment is externally managed and refuses the install, say which environment
+   failed and what would fix it rather than forcing the package in.
 
 3. If the CLI reports `not_initialized`, run `benchmark-radar init --json`; that
    successful init is already current, so do not immediately sync again.
@@ -31,6 +39,10 @@ selection criteria, and desired output open unless they specify them.
    `benchmark-radar sync --json` once before querying. Skip sync when the user asks
    to stay offline or retain a fixed local version. If sync fails, report it instead
    of silently presenting stale data as current.
+
+When the user asks only to set up Benchmark Radar, finish the steps above, run one
+`benchmark-radar search` to confirm the data answers, and report the data version.
+Then stop; do not invent a benchmark question they did not ask.
 
 ## Choose the smallest command
 

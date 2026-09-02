@@ -60,24 +60,14 @@ If Benchmark Radar saves you research time, **[star the repository](https://gith
 
 ## Query it locally (CLI version)
 
-Install the Benchmark Radar Agent Skill:
-
 ```bash
 npx skills add ktwu01/benchmark-radar
 ```
 
-This command installs the instructions your coding agent uses. The Python CLI
-and searchable data are configured separately.
-
-Give this prompt to your coding agent:
-
-```text
-Use the installed Benchmark Radar Skill to finish local benchmark search setup. Follow
-https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md
-to install or repair the CLI if needed, initialize the local data, and verify the setup.
-You have permission to install the CLI from the official repository. Use only consumer
-commands.
-```
+Then ask your coding agent about benchmarks. It installs the command-line tool
+and downloads the data to your computer the first time you ask. What it does is
+written in the
+[setup and usage guide](https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md).
 
 ## More
 

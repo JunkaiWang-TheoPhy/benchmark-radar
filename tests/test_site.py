@@ -183,10 +183,10 @@ def test_offline_cli_route_is_in_the_view_bar_behind_a_short_link():
     assert 'canonical: "/cli/"' in script
     assert "function openCli(" in script
 
-    # Both setup steps share the citation card's copy control rather than adding
-    # another clipboard handler.
-    assert 'copyBlock("Install the Agent Skill", CLI_SKILL_INSTALL' in script
-    assert 'copyBlock(\n        "Give this prompt to your coding agent",' in script
+    # The single command shares the citation card's copy control rather than
+    # adding another clipboard handler, and its label is for screen readers only.
+    assert 'copyBlock("Install", CLI_SKILL_INSTALL, "Click to copy", true)' in script
+    assert 'hideLabel ? "copy-label visually-hidden" : "copy-label"' in script
 
     # The card holds no data either, so it opens before the fetch and closes on
     # Back above the early return, and it owns its pushed history entry.
@@ -217,14 +217,10 @@ def test_offline_cli_route_is_in_the_view_bar_behind_a_short_link():
     assert skill_url in script
     assert "npx skills add ktwu01/benchmark-radar" in readme_cli
     assert "npx skills add ktwu01/benchmark-radar" in script
-    for line in (
-        "Use the installed Benchmark Radar Skill to finish local benchmark search setup. Follow",
-        "to install or repair the CLI if needed, initialize the local data, and verify the setup.",
-        "You have permission to install the CLI from the official repository. Use only consumer",
-        "commands.",
-    ):
-        assert line in readme_cli
-        assert line in script
+    # One published command, and nothing the reader has to relay to an agent:
+    # the Skill installs the CLI and the data the first time it is asked.
+    assert "```text" not in readme_cli
+    assert "CLI_AGENT_PROMPT" not in script
 
 
 def test_only_one_sheet_is_open_at_a_time():
