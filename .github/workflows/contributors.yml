@@ -12,19 +12,30 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 concurrency:
   group: contributors-image
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   update:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Create contributors-image token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.RADAR_APP_ID }}
+          private-key: ${{ secrets.RADAR_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: benchmark-radar
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Generate contributors image
         uses: jaywcjlove/github-action-contributors@86707f6d4c2469ce6b46bc3367253ebd41ee242c # v2.1.0
@@ -33,32 +44,21 @@ jobs:
           avatarSize: 42
           excludeBots: "true"
 
-      - name: Open or update pull request
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BRANCH: automation/update-contributors-image
+      - name: Commit contributors image
         run: |
           set -euo pipefail
 
           if git diff --quiet -- assets/contributors.svg; then
-            echo "Contributors image unchanged; nothing to propose."
+            echo "Contributors image unchanged; nothing to commit."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -c "$BRANCH"
           git add assets/contributors.svg
-          git commit -m "chore: update contributors image"
-          git push --force origin "HEAD:refs/heads/$BRANCH"
-
-          if [ -n "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
-            echo "Pull request already open; branch updated in place."
-            exit 0
+          if git diff --cached --name-only | grep -v '^assets/contributors\.svg$'; then
+            echo "::error::Contributors image writer attempted to modify an unexpected path"
+            exit 1
           fi
-
-          gh pr create \
-            --base main \
-            --head "$BRANCH" \
-            --title "chore: update contributors image" \
-            --body "Updates the generated contributor profile image. Opened automatically by the contributors workflow."
+          git commit -m "chore: update contributors image"
+          git push origin HEAD:main
