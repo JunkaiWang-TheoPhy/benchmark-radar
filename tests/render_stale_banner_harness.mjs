@@ -107,7 +107,12 @@ globalThis.document = {
   querySelectorAll: () => [],
   querySelector: () => null,
 };
-globalThis.window = { addEventListener: () => {}, location: { search: "", hash: "" } };
+// pathname included because the app reads the view off it: a location
+// without one is not a location any browser would hand you.
+globalThis.window = {
+  addEventListener: () => {},
+  location: { pathname: "/", search: "", hash: "" },
+};
 globalThis.localStorage = {
   getItem: () => null,
   setItem: () => {},

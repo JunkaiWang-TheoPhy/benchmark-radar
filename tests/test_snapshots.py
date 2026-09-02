@@ -297,11 +297,12 @@ def test_rebuild_writes_a_small_latest_day_bootstrap(tmp_path):
     assert bootstrap_path.stat().st_size < output.stat().st_size
 
 
-def test_rebuild_can_publish_the_feed_from_the_same_snapshot_history(tmp_path):
+def test_rebuild_can_publish_the_feed_from_the_same_snapshot_history(tmp_path, site_shell):
     snapshot_dir = tmp_path / "snapshots"
     write_snapshot(radar_run(26), snapshot_dir)
     write_snapshot(radar_run(27), snapshot_dir)
     feed_output = tmp_path / "site" / "feed.xml"
+    site_shell(tmp_path / "site")
 
     rebuild_dashboard(
         snapshot_dir,
@@ -316,12 +317,13 @@ def test_rebuild_can_publish_the_feed_from_the_same_snapshot_history(tmp_path):
     ]
 
 
-def test_rebuild_writes_the_sitemap_at_the_site_root(tmp_path):
+def test_rebuild_writes_the_sitemap_at_the_site_root(tmp_path, site_shell):
     """The Pages build must publish the URL advertised by robots.txt."""
     snapshot_dir = tmp_path / "snapshots"
     write_snapshot(radar_run(27), snapshot_dir)
     data_output = tmp_path / "site" / "data" / "radar.json"
     feed_output = tmp_path / "site" / "feed.xml"
+    site_shell(tmp_path / "site")
     shard_dir = tmp_path / "shards"
     shard_dir.mkdir()
     for slug in ("alpha-bench", "zeta-bench"):
@@ -338,13 +340,19 @@ def test_rebuild_writes_the_sitemap_at_the_site_root(tmp_path):
     sitemap_output = tmp_path / "site" / "sitemap.xml"
     assert sitemap_output.exists()
     assert not (data_output.parent / "sitemap.xml").exists()
+    for slug in ("leaderboard", "trends", "explore", "cli", "cite", "rubric"):
+        assert (tmp_path / "site" / slug / "index.html").exists()
     root = ET.parse(sitemap_output).getroot()
     urls = [node.text for node in root.findall("sm:url/sm:loc", ns)]
     assert urls == [
         f"{SITE_URL}/",
-        f"{SITE_URL}/?view=leaderboard",
-        f"{SITE_URL}/?view=trends",
-        f"{SITE_URL}/?view=map",
+        f"{SITE_URL}/leaderboard/",
+        f"{SITE_URL}/trends/",
+        f"{SITE_URL}/explore/",
+        f"{SITE_URL}/cli/",
+        f"{SITE_URL}/cite/",
+        f"{SITE_URL}/rubric/",
+        f"{SITE_URL}/benchmarks/",
         f"{SITE_URL}/benchmarks/alpha-bench/",
         f"{SITE_URL}/benchmarks/zeta-bench/",
     ]

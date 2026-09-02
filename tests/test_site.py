@@ -1,3 +1,4 @@
+import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
@@ -69,7 +70,14 @@ def test_every_html_entry_point_loads_clarity_once_and_discloses_analytics():
     for path in html_paths:
         html = path.read_text(encoding="utf-8")
         head = html.split("<head>", 1)[1].split("</head>", 1)[0]
-        assert head.count('src="assets/clarity.js"') == 1, path
+        assert head.count("assets/clarity.js") == 1, path
+
+    # The dashboard is also served at /leaderboard/, /trends/ and /explore/,
+    # where a relative src resolves one directory down and 404s. logos.html is
+    # only ever served from the root, so it may stay relative.
+    dashboard = Path("site/index.html").read_text(encoding="utf-8")
+    dashboard_head = dashboard.split("<head>", 1)[1].split("</head>")[0]
+    assert 'src="/assets/clarity.js"' in dashboard_head
 
     loader = Path("site/assets/clarity.js").read_text(encoding="utf-8")
     assert loader.count("ya4h95jvfj") == 1
@@ -120,14 +128,14 @@ def test_citation_formats_are_one_click_away_behind_a_short_link():
     styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
     cff = Path("CITATION.cff").read_text(encoding="utf-8")
 
-    # Same pop-out treatment as the rubric, reachable at a link short enough to
-    # paste into a paper or a message.
+    # Same pop-out treatment as the rubric, with a first-class path short enough
+    # to paste into a paper or a message.
     assert 'id="cite-dialog"' in html
     assert 'id="cite-content"' in html
-    assert 'href="https://benchmark-radar.org/#cite"' in html
+    assert 'href="/cite/"' in html
     assert 'aria-controls="cite-dialog"' in html
-    assert 'state.cite = rawHash === "cite" || hashParams.has("cite");' in script
-    assert 'else if (state.cite) hash = "cite";' in script
+    assert 'state.cite = pathUtility === "cite"' in script
+    assert 'canonical: "/cite/"' in script
     assert "function openCite(" in script
 
     # Three formats, each copied by clicking the citation itself.
@@ -144,12 +152,12 @@ def test_citation_formats_are_one_click_away_behind_a_short_link():
     cite_sync = pop_state.index('const citeDialog = byId("cite-dialog");')
     assert cite_sync < pop_state.index("if (!state.data) return;")
 
-    # Opening from the footer pushes an entry. Closing steps back through it
-    # rather than replacing it, or Back would land on an identical URL and
-    # look broken -- but only when this page pushed the entry, so closing a
-    # directly-opened /#cite never sends the reader off the site.
+    # Opening from the footer pushes an entry carrying its background view.
+    # Closing consumes it, while a directly-opened /cite/ replaces to `/` and
+    # never sends the reader back to an external referrer.
     assert "citeOwnsHistoryEntry = updateUrl;" in script
-    assert 'if (owned && window.location.hash === "#cite") {' in script
+    assert 'finishUtilityClose("cite", owned);' in script
+    assert "benchmarkRadarUtility" in script
 
     # The rendered citations must agree with the file they claim to mirror, or
     # the site would hand out a citation the repository does not make.
@@ -167,12 +175,12 @@ def test_offline_cli_route_is_in_the_view_bar_behind_a_short_link():
     # than from a section of the README a reader has to scroll to.
     nav = html.split('<nav class="view-nav"', 1)[1].split("</nav>", 1)[0]
     assert 'id="cli-nav"' in nav
-    assert 'href="https://benchmark-radar.org/#cli"' in nav
+    assert 'href="/cli/"' in nav
     assert 'aria-controls="cli-dialog"' in nav
     assert 'id="cli-dialog"' in html
     assert 'id="cli-content"' in html
-    assert 'state.cli = rawHash === "cli" || hashParams.has("cli");' in script
-    assert 'else if (state.cli) hash = "cli";' in script
+    assert 'state.cli = pathUtility === "cli"' in script
+    assert 'canonical: "/cli/"' in script
     assert "function openCli(" in script
 
     # One copy block, sharing the citation card's control rather than a second
@@ -187,13 +195,13 @@ def test_offline_cli_route_is_in_the_view_bar_behind_a_short_link():
         "if (!state.data) return;"
     )
     assert "cliOwnsHistoryEntry = updateUrl;" in script
-    assert 'if (owned && window.location.hash === "#cli") {' in script
+    assert 'finishUtilityClose("cli", owned);' in script
 
     # A view entry and the CLI entry must not both read as current, and the CLI
     # entry carries the rubric's dialog-trigger treatment: both open a sheet
     # over the page rather than changing the view under it.
-    assert 'cliNav.classList.toggle("nav-active", state.cli);' in script
-    assert "!rubricActive && !state.cli && item.dataset.view === state.view" in script
+    assert 'cliNav.classList.toggle("nav-active", utility === "cli");' in script
+    assert "!utility && item.dataset.view === state.view" in script
     styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
     assert "#cli-nav:not(.nav-active) {" in styles
     assert "#cli-nav::after {" in styles
@@ -229,6 +237,7 @@ def test_only_one_sheet_is_open_at_a_time():
         assert dialog in guard
     # Dropped before closing, so the sheet being replaced does not step history
     # back through the entry the reader arrived on.
+    assert guard.index("rubricOwnsHistoryEntry = false;") < guard.index("other.close();")
     assert guard.index("citeOwnsHistoryEntry = false;") < guard.index("other.close();")
     assert guard.index("cliOwnsHistoryEntry = false;") < guard.index("other.close();")
 
@@ -243,6 +252,9 @@ def test_every_navigation_item_uses_the_same_active_state():
     # selected state.
     assert 'aria-controls="rubric-dialog"' in html
     assert 'aria-expanded="false"' in html
+    today = re.search(r'<button\b(?=[^>]*data-view="today")[^>]*>', html)
+    assert today and "nav-active" in today.group(0)
+    assert 'aria-current="page"' in today.group(0)
     assert "function syncNavState()" in script
     assert 'item.classList.toggle("nav-active", active);' in script
     assert 'rubricNav.classList.toggle("nav-active", rubricActive);' in script
@@ -332,7 +344,8 @@ def test_search_defaults_to_all_dates_and_explains_the_scope():
     )[0]
     assert 'state.todayDate !== "all"' in banner
     assert "totalResults > 10" in banner
-    assert 'href: "https://benchmark-radar.org/#cli"' in banner
+    assert 'attrs: { href: "/cli/" }' in banner
+    assert "openCli();" in banner
     assert 'text: t("Search today")' in banner
     assert "state.todayDate = state.data.latest_date;" in banner
     assert "(state.q || state.todayDate !== state.data?.latest_date)" in script
@@ -372,15 +385,17 @@ def test_each_view_serializes_only_the_filters_it_reads():
     # Each param is read back by exactly one view, so only that view may write
     # it. Guard the gate rather than the individual set() calls, which the
     # previous fix already had and which still leaked.
-    today = body.split('if (state.view === "today")', 1)[1].split('if (state.view === "map"', 1)[0]
+    today = body.split('if (!utility && state.view === "today")', 1)[1].split(
+        'if (!utility && state.view === "map"', 1
+    )[0]
     for key in ("date", "q", "kind", "category", "source", "organization", "event"):
         assert f'params.set("{key}"' in today
 
-    leaderboard = body.split('if (state.view === "leaderboard")', 1)[1]
+    leaderboard = body.split('if (!utility && state.view === "leaderboard")', 1)[1]
     for key in ("lq", "ldomain", "lorg", "lera", "lfrontier"):
         assert f'params.set("{key}"' in leaderboard
 
-    assert 'if (state.view === "map" && state.entity) params.set("entity"' in body
+    assert 'if (!utility && state.view === "map" && state.entity) params.set("entity"' in body
 
 
 def test_site_has_an_icon():
@@ -499,37 +514,250 @@ def test_language_toggle_click_handler_is_wired():
     assert 'langToggle.addEventListener("click", toggleLang)' in script
 
 
-def test_rubric_dialog_is_linkable_by_url_hash():
+def test_rubric_dialog_is_linkable_by_clean_path_and_version_query():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
-    # Issue #41: opening the rubric must be shareable as a hashtag link, and
-    # loading that link must reopen the same rubric version.
+    # Issue #41: current and historical rubrics remain shareable, but the
+    # content now has one indexable path rather than fragment-only states.
     assert "state.rubric" in script
+    assert 'pathUtility === "rubric"' in script
+    assert 'currentParams.get("version") || "current"' in script
+    assert 'params.set("version", state.rubric)' in script
+    assert 'canonical: "/rubric/"' in script
+    # Old fragments are still understood long enough to replace-migrate them.
     assert 'rawHash === "rubric"' in script
-    assert 'hash = "rubric"' in script
     assert 'state.rubric === "current" ? null : state.rubric' in script
 
 
-def test_contact_dialog_and_current_rubric_have_clean_hash_links():
+def test_contact_stays_in_page_while_rubric_uses_its_clean_path():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     assert 'rawHash === "contact"' in script
     assert 'hash = "contact"' in script
     assert "state.contact = true;" in script
     assert "openContact(false)" in script
-    assert 'else if (state.rubric === "current") hash = "rubric";' in script
-    # Historical records remain linkable to the rubric that scored them.
-    assert "hash = `rubric=${encodeURIComponent(state.rubric)}`" in script
+    assert "UTILITY_SEO[utility].canonical" in script
+    # The current rubric has no query; historical records keep their version.
+    assert 'state.rubric !== "current"' in script
+
+
+def test_clean_route_model_migrates_legacy_urls_and_preserves_utility_backgrounds():
+    """Execute the real URL functions against a small browser-history stub."""
+    import json
+    import shutil
+    import subprocess
+
+    import pytest
+
+    source = Path("site/assets/app.js").read_text(encoding="utf-8")
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+
+    def section(start: str, end: str) -> str:
+        return source[source.index(start) : source.index(end, source.index(start))]
+
+    route_source = "\n".join(
+        (
+            section("const VIEW_SEO = {", "// These sheets are also indexable pages."),
+            section("const UTILITY_SEO = {", "// One list, not two:"),
+            section("const VIEW_PATHS =", "function applySeo("),
+            section("function readUrl()", "// `push` adds a history entry"),
+            section("function writeUrl(", "// A pushed entry changes the URL"),
+        )
+    )
+    program = f"""
+const state = {{}};
+{route_source}
+function install(url, historyState = null) {{
+  const parsed = new URL(url, "https://benchmark-radar.org");
+  window.location.pathname = parsed.pathname;
+  window.location.search = parsed.search;
+  window.location.hash = parsed.hash;
+  window.history.state = historyState;
+}}
+function applyHistory(stateValue, url) {{
+  install(url, stateValue);
+}}
+globalThis.window = {{
+  location: {{ origin: "https://benchmark-radar.org", pathname: "/", search: "", hash: "" }},
+  history: {{
+    state: null,
+    pushState(stateValue, _title, url) {{ applyHistory(stateValue, url); }},
+    replaceState(stateValue, _title, url) {{ applyHistory(stateValue, url); }},
+  }},
+}};
+const results = {{}};
+install("/?view=leaderboard&lq=agent");
+readUrl();
+writeUrl("replace");
+results.legacyView = window.location.pathname + window.location.search;
+
+install("/#rubric=2");
+readUrl();
+writeUrl("replace");
+results.legacyRubric = window.location.pathname + window.location.search;
+results.legacyReturns = window.history.state.benchmarkRadarUtility.returnOnClose;
+
+install("/leaderboard/?lq=agent");
+readUrl();
+state.cli = true;
+writeUrl("push");
+results.openCli = window.location.pathname + window.location.search;
+results.background = window.history.state.benchmarkRadarUtility;
+readUrl();
+results.forwardView = state.view;
+results.forwardQuery = state.lq;
+
+install("/cite/");
+readUrl();
+results.directCite = {{ view: state.view, cite: state.cite }};
+console.log(JSON.stringify(results));
+"""
+    result = subprocess.run(
+        [node, "-e", program], capture_output=True, text=True, timeout=60, check=True
+    )
+    routes = json.loads(result.stdout)
+
+    assert routes["legacyView"] == "/leaderboard/?lq=agent"
+    assert routes["legacyRubric"] == "/rubric/?version=2"
+    assert routes["legacyReturns"] is False
+    assert routes["openCli"] == "/cli/"
+    assert routes["background"] == {
+        "utility": "cli",
+        "backgroundView": "leaderboard",
+        "backgroundUrl": "/leaderboard/?lq=agent",
+        "returnOnClose": True,
+    }
+    assert routes["forwardView"] == "leaderboard"
+    assert routes["forwardQuery"] == "agent"
+    assert routes["directCite"] == {"view": "today", "cite": True}
+
+
+def test_utility_routes_have_distinct_metadata_and_accessible_active_state():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    utility_seo = script.split("const UTILITY_SEO = {", 1)[1].split("\n};", 1)[0]
+
+    for utility, path in (("cli", "/cli/"), ("cite", "/cite/"), ("rubric", "/rubric/")):
+        entry = utility_seo.split(f"  {utility}: {{", 1)[1].split("  },", 1)[0]
+        assert "title:" in entry
+        assert "description:" in entry
+        assert f'canonical: "{path}"' in entry
+    assert "applySeo(utility ? UTILITY_SEO[utility]" in script
+    assert 'rubricNav.setAttribute("aria-current", "page")' in script
+    assert 'cliNav.setAttribute("aria-current", "page")' in script
+    assert 'citeOpen?.setAttribute("aria-expanded", String(utility === "cite"))' in script
+    assert 'citeOpen?.setAttribute("aria-current", "page")' in script
+
+
+def test_routes_degrade_to_static_pages_and_refresh_the_payload_the_route_needs():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    nav = script.split('document.querySelectorAll("[data-view]")', 1)[1].split(
+        "// Reads every control rather than the event target", 1
+    )[0]
+    refresh = script.split("async function refreshData()", 1)[1].split(
+        "async function initialize()", 1
+    )[0]
+    initialize = script.split("async function initialize()", 1)[1]
+
+    # A copied trend-day link must leave /trends/ even without JavaScript.
+    assert "attrs: { href: `/?date=${day.date}` }" in script
+    # Missing bootstrap data falls through to a real anchor; a failed lazy full
+    # fetch hard-navigates to that generated route instead of swallowing click.
+    assert "if (!compatibleDashboard(state.data))" in nav
+    assert "if (anchor) return;" in nav
+    assert 'window.location.assign(anchor?.href || VIEW_PATHS[view] || "/")' in nav
+    assert "const navigationSequence = ++viewNavigationSequence;" in nav
+    assert nav.count("navigationSequence !== viewNavigationSequence") == 2
+
+    # A route that needs history selects radar.json before fetching, verifies
+    # again after assignment, and only then retires the visible error.
+    assert "state.fullDataLoaded || stateNeedsFullData()" in refresh
+    assert 'needsFullPayload ? "/data/radar.json" : "/data/radar-bootstrap.json"' in refresh
+    assert 'if (stateNeedsFullData()) await ensureFullData("reload");' in refresh
+    assert refresh.index(
+        'if (stateNeedsFullData()) await ensureFullData("reload");'
+    ) < refresh.index('byId("error-state").hidden = true;')
+    # A stale full-data failure from the route that initialized the document
+    # cannot erase a newer view (or a successful Refresh) that the payload in
+    # state already satisfies.
+    assert "initializationWasSuperseded" in initialize
+    assert "initializationNavigationSequence !== viewNavigationSequence" in initialize
+    assert "initializationRefreshSequence !== successfulDataRefreshSequence" in initialize
+    recovery = initialize.split("initializationWasSuperseded", 2)[2].split("// /leaderboard/", 1)[0]
+    assert "rerenderCurrentView();" in recovery
+    assert "return;" in recovery
+
+
+def test_newer_successful_data_requests_cannot_be_overwritten_by_late_responses():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    apply_data = script.split("function applyDashboardData", 1)[1].split("function element", 1)[0]
+    refresh = script.split("async function refreshData()", 1)[1].split(
+        "async function initialize()", 1
+    )[0]
+    initialize = script.split("async function initialize()", 1)[1]
+
+    assert "requestSequence < latestAppliedDashboardRequestSequence" in apply_data
+    assert "latestAppliedDashboardRequestSequence = requestSequence" in apply_data
+    assert "const requestSequence = ++nextDashboardRequestSequence;" in refresh
+    assert "if (!applyDashboardData(data, requestSequence" in refresh
+    assert "const requestSequence = ++nextDashboardRequestSequence;" in initialize
+    assert "if (!applyDashboardData(data, requestSequence, false)) return;" in initialize
+    ensure_full = script.split("async function ensureFullData", 1)[1].split(
+        "async function ensureDataForState", 1
+    )[0]
+    assert "if (!applied && !state.fullDataLoaded)" in ensure_full
+    assert "Full data request was superseded by a bootstrap response" in ensure_full
+
+
+def test_failed_data_rubric_navigation_keeps_its_background_route():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    handler = script.split('byId("rubric-nav").addEventListener', 1)[1].split(
+        'byId("badge-contact")', 1
+    )[0]
+
+    assert 'state.rubric = "current";' in handler
+    assert 'writeUrl("push");' in handler
+    assert "window.location.reload();" in handler
+
+
+def test_hydrated_expansion_controls_announce_the_action_they_will_take():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    top = script.split("function renderLeaderboardTop", 1)[1].split(
+        "function syncLeaderboardNav", 1
+    )[0]
+    table = script.split("const showAllButton =", 1)[1].split("const cards =", 1)[0]
+
+    assert 'more.setAttribute("aria-label", label);' in top
+    assert 'showAllButton.setAttribute("aria-label", showAllLabel);' in table
+
+
+def test_seeded_utility_dialog_is_promoted_without_an_invalid_second_open():
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
+    promote = script.split("function promoteSeededDialog", 1)[1].split(
+        "function showModalDialog", 1
+    )[0]
+    show = script.split("function showModalDialog", 1)[1].split("let rubricOwnsHistoryEntry", 1)[0]
+    initialize = script.split("async function initialize()", 1)[1]
+
+    assert 'dialog.hasAttribute("data-seed")' in promote
+    assert promote.index('dialog.removeAttribute("open")') < promote.index("dialog.showModal()")
+    assert "replaceChildren" not in promote
+    assert "if (!dialog.open) dialog.showModal();" in show
+    assert "promoteSeededDialog(byId(`${seededUtility}-dialog`))" in initialize
+    assert initialize.index("promoteSeededDialog") < initialize.index(
+        'fetch("/data/radar-bootstrap.json")'
+    )
 
 
 def test_initial_page_uses_small_bootstrap_and_lazy_loads_history():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     initialize = script.split("async function initialize()", 1)[1]
-    assert 'fetch("data/radar-bootstrap.json")' in initialize
+    assert 'fetch("/data/radar-bootstrap.json")' in initialize
     assert "await ensureDataForState();" in initialize
     loader = script.split("async function ensureFullData(", 1)[1].split("\nasync function ", 1)[0]
-    assert 'fetch("data/radar.json", { cache })' in loader
+    assert 'fetch("/data/radar.json", { cache })' in loader
     assert '["trends", "map"].includes(state.view)' in script
     assert 'state.todayDate === "all"' in script
 
@@ -603,7 +831,8 @@ def test_today_toolbar_keeps_secondary_filters_in_a_popover():
     assert "function updateFiltersCount()" in script
     assert "function closeFiltersDrawer()" in script
     assert "function refreshData()" in script
-    assert 'state.fullDataLoaded ? "data/radar.json" : "data/radar-bootstrap.json"' in script
+    assert "state.fullDataLoaded || stateNeedsFullData()" in script
+    assert 'needsFullPayload ? "/data/radar.json" : "/data/radar-bootstrap.json"' in script
     assert 'const response = await fetch(path, { cache: "reload" });' in script
     assert "drawer.hidden = true" in script
 
@@ -739,11 +968,14 @@ def test_records_expand_inline_without_an_exclusive_accordion_or_record_modal():
     # #311), the citation card, and the CLI setup card. Record detail must stay
     # inline, so a showModal() the list below does not name is a regression to a
     # record modal.
-    assert script.count(".showModal()") == 4
+    assert script.count(".showModal()") == 3
     assert 'byId("rubric-dialog")' in script
     assert 'byId("contact-dialog")' in script
     assert 'byId("cite-dialog")' in script
     assert 'byId("cli-dialog")' in script
+    for opener in ("openRubric", "openCite", "openCli"):
+        body = script.split(f"function {opener}(", 1)[1].split("\n}", 1)[0]
+        assert "showModalDialog(dialog);" in body
 
 
 def test_hugging_face_expansion_links_to_the_full_card():
@@ -867,10 +1099,24 @@ def test_static_html_references_existing_local_assets():
     # radar.json is the dashboard bundle the "Download the dataset" link points
     # at. Pages writes it during the build, before the artifact upload, so the
     # published link resolves; it is absent from a clean checkout by design.
-    generated_assets = {"feed.xml", "data/radar.json"}
+    # The view paths are this same document republished by app_pages.py, also
+    # during the build.
+    generated_assets = {
+        "feed.xml",
+        "data/radar.json",
+        "leaderboard/",
+        "trends/",
+        "explore/",
+        "rubric/",
+        "cli/",
+        "cite/",
+    }
     missing = []
     for reference in parser.local_refs:
-        path = urlsplit(reference).path
+        # References are root-absolute because this document is also served at
+        # /leaderboard/, /trends/ and /explore/. Strip the leading slash so the
+        # target resolves inside site/ rather than at the filesystem root.
+        path = urlsplit(reference).path.lstrip("/")
         target = Path("site") if path in {"", ".", "./"} else Path("site") / path
         if not target.exists() and path not in generated_assets:
             missing.append(reference)
@@ -971,8 +1217,8 @@ def test_leaderboard_view_is_a_first_class_dashboard_view():
     parser.feed(html)
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
-    # Issue #83 step 3: the Model Card Adoption Rank is reachable as
-    # ?view=leaderboard from the homepage nav, not a separate page.
+    # The interactive state remains first class even though the crawlable href
+    # now points at a static landing page and JavaScript intercepts the click.
     assert "leaderboard-view" in parser.ids
     assert 'data-view="leaderboard"' in html
     assert '"map", "leaderboard"' in script
@@ -1126,8 +1372,14 @@ def test_leaderboard_degrades_when_the_curated_registry_is_absent():
     # No registry means no ranking. Hiding the nav entry and redirecting a
     # ?view=leaderboard permalink beats offering a tab that opens blank.
     assert "document.querySelector('[data-view=\"leaderboard\"]')" in script
-    assert "navButton.hidden = true" in script
+    assert "navButton.hidden = !state.data?.model_card_leaderboard;" in script
     assert 'state.view === "leaderboard" && !state.data.model_card_leaderboard' in script
+    # The entry has to reflect the data from every view, not only from the one
+    # being rendered. Boot settles it before it picks a view to draw, so Today
+    # cannot leave a dead tab on screen for a click to push /leaderboard/ over.
+    boot = script.split("renderTodayDateOptions();\n    syncLeaderboardNav();", 1)
+    assert len(boot) == 2, "boot does not sync the leaderboard nav"
+    assert 'if (state.view === "leaderboard") renderLeaderboard();' in boot[1]
 
 
 def test_leaderboard_names_an_unadopted_benchmark_rather_than_showing_a_bare_zero():
@@ -2264,8 +2516,8 @@ def test_issue_286_navigation_is_backable_but_typing_is_not():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     assert 'function writeUrl(mode = "replace")' in script
-    assert 'window.history.pushState(null, "", url);' in script
-    assert 'window.history.replaceState(null, "", url);' in script
+    assert 'window.history.pushState(historyState, "", url);' in script
+    assert 'window.history.replaceState(historyState, "", url);' in script
 
     # A discrete navigation the reader chose pushes. Changing view is the one
     # the issue measured; selecting a benchmark is the one that made it easy to
@@ -2345,7 +2597,7 @@ def test_issue_311_the_today_list_loads_one_page_at_a_time():
     assert pager_end < dataset_card < page_footer
     dataset = html.split('<div class="footer-dataset">', 1)[1].split("</div>", 1)[0]
     assert "Free dataset. No crawler needed." in dataset
-    assert 'href="data/radar.json"' in dataset
+    assert 'href="/data/radar.json"' in dataset
     assert "Star the repository" not in dataset
     assert "Contact" not in dataset
     footer = html.split("<footer>", 1)[1].split("</footer>", 1)[0]
@@ -2354,7 +2606,7 @@ def test_issue_311_the_today_list_loads_one_page_at_a_time():
     assert 'id="share-radar"' in footer
     contact = script.split("function openContact(", 1)[1].split("dialog.showModal();", 1)[0]
     assert "The complete dataset is free to download" in contact
-    assert 'href: "data/radar.json"' in contact
+    assert 'href: "/data/radar.json"' in contact
     assert 'className: "contact-dataset"' in contact
 
 
@@ -2365,24 +2617,36 @@ def _css_rule(styles: str, selector: str) -> str:
 
 
 def test_heading_outline_and_scale_stay_quiet():
-    """Regression guard for the single-h1 retagging and its typography.
+    """Regression guard for the per-view h1 outline and its typography.
 
-    The page keeps one document h1 ("Today's radar"), rendered as the muted
-    caption it always was; every other view heading is an h2 at the compact
-    leaderboard scale. Before this rule existed the per-view headings carried
-    the display-scale h1 treatment (3rem uppercase), which drowned the content
-    they named.
+    Each view is served at its own URL, so each one owns an h1 naming what that
+    page is. Only one view is on screen at a time, so only one h1 ever renders.
+    They keep the quiet leaderboard scale rather than the display scale, so
+    promoting them changed the document outline and not the design: before this
+    rule existed the headings carried the 3rem uppercase h1 treatment, which
+    drowned the content they named.
     """
     html = Path("site/index.html").read_text(encoding="utf-8")
     styles = Path("site/assets/styles.css").read_text(encoding="utf-8")
 
-    # One h1 in the static document, and it is the today view's caption.
-    assert html.count("<h1") == 1
-    assert '<h1 class="today-heading" data-i18n="Today\'s radar">' in html
-    for old_h1_id in ("leaderboard-heading", "map-heading", "trends-heading"):
-        assert f'<h2 id="{old_h1_id}"' in html
+    # One h1 per view, and exactly one of them sits in a section the reader can
+    # see. The other three stay behind `hidden` until routing opens them.
+    sections = re.findall(
+        r'<section class="view" id="([a-z]+)-view"([^>]*)>(.*?)\n      </section>',
+        html,
+        re.S,
+    )
+    assert {name for name, _, _ in sections} == {"today", "leaderboard", "map", "trends"}
+    for name, _, body in sections:
+        assert body.count("<h1") == 1, name
+    visible = [name for name, attrs, _ in sections if " hidden" not in attrs]
+    assert visible == ["today"], visible
 
-    # The h1 renders exactly like the counts caption beside it: the shared
+    assert '<h1 class="today-heading" data-i18n="Today\'s radar">' in html
+    for heading_id in ("leaderboard-heading", "map-heading", "trends-heading"):
+        assert f'<h1 id="{heading_id}"' in html
+
+    # The today h1 renders exactly like the counts caption beside it: the shared
     # small-caps utility group supplies face/size/case, and this rule only
     # mutes color and weight. No font-size override may reappear here.
     marker = "#today-view .section-title h1,"
@@ -2405,9 +2669,10 @@ def test_heading_outline_and_scale_stay_quiet():
     assert "align-items: flex-start;" in footer_block
 
     # View and detail headings share the compact leaderboard scale; none of
-    # them may reintroduce the uppercase display treatment.
+    # them may reintroduce the uppercase display treatment. h1 and h2 are styled
+    # by the same rule, so retagging a heading cannot change how it looks.
     compact = "clamp(1.25rem, 2vw, 1.5rem);"
-    view_rule = _css_rule(styles, ".view-heading h2 {")
+    view_rule = _css_rule(styles, ".view-heading h1,\n.view-heading h2 {")
     assert f"font-size: {compact}" in view_rule
     assert "line-height: 1.2;" in view_rule
     assert "text-transform" not in view_rule
@@ -2415,9 +2680,11 @@ def test_heading_outline_and_scale_stay_quiet():
     assert f"font-size: {compact}" in detail_rule
     assert "line-height: 1.2;" in detail_rule
 
-    # The mobile h1 clamp must not reach the quiet h2 headings.
+    # The mobile h1 clamp must not reach the quiet view headings, in either tag.
     mobile_block = styles.split("@media (max-width: 760px)", 1)[1]
-    assert ".view-heading h2," not in mobile_block.split("}", 1)[0]
+    first_rule = mobile_block.split("}", 1)[0]
+    assert ".view-heading h1," not in first_rule
+    assert ".view-heading h2," not in first_rule
 
 
 def test_issue_332_a_release_outranks_a_same_day_update():

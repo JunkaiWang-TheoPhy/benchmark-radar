@@ -257,7 +257,7 @@ def _page_html(slug: str, shard: dict[str, Any]) -> str:
         scores_html = (
             '<p class="caveat">No reported scores are on record for this benchmark yet.</p>'
         )
-    interactive = f"{SITE_URL}/?view=leaderboard&lfrontier={slug}"
+    interactive = f"{SITE_URL}/leaderboard/?lfrontier={slug}"
     nav = _benchmark_nav(interactive)
     return f"""<!doctype html>
 <html lang="en">
@@ -346,7 +346,7 @@ def _directory_html(entries: list[tuple[str, str]]) -> str:
   <h1>Benchmark directory</h1>
   <p class="lede">Every benchmark in the catalog, each with its own page covering
     what it tests, who published it, and which scores are on record. The
-    interactive dashboard is <a href="{SITE_URL}/?view=leaderboard">here</a>.</p>
+    interactive dashboard is <a href="{SITE_URL}/leaderboard/">here</a>.</p>
   <p class="count">{count}</p>
   <ul>{links}</ul>
 </main>

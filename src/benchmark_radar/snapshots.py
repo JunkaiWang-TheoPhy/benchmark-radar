@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from . import kw_bench
+from .app_pages import write_app_pages
 from .attention import fetch_attention_feeds
 from .benchmark_scores import DEFAULT_SCORES_PATH, load_scores, score_progression
 from .corpus import (
@@ -1134,13 +1135,23 @@ def rebuild_dashboard(
         if feed_output is not None
         else output.parent / "sitemap.xml"
     )
+    slugs = benchmark_slugs(benchmark_shard_dir)
+    # A data-only build writes no view pages, so it has no list of published
+    # ones, and None asks for every view. That is right rather than empty: this
+    # sitemap describes the deployed site, not this build's output directory,
+    # the same way it lists benchmark pages this build did not write either.
+    # The Pages build, which does write the pages, passes what it wrote.
+    view_paths: list[str] | None = None
+    if feed_output is not None:
+        app_pages = write_app_pages(value, sitemap_output.parent)
+        view_paths = app_pages["paths"]
+        write_feed(snapshots, feed_output)
     write_sitemap(
         snapshots,
         sitemap_output,
-        benchmark_slugs(benchmark_shard_dir),
+        slugs,
+        view_paths=view_paths,
     )
-    if feed_output is not None:
-        write_feed(snapshots, feed_output)
     return value
 
 

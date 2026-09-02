@@ -23,7 +23,7 @@ github.com/ktwu01/benchmark-radar，每天更新，并支持一键导出数据
 **几秒找到一个 benchmark，再看模型成绩如何随时间变化。点击下面的动图，查看
 SWE-bench Verified 的 saturation 过程。**
 
-<a href="https://benchmark-radar.org/?view=leaderboard&lfrontier=swe_bench_verified">
+<a href="https://benchmark-radar.org/leaderboard/?lfrontier=swe_bench_verified">
   <img src="assets/swe-bench-verified.gif" alt="搜索 SWE-bench Verified 并查看模型成绩随时间变化的动画演示" width="720" />
 </a>
 
@@ -39,13 +39,14 @@ SWE-bench Verified 的 saturation 过程。**
 **Leaderboard：各家模型卡到底最常报告哪些 benchmark，以及每个 benchmark 的成绩
 如何一路上涨，直到几乎没有提升空间。**
 
-<a href="https://benchmark-radar.org/?view=leaderboard">
+<a href="https://benchmark-radar.org/leaderboard/">
   <img src="assets/intro-leaderboard-page.gif" alt="Leaderboard 页面动画演示：按模型卡采用度排序的 benchmark、成绩随时间变化的图表，以及剩余提升空间卡片" width="720" />
 </a>
 
 ## 使用方法
 
 - **[打开 dashboard](https://benchmark-radar.org/)** — 每日洞察、趋势、热门 benchmark、模型卡采用排名等
+- **[在本地查询](https://benchmark-radar.org/cli/)** — 安装并使用离线 CLI
 - **[通过 RSS 订阅](https://benchmark-radar.org/feed.xml)** — 每天获取最新的 benchmark 情报
 - **[下载完整数据集](https://benchmark-radar.org/data/radar.json)** — 免费、公开、机器可读的 JSON，无需爬虫或联系作者
 - **[参与贡献](CONTRIBUTING.md)** — 添加 benchmark、模型卡、信源或修复
@@ -65,10 +66,10 @@ https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL
 
 ## 更多
 
-- [评分规则](src/benchmark_radar/rubric.py)
+- [评分规则](https://benchmark-radar.org/rubric/)
 - [模型卡采用数据](data/model_cards.yml)
 - [公开语料 schema](docs/cumulative-corpus.schema.json)
-- [引用信息](CITATION.cff)
+- [引用信息](https://benchmark-radar.org/cite/)
 - [技术报告](https://doi.org/10.5281/zenodo.22167102)
 - [配置](config.yml)
 - **开发环境：** `python -m pip install -e '.[dev]' && benchmark-radar normalize-external`

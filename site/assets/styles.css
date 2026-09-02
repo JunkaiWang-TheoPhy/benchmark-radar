@@ -446,10 +446,9 @@ button.repo-badge svg {
   color: white;
 }
 
-/* Rubric and CLI are dialog triggers rather than page links, so their inactive
-   blue is kept separate from the shared active treatment above. A reader should
-   be able to tell before clicking that these two open a sheet over the page
-   instead of changing the view under it. */
+/* Rubric and CLI have real page paths, but still open the familiar dialog
+   panels. Their inactive blue distinguishes that interaction from a dashboard
+   view switch. */
 #rubric-nav:not(.nav-active),
 #cli-nav:not(.nav-active) {
   color: var(--blue-deep);
@@ -482,9 +481,12 @@ main {
   padding-top: clamp(1.25rem, 2vw, 1.75rem);
 }
 
-/* View headings are h2s under the page's single h1, and they share the
-   quiet leaderboard-heading scale rather than the display scale the old
-   per-view h1s used. */
+/* Each view is its own page (/, /leaderboard/, /trends/, /explore/) and
+   carries its own h1, but only one view is visible at a time so only one h1
+   ever renders. They keep the quiet leaderboard-heading scale rather than the
+   display scale, so promoting the heading changed the document outline and
+   not the design. */
+.view-heading h1,
 .view-heading h2 {
   margin: 0;
   max-width: none;
@@ -3725,6 +3727,19 @@ dialog {
   box-shadow: 0 25px 90px rgb(15 29 35 / 35%);
 }
 
+/* The generated /cli/, /cite/ and /rubric/ documents ship their familiar
+   dialog already open, so their useful content is visible before app.js runs.
+   A non-modal <dialog open> otherwise keeps its document position near the
+   footer; pin the seeded first paint inside the viewport. The router promotes
+   it to a modal immediately after hydration, at which point :modal takes over. */
+dialog[open][data-seed]:not(:modal) {
+  position: fixed;
+  inset-block-start: max(1rem, env(safe-area-inset-top));
+  inset-inline: 0;
+  z-index: 20;
+  margin-inline: auto;
+}
+
 dialog::backdrop {
   background: rgb(21 36 42 / 65%);
   backdrop-filter: blur(3px);
@@ -3866,7 +3881,7 @@ dialog::backdrop {
   word-break: break-all;
 }
 
-/* Shared by the citation sheet at /#cite and the CLI sheet at /#cli: blocks of
+/* Shared by the citation panel at /cite/ and the CLI panel at /cli/: blocks of
    text a reader came to copy, stacked in one column so each one's label is
    readable before a character of the block itself is. */
 .copy-blocks {

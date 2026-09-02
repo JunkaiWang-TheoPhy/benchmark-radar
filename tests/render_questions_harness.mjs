@@ -89,7 +89,12 @@ globalThis.document = {
   querySelectorAll: () => [],
   querySelector: () => null,
 };
-globalThis.window = { addEventListener: () => {}, location: { search: "", hash: "" } };
+// pathname included because the app reads the view off it: a location
+// without one is not a location any browser would hand you.
+globalThis.window = {
+  addEventListener: () => {},
+  location: { pathname: "/", search: "", hash: "" },
+};
 // Bootstrap fetches radar.json on load. This harness renders a fixture instead,
 // so the request is stubbed to a never-settling promise: letting it reject would
 // print an unhandled rejection that has nothing to do with what is under test.

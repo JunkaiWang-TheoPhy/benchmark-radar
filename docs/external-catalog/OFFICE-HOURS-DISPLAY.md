@@ -5,7 +5,7 @@ about it. Two of my earlier conclusions were wrong and are corrected here.
 
 ## Correction 1: the saturation panel already exists, and it is good
 
-`?view=leaderboard&lfrontier=gpqa_diamond` renders a three-band chart:
+`/leaderboard/?lfrontier=gpqa_diamond` renders a three-band chart:
 
 - **Top band, largest:** cumulative distinct organizations, a staircase. Adoption.
 - **Middle:** a rug of model-card ticks.
@@ -100,7 +100,7 @@ three navigation systems for one job. Search subsumes both once it covers 1,148.
 
 ## The assignment
 
-Open `?view=leaderboard&lfrontier=mmlu` and read the panel as if you had five seconds and
+Open `/leaderboard/?lfrontier=mmlu` and read the panel as if you had five seconds and
 came from lab meeting. Note where your eye lands first and whether it answers "is this
 still worth running". Then decide whether the fix is reordering the bands or rewriting the
 headline. That judgement is yours and it does not need any more data work to make.
