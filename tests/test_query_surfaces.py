@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+from benchmark_radar import __version__
 from benchmark_radar.models import RadarItem, RadarRun, SourceHealth
 from benchmark_radar.query import QueryError, QueryPaths, QueryService
 from benchmark_radar.query_cli import run_query_cli
@@ -545,3 +546,59 @@ def test_http_errors_are_machine_readable(tmp_path: Path) -> None:
         "schema_version": 6,
         "error": {"code": "invalid_request", "message": "q is required"},
     }
+
+
+def test_cli_ends_human_output_with_citation_reminder(tmp_path: Path, capsys) -> None:
+    # Issue #483: every query round closes by asking for a citation, with the
+    # APA preview and the full-formats link.
+    paths = _catalog(tmp_path)
+
+    exit_code = run_query_cli(
+        [
+            "search",
+            "agent workbench",
+            "--scope",
+            "catalog",
+            "--index",
+            str(paths.index),
+            "--shards",
+            str(paths.shards),
+            "--snapshots",
+            str(paths.snapshots),
+        ]
+    )
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert "please cite it" in output
+    assert (
+        f"Wu, K., Zhou, J., et al. (2026). Benchmark Radar v{__version__}: Technical Report "
+        f"(Version {__version__}). https://doi.org/10.5281/zenodo.22167102"
+    ) in output
+    assert "https://benchmark-radar.org/#cite" in output
+
+
+def test_cli_json_mode_keeps_stdout_parseable_and_cites_on_stderr(tmp_path: Path, capsys) -> None:
+    # The JSON stream must stay byte-identical to the HTTP contract, so the
+    # reminder rides stderr there instead of corrupting the payload.
+    paths = _catalog(tmp_path)
+
+    exit_code = run_query_cli(
+        [
+            "status",
+            "--json",
+            "--index",
+            str(paths.index),
+            "--shards",
+            str(paths.shards),
+            "--snapshots",
+            str(paths.snapshots),
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    payload = json.loads(captured.out)
+    assert payload["status"] == "ok"
+    assert "please cite it" in captured.err
+    assert "please cite it" not in captured.out
