@@ -12,7 +12,7 @@ selection criteria, and desired output open unless they specify them.
 
 Carry this out yourself, without handing the user a checklist. Installing this Skill
 is the request to use the CLI, so an install or repair the steps below call for is
-part of that request: run it, then say what you ran. Ask first only when the user
+part of that request: say you are installing the CLI from the official repository, then run it and report what you ran. Ask first only when the user
 told you not to install anything.
 
 1. Check availability with `benchmark-radar status --json`.

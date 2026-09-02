@@ -143,7 +143,8 @@ def test_consumer_skill_recovers_a_broken_cli() -> None:
     text = SKILL.read_text(encoding="utf-8")
     assert "missing or broken" in text
     assert "--force-reinstall" in text
-    assert "run it, then say what you ran" in text
+    assert "say you are installing the CLI from the official repository" in text
+    assert "report what you ran" in text
 
 
 def test_consumer_skill_keeps_acceptance_with_the_agent() -> None:
