@@ -190,15 +190,11 @@ def build_saturation_audit(
                     f"instruments: {', '.join(all_instruments)}"
                     if len(all_instruments) > 1
                     else None,
-                    f"protocols: {', '.join(all_protocols)}"
-                    if len(all_protocols) > 1
-                    else None,
+                    f"protocols: {', '.join(all_protocols)}" if len(all_protocols) > 1 else None,
                 ]
                 + ([caveat] if caveat else []),
                 "uncertainty": (
-                    [
-                        "No protocol-stratified series has at least two dated points."
-                    ]
+                    ["No protocol-stratified series has at least two dated points."]
                     if selected_series is None
                     else [
                         (
@@ -224,8 +220,7 @@ def build_saturation_audit(
                 "two dated points"
             ),
             "protocol_compatibility": (
-                "instrument and protocol must both match; otherwise rows are not "
-                "comparable"
+                "instrument and protocol must both match; otherwise rows are not comparable"
             ),
             "thresholds": list(_THRESHOLDS),
         },
