@@ -191,6 +191,8 @@ def test_offline_cli_route_is_in_the_view_bar_behind_a_short_link():
     assert 'id="cli-nav"' in nav
     assert 'href="/cli/"' in nav
     assert 'aria-controls="cli-dialog"' in nav
+    assert nav.index('data-view="today"') < nav.index('id="cli-nav"')
+    assert nav.index('id="cli-nav"') < nav.index('data-view="leaderboard"')
     assert 'id="cli-dialog"' in html
     assert 'id="cli-content"' in html
     assert 'state.cli = pathUtility === "cli"' in script
