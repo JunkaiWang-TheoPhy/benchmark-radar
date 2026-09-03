@@ -124,6 +124,29 @@ def _drop_spa_attributes(fragment: str) -> str:
     return re.sub(r'\s(?:data-view|aria-controls|aria-expanded)="[^"]*"', "", fragment)
 
 
+def _ensure_outline_icon(inner: str) -> str:
+    """Guarantee the first SVG in ``inner`` carries ``outline-icon``.
+
+    Matches the class anywhere in the attribute so extra classes or a
+    different attribute order do not look like a missing icon. If the SVG
+    already has a class list, append; if it has none, add one.
+    """
+    svg = re.search(r"<svg\b([^>]*)>", inner)
+    if not svg:
+        raise ValueError("the contact button has no svg to carry outline-icon")
+    attrs = svg.group(1)
+    class_attr = re.search(r'\bclass="([^"]*)"', attrs)
+    if class_attr:
+        classes = class_attr.group(1).split()
+        if "outline-icon" in classes:
+            return inner
+        replacement = f'class="{class_attr.group(1)} outline-icon"'
+        tagged_attrs = attrs[: class_attr.start()] + replacement + attrs[class_attr.end() :]
+    else:
+        tagged_attrs = attrs + ' class="outline-icon"'
+    return inner[: svg.start()] + f"<svg{tagged_attrs}>" + inner[svg.end() :]
+
+
 def _today_link(button: str) -> str:
     view = re.search(r'data-view="([^"]*)"', button)
     label = re.sub(r"<[^>]+>", "", button).strip()
@@ -172,14 +195,7 @@ def _adapt_header(header: str) -> str:
     # The chat-bubble svg carries the outline-icon class from index.html (same
     # mechanism fork and issues use on link badges). Ensure it is present so
     # the bubble renders as an outline when transformed into an anchor badge.
-    if 'class="outline-icon"' not in inner:
-        inner, count = re.subn(
-            r"<svg\b(?![^>]*\bclass=)", '<svg class="outline-icon"', inner, count=1
-        )
-        if count != 1:
-            raise ValueError(
-                "the contact button svg has no outline-icon class and cannot be tagged"
-            )
+    inner = _ensure_outline_icon(inner)
     header = header.replace(
         contact.group(0),
         '<a class="repo-badge" href="/#contact" aria-haspopup="dialog"'

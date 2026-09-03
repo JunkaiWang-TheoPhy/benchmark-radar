@@ -146,6 +146,11 @@ globalThis.window = {
   location: { search: "", href: "http://localhost:8734/blog/test/" },
 };
 
+// blog.js fetches GitHub badge counts on load. Keep the harness offline and
+// deterministic: never hit the network, and never reject so language tests
+// are not coupled to badge rendering.
+globalThis.fetch = async () => ({ ok: false, json: async () => ({}) });
+
 // Evaluate blog.js in this sandbox
 new Function(blogJsSource)();
 

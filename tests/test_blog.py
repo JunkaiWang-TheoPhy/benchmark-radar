@@ -21,6 +21,7 @@ from benchmark_radar.blog_shell import (
     BLOG_ARCHIVE_PATH,
     BLOG_FEED_PATH,
     BLOG_PATH,
+    _ensure_outline_icon,
     extract_site_chrome,
 )
 from benchmark_radar.feed import SITE_URL
@@ -565,12 +566,25 @@ def test_nav_labels_without_a_reviewed_string_stay_english_like_the_dashboard(tm
     assert table["CLI"] == "命令行"
 
 
+def test_ensure_outline_icon_tolerates_existing_classes_and_attribute_order():
+    already = '<svg class="outline-icon" viewBox="0 0 24 24"></svg>'
+    assert _ensure_outline_icon(already) == already
+    extra = '<svg class="foo outline-icon" viewBox="0 0 24 24"></svg>'
+    assert _ensure_outline_icon(extra) == extra
+    appended = _ensure_outline_icon('<svg class="foo" viewBox="0 0 24 24"></svg>')
+    assert 'class="foo outline-icon"' in appended
+    added = _ensure_outline_icon('<svg viewBox="0 0 24 24"></svg>')
+    assert re.search(r'<svg\b[^>]*\bclass="[^"]*\boutline-icon\b', added)
+    reordered = _ensure_outline_icon('<svg viewBox="0 0 24 24" class="foo"></svg>')
+    assert re.search(r'<svg\b[^>]*\bclass="[^"]*\boutline-icon\b', reordered)
+
+
 def test_contact_button_has_outline_icon_in_dashboard_source_and_blog_pages(tmp_path):
     # The contact button svg must carry class="outline-icon" directly in index.html,
     # and the extracted anchor in generated blog pages must preserve it so the icon
     # renders with stroke instead of a filled black blob.
     assert re.search(
-        r'<button\b[^>]*\bid="badge-contact"[^>]*>[\s\S]*?<svg\s+class="outline-icon"',
+        r'<button\b[^>]*\bid="badge-contact"[^>]*>[\s\S]*?<svg\b[^>]*\bclass="[^"]*\boutline-icon\b',
         DASHBOARD_HTML,
     ), "site/index.html contact button svg lacks outline-icon class"
 
@@ -578,7 +592,10 @@ def test_contact_button_has_outline_icon_in_dashboard_source_and_blog_pages(tmp_
     page = (tmp_path / "blog" / "2026-08-30" / "index.html").read_text(encoding="utf-8")
     contact_match = re.search(r'<a\b[^>]*\bhref="/#contact"[^>]*>([\s\S]*?)</a>', page)
     assert contact_match, "transformed contact link missing in blog page"
-    assert '<svg class="outline-icon"' in contact_match.group(1)
+    assert re.search(
+        r'<svg\b[^>]*\bclass="[^"]*\boutline-icon\b',
+        contact_match.group(1),
+    )
 
 
 def _run_blog_language_harness(mode: str, target_lang: str, remember: bool = True) -> dict:
