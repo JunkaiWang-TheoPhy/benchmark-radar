@@ -355,6 +355,9 @@ def test_rebuild_writes_the_sitemap_at_the_site_root(tmp_path, site_shell):
         f"{SITE_URL}/benchmarks/",
         f"{SITE_URL}/benchmarks/alpha-bench/",
         f"{SITE_URL}/benchmarks/zeta-bench/",
+        f"{SITE_URL}/blog/",
+        f"{SITE_URL}/blog/archive/",
+        f"{SITE_URL}/blog/2026-07-27/",
     ]
     lastmods = [node.text for node in root.findall("sm:url/sm:lastmod", ns)]
     assert lastmods == ["2026-07-27"] * len(urls)
@@ -1497,3 +1500,74 @@ def test_rebuild_dashboard_uses_an_empty_briefing_when_the_day_has_none(tmp_path
 
     # The dashboard renders its own absent state from this.
     assert json.loads(output.read_text())["days"][0]["briefing"] == {}
+
+
+def test_rebuild_publishes_a_brief_for_every_snapshot_and_lists_them(tmp_path, site_shell):
+    """The blog is built in the same run as the dashboard, from the same history."""
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(26), snapshot_dir)
+    write_snapshot(radar_run(27), snapshot_dir)
+    site_dir = tmp_path / "site"
+    site_shell(site_dir)
+
+    rebuild_dashboard(
+        snapshot_dir,
+        site_dir / "data" / "radar.json",
+        feed_output=site_dir / "feed.xml",
+    )
+
+    for day in ("2026-07-26", "2026-07-27"):
+        assert (site_dir / "blog" / day / "index.html").exists()
+    assert (site_dir / "blog" / "index.html").exists()
+    assert (site_dir / "blog" / "archive" / "index.html").exists()
+
+    ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    urls = [
+        node.text
+        for node in ET.parse(site_dir / "sitemap.xml").getroot().findall("sm:url/sm:loc", ns)
+    ]
+    assert f"{SITE_URL}/blog/" in urls
+    assert f"{SITE_URL}/blog/archive/" in urls
+    assert f"{SITE_URL}/blog/2026-07-27/" in urls
+
+
+def test_the_site_feed_and_the_blog_feed_stay_separate(tmp_path, site_shell):
+    """/feed.xml keeps pointing at the dashboard; /blog/feed.xml points at the pages."""
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(27), snapshot_dir)
+    site_dir = tmp_path / "site"
+    site_shell(site_dir)
+
+    rebuild_dashboard(
+        snapshot_dir,
+        site_dir / "data" / "radar.json",
+        feed_output=site_dir / "feed.xml",
+    )
+
+    site_feed = ET.parse(site_dir / "feed.xml").getroot()
+    blog_feed = ET.parse(site_dir / "blog" / "feed.xml").getroot()
+    assert site_feed.findtext("./channel/title") == "Benchmark Radar"
+    assert [item.findtext("link") for item in site_feed.findall("./channel/item")] == [
+        f"{SITE_URL}/?date=2026-07-27"
+    ]
+    assert blog_feed.findtext("./channel/title") == "Benchmark Radar daily brief"
+    assert [item.findtext("link") for item in blog_feed.findall("./channel/item")] == [
+        f"{SITE_URL}/blog/2026-07-27/"
+    ]
+
+
+def test_a_data_only_rebuild_writes_no_blog(tmp_path):
+    """No feed output means no site build, so no pages and no blog URLs listed."""
+    snapshot_dir = tmp_path / "snapshots"
+    write_snapshot(radar_run(27), snapshot_dir)
+    output = tmp_path / "data" / "radar.json"
+
+    rebuild_dashboard(snapshot_dir, output)
+
+    assert not (tmp_path / "data" / "blog").exists()
+    ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    urls = [
+        node.text
+        for node in ET.parse(output.parent / "sitemap.xml").getroot().findall("sm:url/sm:loc", ns)
+    ]
+    assert not [url for url in urls if "/blog/" in url]

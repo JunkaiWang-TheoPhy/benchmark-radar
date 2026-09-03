@@ -372,6 +372,10 @@
       >
         Explore
       </a>
+      <!-- The blog is a set of documents, not a dashboard view, so this link
+           carries no data-view: app.js only intercepts clicks on elements that
+           have one, and a brief has to arrive as a full page load. -->
+      <a href="/blog/" data-i18n="Blog">Blog</a>
       <!-- Rubric remains the same pop-up panel readers already use, but its
            href gives it a server-rendered, indexable entry point. -->
       <a

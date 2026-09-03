@@ -12,7 +12,7 @@ showing a zero.
 
 The interactive dashboard has four views. Each heavy view also arrives with a
 server-delivered first screen in the same visual language. The benchmark
-directory is a set of plain pages that need no JavaScript to read.
+directory and the daily brief are plain pages that need no JavaScript to read.
 
 ## Start here
 
@@ -24,6 +24,7 @@ directory is a set of plain pages that need no JavaScript to read.
 - [Command-line access](https://benchmark-radar.org/cli/): how to install and use the offline benchmark search CLI.
 - [Citation information](https://benchmark-radar.org/cite/): the preferred project citation and machine-readable citation metadata.
 - [Scoring rubric](https://benchmark-radar.org/rubric/): how evidence is collected and scored.
+- [Daily brief](https://benchmark-radar.org/blog/): one page per collection day covering what appeared, how strong the evidence was, and what the record does not support. The [archive](https://benchmark-radar.org/blog/archive/) lists every day.
 
 ## Data
 
@@ -33,6 +34,7 @@ directory is a set of plain pages that need no JavaScript to read.
 - [leaderboard.json](https://benchmark-radar.org/data/leaderboard.json): the model card adoption ranking as standalone data. Also published as [leaderboard.csv](https://benchmark-radar.org/data/leaderboard.csv) and [leaderboard.md](https://benchmark-radar.org/data/leaderboard.md).
 - [records-badge.json](https://benchmark-radar.org/data/records-badge.json): the current number of collected records.
 - [RSS feed](https://benchmark-radar.org/feed.xml): one entry per collection day.
+- [Daily brief RSS feed](https://benchmark-radar.org/blog/feed.xml): one entry per published brief.
 - [sitemap.xml](https://benchmark-radar.org/sitemap.xml): every indexable page on the site.
 
 Per-benchmark data is served one file per benchmark under

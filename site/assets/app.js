@@ -383,6 +383,7 @@ const I18N = {
     Leaderboard: "排行榜",
     Trends: "趋势",
     Explore: "探索",
+    Blog: "博客",
     Rubric: "评分标准",
     "Daily briefing": "每日简报",
     "Questions for today": "今日问答",
