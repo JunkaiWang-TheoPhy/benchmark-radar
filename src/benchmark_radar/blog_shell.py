@@ -1,47 +1,21 @@
-"""The shared site chrome, extracted for the daily brief blog.
+"""Page chrome and the post record for the daily brief blog.
 
-``site/index.html`` is the single hand-maintained source of the site's
-masthead, section navigation, and footer. Every dashboard route is that same
-document served at its own path by ``app_pages.py``; the blog joins it here by
-extracting those three regions at build time, so a menubar item, badge, or
-footer line can no longer exist on the dashboard but not on a brief.
-
-A blog page is still a static document outside the single-page app, so the
-extracted chrome carries a small, explicit set of transforms, each of which
-exists because the SPA machinery it referenced is absent:
-
-* the Today control is a view-switching button in the SPA and becomes the
-  plain link to ``/`` it already is for crawlers;
-* view-only attributes (``data-view``, ``aria-controls``, ``aria-expanded``)
-  are dropped from the section nav, and the blog's own link is marked
-  active. Element ids stay: styles.css keys the dialog-trigger treatment of
-  Rubric and CLI (the inactive blue and the "ⓘ" marker) off #rubric-nav and
-  #cli-nav, so a brief's tabs must carry the same ids to look the same;
-* the Contact button opens a sheet that only exists inside the SPA, so it
-  becomes a link to ``/#contact`` — the dashboard deep link that opens the
-  same sheet on load;
-* the masthead RSS badge keeps the site-wide feed but with a root-relative
-  href, so a locally served preview (or any non-canonical mirror) stays on
-  the serving host; canonical and ``og:`` URLs keep the absolute SITE_URL;
-* the language toggle ships on every page, because the chrome itself is
-  always translatable: ``blog.js`` drives it with the same visible
-  contract ``app.js`` uses (title, glyph, aria-pressed) and applies the
-  same reviewed translations to the chrome — the app.js ``I18N`` table is
-  parsed at build time and the subset the chrome needs is baked into the
-  page, so a Chinese reader sees 联系作者 and the ⓘ tooltips on a brief
-  too. A body without a stored translation simply stays English;
-* the footer's build date is baked from the day the page describes.
+Blog pages are not the dashboard. The dashboard is one JavaScript application
+whose views are published at their own paths by ``app_pages.py``; a brief is a
+document that has to be readable with no script at all, because the whole point
+of writing one per collection day is that a search engine and a reader arriving
+cold can both see what changed that day. So these pages carry their own
+skeleton and link the dashboard stylesheet for its design tokens rather than
+reusing ``site/index.html``.
 
 Nothing here writes files. It owns the record a brief is built into and the
-chrome that wraps it, so ``blog_content.py`` can turn snapshots into posts
-and ``blog.py`` can decide which pages exist without either of them
-restating the masthead.
+markup that wraps it, so ``blog_content.py`` can turn snapshots into posts and
+``blog.py`` can decide which pages exist without either of them restating the
+masthead.
 """
 
 from __future__ import annotations
 
-import json
-import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any
@@ -52,10 +26,6 @@ from .site_shell import esc, json_ld
 BLOG_PATH = "/blog/"
 BLOG_ARCHIVE_PATH = "/blog/archive/"
 BLOG_FEED_PATH = "/blog/feed.xml"
-
-# The SPA's Today control maps to the dashboard root; every other section is
-# already a real anchor whose href is the server-rendered page.
-_TODAY_HREFS = {"today": "/"}
 
 
 @dataclass(frozen=True)
@@ -94,127 +64,76 @@ class BlogPost:
         return self.body_zh is not None
 
 
-@dataclass(frozen=True)
-class SiteChrome:
-    """The masthead, section nav, and footer extracted from ``index.html``."""
-
-    header: str
-    navigation: str
-    footer: str
-
-
-def _region(dashboard_html: str, pattern: str, what: str) -> str:
-    found = re.search(pattern, dashboard_html, re.S)
-    if not found:
-        raise ValueError(
-            f"cannot extract the {what} from site/index.html: "
-            "the dashboard source changed shape; update the blog chrome extractor"
-        )
-    return found.group(0)
+def _brand() -> str:
+    # Root-relative, like the dashboard's own menubar. A canonical absolute URL
+    # belongs in the SEO tags, not in a nav anchor: absolute links here eject a
+    # local preview (or any non-canonical mirror) to the production domain.
+    return """<a class="brand" href="/" aria-label="Benchmark Radar home">
+  <span class="brand-mark" aria-hidden="true"><span></span></span>
+  <strong>Benchmark Radar</strong>
+</a>"""
 
 
-def _strip_comments(fragment: str) -> str:
-    without = re.sub(r"<!--.*?-->", "", fragment, flags=re.S)
-    return re.sub(r"\n[ \t]*\n", "\n", without)
+_RSS_ICON = """<svg viewBox="0 0 24 24" aria-hidden="true">
+  <circle cx="5" cy="19" r="2"></circle>
+  <path d="M4 11a9 9 0 0 1 9 9"></path>
+  <path d="M4 4a16 16 0 0 1 16 16"></path>
+</svg>"""
+
+_GITHUB_ICON = """<svg class="brand-icon github-icon" viewBox="0 0 24 24" aria-hidden="true">
+  <path d="M12 2.5a9.5 9.5 0 0 0-3 18.52c.48.09.65-.21.65-.46v-1.67
+    c-2.67.58-3.23-1.13-3.23-1.13-.44-1.12-1.07-1.42-1.07-1.42-.87-.6.07-.59.07-.59
+    .96.07 1.47.99 1.47.99.86 1.47 2.25 1.05 2.8.8.09-.62.34-1.05.61-1.29
+    -2.13-.24-4.37-1.07-4.37-4.75 0-1.05.38-1.91.99-2.58-.1-.24-.43-1.22.09-2.54
+    0 0 .81-.26 2.63.98A9.16 9.16 0 0 1 12 7.96c.82 0 1.65.11 2.42.33
+    1.82-1.24 2.63-.98 2.63-.98.52 1.32.19 2.3.09 2.54.61.67.99 1.53.99 2.58
+    0 3.69-2.25 4.5-4.39 4.74.35.3.65.88.65 1.78v2.63c0 .25.17.55.66.46
+    A9.5 9.5 0 0 0 12 2.5Z"></path>
+</svg>"""
+
+# Every dashboard route plus the blog, so a reader who landed on a brief from
+# search can reach the rest of the site. The dashboard's own menubar is a
+# separate list in site/index.html and stays the source of truth for it.
+_NAV_LINKS: tuple[tuple[str, str, str], ...] = (
+    ("today", "/", "Today"),
+    ("leaderboard", "/leaderboard/", "Leaderboard"),
+    ("trends", "/trends/", "Trends"),
+    ("explore", "/explore/", "Explore"),
+    ("blog", BLOG_PATH, "Blog"),
+)
 
 
-def _drop_spa_attributes(fragment: str) -> str:
-    # Ids stay on purpose: styles.css styles #rubric-nav and #cli-nav by id,
-    # so stripping them would silently turn those tabs into plain links.
-    return re.sub(r'\s(?:data-view|aria-controls|aria-expanded)="[^"]*"', "", fragment)
-
-
-def _today_link(button: str) -> str:
-    view = re.search(r'data-view="([^"]*)"', button)
-    label = re.sub(r"<[^>]+>", "", button).strip()
-    if not view or view.group(1) not in _TODAY_HREFS or not label:
-        raise ValueError(
-            "the dashboard nav contains a button this extractor cannot turn "
-            f"into a link: {button[:120]!r}"
-        )
-    href = _TODAY_HREFS[view.group(1)]
-    return f'<a href="{href}" data-i18n="{esc(label)}">{esc(label)}</a>'
-
-
-def _adapt_navigation(nav: str) -> str:
-    nav = _strip_comments(nav)
-    nav = re.sub(r"<button\b[^>]*>.*?</button>", lambda m: _today_link(m.group(0)), nav, flags=re.S)
-    nav = _drop_spa_attributes(nav)
-    # The blog's own entry is the current page everywhere the blog renders.
-    marked = re.sub(
-        r'<a href="' + BLOG_PATH + '"',
-        f'<a class="nav-active" aria-current="page" href="{BLOG_PATH}"',
-        nav,
+def header(*, translated: bool) -> str:
+    toggle = (
+        '<button type="button" class="repo-badge" id="lang-toggle" aria-pressed="false" '
+        'aria-label="Switch to Chinese (中文)" data-next-language="zh">'
+        '<span class="repo-badge-glyph" id="lang-toggle-label">中</span></button>'
+        if translated
+        else ""
     )
-    if marked == nav:
-        raise ValueError(
-            "the dashboard nav no longer links to the blog at "
-            f"{BLOG_PATH!r}; the blog pages cannot mark their section active"
-        )
-    return marked
+    return f"""<header class="masthead">
+{_brand()}
+<div class="masthead-end" aria-label="Site utilities">
+  <a class="repo-badge feed-badge" href="{BLOG_FEED_PATH}"
+     aria-label="Subscribe to the daily brief via RSS">{_RSS_ICON}
+    <span class="repo-badge-label">RSS</span></a>
+  {toggle}
+  <a class="repo-badge" href="https://github.com/ktwu01/benchmark-radar"
+     aria-label="Open Benchmark Radar on GitHub">{_GITHUB_ICON}
+    <span class="repo-badge-label">GitHub</span></a>
+</div>
+</header>"""
 
 
-def _adapt_header(header: str) -> str:
-    header = _strip_comments(header)
-    # Same host-relative rule as the section nav: the badge keeps the site
-    # feed, but a local preview or mirror must not eject to the canonical
-    # domain on click.
-    header = header.replace(f'href="{SITE_URL}/feed.xml"', 'href="/feed.xml"', 1)
-    contact = re.search(r'<button\b([^>]*\bid="badge-contact"[^>]*)>(.*?)</button>', header, re.S)
-    if not contact:
-        raise ValueError(
-            "the dashboard masthead no longer carries the contact button; "
-            "the blog chrome cannot link to /#contact"
-        )
-    attrs, inner = contact.group(1), contact.group(2)
-    title = re.search(r'title="([^"]*)"', attrs)
-    i18n_title = re.search(r'data-i18n-title="([^"]*)"', attrs)
-    # The chat-bubble svg carries the outline-icon class from index.html (same
-    # mechanism fork and issues use on link badges). Ensure it is present so
-    # the bubble renders as an outline when transformed into an anchor badge.
-    if 'class="outline-icon"' not in inner:
-        inner, count = re.subn(
-            r"<svg\b(?![^>]*\bclass=)", '<svg class="outline-icon"', inner, count=1
-        )
-        if count != 1:
-            raise ValueError(
-                "the contact button svg has no outline-icon class and cannot be tagged"
-            )
-    header = header.replace(
-        contact.group(0),
-        '<a class="repo-badge" href="/#contact" aria-haspopup="dialog"'
-        + (f' title="{esc(title.group(1))}"' if title else "")
-        + (f' data-i18n-title="{esc(i18n_title.group(1))}"' if i18n_title else "")
-        + f">{inner}</a>",
-        1,
-    )
-    return header
-
-
-def _page_footer(footer: str, updated: str) -> str:
-    stamped, count = re.subn(
-        r'(<p id="build-meta">)Updated —(</p>)',
-        rf'\g<1><span data-i18n="Updated">Updated</span> {esc(updated)}\g<2>',
-        footer,
-    )
-    if count != 1:
-        raise ValueError(
-            "the dashboard footer no longer has the 'Updated —' placeholder; "
-            "the blog pages cannot bake their build date"
-        )
-    return stamped
-
-
-def extract_site_chrome(dashboard_html: str) -> SiteChrome:
-    """Pull the shared masthead, nav, and footer out of ``site/index.html``."""
-    header = _region(dashboard_html, r'<header class="masthead">.*?</header>', "masthead")
-    navigation = _region(dashboard_html, r'<nav class="view-nav".*?</nav>', "section nav")
-    footer = _region(dashboard_html, r"<footer>.*?</footer>", "footer")
-    return SiteChrome(
-        header=_adapt_header(header),
-        navigation=_adapt_navigation(navigation),
-        footer=_strip_comments(footer),
-    )
+def navigation(active: str) -> str:
+    # Root-relative for the same reason as the brand link above: these stay on
+    # whatever host serves the page. Sitemap locs, canonical, and og:url keep
+    # the absolute SITE_URL because those are semantically absolute by spec.
+    rendered = []
+    for key, path, label in _NAV_LINKS:
+        current = ' class="nav-active" aria-current="page"' if key == active else ""
+        rendered.append(f'<a href="{path}"{current}>{label}</a>')
+    return '<nav class="view-nav" aria-label="Site sections">' + "".join(rendered) + "</nav>"
 
 
 def render_page(
@@ -223,22 +142,13 @@ def render_page(
     description: str,
     canonical: str,
     body: str,
-    chrome: SiteChrome,
-    updated: str,
-    chrome_i18n: dict[str, str] | None = None,
     schemas: Iterable[dict[str, Any]] = (),
     og_type: str = "website",
+    translated: bool = False,
 ) -> str:
-    """Wrap one rendered body in the extracted site chrome."""
+    """Wrap one rendered body in the blog skeleton."""
     schema_blocks = "".join(
         f'<script type="application/ld+json">{json_ld(payload)}</script>' for payload in schemas
-    )
-    i18n_block = (
-        '<script type="application/json" id="chrome-i18n">'
-        + json.dumps(chrome_i18n, ensure_ascii=False, sort_keys=True)
-        + "</script>"
-        if chrome_i18n
-        else ""
     )
     return f"""<!doctype html>
 <html lang="en">
@@ -265,15 +175,17 @@ def render_page(
 <link rel="stylesheet" href="/assets/styles.css">
 <link rel="stylesheet" href="/assets/blog.css">
 {schema_blocks}
-{i18n_block}
 <script src="/assets/blog.js" defer></script>
 </head>
 <body class="blog-page">
 <a class="skip-link" href="#main-content">Skip to content</a>
-{chrome.header}
-{chrome.navigation}
+{header(translated=translated)}
+{navigation("blog")}
 <main id="main-content" tabindex="-1"><div class="blog-view">{body}</div></main>
-{_page_footer(chrome.footer, updated)}
+<footer class="blog-footer">
+  <strong>Benchmark Radar</strong>
+  <span>Evidence first. Every claim should lead back to its source.</span>
+</footer>
 </body>
 </html>
 """
