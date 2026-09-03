@@ -23,12 +23,13 @@ exists because the SPA machinery it referenced is absent:
 * the masthead RSS badge keeps the site-wide feed but with a root-relative
   href, so a locally served preview (or any non-canonical mirror) stays on
   the serving host; canonical and ``og:`` URLs keep the absolute SITE_URL;
-* the language toggle ships only on pages that store a reviewed Chinese
-  translation; ``blog.js`` drives it with the same visible contract
-  ``app.js`` uses (title, glyph, aria-pressed), and applies the same
-  reviewed translations to the chrome: the app.js ``I18N`` table is parsed
-  at build time and the subset the chrome needs is baked into the page,
-  so a Chinese reader sees 联系作者 and the ⓘ tooltips on a brief too;
+* the language toggle ships on every page, because the chrome itself is
+  always translatable: ``blog.js`` drives it with the same visible
+  contract ``app.js`` uses (title, glyph, aria-pressed) and applies the
+  same reviewed translations to the chrome — the app.js ``I18N`` table is
+  parsed at build time and the subset the chrome needs is baked into the
+  page, so a Chinese reader sees 联系作者 and the ⓘ tooltips on a brief
+  too. A body without a stored translation simply stays English;
 * the footer's build date is baked from the day the page describes.
 
 Nothing here writes files. It owns the record a brief is built into and the
@@ -168,6 +169,11 @@ def _adapt_header(header: str) -> str:
     attrs, inner = contact.group(1), contact.group(2)
     title = re.search(r'title="([^"]*)"', attrs)
     i18n_title = re.search(r'data-i18n-title="([^"]*)"', attrs)
+    # The chat-bubble svg carries no class: on the dashboard the outline comes
+    # from button.repo-badge svg, which an anchor badge does not match. The
+    # outline-icon class is the same mechanism the fork and issues icons use
+    # on link badges, so the bubble renders identically on a brief.
+    inner = inner.replace("<svg viewBox=", '<svg class="outline-icon" viewBox=', 1)
     header = header.replace(
         contact.group(0),
         '<a class="repo-badge" href="/#contact" aria-haspopup="dialog"'
@@ -177,17 +183,6 @@ def _adapt_header(header: str) -> str:
         1,
     )
     return header
-
-
-def _with_toggle(header: str, *, translated: bool) -> str:
-    if translated:
-        return header
-    return re.sub(
-        r'<button\b[^>]*\bid="lang-toggle"[^>]*>.*?</button>',
-        "",
-        header,
-        flags=re.S,
-    )
 
 
 def _page_footer(footer: str, updated: str) -> str:
@@ -227,7 +222,6 @@ def render_page(
     chrome_i18n: dict[str, str] | None = None,
     schemas: Iterable[dict[str, Any]] = (),
     og_type: str = "website",
-    translated: bool = False,
 ) -> str:
     """Wrap one rendered body in the extracted site chrome."""
     schema_blocks = "".join(
@@ -270,7 +264,7 @@ def render_page(
 </head>
 <body class="blog-page">
 <a class="skip-link" href="#main-content">Skip to content</a>
-{_with_toggle(chrome.header, translated=translated)}
+{chrome.header}
 {chrome.navigation}
 <main id="main-content" tabindex="-1"><div class="blog-view">{body}</div></main>
 {_page_footer(chrome.footer, updated)}

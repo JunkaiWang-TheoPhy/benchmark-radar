@@ -131,7 +131,6 @@ def _post_page(post: BlogPost, chrome: SiteChrome, chrome_i18n: dict[str, str]) 
             ),
         ),
         og_type="article",
-        translated=post.translated,
     )
 
 

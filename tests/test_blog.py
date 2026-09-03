@@ -218,20 +218,25 @@ def test_stored_chinese_is_published_with_a_toggle():
     assert "该信息流经过关键词筛选" in post.body_zh
 
 
-def test_a_day_without_stored_chinese_publishes_english_only(tmp_path):
+def test_a_day_without_stored_chinese_publishes_english_body_with_the_toggle(tmp_path):
     post = build_post(_legacy())
     assert post.body_zh is None and post.title_zh is None
     write_blog_with_chrome([_legacy()], tmp_path)
     page = (tmp_path / "blog" / "2026-07-23" / "index.html").read_text(encoding="utf-8")
+    # No invented translation: the body ships English-only. The toggle stays,
+    # because the chrome itself is translatable on every page.
     assert 'data-lang-content="zh"' not in page
-    assert 'id="lang-toggle"' not in page
+    assert 'data-lang-content="en"' in page
+    assert 'id="lang-toggle"' in page
 
 
-def test_the_toggle_appears_only_where_a_translation_exists(tmp_path):
-    write_blog_with_chrome([_briefed(status="insight")], tmp_path)
-    page = (tmp_path / "blog" / "2026-08-30" / "index.html").read_text(encoding="utf-8")
-    assert page.count('id="lang-toggle"') == 1
-    assert 'data-lang-content="zh"' in page and 'data-lang-content="en"' in page
+def test_the_toggle_is_on_every_blog_page_like_the_dashboard(tmp_path):
+    write_blog_with_chrome([_briefed(status="insight"), _legacy()], tmp_path)
+    for slug in ("", "archive/", "2026-08-30/", "2026-07-23/"):
+        page = (tmp_path / "blog" / slug / "index.html").read_text(encoding="utf-8")
+        assert page.count('id="lang-toggle"') == 1, f"missing toggle on /blog/{slug}"
+    translated = (tmp_path / "blog" / "2026-08-30" / "index.html").read_text(encoding="utf-8")
+    assert 'data-lang-content="zh"' in translated and 'data-lang-content="en"' in translated
 
 
 # --- the published tree ---------------------------------------------------
