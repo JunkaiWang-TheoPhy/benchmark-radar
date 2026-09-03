@@ -1034,8 +1034,6 @@ const I18N = {
       " · 最近 18 个月窗口内发布的 {count} 项已经出现在三家及以上有明确日期的机构中。在解读原始排名之前，先看它们的轨迹变化。",
     "Show all {count} benchmarks": "显示全部 {count} 个benchmark",
     "Star this repository on GitHub. {count} stars": "在 GitHub 上给这个仓库点 Star。{count} 个 star",
-    "Fork this repository on GitHub. {count} forks": "在 GitHub 上 fork 这个仓库。{count} 个 fork",
-    "Open a new issue on GitHub. {count} issues open": "在 GitHub 上提交新 issue。当前有 {count} 个 open issue",
   },
 };
 
@@ -8548,19 +8546,16 @@ const REPO_SLUG = "ktwu01/benchmark-radar";
 // The visible badge reads "★ Star 12", which a screen reader would announce as
 // a bare statistic. The accessible name states the action and keeps the count
 // as context, so the control sounds like the invitation it is.
-const BADGE_ACTIONS = {
-  "badge-stars": (count) => t("Star this repository on GitHub. {count} stars", { count }),
-  "badge-forks": (count) => t("Fork this repository on GitHub. {count} forks", { count }),
-  "badge-issues": (count) => t("Open a new issue on GitHub. {count} issues open", { count }),
-};
-
-function setBadgeCount(id, value) {
-  const badge = byId(id);
+function setStarBadgeCount(value) {
+  const badge = byId("badge-stars");
   const node = badge?.querySelector("[data-count]");
   if (!node) return;
   const count = Number(value || 0).toLocaleString();
   node.textContent = count;
-  badge.setAttribute("aria-label", BADGE_ACTIONS[id](count));
+  badge.setAttribute(
+    "aria-label",
+    t("Star this repository on GitHub. {count} stars", { count }),
+  );
 }
 
 async function renderRepoBadges() {
@@ -8572,21 +8567,7 @@ async function renderRepoBadges() {
     });
     if (!response.ok) return;
     const repo = await response.json();
-    setBadgeCount("badge-stars", repo.stargazers_count);
-    setBadgeCount("badge-forks", repo.forks_count);
-    // open_issues_count includes pull requests, so building the count from it
-    // overstates how many issues are actually open. Ask search for issues only,
-    // and leave the badge blank if that fails rather than showing the inflated
-    // number.
-    const issues = await fetch(
-      `https://api.github.com/search/issues?q=${encodeURIComponent(
-        `repo:${REPO_SLUG} is:issue is:open`,
-      )}&per_page=1`,
-      { headers: { Accept: "application/vnd.github+json" } },
-    );
-    if (issues.ok) {
-      setBadgeCount("badge-issues", (await issues.json()).total_count);
-    }
+    setStarBadgeCount(repo.stargazers_count);
   } catch (error) {
     console.debug("Repository badge counts unavailable", error);
   }
