@@ -1199,25 +1199,32 @@ def test_today_view_shows_total_corpus_counts_by_category():
 
 
 def test_badge_accessible_names_state_the_action():
+    html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
-    assert "BADGE_ACTIONS" in script
-    for fragment in (
-        "Star this repository on GitHub",
-        "Fork this repository on GitHub",
-        "Open a new issue on GitHub",
-    ):
-        assert fragment in script
-    assert 'badge.setAttribute("aria-label"' in script
+    assert "Star this repository on GitHub" in script
+    for fragment in ("Fork this repository", "Open a new issue"):
+        assert f'aria-label="{fragment}"' in html
+    assert 'badge.setAttribute(\n    "aria-label",' in script
 
 
-def test_repo_badge_counts_are_visible():
+def test_only_the_repo_star_badge_shows_a_count():
     css = Path("site/assets/styles.css").read_text(encoding="utf-8")
     html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     # Issue #402: the GitHub API count should be useful to sighted visitors,
     # not only present as clipped text for screen readers.
     assert 'id="badge-stars"' in html
+    star_badge = html.split('id="badge-stars"', 1)[1].split("</a>", 1)[0]
+    fork_badge = html.split('id="badge-forks"', 1)[1].split("</a>", 1)[0]
+    issue_badge = html.split('id="badge-issues"', 1)[1].split("</a>", 1)[0]
+    assert "data-count" in star_badge
+    assert "data-count" not in fork_badge
+    assert "data-count" not in issue_badge
+    assert html.count('class="repo-badge-count"') == 1
+    assert "repo.forks_count" not in script
+    assert "api.github.com/search/issues" not in script
     assert ".repo-badge-count" in css
     assert (
         "clip-path: inset(50%)"

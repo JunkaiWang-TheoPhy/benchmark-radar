@@ -269,9 +269,9 @@
           <span class="repo-badge-label" data-i18n="Contact">Contact</span>
         </button>
         <!--
-          Each badge is a call to action, not a link to a roster. The live counts
-          come from GitHub's public repository API; starring still opens the repo
-          itself, where the visitor can click GitHub's Star control.
+          Each badge is a call to action, not a link to a roster. The live Star
+          count comes from GitHub's public repository API; starring still opens
+          the repo itself, where the visitor can click GitHub's Star control.
         -->
         <div class="repo-badges" id="repo-badges" aria-label="Support this repository">
           <a
@@ -299,6 +299,8 @@
             rel="noopener noreferrer"
             title="Fork this repository"
             data-i18n-title="Fork this repository"
+            aria-label="Fork this repository"
+            data-i18n-aria="Fork this repository"
           >
             <svg class="outline-icon" viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="12" cy="18" r="3"></circle>
@@ -308,7 +310,6 @@
               <path d="M6 9v2c0 .6.5 1.2 1.2 1.7l3.6 2.4"></path>
             </svg>
             <span class="repo-badge-label" data-i18n="Fork">Fork</span>
-            <span class="repo-badge-count" data-count>—</span>
           </a>
           <a
             class="repo-badge"
@@ -318,6 +319,8 @@
             rel="noopener noreferrer"
             title="Open a new issue"
             data-i18n-title="Open a new issue"
+            aria-label="Open a new issue"
+            data-i18n-aria="Open a new issue"
           >
             <svg class="outline-icon" viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="12" cy="12" r="9"></circle>
@@ -329,7 +332,6 @@
               ></circle>
             </svg>
             <span class="repo-badge-label" data-i18n="Issues">Issues</span>
-            <span class="repo-badge-count" data-count>—</span>
           </a>
         </div>
       </div>
