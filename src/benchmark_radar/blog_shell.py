@@ -65,7 +65,10 @@ class BlogPost:
 
 
 def _brand() -> str:
-    return f"""<a class="brand" href="{SITE_URL}/" aria-label="Benchmark Radar home">
+    # Root-relative, like the dashboard's own menubar. A canonical absolute URL
+    # belongs in the SEO tags, not in a nav anchor: absolute links here eject a
+    # local preview (or any non-canonical mirror) to the production domain.
+    return """<a class="brand" href="/" aria-label="Benchmark Radar home">
   <span class="brand-mark" aria-hidden="true"><span></span></span>
   <strong>Benchmark Radar</strong>
 </a>"""
@@ -123,10 +126,13 @@ def header(*, translated: bool) -> str:
 
 
 def navigation(active: str) -> str:
+    # Root-relative for the same reason as the brand link above: these stay on
+    # whatever host serves the page. Sitemap locs, canonical, and og:url keep
+    # the absolute SITE_URL because those are semantically absolute by spec.
     rendered = []
     for key, path, label in _NAV_LINKS:
         current = ' class="nav-active" aria-current="page"' if key == active else ""
-        rendered.append(f'<a href="{SITE_URL}{path}"{current}>{label}</a>')
+        rendered.append(f'<a href="{path}"{current}>{label}</a>')
     return '<nav class="view-nav" aria-label="Site sections">' + "".join(rendered) + "</nav>"
 
 
