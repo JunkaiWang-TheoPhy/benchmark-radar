@@ -5,7 +5,9 @@
 // app.js would have handled — with the same visible contracts: the language
 // toggle flips title, glyph, and aria-pressed; the repository badges fill
 // their counts from the same GitHub endpoints; the footer share control uses
-// navigator.share with a clipboard fallback.
+// navigator.share with a clipboard fallback; and the chrome itself translates
+// from the same reviewed I18N table app.js uses, baked into the page at build
+// time as #chrome-i18n.
 //
 // The body's language blocks stay a pure visibility change and never a fetch.
 // Pages without a stored translation ship no toggle at all: a control that
@@ -31,6 +33,62 @@ function savedLanguage() {
   return "en";
 }
 
+let chromeI18N = null;
+try {
+  const baked = document.getElementById("chrome-i18n");
+  if (baked) chromeI18N = JSON.parse(baked.textContent);
+} catch (_) {
+  // A malformed table must not break the page; the chrome stays English.
+}
+function t(key, params) {
+  let value = (document.documentElement.lang === "zh-CN" ? chromeI18N?.[key] : null) ?? key;
+  if (params) {
+    for (const [name, replacement] of Object.entries(params)) {
+      value = value.replaceAll(`{${name}}`, String(replacement));
+    }
+  }
+  return value;
+}
+
+// The same three passes app.js applies, including the repo-badge tooltip
+// contract: a data-i18n-title on a badge becomes the CSS-rendered
+// data-tooltip instead of the browser's delayed native title.
+function applyChromeI18n() {
+  if (!chromeI18N) return;
+  const zh = document.documentElement.lang === "zh-CN";
+  document.querySelectorAll("[data-i18n]").forEach((node) => {
+    if (node.dataset.i18nEn === undefined) {
+      node.dataset.i18nEn = node.textContent;
+    }
+    node.textContent = zh ? (chromeI18N[node.dataset.i18n] ?? node.dataset.i18nEn) : node.dataset.i18nEn;
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((node) => {
+    if (node.dataset.i18nTitleEn === undefined) {
+      node.dataset.i18nTitleEn = node.getAttribute("title") || "";
+    }
+    const resolved = zh ? (chromeI18N[node.dataset.i18nTitle] ?? node.dataset.i18nTitleEn) : node.dataset.i18nTitleEn;
+    if (node.classList.contains("repo-badge")) {
+      if (zh) {
+        node.setAttribute("data-tooltip", resolved);
+        node.removeAttribute("title");
+        if (!node.hasAttribute("aria-label")) node.setAttribute("aria-label", resolved);
+      } else {
+        node.removeAttribute("data-tooltip");
+        node.setAttribute("title", resolved);
+      }
+    } else {
+      node.setAttribute("title", resolved);
+    }
+  });
+  document.querySelectorAll("[data-i18n-aria]").forEach((node) => {
+    if (node.dataset.i18nAriaEn === undefined) {
+      node.dataset.i18nAriaEn = node.getAttribute("aria-label") || "";
+    }
+    const resolved = zh ? (chromeI18N[node.dataset.i18nAria] ?? node.dataset.i18nAriaEn) : node.dataset.i18nAriaEn;
+    node.setAttribute("aria-label", resolved);
+  });
+}
+
 function showLanguage(language, { remember = false } = {}) {
   const available = document.querySelector(`[data-lang-content="${language}"]`);
   const resolved = available ? language : "en";
@@ -38,11 +96,15 @@ function showLanguage(language, { remember = false } = {}) {
     node.hidden = node.dataset.langContent !== resolved;
   });
   document.documentElement.lang = resolved === "zh" ? "zh-CN" : "en";
+  applyChromeI18n();
   const toggle = document.getElementById("lang-toggle");
   if (toggle) {
     const next = resolved === "zh" ? "en" : "zh";
+    const titleKey = next === "zh" ? "Switch to Chinese (中文)" : "Switch to English";
     toggle.setAttribute("aria-pressed", String(resolved === "zh"));
-    toggle.title = next === "zh" ? "Switch to Chinese (中文)" : "Switch to English";
+    toggle.setAttribute("aria-label", t(titleKey));
+    toggle.setAttribute("data-tooltip", t(titleKey));
+    toggle.removeAttribute("title");
     document.getElementById("lang-toggle-label").textContent = next === "zh" ? "中" : "EN";
   }
   if (!remember || resolved !== language) return;
@@ -68,9 +130,9 @@ showLanguage(savedLanguage());
 const REPO_SLUG = "ktwu01/benchmark-radar";
 
 const BADGE_ACTIONS = {
-  "badge-stars": (count) => `Star this repository on GitHub. ${count} stars`,
-  "badge-forks": (count) => `Fork this repository on GitHub. ${count} forks`,
-  "badge-issues": (count) => `Open a new issue on GitHub. ${count} issues open`,
+  "badge-stars": "Star this repository on GitHub. {count} stars",
+  "badge-forks": "Fork this repository on GitHub. {count} forks",
+  "badge-issues": "Open a new issue on GitHub. {count} issues open",
 };
 
 function setBadgeCount(id, value) {
@@ -79,7 +141,7 @@ function setBadgeCount(id, value) {
   if (!node) return;
   const count = Number(value || 0).toLocaleString();
   node.textContent = count;
-  badge.setAttribute("aria-label", BADGE_ACTIONS[id](count));
+  badge.setAttribute("aria-label", t(BADGE_ACTIONS[id], { count }));
 }
 
 async function renderRepoBadges() {

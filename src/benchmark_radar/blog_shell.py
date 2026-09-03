@@ -24,8 +24,11 @@ exists because the SPA machinery it referenced is absent:
   href, so a locally served preview (or any non-canonical mirror) stays on
   the serving host; canonical and ``og:`` URLs keep the absolute SITE_URL;
 * the language toggle ships only on pages that store a reviewed Chinese
-  translation; ``blog.js`` owns its state on these pages with the same
-  visible contract ``app.js`` uses (title, glyph, aria-pressed);
+  translation; ``blog.js`` drives it with the same visible contract
+  ``app.js`` uses (title, glyph, aria-pressed), and applies the same
+  reviewed translations to the chrome: the app.js ``I18N`` table is parsed
+  at build time and the subset the chrome needs is baked into the page,
+  so a Chinese reader sees 联系作者 and the ⓘ tooltips on a brief too;
 * the footer's build date is baked from the day the page describes.
 
 Nothing here writes files. It owns the record a brief is built into and the
@@ -36,6 +39,7 @@ restating the masthead.
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -163,10 +167,12 @@ def _adapt_header(header: str) -> str:
         )
     attrs, inner = contact.group(1), contact.group(2)
     title = re.search(r'title="([^"]*)"', attrs)
+    i18n_title = re.search(r'data-i18n-title="([^"]*)"', attrs)
     header = header.replace(
         contact.group(0),
-        '<a class="repo-badge" href="/#contact"'
+        '<a class="repo-badge" href="/#contact" aria-haspopup="dialog"'
         + (f' title="{esc(title.group(1))}"' if title else "")
+        + (f' data-i18n-title="{esc(i18n_title.group(1))}"' if i18n_title else "")
         + f">{inner}</a>",
         1,
     )
@@ -186,7 +192,9 @@ def _with_toggle(header: str, *, translated: bool) -> str:
 
 def _page_footer(footer: str, updated: str) -> str:
     stamped, count = re.subn(
-        r'(<p id="build-meta">Updated )—(</p>)', rf"\g<1>{esc(updated)}\g<2>", footer
+        r'(<p id="build-meta">)Updated —(</p>)',
+        rf'\g<1><span data-i18n="Updated">Updated</span> {esc(updated)}\g<2>',
+        footer,
     )
     if count != 1:
         raise ValueError(
@@ -216,6 +224,7 @@ def render_page(
     body: str,
     chrome: SiteChrome,
     updated: str,
+    chrome_i18n: dict[str, str] | None = None,
     schemas: Iterable[dict[str, Any]] = (),
     og_type: str = "website",
     translated: bool = False,
@@ -223,6 +232,13 @@ def render_page(
     """Wrap one rendered body in the extracted site chrome."""
     schema_blocks = "".join(
         f'<script type="application/ld+json">{json_ld(payload)}</script>' for payload in schemas
+    )
+    i18n_block = (
+        '<script type="application/json" id="chrome-i18n">'
+        + json.dumps(chrome_i18n, ensure_ascii=False, sort_keys=True)
+        + "</script>"
+        if chrome_i18n
+        else ""
     )
     return f"""<!doctype html>
 <html lang="en">
@@ -249,6 +265,7 @@ def render_page(
 <link rel="stylesheet" href="/assets/styles.css">
 <link rel="stylesheet" href="/assets/blog.css">
 {schema_blocks}
+{i18n_block}
 <script src="/assets/blog.js" defer></script>
 </head>
 <body class="blog-page">

@@ -28,13 +28,13 @@ from benchmark_radar.feed import SITE_URL
 # The blog chrome is extracted from the committed dashboard source, so the
 # tests exercise the real site/index.html rather than a hand-written fixture
 # that could drift from what ships.
-DASHBOARD_HTML = (Path(__file__).resolve().parents[1] / "site" / "index.html").read_text(
-    encoding="utf-8"
-)
+SITE_DIR = Path(__file__).resolve().parents[1] / "site"
+DASHBOARD_HTML = (SITE_DIR / "index.html").read_text(encoding="utf-8")
+APP_JS = (SITE_DIR / "assets" / "app.js").read_text(encoding="utf-8")
 
 
 def write_blog_with_chrome(snapshots, tmp_path):
-    return write_blog(snapshots, tmp_path, dashboard_html=DASHBOARD_HTML)
+    return write_blog(snapshots, tmp_path, dashboard_html=DASHBOARD_HTML, app_js=APP_JS)
 
 
 SNAPSHOT_DIR = Path(__file__).resolve().parents[1] / "data" / "snapshots"
@@ -475,8 +475,8 @@ def test_the_footer_build_date_is_baked_from_the_day_the_page_describes(tmp_path
     write_blog_with_chrome([_briefed(), _legacy()], tmp_path)
     brief = (tmp_path / "blog" / "2026-08-30" / "index.html").read_text(encoding="utf-8")
     legacy = (tmp_path / "blog" / "2026-07-23" / "index.html").read_text(encoding="utf-8")
-    assert '<p id="build-meta">Updated 2026-08-30</p>' in brief
-    assert '<p id="build-meta">Updated 2026-07-23</p>' in legacy
+    assert '<span data-i18n="Updated">Updated</span> 2026-08-30' in brief
+    assert '<span data-i18n="Updated">Updated</span> 2026-07-23' in legacy
     assert "Updated \u2014" not in brief
 
 
@@ -488,3 +488,35 @@ def test_a_missing_dashboard_source_fails_visibly(tmp_path):
 def test_the_extractor_fails_loudly_when_the_dashboard_changes_shape():
     with pytest.raises(ValueError, match="masthead"):
         extract_site_chrome("<html><body><p>no header here</p></body></html>")
+
+
+def test_the_chrome_i18n_table_is_baked_from_app_js_for_chinese_readers(tmp_path):
+    write_blog_with_chrome([_briefed()], tmp_path)
+    page = (tmp_path / "blog" / "2026-08-30" / "index.html").read_text(encoding="utf-8")
+    match = re.search(
+        r'<script type="application/json" id="chrome-i18n">(.*?)</script>', page, re.S
+    )
+    assert match, "the baked chrome-i18n table is missing"
+    table = json.loads(match.group(1))
+    # Same reviewed strings the dashboard applies: the contact label, the
+    # toggle states, and the badge aria templates.
+    assert table["Contact"] == "联系作者"
+    assert table["Switch to English"] == "切换到英文"
+    assert "{count}" in table["Star this repository on GitHub. {count} stars"]
+    assert table["Updated"] == "更新于"
+
+
+def test_nav_labels_without_a_reviewed_string_stay_english_like_the_dashboard(tmp_path):
+    # The dashboard's t() falls back to the key when the table lacks it, so
+    # short section labels stay English there; the blog must mirror that
+    # instead of inventing translations.
+    write_blog_with_chrome([_briefed()], tmp_path)
+    page = (tmp_path / "blog" / "2026-08-30" / "index.html").read_text(encoding="utf-8")
+    match = re.search(
+        r'<script type="application/json" id="chrome-i18n">(.*?)</script>', page, re.S
+    )
+    table = json.loads(match.group(1))
+    # Section labels carry reviewed translations (Blog → 博客), same as the
+    # dashboard's menubar in Chinese mode.
+    assert table["Blog"] == "博客"
+    assert table["CLI"] == "命令行"

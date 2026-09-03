@@ -24,6 +24,7 @@ collect that day.
 
 from __future__ import annotations
 
+import re
 import shutil
 from datetime import UTC, date, datetime, time
 from email.utils import format_datetime
@@ -46,6 +47,18 @@ from .site_shell import breadcrumb_schema, esc, webpage_schema
 
 LATEST_POST_LIMIT = 30
 
+# The dashboard's toggle and repo badges translate these at runtime; the
+# chrome's own data-i18n keys cover everything else.
+_TOGGLE_I18N_KEYS = ("Switch to Chinese (中文)", "Switch to English")
+_BADGE_I18N_KEYS = (
+    "Star this repository on GitHub. {count} stars",
+    "Fork this repository on GitHub. {count} forks",
+    "Open a new issue on GitHub. {count} issues open",
+)
+# The footer's build date prefix is baked in per page, after the keys were
+# collected from the raw extracted chrome, so it is listed here.
+_FOOTER_I18N_KEYS = ("Updated",)
+
 _INDEX_TITLE = "AI benchmark daily brief | Benchmark Radar"
 _INDEX_HEADING = "What changed in AI evaluation, and why it matters"
 _INDEX_DESCRIPTION = (
@@ -60,7 +73,7 @@ _ARCHIVE_DESCRIPTION = (
 )
 
 
-def _post_page(post: BlogPost, chrome: SiteChrome) -> str:
+def _post_page(post: BlogPost, chrome: SiteChrome, chrome_i18n: dict[str, str]) -> str:
     tags = "".join(f'<span class="blog-chip">{esc(tag)}</span>' for tag in post.tags)
 
     def language_body(language: str, content: str, *, hidden: bool) -> str:
@@ -106,6 +119,7 @@ def _post_page(post: BlogPost, chrome: SiteChrome) -> str:
         canonical=post.canonical,
         body=body,
         chrome=chrome,
+        chrome_i18n=chrome_i18n,
         updated=post.updated,
         schemas=(
             posting,
@@ -130,7 +144,9 @@ def _post_card(post: BlogPost) -> str:
 </article></li>"""
 
 
-def _index_page(posts: list[BlogPost], *, archive: bool, chrome: SiteChrome) -> str:
+def _index_page(
+    posts: list[BlogPost], *, archive: bool, chrome: SiteChrome, chrome_i18n: dict[str, str]
+) -> str:
     canonical = SITE_URL + (BLOG_ARCHIVE_PATH if archive else BLOG_PATH)
     shown = posts if archive else posts[:LATEST_POST_LIMIT]
     cards = "".join(_post_card(post) for post in shown) or (
@@ -171,6 +187,7 @@ def _index_page(posts: list[BlogPost], *, archive: bool, chrome: SiteChrome) -> 
         canonical=canonical,
         body=body,
         chrome=chrome,
+        chrome_i18n=chrome_i18n,
         updated=posts[0].updated if posts else "—",
         schemas=(
             webpage_schema(title=title, description=description, canonical=canonical),
@@ -234,15 +251,71 @@ def build_posts(snapshots: list[dict[str, Any]]) -> list[BlogPost]:
     return posts
 
 
+def _parse_zh_table(app_js: str) -> dict[str, str]:
+    """The reviewed English→Chinese strings from app.js's ``I18N.zh`` table."""
+    start = app_js.find("const I18N = {")
+    if start == -1:
+        raise ValueError(
+            "app.js no longer defines `const I18N`; the blog chrome cannot bake its translations"
+        )
+    open_brace = app_js.find("{", start)
+    depth = 0
+    end = -1
+    for index in range(open_brace, len(app_js)):
+        if app_js[index] == "{":
+            depth += 1
+        elif app_js[index] == "}":
+            depth -= 1
+            if depth == 0:
+                end = index
+                break
+    if end == -1:
+        raise ValueError(
+            "app.js's I18N table is unbalanced; the blog chrome cannot bake its translations"
+        )
+    table: dict[str, str] = {}
+    # Object keys are quoted or bare JS identifiers (both appear in the table).
+    pair = re.compile(r'(?:"((?:[^"\\]|\\.)*)"|([A-Za-z_$][\w$]*))\s*:\s*"((?:[^"\\]|\\.)*)"')
+    for quoted, bare, value in pair.findall(app_js[open_brace:end]):
+        table[quoted or bare] = value
+    return table
+
+
+def _chrome_i18n_script(chrome: SiteChrome, app_js: str) -> dict[str, str]:
+    """Bake the reviewed zh subset the chrome needs from app.js's I18N table.
+
+    The dashboard translates its chrome in place from the same table; the blog
+    has no app.js, so the needed entries ship with the page and blog.js applies
+    them with the same contract. Keys come from the chrome itself, so a new
+    badge or nav label is covered without touching this function.
+    """
+    chrome_html = chrome.header + chrome.navigation + chrome.footer
+    keys = set(re.findall(r'data-i18n(?:-title|-aria)?="([^"]+)"', chrome_html))
+    keys.update(_TOGGLE_I18N_KEYS)
+    keys.update(_BADGE_I18N_KEYS)
+    keys.update(_FOOTER_I18N_KEYS)
+    table = _parse_zh_table(app_js)
+    # Keys the table does not carry (short nav labels like Blog and Trends)
+    # stay English on the dashboard too — t() falls back to the key itself —
+    # so the blog mirrors that instead of inventing translations.
+    return {key: table[key] for key in sorted(keys) if key in table}
+
+
 def write_blog(
-    snapshots: list[dict[str, Any]], site_dir: Path, *, dashboard_html: str | None = None
+    snapshots: list[dict[str, Any]],
+    site_dir: Path,
+    *,
+    dashboard_html: str | None = None,
+    app_js: str | None = None,
 ) -> dict[str, Any]:
     """Write the whole blog tree atomically and report what it published.
 
     The chrome around every page is extracted from the dashboard source,
     ``site/index.html``, so the site has one masthead, nav, and footer rather
-    than two drifting copies. Tests pass ``dashboard_html`` explicitly; the
-    default reads the committed dashboard beside the output directory.
+    than two drifting copies. The zh strings the chrome needs are baked from
+    app.js's I18N table for the same reason. Tests pass both sources
+    explicitly; the defaults read the committed files beside the output
+    directory.
     """
     if dashboard_html is None:
         dashboard_source = site_dir / "index.html"
@@ -252,7 +325,16 @@ def write_blog(
                 f"source, which is missing at {dashboard_source}"
             )
         dashboard_html = dashboard_source.read_text(encoding="utf-8")
+    if app_js is None:
+        app_js_source = site_dir / "assets" / "app.js"
+        if not app_js_source.is_file():
+            raise FileNotFoundError(
+                "the blog chrome translations are baked from the committed "
+                f"app.js, which is missing at {app_js_source}"
+            )
+        app_js = app_js_source.read_text(encoding="utf-8")
     chrome = extract_site_chrome(dashboard_html)
+    chrome_i18n = _chrome_i18n_script(chrome, app_js)
     posts = build_posts(snapshots)
     output_dir = site_dir / "blog"
     staging = site_dir / "blog.staging"
@@ -260,17 +342,21 @@ def write_blog(
         shutil.rmtree(staging)
     staging.mkdir(parents=True)
     (staging / "index.html").write_text(
-        _index_page(posts, archive=False, chrome=chrome), encoding="utf-8"
+        _index_page(posts, archive=False, chrome=chrome, chrome_i18n=chrome_i18n),
+        encoding="utf-8",
     )
     archive_dir = staging / "archive"
     archive_dir.mkdir()
     (archive_dir / "index.html").write_text(
-        _index_page(posts, archive=True, chrome=chrome), encoding="utf-8"
+        _index_page(posts, archive=True, chrome=chrome, chrome_i18n=chrome_i18n),
+        encoding="utf-8",
     )
     for post in posts:
         page_dir = staging / post.slug
         page_dir.mkdir()
-        (page_dir / "index.html").write_text(_post_page(post, chrome), encoding="utf-8")
+        (page_dir / "index.html").write_text(
+            _post_page(post, chrome, chrome_i18n), encoding="utf-8"
+        )
     tree = blog_feed_tree(posts)
     ET.indent(tree, space="  ")
     tree.write(staging / "feed.xml", encoding="utf-8", xml_declaration=True)
