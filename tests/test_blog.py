@@ -563,3 +563,81 @@ def test_nav_labels_without_a_reviewed_string_stay_english_like_the_dashboard(tm
     # dashboard's menubar in Chinese mode.
     assert table["Blog"] == "博客"
     assert table["CLI"] == "命令行"
+
+
+def test_contact_button_has_outline_icon_in_dashboard_source_and_blog_pages(tmp_path):
+    # The contact button svg must carry class="outline-icon" directly in index.html,
+    # and the extracted anchor in generated blog pages must preserve it so the icon
+    # renders with stroke instead of a filled black blob.
+    assert re.search(
+        r'<button\b[^>]*\bid="badge-contact"[^>]*>[\s\S]*?<svg\s+class="outline-icon"',
+        DASHBOARD_HTML,
+    ), "site/index.html contact button svg lacks outline-icon class"
+
+    write_blog_with_chrome([_briefed()], tmp_path)
+    page = (tmp_path / "blog" / "2026-08-30" / "index.html").read_text(encoding="utf-8")
+    contact_match = re.search(r'<a\b[^>]*\bhref="/#contact"[^>]*>([\s\S]*?)</a>', page)
+    assert contact_match, "transformed contact link missing in blog page"
+    assert '<svg class="outline-icon"' in contact_match.group(1)
+
+
+def _run_blog_language_harness(mode: str, target_lang: str, remember: bool = True) -> dict:
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    args = [
+        node,
+        "tests/render_blog_language_harness.mjs",
+        mode,
+        target_lang,
+    ]
+    if remember:
+        args.append("remember")
+    result = subprocess.run(args, capture_output=True, text=True, check=True)
+    return json.loads(result.stdout)
+
+
+def test_client_language_switch_keeps_untranslated_body_visible_while_translating_chrome():
+    # When a post has no Chinese body translation, switching to Chinese must translate
+    # the chrome (navbar, badges, footer) and update toggle state without hiding the English body.
+    res = _run_blog_language_harness("untranslated", "zh")
+    assert res["htmlLang"] == "zh-CN"
+    assert res["enHidden"] is False
+    assert res["zhHidden"] is None
+    assert res["toggleAriaPressed"] == "true"
+    assert res["toggleLabel"] == "EN"
+    assert res["storedLang"] == "zh"
+    assert res["contactText"] == "联系作者"
+
+
+def test_client_language_switch_toggles_translated_body_between_en_and_zh():
+    # When a post has both en and zh translations, switching to Chinese shows zh and hides en;
+    # switching to English shows en and hides zh.
+    zh_res = _run_blog_language_harness("translated", "zh")
+    assert zh_res["htmlLang"] == "zh-CN"
+    assert zh_res["enHidden"] is True
+    assert zh_res["zhHidden"] is False
+    assert zh_res["toggleAriaPressed"] == "true"
+    assert zh_res["toggleLabel"] == "EN"
+    assert zh_res["storedLang"] == "zh"
+    assert zh_res["contactText"] == "联系作者"
+
+    en_res = _run_blog_language_harness("translated", "en")
+    assert en_res["htmlLang"] == "en"
+    assert en_res["enHidden"] is False
+    assert en_res["zhHidden"] is True
+    assert en_res["toggleAriaPressed"] == "false"
+    assert en_res["toggleLabel"] == "中"
+    assert en_res["storedLang"] == "en"
+    assert en_res["contactText"] == "Contact"
+
+
+def test_client_malformed_chrome_i18n_logs_error_without_throwing():
+    # If the baked chrome-i18n payload fails to parse, it logs with console.error,
+    # keeps the page functional in English, and does not throw.
+    res = _run_blog_language_harness("malformed-json", "zh")
+    assert any("Failed to parse #chrome-i18n payload" in err for err in res["consoleErrors"])
+    assert res["contactText"] == "Contact"

@@ -169,11 +169,17 @@ def _adapt_header(header: str) -> str:
     attrs, inner = contact.group(1), contact.group(2)
     title = re.search(r'title="([^"]*)"', attrs)
     i18n_title = re.search(r'data-i18n-title="([^"]*)"', attrs)
-    # The chat-bubble svg carries no class: on the dashboard the outline comes
-    # from button.repo-badge svg, which an anchor badge does not match. The
-    # outline-icon class is the same mechanism the fork and issues icons use
-    # on link badges, so the bubble renders identically on a brief.
-    inner = inner.replace("<svg viewBox=", '<svg class="outline-icon" viewBox=', 1)
+    # The chat-bubble svg carries the outline-icon class from index.html (same
+    # mechanism fork and issues use on link badges). Ensure it is present so
+    # the bubble renders as an outline when transformed into an anchor badge.
+    if 'class="outline-icon"' not in inner:
+        inner, count = re.subn(
+            r"<svg\b(?![^>]*\bclass=)", '<svg class="outline-icon"', inner, count=1
+        )
+        if count != 1:
+            raise ValueError(
+                "the contact button svg has no outline-icon class and cannot be tagged"
+            )
     header = header.replace(
         contact.group(0),
         '<a class="repo-badge" href="/#contact" aria-haspopup="dialog"'

@@ -37,8 +37,8 @@ let chromeI18N = null;
 try {
   const baked = document.getElementById("chrome-i18n");
   if (baked) chromeI18N = JSON.parse(baked.textContent);
-} catch (_) {
-  // A malformed table must not break the page; the chrome stays English.
+} catch (error) {
+  console.error("Failed to parse #chrome-i18n payload:", error);
 }
 function t(key, params) {
   let value = (document.documentElement.lang === "zh-CN" ? chromeI18N?.[key] : null) ?? key;
@@ -90,26 +90,30 @@ function applyChromeI18n() {
 }
 
 function showLanguage(language, { remember = false } = {}) {
-  const available = document.querySelector(`[data-lang-content="${language}"]`);
-  const resolved = available ? language : "en";
+  const hasZh = Boolean(document.querySelector('[data-lang-content="zh"]'));
   document.querySelectorAll("[data-lang-content]").forEach((node) => {
-    node.hidden = node.dataset.langContent !== resolved;
+    if (node.dataset.langContent === "zh") {
+      node.hidden = language !== "zh";
+    } else if (node.dataset.langContent === "en") {
+      node.hidden = language === "zh" && hasZh;
+    }
   });
-  document.documentElement.lang = resolved === "zh" ? "zh-CN" : "en";
+  document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
   applyChromeI18n();
   const toggle = document.getElementById("lang-toggle");
   if (toggle) {
-    const next = resolved === "zh" ? "en" : "zh";
-    const titleKey = next === "zh" ? "Switch to Chinese (中文)" : "Switch to English";
-    toggle.setAttribute("aria-pressed", String(resolved === "zh"));
+    const zh = language === "zh";
+    const titleKey = zh ? "Switch to English" : "Switch to Chinese (中文)";
+    toggle.setAttribute("aria-pressed", String(zh));
     toggle.setAttribute("aria-label", t(titleKey));
     toggle.setAttribute("data-tooltip", t(titleKey));
-    toggle.removeAttribute("title");
-    document.getElementById("lang-toggle-label").textContent = next === "zh" ? "中" : "EN";
+    toggle.setAttribute("title", "");
+    const label = document.getElementById("lang-toggle-label");
+    if (label) label.textContent = zh ? "EN" : "中";
   }
-  if (!remember || resolved !== language) return;
+  if (!remember) return;
   try {
-    localStorage.setItem(LANG_STORAGE_KEY, resolved);
+    localStorage.setItem(LANG_STORAGE_KEY, language);
   } catch (_) {
     // The page still switches even when preference storage is unavailable.
   }
