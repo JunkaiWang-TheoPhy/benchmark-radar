@@ -2,10 +2,6 @@
    and only compose its existing tokens into a reading layout. Nothing here
    applies to the dashboard: every rule is scoped to .blog-page, which only the
    generated blog documents carry. */
-.blog-page .masthead-end {
-  display: flex;
-}
-
 .blog-page .blog-view {
   padding: clamp(2.25rem, 4vw, 3.75rem) 0 6rem;
 }
@@ -262,13 +258,6 @@
 
 .blog-page .blog-facts dd {
   margin: 0;
-}
-
-.blog-page .blog-footer {
-  gap: 0.65rem;
-  padding: 1.5rem 0 2.5rem;
-  border-top: 1px solid var(--edge);
-  color: var(--muted);
 }
 
 .blog-page [data-lang-content][hidden] {

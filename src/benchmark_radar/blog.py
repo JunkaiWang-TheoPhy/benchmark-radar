@@ -32,7 +32,15 @@ from typing import Any
 from xml.etree import ElementTree as ET
 
 from .blog_content import build_post
-from .blog_shell import BLOG_ARCHIVE_PATH, BLOG_FEED_PATH, BLOG_PATH, BlogPost, render_page
+from .blog_shell import (
+    BLOG_ARCHIVE_PATH,
+    BLOG_FEED_PATH,
+    BLOG_PATH,
+    BlogPost,
+    SiteChrome,
+    extract_site_chrome,
+    render_page,
+)
 from .feed import ATOM_NAMESPACE, SITE_URL
 from .site_shell import breadcrumb_schema, esc, webpage_schema
 
@@ -52,7 +60,7 @@ _ARCHIVE_DESCRIPTION = (
 )
 
 
-def _post_page(post: BlogPost) -> str:
+def _post_page(post: BlogPost, chrome: SiteChrome) -> str:
     tags = "".join(f'<span class="blog-chip">{esc(tag)}</span>' for tag in post.tags)
 
     def language_body(language: str, content: str, *, hidden: bool) -> str:
@@ -97,6 +105,8 @@ def _post_page(post: BlogPost) -> str:
         description=post.description,
         canonical=post.canonical,
         body=body,
+        chrome=chrome,
+        updated=post.updated,
         schemas=(
             posting,
             breadcrumb_schema(
@@ -120,7 +130,7 @@ def _post_card(post: BlogPost) -> str:
 </article></li>"""
 
 
-def _index_page(posts: list[BlogPost], *, archive: bool) -> str:
+def _index_page(posts: list[BlogPost], *, archive: bool, chrome: SiteChrome) -> str:
     canonical = SITE_URL + (BLOG_ARCHIVE_PATH if archive else BLOG_PATH)
     shown = posts if archive else posts[:LATEST_POST_LIMIT]
     cards = "".join(_post_card(post) for post in shown) or (
@@ -160,6 +170,8 @@ def _index_page(posts: list[BlogPost], *, archive: bool) -> str:
         description=description,
         canonical=canonical,
         body=body,
+        chrome=chrome,
+        updated=posts[0].updated if posts else "—",
         schemas=(
             webpage_schema(title=title, description=description, canonical=canonical),
             item_list,
@@ -222,22 +234,43 @@ def build_posts(snapshots: list[dict[str, Any]]) -> list[BlogPost]:
     return posts
 
 
-def write_blog(snapshots: list[dict[str, Any]], site_dir: Path) -> dict[str, Any]:
-    """Write the whole blog tree atomically and report what it published."""
+def write_blog(
+    snapshots: list[dict[str, Any]], site_dir: Path, *, dashboard_html: str | None = None
+) -> dict[str, Any]:
+    """Write the whole blog tree atomically and report what it published.
+
+    The chrome around every page is extracted from the dashboard source,
+    ``site/index.html``, so the site has one masthead, nav, and footer rather
+    than two drifting copies. Tests pass ``dashboard_html`` explicitly; the
+    default reads the committed dashboard beside the output directory.
+    """
+    if dashboard_html is None:
+        dashboard_source = site_dir / "index.html"
+        if not dashboard_source.is_file():
+            raise FileNotFoundError(
+                "the blog chrome is extracted from the committed dashboard "
+                f"source, which is missing at {dashboard_source}"
+            )
+        dashboard_html = dashboard_source.read_text(encoding="utf-8")
+    chrome = extract_site_chrome(dashboard_html)
     posts = build_posts(snapshots)
     output_dir = site_dir / "blog"
     staging = site_dir / "blog.staging"
     if staging.exists():
         shutil.rmtree(staging)
     staging.mkdir(parents=True)
-    (staging / "index.html").write_text(_index_page(posts, archive=False), encoding="utf-8")
+    (staging / "index.html").write_text(
+        _index_page(posts, archive=False, chrome=chrome), encoding="utf-8"
+    )
     archive_dir = staging / "archive"
     archive_dir.mkdir()
-    (archive_dir / "index.html").write_text(_index_page(posts, archive=True), encoding="utf-8")
+    (archive_dir / "index.html").write_text(
+        _index_page(posts, archive=True, chrome=chrome), encoding="utf-8"
+    )
     for post in posts:
         page_dir = staging / post.slug
         page_dir.mkdir()
-        (page_dir / "index.html").write_text(_post_page(post), encoding="utf-8")
+        (page_dir / "index.html").write_text(_post_page(post, chrome), encoding="utf-8")
     tree = blog_feed_tree(posts)
     ET.indent(tree, space="  ")
     tree.write(staging / "feed.xml", encoding="utf-8", xml_declaration=True)

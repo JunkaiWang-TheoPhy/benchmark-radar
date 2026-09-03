@@ -16,8 +16,26 @@ from benchmark_radar.blog_content import (
     KIND_NO_CHANGE,
     build_post,
 )
-from benchmark_radar.blog_shell import BLOG_ARCHIVE_PATH, BLOG_FEED_PATH, BLOG_PATH
+from benchmark_radar.blog_shell import (
+    _TODAY_HREFS,
+    BLOG_ARCHIVE_PATH,
+    BLOG_FEED_PATH,
+    BLOG_PATH,
+    extract_site_chrome,
+)
 from benchmark_radar.feed import SITE_URL
+
+# The blog chrome is extracted from the committed dashboard source, so the
+# tests exercise the real site/index.html rather than a hand-written fixture
+# that could drift from what ships.
+DASHBOARD_HTML = (Path(__file__).resolve().parents[1] / "site" / "index.html").read_text(
+    encoding="utf-8"
+)
+
+
+def write_blog_with_chrome(snapshots, tmp_path):
+    return write_blog(snapshots, tmp_path, dashboard_html=DASHBOARD_HTML)
+
 
 SNAPSHOT_DIR = Path(__file__).resolve().parents[1] / "data" / "snapshots"
 
@@ -203,14 +221,14 @@ def test_stored_chinese_is_published_with_a_toggle():
 def test_a_day_without_stored_chinese_publishes_english_only(tmp_path):
     post = build_post(_legacy())
     assert post.body_zh is None and post.title_zh is None
-    write_blog([_legacy()], tmp_path)
+    write_blog_with_chrome([_legacy()], tmp_path)
     page = (tmp_path / "blog" / "2026-07-23" / "index.html").read_text(encoding="utf-8")
     assert 'data-lang-content="zh"' not in page
     assert 'id="lang-toggle"' not in page
 
 
 def test_the_toggle_appears_only_where_a_translation_exists(tmp_path):
-    write_blog([_briefed(status="insight")], tmp_path)
+    write_blog_with_chrome([_briefed(status="insight")], tmp_path)
     page = (tmp_path / "blog" / "2026-08-30" / "index.html").read_text(encoding="utf-8")
     assert page.count('id="lang-toggle"') == 1
     assert 'data-lang-content="zh"' in page and 'data-lang-content="en"' in page
@@ -221,7 +239,7 @@ def test_the_toggle_appears_only_where_a_translation_exists(tmp_path):
 
 def test_write_blog_publishes_index_archive_feed_and_one_page_per_day(tmp_path):
     snapshots = [_snapshot(day) for day in _snapshot_days()]
-    report = write_blog(snapshots, tmp_path)
+    report = write_blog_with_chrome(snapshots, tmp_path)
     blog = tmp_path / "blog"
     assert report["post_count"] == len(snapshots)
     assert (blog / "index.html").exists()
@@ -233,7 +251,7 @@ def test_write_blog_publishes_index_archive_feed_and_one_page_per_day(tmp_path):
 
 def test_the_landing_page_shows_the_latest_days_and_the_archive_shows_all(tmp_path):
     snapshots = [_snapshot(day) for day in _snapshot_days()]
-    write_blog(snapshots, tmp_path)
+    write_blog_with_chrome(snapshots, tmp_path)
     latest = (tmp_path / "blog" / "index.html").read_text(encoding="utf-8")
     archive = (tmp_path / "blog" / "archive" / "index.html").read_text(encoding="utf-8")
     assert latest.count('class="blog-card"') == LATEST_POST_LIMIT
@@ -243,9 +261,9 @@ def test_the_landing_page_shows_the_latest_days_and_the_archive_shows_all(tmp_pa
 
 
 def test_a_rebuild_removes_pages_for_days_that_left_the_history(tmp_path):
-    write_blog([_briefed(), _legacy()], tmp_path)
+    write_blog_with_chrome([_briefed(), _legacy()], tmp_path)
     assert (tmp_path / "blog" / "2026-08-30" / "index.html").exists()
-    write_blog([_legacy()], tmp_path)
+    write_blog_with_chrome([_legacy()], tmp_path)
     assert not (tmp_path / "blog" / "2026-08-30").exists()
     assert (tmp_path / "blog" / "2026-07-23" / "index.html").exists()
 
@@ -253,8 +271,8 @@ def test_a_rebuild_removes_pages_for_days_that_left_the_history(tmp_path):
 def test_rebuilding_is_deterministic_and_never_mutates_the_snapshot(tmp_path):
     snapshots = [_snapshot(day) for day in _snapshot_days()]
     original = copy.deepcopy(snapshots)
-    write_blog(snapshots, tmp_path / "first")
-    write_blog(snapshots, tmp_path / "second")
+    write_blog_with_chrome(snapshots, tmp_path / "first")
+    write_blog_with_chrome(snapshots, tmp_path / "second")
     assert snapshots == original
     for page in sorted((tmp_path / "first" / "blog").rglob("*")):
         if page.is_file():
@@ -266,7 +284,7 @@ def test_rebuilding_is_deterministic_and_never_mutates_the_snapshot(tmp_path):
 
 
 def test_each_page_carries_its_own_canonical_and_blogposting_schema(tmp_path):
-    write_blog([_briefed(status="insight")], tmp_path)
+    write_blog_with_chrome([_briefed(status="insight")], tmp_path)
     page = (tmp_path / "blog" / "2026-08-30" / "index.html").read_text(encoding="utf-8")
     canonical = f"{SITE_URL}{BLOG_PATH}2026-08-30/"
     assert f'<link rel="canonical" href="{canonical}">' in page
@@ -285,7 +303,7 @@ def _schemas(page: str) -> list[dict]:
 
 
 def test_each_page_carries_a_breadcrumb_back_to_the_blog(tmp_path):
-    write_blog([_briefed()], tmp_path)
+    write_blog_with_chrome([_briefed()], tmp_path)
     page = (tmp_path / "blog" / "2026-08-30" / "index.html").read_text(encoding="utf-8")
     crumb = next(p for p in _schemas(page) if p.get("@type") == "BreadcrumbList")
     assert [item["item"] for item in crumb["itemListElement"]] == [
@@ -297,7 +315,7 @@ def test_each_page_carries_a_breadcrumb_back_to_the_blog(tmp_path):
 
 def test_sitemap_entries_cover_the_blog_and_date_each_brief_individually(tmp_path):
     snapshots = [_snapshot(day) for day in _snapshot_days()]
-    entries = write_blog(snapshots, tmp_path)["sitemap_entries"]
+    entries = write_blog_with_chrome(snapshots, tmp_path)["sitemap_entries"]
     paths = [path for path, _ in entries]
     assert paths[:2] == [BLOG_PATH, BLOG_ARCHIVE_PATH]
     assert len(paths) == len(snapshots) + 2
@@ -317,7 +335,7 @@ def test_the_blog_feed_lists_every_post_and_is_self_describing():
 
 def test_the_blog_feed_is_written_into_the_published_tree(tmp_path):
     snapshots = [_snapshot(day) for day in _snapshot_days()]
-    write_blog(snapshots, tmp_path)
+    write_blog_with_chrome(snapshots, tmp_path)
     channel = ET.parse(tmp_path / "blog" / "feed.xml").getroot().find("channel")
     assert len(channel.findall("item")) == len(snapshots)
 
@@ -413,3 +431,60 @@ def test_question_translations_match_the_dashboard_table():
         match = re.search(rf'"{re.escape(english)}":\s*\n?\s*"([^"]+)"', app_js)
         assert match, f"the dashboard does not translate {english!r}"
         assert match.group(1) == chinese
+
+
+def _nav_targets(fragment: str) -> list[str]:
+    """Href sequence of a section nav; the SPA's Today button maps to ``/``."""
+    nav = re.search(r'<nav class="view-nav".*?</nav>', fragment, re.S).group(0)
+    targets = []
+    for match in re.finditer(r"<(a|button)\b([^>]*)>", nav):
+        tag, attrs = match.group(1), match.group(2)
+        href = re.search(r'href="([^"]*)"', attrs)
+        if tag == "a":
+            assert href, f"nav anchor without href: {match.group(0)!r}"
+            targets.append(href.group(1))
+        else:
+            view = re.search(r'data-view="([^"]*)"', attrs)
+            assert view and view.group(1) in _TODAY_HREFS, attrs
+            targets.append(_TODAY_HREFS[view.group(1)])
+    return targets
+
+
+def test_blog_nav_lists_the_same_sections_in_the_same_order_as_the_dashboard(tmp_path):
+    # The nav is extracted from site/index.html, not restated; this fails
+    # loudly if the extractor breaks or the dashboard grows a section the
+    # blog silently stops carrying.
+    dashboard_targets = _nav_targets(DASHBOARD_HTML)
+    assert dashboard_targets, "the extractor found no nav in site/index.html"
+    write_blog_with_chrome([_briefed(), _legacy()], tmp_path)
+    page = (tmp_path / "blog" / "2026-08-30" / "index.html").read_text(encoding="utf-8")
+    assert _nav_targets(page) == dashboard_targets
+    assert 'class="nav-active" aria-current="page" href="/blog/"' in page
+
+
+def test_the_contact_button_becomes_the_dashboard_deep_link(tmp_path):
+    write_blog_with_chrome([_briefed()], tmp_path)
+    page = (tmp_path / "blog" / "2026-08-30" / "index.html").read_text(encoding="utf-8")
+    # The contact sheet itself lives inside the SPA; the blog links to the
+    # deep link that opens it on load instead of shipping a dead button.
+    assert '<a class="repo-badge" href="/#contact"' in page
+    assert 'id="badge-contact"' not in page
+
+
+def test_the_footer_build_date_is_baked_from_the_day_the_page_describes(tmp_path):
+    write_blog_with_chrome([_briefed(), _legacy()], tmp_path)
+    brief = (tmp_path / "blog" / "2026-08-30" / "index.html").read_text(encoding="utf-8")
+    legacy = (tmp_path / "blog" / "2026-07-23" / "index.html").read_text(encoding="utf-8")
+    assert '<p id="build-meta">Updated 2026-08-30</p>' in brief
+    assert '<p id="build-meta">Updated 2026-07-23</p>' in legacy
+    assert "Updated \u2014" not in brief
+
+
+def test_a_missing_dashboard_source_fails_visibly(tmp_path):
+    with pytest.raises(FileNotFoundError, match="dashboard source"):
+        write_blog([_briefed()], tmp_path)
+
+
+def test_the_extractor_fails_loudly_when_the_dashboard_changes_shape():
+    with pytest.raises(ValueError, match="masthead"):
+        extract_site_chrome("<html><body><p>no header here</p></body></html>")
