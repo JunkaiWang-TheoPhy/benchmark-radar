@@ -377,27 +377,20 @@ CLI_SKILL_URL = (
     "https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md"
 )
 CLI_SKILL_INSTALL = "npx skills add ktwu01/benchmark-radar"
-CLI_AGENT_PROMPT = "\n".join(
-    (
-        "Use the installed Benchmark Radar Skill to finish local benchmark search setup. Follow",
-        CLI_SKILL_URL,
-        "to install or repair the CLI if needed, initialize the local data, and verify the setup.",
-        "You have permission to install the CLI from the official repository. Use only consumer"
-        " commands.",
-    )
-)
+CLI_INSTALL_LABEL = "Install"
 
 
-def _copy_block(label: str, value: str, hint: str) -> str:
+def _copy_block(label: str, value: str, hint: str, hide_label: bool = False) -> str:
     """The non-interactive form of copyBlock in app.js.
 
     The button already contains its label, value and fallback instruction. The
     runtime only has to add clipboard behavior; a failed or disabled script
     never leaves behind an empty button.
     """
+    label_class = "copy-label visually-hidden" if hide_label else "copy-label"
     return (
         '<section class="copy-block">'
-        f'<h3 class="copy-label">{esc(label)}</h3>'
+        f'<h3 class="{label_class}">{esc(label)}</h3>'
         f'<button class="copy-target" type="button" aria-label="{esc(hint)}: {esc(label)}">'
         f'<code class="copy-text">{esc(value)}</code>'
         f'<span class="copy-status">{esc(hint)}</span>'
@@ -433,12 +426,8 @@ def _cli_seed() -> dict[str, str]:
         '<p class="detail-source">Benchmark Radar</p>'
         '<h2 class="detail-title cli-title" id="cli-title">'
         "Query it locally (CLI version)</h2>"
-        '<p class="detail-summary">'
-        "To let your agent use the CLI version, run the command below."
-        "</p>"
         '<div class="copy-blocks">'
-        f"{_copy_block('Install the Agent Skill', CLI_SKILL_INSTALL, 'Click to copy')}"
-        f"{_copy_block('Give this prompt to your coding agent', CLI_AGENT_PROMPT, 'Click to copy')}"
+        f"{_copy_block(CLI_INSTALL_LABEL, CLI_SKILL_INSTALL, 'Click to copy', True)}"
         "</div>"
         '<a class="secondary-link dialog-link" '
         f'href="{esc(CLI_SKILL_URL)}" target="_blank" rel="noopener noreferrer">'
