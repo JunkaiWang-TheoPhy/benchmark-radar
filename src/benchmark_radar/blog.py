@@ -50,11 +50,7 @@ LATEST_POST_LIMIT = 30
 # The dashboard's toggle and repo badges translate these at runtime; the
 # chrome's own data-i18n keys cover everything else.
 _TOGGLE_I18N_KEYS = ("Switch to Chinese (中文)", "Switch to English")
-_BADGE_I18N_KEYS = (
-    "Star this repository on GitHub. {count} stars",
-    "Fork this repository on GitHub. {count} forks",
-    "Open a new issue on GitHub. {count} issues open",
-)
+_BADGE_I18N_KEYS = ("Star this repository on GitHub. {count} stars",)
 # The footer's build date prefix is baked in per page, after the keys were
 # collected from the raw extracted chrome, so it is listed here.
 _FOOTER_I18N_KEYS = ("Updated",)
@@ -137,7 +133,7 @@ def _post_page(post: BlogPost, chrome: SiteChrome, chrome_i18n: dict[str, str]) 
 def _post_card(post: BlogPost) -> str:
     return f"""<li><article class="blog-card">
   <div><span class="blog-chip">{esc(post.kind)}</span>
-  <h2><a href="{esc(post.canonical)}">{esc(post.title)}</a></h2></div>
+  <h2><a href="{esc(post.path)}">{esc(post.title)}</a></h2></div>
   <time class="blog-meta" datetime="{esc(post.published)}">{esc(post.published)}</time>
   <p>{esc(post.description)}</p>
 </article></li>"""
@@ -153,11 +149,11 @@ def _index_page(
     )
     if archive:
         title, heading, description = _ARCHIVE_TITLE, _ARCHIVE_HEADING, _ARCHIVE_DESCRIPTION
-        action = f'<a class="secondary-link" href="{SITE_URL}{BLOG_PATH}">Latest briefs</a>'
+        action = f'<a class="secondary-link" href="{BLOG_PATH}">Latest briefs</a>'
         crumb = "Blog archive"
     else:
         title, heading, description = _INDEX_TITLE, _INDEX_HEADING, _INDEX_DESCRIPTION
-        action = f'<a class="secondary-link" href="{SITE_URL}{BLOG_ARCHIVE_PATH}">Full archive</a>'
+        action = f'<a class="secondary-link" href="{BLOG_ARCHIVE_PATH}">Full archive</a>'
         crumb = "Blog"
     count = (
         f"{len(shown)} of {len(posts)} collection days"

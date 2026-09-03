@@ -265,6 +265,19 @@ def test_the_landing_page_shows_the_latest_days_and_the_archive_shows_all(tmp_pa
         assert f"{BLOG_PATH}{snapshot['date']}/" in archive
 
 
+def test_blog_document_links_stay_on_the_serving_host(tmp_path):
+    write_blog_with_chrome([_briefed(), _legacy()], tmp_path)
+    latest = (tmp_path / "blog" / "index.html").read_text(encoding="utf-8")
+    archive = (tmp_path / "blog" / "archive" / "index.html").read_text(encoding="utf-8")
+    assert f'href="{BLOG_ARCHIVE_PATH}"' in latest
+    assert f'href="{BLOG_PATH}"' in archive
+    for post in build_posts([_briefed(), _legacy()]):
+        assert f'href="{post.path}"' in latest
+        assert f'href="{post.path}"' in archive
+        assert f'href="{post.canonical}"' not in latest
+        assert f'href="{post.canonical}"' not in archive
+
+
 def test_a_rebuild_removes_pages_for_days_that_left_the_history(tmp_path):
     write_blog_with_chrome([_briefed(), _legacy()], tmp_path)
     assert (tmp_path / "blog" / "2026-08-30" / "index.html").exists()
@@ -465,6 +478,31 @@ def test_blog_nav_lists_the_same_sections_in_the_same_order_as_the_dashboard(tmp
     page = (tmp_path / "blog" / "2026-08-30" / "index.html").read_text(encoding="utf-8")
     assert _nav_targets(page) == dashboard_targets
     assert 'class="nav-active" aria-current="page" href="/blog/"' in page
+
+
+def test_blog_nav_preserves_main_visibility_and_priority(tmp_path):
+    write_blog_with_chrome([_briefed()], tmp_path)
+    page = (tmp_path / "blog" / "2026-08-30" / "index.html").read_text(encoding="utf-8")
+    nav = re.search(r'<nav class="view-nav".*?</nav>', page, re.S).group(0)
+    assert _nav_targets(nav) == [
+        "/",
+        "/cli/",
+        "/leaderboard/",
+        "/trends/",
+        "/explore/",
+        "/blog/",
+        "/rubric/",
+    ]
+    for identity in ('href="/explore/"', 'id="rubric-nav"'):
+        opening = re.search(rf"<a\b(?=[^>]*{re.escape(identity)})[^>]*>", nav).group(0)
+        assert " hidden" in opening
+
+
+def test_blog_fetches_only_the_star_count_like_the_dashboard():
+    script = (SITE_DIR / "assets" / "blog.js").read_text(encoding="utf-8")
+    assert "repo.stargazers_count" in script
+    assert "repo.forks_count" not in script
+    assert "api.github.com/search/issues" not in script
 
 
 def test_the_contact_button_becomes_the_dashboard_deep_link(tmp_path):

@@ -63,6 +63,20 @@ def test_site_has_accessible_landmarks_and_views():
     assert "explorer-view" not in parser.ids
 
 
+def test_explore_and_rubric_are_hidden_from_the_menu_but_keep_direct_links():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    navigation = html.split('<nav class="view-nav"', 1)[1].split("</nav>", 1)[0]
+
+    for identifying_attribute, href in (
+        ('data-view="map"', "/explore/"),
+        ('id="rubric-nav"', "/rubric/"),
+    ):
+        opening = re.search(rf"<a\b(?=[^>]*{re.escape(identifying_attribute)})[^>]*>", navigation)
+        assert opening
+        assert re.search(r"\shidden(?:\s|>)", opening.group(0))
+        assert f'href="{href}"' in opening.group(0)
+
+
 def test_every_html_entry_point_loads_clarity_once_and_discloses_analytics():
     html_paths = sorted(Path("site").glob("*.html"))
     assert html_paths
@@ -177,6 +191,8 @@ def test_offline_cli_route_is_in_the_view_bar_behind_a_short_link():
     assert 'id="cli-nav"' in nav
     assert 'href="/cli/"' in nav
     assert 'aria-controls="cli-dialog"' in nav
+    assert nav.index('data-view="today"') < nav.index('id="cli-nav"')
+    assert nav.index('id="cli-nav"') < nav.index('data-view="leaderboard"')
     assert 'id="cli-dialog"' in html
     assert 'id="cli-content"' in html
     assert 'state.cli = pathUtility === "cli"' in script
@@ -1046,7 +1062,7 @@ def test_corpus_view_progressively_discloses_the_complete_relationship_map():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     assert 'data-view="map"' in html
-    assert 'data-i18n="Explore">Explore</a>' in html
+    assert re.search(r'data-i18n="Explore"[^>]*>\s*Explore\s*</a>', html)
     assert 'id="map-insights"' in html
     assert '<details class="relationship-explorer" id="relationship-explorer">' in html
     assert "renderMapInsights(corpus)" in script
@@ -1108,6 +1124,7 @@ def test_static_html_references_existing_local_assets():
     generated_assets = {
         "feed.xml",
         "data/radar.json",
+        "blog/",
         "leaderboard/",
         "trends/",
         "explore/",
@@ -1185,25 +1202,32 @@ def test_today_view_shows_total_corpus_counts_by_category():
 
 
 def test_badge_accessible_names_state_the_action():
+    html = Path("site/index.html").read_text(encoding="utf-8")
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
-    assert "BADGE_ACTIONS" in script
-    for fragment in (
-        "Star this repository on GitHub",
-        "Fork this repository on GitHub",
-        "Open a new issue on GitHub",
-    ):
-        assert fragment in script
-    assert 'badge.setAttribute("aria-label"' in script
+    assert "Star this repository on GitHub" in script
+    for fragment in ("Fork this repository", "Open a new issue"):
+        assert f'aria-label="{fragment}"' in html
+    assert 'badge.setAttribute(\n    "aria-label",' in script
 
 
-def test_repo_badge_counts_are_visible():
+def test_only_the_repo_star_badge_shows_a_count():
     css = Path("site/assets/styles.css").read_text(encoding="utf-8")
     html = Path("site/index.html").read_text(encoding="utf-8")
+    script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     # Issue #402: the GitHub API count should be useful to sighted visitors,
     # not only present as clipped text for screen readers.
     assert 'id="badge-stars"' in html
+    star_badge = html.split('id="badge-stars"', 1)[1].split("</a>", 1)[0]
+    fork_badge = html.split('id="badge-forks"', 1)[1].split("</a>", 1)[0]
+    issue_badge = html.split('id="badge-issues"', 1)[1].split("</a>", 1)[0]
+    assert "data-count" in star_badge
+    assert "data-count" not in fork_badge
+    assert "data-count" not in issue_badge
+    assert html.count('class="repo-badge-count"') == 1
+    assert "repo.forks_count" not in script
+    assert "api.github.com/search/issues" not in script
     assert ".repo-badge-count" in css
     assert (
         "clip-path: inset(50%)"
