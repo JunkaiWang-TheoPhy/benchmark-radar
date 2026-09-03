@@ -63,6 +63,20 @@ def test_site_has_accessible_landmarks_and_views():
     assert "explorer-view" not in parser.ids
 
 
+def test_explore_and_rubric_are_hidden_from_the_menu_but_keep_direct_links():
+    html = Path("site/index.html").read_text(encoding="utf-8")
+    navigation = html.split('<nav class="view-nav"', 1)[1].split("</nav>", 1)[0]
+
+    for identifying_attribute, href in (
+        ('data-view="map"', "/explore/"),
+        ('id="rubric-nav"', "/rubric/"),
+    ):
+        opening = re.search(rf"<a\b(?=[^>]*{re.escape(identifying_attribute)})[^>]*>", navigation)
+        assert opening
+        assert re.search(r"\shidden(?:\s|>)", opening.group(0))
+        assert f'href="{href}"' in opening.group(0)
+
+
 def test_every_html_entry_point_loads_clarity_once_and_discloses_analytics():
     html_paths = sorted(Path("site").glob("*.html"))
     assert html_paths
@@ -1046,7 +1060,7 @@ def test_corpus_view_progressively_discloses_the_complete_relationship_map():
     script = Path("site/assets/app.js").read_text(encoding="utf-8")
 
     assert 'data-view="map"' in html
-    assert 'data-i18n="Explore">Explore</a>' in html
+    assert re.search(r'data-i18n="Explore"[^>]*>\s*Explore\s*</a>', html)
     assert 'id="map-insights"' in html
     assert '<details class="relationship-explorer" id="relationship-explorer">' in html
     assert "renderMapInsights(corpus)" in script
