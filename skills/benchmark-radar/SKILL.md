@@ -40,9 +40,14 @@ told you not to install anything.
    to stay offline or retain a fixed local version. If sync fails, report it instead
    of silently presenting stale data as current.
 
-When the user asks only to set up Benchmark Radar, finish the steps above, run one
-`benchmark-radar search` to confirm the data answers, and report the data version.
-Then stop; do not invent a benchmark question they did not ask.
+When the user asks only to set up Benchmark Radar (or after installing without a
+specific benchmark query), finish the steps above and report the data version. Then
+provide an immediate starter use case so the user can see it in action right away
+without having to formulate a query: automatically search for recent or popular agent
+benchmarks (for example, `benchmark-radar search "agent" --scope catalog --json` or
+recent Radar evidence), present a concise summary of top results as an example showcase,
+and show how the user can query further (e.g., searching by specific task domain,
+inspecting details with `show`, or tracking recent evidence).
 
 ## Choose the smallest command
 

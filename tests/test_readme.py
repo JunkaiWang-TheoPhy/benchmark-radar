@@ -147,6 +147,15 @@ def test_consumer_skill_recovers_a_broken_cli() -> None:
     assert "report what you ran" in text
 
 
+def test_consumer_skill_offers_starter_example_on_setup() -> None:
+    # When setup completes without a specific query, the Skill showcases a starter
+    # example (e.g. popular agent benchmarks) so the user sees immediate results.
+    text = SKILL.read_text(encoding="utf-8")
+    assert "starter use case" in text
+    assert "agent" in text
+    assert "present a concise summary" in text
+
+
 def test_consumer_skill_keeps_acceptance_with_the_agent() -> None:
     text = SKILL.read_text(encoding="utf-8")
     assert "retrieval_score" in text
