@@ -51,15 +51,17 @@ PURPLE = HexColor("#6D4AFF")
 FROZEN_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf")
 NEXT_DRAFT_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-next-draft.pdf")
 FROZEN_AUTHORS = ("Koutian Wu",)
-NEXT_DRAFT_AUTHORS = ("Koutian Wu", "Junjie Zhou")
+NEXT_DRAFT_AUTHORS = ("Koutian Wu", "Junjie Zhou", "Jiayu Wang")
 NEXT_DRAFT_BYLINE = (
     "Koutian Wu<super>1,2,*</super>",
     "Junjie Zhou<super>3</super>",
+    "Jiayu Wang<super>4</super>",
 )
 NEXT_DRAFT_AFFILIATIONS = (
     "<super>1</super> Independent researcher",
     "<super>2</super> Tacite AI",
     "<super>3</super> Hangzhou Dianzi University",
+    "<super>4</super> Xi'an Jiaotong University",
 )
 NEXT_DRAFT_CORRESPONDING_AUTHOR = "Koutian Wu, k@tacite.ai"
 
@@ -966,6 +968,30 @@ def story(
                     ],
                 ],
                 [0.55 * inch, 3.35 * inch, 2.70 * inch],
+            ),
+            p(
+                "6.5 Worked real use case: prior-art check for a new evaluation",
+                st["subsection"],
+            ),
+            p(
+                "Jiayu Wang, a researcher working on agent evaluation, used Benchmark Radar to decide whether a proposed new evaluation would duplicate existing work. The check decides whether the design is still novel, and it used to be slow: comparing a candidate against the field required long manual searches, and completeness was hard to guarantee. The case ran during August 2026: survey recent work on credit assignment in agentic training, with small Qwen-series baselines kept as a reproducibility constraint.",
+                st["body"],
+            ),
+            p(
+                "A coding agent installed the CLI and the public benchmark-radar Skill, initialized the local corpus with benchmark-radar init, and queried candidate records with benchmark-radar search. Because Radar links one artifact across papers, code, releases, and datasets, the agent could see at a glance whether a candidate had a paper but no code, or code but no dataset. It cross-checked the Radar candidates against the agent's own web search before writing a short comparison table.",
+                st["body"],
+            ),
+            p(
+                "The result was a shortlist of related work that the author judged complete enough to act on. For the author's earlier benchmark, AARR-Bench, the equivalent survey had consumed effort second only to producing the benchmark data itself. With Benchmark Radar the survey became a single agent session, and the outcome stayed verifiable through source-linked records.",
+                st["body"],
+            ),
+            p(
+                "Limits: Radar search is deterministic lexical matching rather than semantic retrieval, so a differently worded query can change the candidate set. The session used the Radar CLI together with the agent's general web search, so it does not isolate Radar alone. Repository and dataset availability is a snapshot, not a permanent label. The case documents one contributor's workflow; it is not a measured user study. Full evidence, including the summary table and session screenshots, is public in issue #492.",
+                st["body"],
+            ),
+            p(
+                "<b>Contributor.</b> Jiayu Wang, Xi'an Jiaotong University. Case and evidence: github.com/ktwu01/benchmark-radar/issues/492",
+                st["body"],
             ),
             Spacer(1, 10),
             Table(
