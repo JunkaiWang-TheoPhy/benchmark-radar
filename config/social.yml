@@ -25,8 +25,14 @@
 # count as though it describes the current corpus.
 social:
   post_sample: |-
-    发前提醒：涉及条目数、来源数、star、日期或榜单名次时，先用当天数据替换
-    `<最新数据>`。标题优先说“免费使用”“一键导出”“开源”，少写“我做了什么”。
+    发前提醒：涉及条目数、来源数、star、日期或榜单名次时，先用当天数据替换`<最新数据>`。标题优先说“免费使用”“一键导出”“开源”，少写“我做了什么”。
+    要多放软广。。少放硬的。
+
+    - [ ] 软广
+      有没有家人们做个“说人话” bench?
+      最近Claudish逼疯了 哈哈
+      衡量LLM说人话程度: or 看看全网9000个 benchmark/eval/dataset消息
+      仓库在 github.com/ktwu01/benchmark-radar，有空可以看看
 
     - [ ] Benchmark Radar：为 Agent 提供第一手消息
       在做 agent benchmark，找 related works 的时候，我发现信息太多很难找全，做出来之后容易跟别人重合了。所以我们做了个开源项目，每天从37个来源收集数据，获得第一手 benchmark 消息，目前已经 140+ stars。
