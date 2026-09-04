@@ -28,6 +28,11 @@ social:
     发前提醒：涉及条目数、来源数、star、日期或榜单名次时，先用当天数据替换`<最新数据>`。标题优先说“免费使用”“一键导出”“开源”，少写“我做了什么”。
     要多放软广。。少放硬的。
 
+
+    - [ ] 在别人的微信群，需要cue 他们本地的bench。
+
+    - [ ] 发微信，群发给朋友们。一人一个唾沫星子都有10k+ stars
+
     - [ ] 软广
       有没有家人们做个“说人话” bench?
       最近Claudish逼疯了 哈哈
@@ -128,10 +133,10 @@ social:
 
     - [ ] Cold email：你的 benchmark 进入了今日 Top 10
 
-      Subject: Your benchmark is in today's Benchmark Radar Top 10
+      Subject: Your new benchmark is in today's Benchmark Radar Top 10
 
       Hey! We found `<benchmark name>` in today's Benchmark Radar Top 10.
-      Interested in using our free CLI to find related work?
+      Interested in using our CLI to find related works from 9000+ sources?
 
       CLI: https://benchmark-radar.org/cli
       Code and data: https://github.com/ktwu01/benchmark-radar
