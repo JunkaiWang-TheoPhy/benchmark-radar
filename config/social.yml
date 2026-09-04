@@ -43,6 +43,12 @@ social:
       在做 agent benchmark，找 related works 的时候，我发现信息太多很难找全，做出来之后容易跟别人重合了。所以我们做了个开源项目，每天从37个来源收集数据，获得第一手 benchmark 消息，目前已经 140+ stars。
       安装 CLI，让你的 agent 查找近一个月内全网9000个 benchmark/eval/dataset消息。仓库在 github.com/ktwu01/benchmark-radar
 
+    - [ ] B站：每天整理 Agent benchmark
+
+      Agent benchmark 每天都能出好几篇。最近看得比较多，我就做了
+      Daily Agent Benchmarks：每天整理 arXiv 新发布的 Agent 评测，支持按领域筛选、
+      关键词搜索，也能按引用数排序。自己整理起来方便些，也能看看最近大家都在关注什么 🤔
+
     - [ ] Agent benchmark 还在测“能不能把事做完”
 
       一个反常识的发现：Agent benchmarks 看起来已经在评测智能体前沿，
@@ -192,12 +198,14 @@ social:
     - name: "KOL：逛逛 GitHub 等相关账号"
       daily: true
 
+    # Requested priority: Bilibili has an active AI audience.
+    - name: "Bilibili / B站"
+      daily: true
+
     # Other public publishing platforms. These appear in every issue.
     - name: "微信公众号"
       daily: true
     - name: "V2EX"
-      daily: true
-    - name: "Bilibili / B站"
       daily: true
     - name: "YouTube"
       daily: true
@@ -247,6 +255,17 @@ social:
       daily: true
     - name: "Papers with Code discussions"
       daily: true
+
+    # Additional US-facing platforms. Keep them visible without making them
+    # daily posting targets.
+    - name: "WhatsApp Communities"
+      daily: false
+    - name: "Pinterest"
+      daily: false
+    - name: "Snapchat"
+      daily: false
+    - name: "Quora"
+      daily: false
 
     # Communities are ranked by historical checks, then by the existing backlog.
     - name: "COLM 2026 开会群"
