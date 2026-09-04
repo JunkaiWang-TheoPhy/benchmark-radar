@@ -321,6 +321,10 @@ def test_repository_social_config_leads_with_crowdsourcing_then_ranked_channels(
         "Cold email：arXiv / OpenReview benchmark 作者",
         "新微信群或 Discord 群",
         "KOL：逛逛 GitHub 等相关账号",
+        "WhatsApp Communities",
+        "Pinterest",
+        "Snapchat",
+        "Quora",
     } <= set(names)
     assert {
         "Sichen Tao",
@@ -339,6 +343,8 @@ def test_repository_social_config_leads_with_crowdsourcing_then_ranked_channels(
     assert "Benchmark Radar Top 10" in sample
     assert "https://benchmark-radar.org/cli" in sample
     assert "网上在热议什么，最后沉淀成了什么" in sample
+    assert "B站：每天整理 Agent benchmark" in sample
+    assert "Daily Agent Benchmarks" in sample
 
 
 def test_render_section_omits_post_sample_when_none_configured():

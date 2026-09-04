@@ -43,6 +43,12 @@ social:
       在做 agent benchmark，找 related works 的时候，我发现信息太多很难找全，做出来之后容易跟别人重合了。所以我们做了个开源项目，每天从37个来源收集数据，获得第一手 benchmark 消息，目前已经 140+ stars。
       安装 CLI，让你的 agent 查找近一个月内全网9000个 benchmark/eval/dataset消息。仓库在 github.com/ktwu01/benchmark-radar
 
+    - [ ] B站：每天整理 Agent benchmark
+
+      Agent benchmark 每天都能出好几篇。最近看得比较多，我就做了
+      Daily Agent Benchmarks：每天整理 GitHub arXiv 等等37个来源的新发布的 Agent 评测，
+      已经有 9000+ 条数据，150+ stars 了，欢迎大家去看看，最近大家都在关注什么～
+
     - [ ] Agent benchmark 还在测“能不能把事做完”
 
       一个反常识的发现：Agent benchmarks 看起来已经在评测智能体前沿，
@@ -147,6 +153,58 @@ social:
       前沿模型报告。两组数据要分开：研究热度来自 discovery corpus，采用情况来自
       model-card reporting。这样才能看出一个话题从讨论走向评测基础设施的过程。
 
+    - [ ] 我们给全网 9000+ AI benchmarks做了个CLI
+
+      中文版
+
+      做了个 Benchmark Radar。
+
+      它每天收集新发布和新更新的 benchmark、评测、数据集与数据质量工作，
+      帮你快速判断今天最值得先看什么。Today 页会优先展示真正的新发布，
+      再看新鲜度和优先级分数。
+
+      当前的优先级分数由四部分组成：相关性占 35%，社区采用信号占 25%，
+      证据强度占 20%，新鲜度占 20%。相关性看标题和来源描述是否确实在讲
+      benchmark 或评测；证据强度看有没有论文、代码、数据、作者和交叉链接；
+      新鲜度则结合发布时间，以及这是首次发布还是普通更新。
+
+      社区采用信号包括 GitHub Stars、论文引用、下载量和点赞数，但不会直接把这些数字相加。
+      系统会按不同指标分别做对数归一化，再采用其中最强的一项。下载和点赞容易受到
+      自动流量影响，因此分数设有上限，不能仅靠很高的下载量压过获得大量 Stars 或引用的项目。
+
+      这个分数只用于信息筛选，回答“接下来值得点开哪个”，不代表 benchmark 的科学质量。
+      Hacker News 等注意力信号会单独展示，不参与证据排名。LLM 只负责根据当天已采集、
+      可引用的证据生成每日简报，不参与打分，也不会预测一个项目未来能有多火。
+
+      English
+
+      I built Benchmark Radar.
+
+      It tracks newly released and updated benchmarks, evaluations, datasets,
+      and data-quality work, helping you decide what is worth opening first.
+      The Today page prioritizes new releases, followed by recency and priority
+      score.
+
+      The priority score has four components: relevance (35%), adoption signals
+      (25%), evidence strength (20%), and recency (20%). Relevance checks whether
+      the title and source description are genuinely about benchmarks or
+      evaluations. Evidence strength considers papers, code, data, authors, and
+      cross-links. Recency accounts for both timing and event type, distinguishing
+      new releases from routine updates.
+
+      Adoption signals include GitHub stars, citations, downloads, and likes.
+      These raw counts are not added together. Each metric is normalized on its
+      own logarithmic scale, and the strongest available signal is used. Downloads
+      and likes are capped because they can accumulate through automated activity;
+      high download counts alone should not outrank projects with substantial stars
+      or citations.
+
+      This score is for triage—answering “What should I open next?”—not judging
+      scientific quality. Attention signals such as Hacker News activity are
+      displayed separately and do not affect the evidence ranking. The LLM only
+      produces a daily briefing from cited, collected evidence. It does not score
+      records or predict future popularity.
+
   channels:
     # Special method requested for every issue. It stays above the ranked list.
     - name: "众筹-social：请 benchmark 群友转发到自己的社群"
@@ -192,12 +250,14 @@ social:
     - name: "KOL：逛逛 GitHub 等相关账号"
       daily: true
 
+    # Requested priority: Bilibili has an active AI audience.
+    - name: "Bilibili / B站"
+      daily: true
+
     # Other public publishing platforms. These appear in every issue.
     - name: "微信公众号"
       daily: true
     - name: "V2EX"
-      daily: true
-    - name: "Bilibili / B站"
       daily: true
     - name: "YouTube"
       daily: true
@@ -247,6 +307,17 @@ social:
       daily: true
     - name: "Papers with Code discussions"
       daily: true
+
+    # Additional US-facing platforms. Keep them visible without making them
+    # daily posting targets.
+    - name: "WhatsApp Communities"
+      daily: false
+    - name: "Pinterest"
+      daily: false
+    - name: "Snapchat"
+      daily: false
+    - name: "Quora"
+      daily: false
 
     # Communities are ranked by historical checks, then by the existing backlog.
     - name: "COLM 2026 开会群"
