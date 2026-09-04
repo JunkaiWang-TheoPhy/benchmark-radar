@@ -140,7 +140,7 @@ The daily evidence feed is built on public data from [arXiv](https://arxiv.org),
 [GitHub Search](https://github.com/search), [GitHub organizations](https://github.com),
 [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases),
 [Hugging Face datasets and Spaces](https://huggingface.co), [Hugging Face Papers](https://huggingface.co/papers),
-[OpenAlex](https://openalex.org), [OpenReview](https://openreview.net),
+[Crossref](https://www.crossref.org), [OpenAlex](https://openalex.org), [OpenReview](https://openreview.net),
 [Kaggle datasets](https://www.kaggle.com/datasets), [Zenodo](https://zenodo.org),
 [Semantic Scholar](https://www.semanticscholar.org), [Brave Search](https://search.brave.com),
 and [Hacker News](https://news.ycombinator.com), plus first-party lab feeds from

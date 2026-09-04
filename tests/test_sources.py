@@ -14,6 +14,7 @@ from benchmark_radar.sources import (
     collection_method,
     fetch_arxiv,
     fetch_brave,
+    fetch_crossref,
     fetch_first_party_feeds,
     fetch_github,
     fetch_github_organizations,
@@ -822,6 +823,85 @@ def test_zenodo_records_preserve_doi_and_upstream_metadata(monkeypatch):
     assert items[0].metrics == {"downloads": 13.0, "views": 21.0}
 
 
+def test_crossref_preserves_doi_metadata_and_bounds_the_query(monkeypatch):
+    calls = []
+    payload = {
+        "message": {
+            "items": [
+                {
+                    "DOI": "10.1000/Radar",
+                    "title": ["A Publisher Benchmark"],
+                    "abstract": "<jats:p>The upstream abstract.</jats:p>",
+                    "published": {"date-parts": [[2026, 7, 27]]},
+                    "URL": "https://doi.org/10.1000/Radar",
+                    "author": [
+                        {
+                            "given": "Grace",
+                            "family": "Evidence",
+                            "affiliation": [{"name": "Radar Lab"}],
+                        }
+                    ],
+                    "is-referenced-by-count": 3,
+                }
+            ]
+        }
+    }
+
+    def fake_get_json(url, **kwargs):
+        calls.append((url, kwargs))
+        return payload
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+    items = fetch_crossref(
+        {
+            "searches": ["agent benchmark"],
+            "max_requests": 1,
+            "_collection_now": datetime(2026, 7, 28, tzinfo=UTC),
+        },
+        datetime(2026, 7, 26, 12, tzinfo=UTC),
+        10,
+    )
+
+    assert [item.source_id for item in items] == ["10.1000/radar"]
+    assert items[0].source == "Crossref"
+    assert items[0].url == "https://doi.org/10.1000/radar"
+    assert items[0].summary == "The upstream abstract."
+    assert items[0].authors == ["Grace Evidence"]
+    assert items[0].organizations == ["Radar Lab"]
+    assert items[0].artifact_urls == ["https://doi.org/10.1000/radar"]
+    assert items[0].metrics == {"citations": 3.0}
+    assert items[0].parser_version == "crossref-works/1"
+    assert calls[0][0] == "https://api.crossref.org/works"
+    assert calls[0][1]["params"]["query.title"] == "agent benchmark"
+    assert calls[0][1]["params"]["filter"] == ("from-pub-date:2026-07-26,until-pub-date:2026-07-28")
+
+
+def test_crossref_skips_dates_without_day_precision(monkeypatch):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, **kwargs: {
+            "message": {
+                "items": [
+                    {
+                        "DOI": "10.1000/year-only",
+                        "title": ["An imprecisely dated benchmark"],
+                        "published": {"date-parts": [[2026]]},
+                    }
+                ]
+            }
+        },
+    )
+
+    assert (
+        fetch_crossref(
+            {"searches": ["benchmark"]},
+            datetime(2026, 7, 26, tzinfo=UTC),
+            10,
+        )
+        == []
+    )
+
+
 def test_openreview_success_uses_only_upstream_abstract(monkeypatch):
     timestamp = int(datetime(2026, 7, 27, 12, tzinfo=UTC).timestamp() * 1000)
 
@@ -1253,6 +1333,7 @@ def test_release_replacement_budget_preserves_later_repository_coverage(monkeypa
         (fetch_openreview, {"venues": ["venue"]}, []),
         (fetch_semantic_scholar, {"searches": ["benchmark"]}, {"data": []}),
         (fetch_github_releases, {"repositories": ["example/benchmark"]}, []),
+        (fetch_crossref, {"searches": ["benchmark"]}, {"message": {"items": []}}),
     ],
 )
 def test_new_connectors_accept_empty_upstream_results(monkeypatch, fetcher, config, empty_payload):
@@ -1281,6 +1362,7 @@ def test_new_connectors_accept_empty_upstream_results(monkeypatch, fetcher, conf
         (fetch_openreview, {"venues": ["venue"]}, "wrong"),
         (fetch_semantic_scholar, {"searches": ["benchmark"]}, {"data": "wrong"}),
         (fetch_github_releases, {"repositories": ["example/benchmark"]}, {}),
+        (fetch_crossref, {"searches": ["benchmark"]}, {"message": {}}),
     ],
 )
 def test_new_connectors_reject_malformed_payloads(monkeypatch, fetcher, config, malformed_payload):
@@ -1314,6 +1396,7 @@ def test_new_connectors_reject_malformed_payloads(monkeypatch, fetcher, config, 
         (fetch_openreview, {"venues": ["venue"]}),
         (fetch_semantic_scholar, {"searches": ["benchmark"]}),
         (fetch_github_releases, {"repositories": ["example/benchmark"]}),
+        (fetch_crossref, {"searches": ["benchmark"]}),
     ],
 )
 def test_new_connectors_surface_http_failures(monkeypatch, fetcher, config):
@@ -1382,6 +1465,21 @@ def test_new_connectors_surface_http_failures(monkeypatch, fetcher, config):
                     "assets": [],
                 }
             ],
+        ),
+        (
+            fetch_crossref,
+            {"searches": ["benchmark"]},
+            {
+                "message": {
+                    "items": [
+                        {
+                            "DOI": "10.1000/no-abstract",
+                            "title": ["No abstract"],
+                            "published": {"date-parts": [[2026, 7, 27]]},
+                        }
+                    ]
+                }
+            },
         ),
     ],
 )
