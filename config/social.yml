@@ -28,6 +28,10 @@ social:
     发前提醒：涉及条目数、来源数、star、日期或榜单名次时，先用当天数据替换
     `<最新数据>`。标题优先说“免费使用”“一键导出”“开源”，少写“我做了什么”。
 
+    - [ ] Benchmark Radar：为 Agent 提供第一手消息
+      在做 agent benchmark，找 related works 的时候，我发现信息太多很难找全，做出来之后容易跟别人重合了。所以我们做了个开源项目，每天从37个来源收集数据，获得第一手 benchmark 消息，目前已经 140+ stars。
+      安装 CLI，让你的 agent 查找近一个月内全网9000个 benchmark/eval/dataset消息。仓库在 github.com/ktwu01/benchmark-radar
+
     - [ ] Agent benchmark 还在测“能不能把事做完”
 
       一个反常识的发现：Agent benchmarks 看起来已经在评测智能体前沿，
