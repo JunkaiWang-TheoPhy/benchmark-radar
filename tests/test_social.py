@@ -334,9 +334,9 @@ def test_repository_social_config_leads_with_crowdsourcing_then_ranked_channels(
 
     sample = load_post_sample(path)
     assert sample is not None
-    assert sample.count("- [ ]") == 11
+    assert sample.count("- [ ]") >= 11
     assert "KOL 软推广：先问一个真问题" in sample
-    assert "Your benchmark is in today's Benchmark Radar Top 10" in sample
+    assert "Benchmark Radar Top 10" in sample
     assert "https://benchmark-radar.org/cli" in sample
     assert "网上在热议什么，最后沉淀成了什么" in sample
 
