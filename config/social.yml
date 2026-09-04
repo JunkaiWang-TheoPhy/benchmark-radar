@@ -147,8 +147,6 @@ social:
       前沿模型报告。两组数据要分开：研究热度来自 discovery corpus，采用情况来自
       model-card reporting。这样才能看出一个话题从讨论走向评测基础设施的过程。
 
-      注意：被更多模型报告采用，表示 vendor attention，不等于 benchmark 质量更高。
-
   channels:
     # Special method requested for every issue. It stays above the ranked list.
     - name: "众筹-social：请 benchmark 群友转发到自己的社群"
