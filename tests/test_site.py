@@ -164,6 +164,11 @@ def test_citation_formats_are_one_click_away_behind_a_short_link():
     for fragment in ("10.5281/zenodo.22167102", "Benchmark Radar v0.9.0: Technical Report"):
         assert fragment in cff
         assert fragment in script
+    assert "given-names: Junjie" in cff
+    assert '"Wu, K., & Zhou, J. (2026)' in script
+    assert '"author = {Wu, Koutian and Zhou, Junjie},"' in script
+    assert html.count('name="citation_author"') == 2
+    assert '<meta name="citation_author" content="Zhou, Junjie">' in html
 
 
 def test_offline_cli_route_is_in_the_view_bar_behind_a_short_link():

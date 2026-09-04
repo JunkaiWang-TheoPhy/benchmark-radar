@@ -112,7 +112,7 @@ technical report:
 
 ```bibtex
 @misc{wu_2026_22167102,
-  author       = {Wu, Koutian},
+  author       = {Wu, Koutian and Zhou, Junjie},
   title        = {Benchmark Radar v0.9.0: Technical Report},
   month        = aug,
   year         = {2026},

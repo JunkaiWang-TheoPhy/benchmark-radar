@@ -69,9 +69,8 @@ active indicator, and Back and Forward should restore meaningful states.
 Show a concise answer first, then offer the evidence and method behind it.
 Expansion should be clear and reversible.
 
-Mobile layout must preserve the same priority. Do not bury a daily briefing
-below a long result list because the desktop result column appears first in the
-document.
+Mobile layout must preserve the surface's primary task. On Today, matching
+results come first; the daily briefing follows as context for the scan date.
 
 Explain a shared limitation once near the affected group. Do not repeat “not
 comparable” or “not enough history” in every card.

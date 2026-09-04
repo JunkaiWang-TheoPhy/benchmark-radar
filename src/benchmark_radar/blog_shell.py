@@ -190,9 +190,8 @@ def _adapt_header(header: str) -> str:
     attrs, inner = contact.group(1), contact.group(2)
     title = re.search(r'title="([^"]*)"', attrs)
     i18n_title = re.search(r'data-i18n-title="([^"]*)"', attrs)
-    # The chat-bubble svg carries the outline-icon class from index.html (same
-    # mechanism fork and issues use on link badges). Ensure it is present so
-    # the bubble renders as an outline when transformed into an anchor badge.
+    # The chat-bubble svg carries the outline-icon class from index.html. Ensure
+    # it is present when the button is transformed into an anchor badge.
     inner = _ensure_outline_icon(inner)
     header = header.replace(
         contact.group(0),
