@@ -128,7 +128,7 @@ if (langToggle) {
 }
 showLanguage(savedLanguage());
 
-// Repository star count. Mirrors app.js's renderRepoBadges: a rate-limited API
+// Repository star count. Mirrors app.js's renderStarCount: a rate-limited API
 // must never surface as an error because the GitHub link still works blank.
 const REPO_SLUG = "ktwu01/benchmark-radar";
 
@@ -141,7 +141,7 @@ function setStarCount(value) {
   badge.setAttribute("aria-label", t("Star this repository on GitHub. {count} stars", { count }));
 }
 
-async function renderRepoBadges() {
+async function renderStarCount() {
   try {
     const response = await fetch(`https://api.github.com/repos/${REPO_SLUG}`, {
       headers: { Accept: "application/vnd.github+json" },
@@ -150,10 +150,10 @@ async function renderRepoBadges() {
     const repo = await response.json();
     setStarCount(repo.stargazers_count);
   } catch (error) {
-    console.debug("Repository badge counts unavailable", error);
+    console.debug("Repository star count unavailable", error);
   }
 }
-renderRepoBadges();
+renderStarCount();
 
 // The footer's share control, same behavior as the dashboard's.
 const shareButton = document.getElementById("share-radar");
