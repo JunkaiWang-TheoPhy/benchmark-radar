@@ -65,6 +65,7 @@ npx skills add ktwu01/benchmark-radar
 
 ## 更多
 
+- [设计原则](design.md)
 - [评分规则](https://benchmark-radar.org/rubric/)
 - [模型卡采用数据](data/model_cards.yml)
 - [公开语料 schema](docs/cumulative-corpus.schema.json)
