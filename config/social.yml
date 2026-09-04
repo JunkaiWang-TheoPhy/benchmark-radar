@@ -46,8 +46,8 @@ social:
     - [ ] B站：每天整理 Agent benchmark
 
       Agent benchmark 每天都能出好几篇。最近看得比较多，我就做了
-      Daily Agent Benchmarks：每天整理 arXiv 新发布的 Agent 评测，支持按领域筛选、
-      关键词搜索，也能按引用数排序。自己整理起来方便些，也能看看最近大家都在关注什么 🤔
+      Daily Agent Benchmarks：每天整理 GitHub arXiv 等等37个来源的新发布的 Agent 评测，
+      已经有 9000+ 条数据，150+ stars 了，欢迎大家去看看，最近大家都在关注什么～
 
     - [ ] Agent benchmark 还在测“能不能把事做完”
 
