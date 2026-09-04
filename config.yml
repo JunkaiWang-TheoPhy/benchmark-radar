@@ -274,6 +274,22 @@ sources:
     attempts: 3
     timeout_seconds: 30
 
+  # Crossref adds publisher-deposited DOI metadata as an independent discovery
+  # path for benchmark papers. Its public API needs no credential; title-focused
+  # queries and the shared taxonomy keep generic papers out of the published feed.
+  crossref:
+    enabled: true
+    required: false
+    searches:
+      - large language model benchmark
+      - artificial intelligence evaluation dataset
+      - data contamination benchmark
+      - agentic benchmark evaluation
+    page_size: 50
+    max_requests: 4
+    attempts: 3
+    timeout_seconds: 30
+
   openreview:
     enabled: true
     venues:
