@@ -71,6 +71,7 @@ written in the
 
 ## More
 
+- [Design principles](design.md)
 - [Scoring rubric](https://benchmark-radar.org/rubric/)
 - [Model-card adoption data](data/model_cards.yml)
 - [Public corpus schema](docs/cumulative-corpus.schema.json)
