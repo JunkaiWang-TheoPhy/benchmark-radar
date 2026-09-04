@@ -1051,7 +1051,7 @@ def story(
                 st["body"],
             ),
             *figure(
-                "assets/use-case-492/aarrbench-manual-table.png",
+                "assets/use-case-492/aarri-bench-manual-table.png",
                 "<b>Figure 6.</b> The manually built 12-by-7 prior-art table for AARRI-Bench, the workflow that Radar now shortens.",
                 st,
             ),

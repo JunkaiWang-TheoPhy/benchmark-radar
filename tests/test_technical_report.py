@@ -66,7 +66,7 @@ def test_next_draft_embeds_use_case_screenshots() -> None:
         "artifact-status-code.png",
         "cross-validation.png",
         "survey-table.png",
-        "aarrbench-manual-table.png",
+        "aarri-bench-manual-table.png",
     )
 
     for name in names:
