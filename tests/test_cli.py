@@ -51,8 +51,24 @@ def _real_snapshot(tmp_path: Path, date: datetime) -> None:
     write_snapshot(run, tmp_path / "snapshots")
 
 
-def test_default_dashboard_build_also_publishes_the_feed(monkeypatch, tmp_path):
+@pytest.mark.parametrize(
+    ("dashboard_url", "expected"),
+    [
+        ("https://benchmark-radar.org/", "https://benchmark-radar.org/leaderboard/"),
+        (
+            "https://example.test/benchmark-radar",
+            "https://example.test/benchmark-radar/leaderboard/",
+        ),
+        (None, None),
+    ],
+)
+def test_leaderboard_url_joins_root_and_subpath_deployments(dashboard_url, expected):
+    assert cli._leaderboard_url(dashboard_url) == expected
+
+
+def test_default_dashboard_build_also_publishes_the_feed(monkeypatch, tmp_path, site_shell):
     _real_snapshot(tmp_path, datetime(2026, 7, 30, tzinfo=UTC))
+    site_shell(tmp_path / "site")
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
         "sys.argv",
@@ -549,6 +565,9 @@ def test_daily_radar_yml_renders_social_material_instead_of_an_issue():
     )
     assert "--social-output generated/out/body.md" in step["run"]
     assert "gh issue create --title" in step["run"]
+    assert "--label automated --label traction" in step["run"]
+    assert "--add-label automated --add-label traction --remove-label daily-radar" in step["run"]
+    assert "--label daily-radar" not in step["run"]
     social_step = next(
         step
         for step in workflow["jobs"]["build-report"]["steps"]

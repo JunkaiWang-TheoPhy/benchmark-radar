@@ -41,8 +41,8 @@ Important caveat: this measures vendor reporting convention, not benchmark quali
 The second half is an automated daily radar that collects benchmark, evaluation, dataset, and data-quality work from arXiv, OpenReview, Hugging Face, GitHub, Semantic Scholar, OpenAlex, Brave Search, and Hacker News.
 
 Code: https://github.com/ktwu01/benchmark-radar  
-Leaderboard: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard  
-Data: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
+Leaderboard: https://benchmark-radar.org/leaderboard/ \
+Data: https://benchmark-radar.org/data/leaderboard.csv
 
 ## 2. Reddit r/MachineLearning
 posted:
@@ -63,8 +63,8 @@ More importantly, this measures vendor reporting convention, not benchmark quali
 There is also an automated daily radar that collects new benchmark, eval, dataset, and data-quality work from eight sources, deduplicates it, classifies it with a published taxonomy, and exposes the ranking components.
 
 Project: https://github.com/ktwu01/benchmark-radar  
-Leaderboard: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard  
-CSV: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
+Leaderboard: https://benchmark-radar.org/leaderboard/ \
+CSV: https://benchmark-radar.org/data/leaderboard.csv
 
 Feedback on the counting method and missing model documents would be especially useful.
 
@@ -85,8 +85,8 @@ This is a leaderboard of reporting convention, not benchmark quality. A benchmar
 The project also runs a daily radar for new benchmarks, evals, datasets, and data-quality work.
 
 Code: https://github.com/ktwu01/benchmark-radar  
-Leaderboard: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard  
-JSON: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.json
+Leaderboard: https://benchmark-radar.org/leaderboard/ \
+JSON: https://benchmark-radar.org/data/leaderboard.json
 
 ## 4. X / Twitter
 
@@ -99,7 +99,7 @@ JSON: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.json
 Which benchmarks do frontier labs actually report when they release a model?
 
 I reviewed 30 model-release documents from 10 organizations. Benchmark Radar now tracks 79 benchmarks.
-https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+https://benchmark-radar.org/leaderboard/
 
 **2/6**
 
@@ -126,7 +126,7 @@ I exclude benchmark scores. Vendors vary in prompts, scaffolds, tool access, rea
 There is also an automated daily radar for new benchmarks, evals, datasets, and data-quality work, with deduplication and explainable ranking components.
 
 MIT licensed: https://github.com/ktwu01/benchmark-radar  
-CSV: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
+CSV: https://benchmark-radar.org/data/leaderboard.csv
 
 ## 5. LinkedIn
 
@@ -147,8 +147,8 @@ This measures vendor reporting convention, not benchmark quality. A saturated or
 Benchmark Radar also includes an automated daily feed for new benchmarks, evaluations, datasets, and data-quality work.
 
 Project: https://github.com/ktwu01/benchmark-radar  
-Leaderboard: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard  
-Citable data: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.md
+Leaderboard: https://benchmark-radar.org/leaderboard/ \
+Citable data: https://benchmark-radar.org/data/leaderboard.md
 
 ## 6. Xiaohongshu（小红书）
 
@@ -169,8 +169,8 @@ Citable data: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.md
 这个排名衡量的是厂商的报告惯例，不是 benchmark 质量。已经饱和或可能受到污染的评测，也可能因为大家习惯报告而排得很高。项目不比较跨厂商的模型得分，因为 prompt、工具、推理预算和 evaluator 并不一致。目前样本只有 30 份文档。
 
 完整排行榜和可下载数据放在 Benchmark Radar：
-https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
-CSV：https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
+https://benchmark-radar.org/leaderboard/
+CSV：https://benchmark-radar.org/data/leaderboard.csv
 
 #人工智能 #大模型 #AI评测 #开源项目 #Benchmark
 
@@ -193,7 +193,7 @@ CSV：https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
 每份文档对同一个 benchmark 最多计一次，文档数和机构数分开公布。这份数据反映报告惯例，不代表 benchmark 质量，也不比较跨厂商的模型得分。样本目前只有 30 份文档。
 
 项目和数据：https://github.com/ktwu01/benchmark-radar
-在线排行榜：https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+在线排行榜：https://benchmark-radar.org/leaderboard/
 
 如果你熟悉模型评测或 model card，欢迎帮我看看这个计数方法有没有漏洞，或者补充还没有收录的模型文档。
 
@@ -243,10 +243,10 @@ This distinction separates broad cross-organization use from repeated reporting 
 
 ### Data artifacts
 
-- [JSON](https://koutian.is-a.dev/benchmark-radar/data/leaderboard.json)
-- [CSV](https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv)
-- [Markdown](https://koutian.is-a.dev/benchmark-radar/data/leaderboard.md)
-- [Shields badge endpoint](https://koutian.is-a.dev/benchmark-radar/data/leaderboard-badge.json)
+- [JSON](https://benchmark-radar.org/data/leaderboard.json)
+- [CSV](https://benchmark-radar.org/data/leaderboard.csv)
+- [Markdown](https://benchmark-radar.org/data/leaderboard.md)
+- [Shields badge endpoint](https://benchmark-radar.org/data/leaderboard-badge.json)
 
 The automated daily radar remains available alongside the curated leaderboard.
 
@@ -264,7 +264,7 @@ Benchmark Radar currently covers 30 documents from 10 organizations and tracks 7
 
 A necessary caveat: this measures vendor reporting convention, not benchmark quality. Saturated or contaminated benchmarks may still rank highly because they are conventional to report. I exclude scores because prompting, scaffolds, tools, reasoning budgets, pass@k, and evaluators differ too much for clean comparison. The n=30 sample is small.
 
-Here is the leaderboard: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+Here is the leaderboard: https://benchmark-radar.org/leaderboard/
 
 If you notice that I represented [BENCHMARK / DOCUMENT] incorrectly, I would appreciate the correction.
 
@@ -301,8 +301,8 @@ https://github.com/ktwu01/benchmark-radar
 Benchmark Radar 的另一部分是自动更新的每日雷达，用来收集新的 benchmark、评测、数据集和数据质量工作。
 
 项目地址：https://github.com/ktwu01/benchmark-radar  
-排行榜：https://koutian.is-a.dev/benchmark-radar/?view=leaderboard  
-CSV：https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
+排行榜：https://benchmark-radar.org/leaderboard/ \
+CSV：https://benchmark-radar.org/data/leaderboard.csv
 
 ## 11. WeChat（微信公众号）
 
@@ -321,7 +321,7 @@ CSV：https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
 Benchmark Radar 还会每日自动收集新的 benchmark、评测、数据集和数据质量工作。
 
 开源地址：https://github.com/ktwu01/benchmark-radar  
-排行榜：https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+排行榜：https://benchmark-radar.org/leaderboard/
 
 ## 12. Dev.to / Hashnode
 
@@ -390,10 +390,10 @@ The daily feed and the hand-curated adoption leaderboard serve different purpose
 
 The project is MIT licensed, and the leaderboard is available in several formats:
 
-- Dashboard: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
-- JSON: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.json
-- CSV: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
-- Markdown: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.md
+- Dashboard: https://benchmark-radar.org/leaderboard/
+- JSON: https://benchmark-radar.org/data/leaderboard.json
+- CSV: https://benchmark-radar.org/data/leaderboard.csv
+- Markdown: https://benchmark-radar.org/data/leaderboard.md
 - Repository: https://github.com/ktwu01/benchmark-radar
 
 Corrections and additions can be submitted through the repository. The most useful additions are missing model documents and corrections to benchmark mentions already recorded.
@@ -420,7 +420,7 @@ It also runs a daily automated radar for new benchmarks, evals, datasets, and da
 
 This measures vendor reporting convention, not benchmark quality. Saturated or contaminated benchmarks can rank highly because reporting them is conventional. Scores are excluded because evaluation setups differ, and n=30 is a small sample.
 
-https://koutian.is-a.dev/benchmark-radar/
+https://benchmark-radar.org/
 
 ## 15. Newsletter pitch
 
@@ -441,8 +441,8 @@ I built a small open-source dataset that counts which benchmarks appear across 3
 计数时，同一份文档中的同一个 benchmark 最多计一次。项目分开公布文档数和机构数，不将它们合成一个总分。这份排名衡量的是厂商报告惯例，不是 benchmark 质量。模型得分也没有放在一起比，因为各家的 prompt、工具、推理预算和 evaluator 并不一致。当前 30 份文档的样本也还很小。
 
 v0.3.0 已经发布：https://github.com/ktwu01/benchmark-radar/releases/tag/v0.3.0
-在线排行榜：https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
-CSV：https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
+在线排行榜：https://benchmark-radar.org/leaderboard/
+CSV：https://benchmark-radar.org/data/leaderboard.csv
 
 希望请 V 友帮忙看两件事：统计口径是否合理；还有哪些重要的模型文档没有收录。
 
@@ -458,9 +458,9 @@ The leading entries are GPQA Diamond at 23 documents from 10 organizations, SWE-
 
 This measures vendor reporting convention, not benchmark quality. Saturated or contaminated benchmarks may rank highly because reporting them remains conventional. Scores are excluded because prompts, tools, reasoning budgets, pass@k, and evaluators differ across vendors. The sample is small at 30 documents.
 
-Leaderboard: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
-CSV: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
-JSON: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.json
+Leaderboard: https://benchmark-radar.org/leaderboard/
+CSV: https://benchmark-radar.org/data/leaderboard.csv
+JSON: https://benchmark-radar.org/data/leaderboard.json
 Repository: https://github.com/ktwu01/benchmark-radar
 
 Feedback on the counting method, incorrect entries, and missing model documents would be useful.
@@ -479,7 +479,7 @@ GPQA Diamond appears in 23 documents from 10 organizations, SWE-bench Verified i
 
 This measures reporting convention, not benchmark quality. Scores are excluded because evaluation setups differ, and the sample is still small at n=30. I would appreciate feedback on the counting method or model documents I missed.
 
-Leaderboard: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+Leaderboard: https://benchmark-radar.org/leaderboard/
 Repository: https://github.com/ktwu01/benchmark-radar
 
 ### 18.2 Hugging Face Discord
@@ -490,8 +490,8 @@ Hi, I published a small open dataset that counts benchmark mentions across 30 fr
 
 The top three are GPQA Diamond at 23 documents/10 organizations, SWE-bench Verified at 18/8, and LiveCodeBench at 15/7. This measures reporting convention, not benchmark quality. Scores are excluded because evaluation setups differ, and n=30 is a small sample.
 
-CSV: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
-JSON: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.json
+CSV: https://benchmark-radar.org/data/leaderboard.csv
+JSON: https://benchmark-radar.org/data/leaderboard.json
 Repository: https://github.com/ktwu01/benchmark-radar
 
 Corrections and missing model-report suggestions are welcome.
@@ -506,8 +506,8 @@ The current hand-curated dataset covers 30 documents from 10 organizations and 7
 
 This is a view of reporting convention, not benchmark quality. Cross-vendor scores are excluded because prompts, tools, reasoning budgets, pass@k, and evaluators differ. The sample is small at n=30.
 
-Leaderboard: https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
-CSV: https://koutian.is-a.dev/benchmark-radar/data/leaderboard.csv
+Leaderboard: https://benchmark-radar.org/leaderboard/
+CSV: https://benchmark-radar.org/data/leaderboard.csv
 Repository: https://github.com/ktwu01/benchmark-radar
 
 Feedback on the data model and counting rule would be useful.
@@ -518,4 +518,4 @@ Feedback on the data model and counting rule would be useful.
 
 I reviewed 30 frontier model-release documents from 10 organizations to see which benchmarks they actually report. GPQA Diamond appears in 23 documents, while 24 of the 79 tracked benchmarks appear only once. Benchmark Radar counts each document once per benchmark and publishes document and organization counts separately. This measures reporting convention, not benchmark quality; scores are excluded because evaluation setups differ, and n=30 is a small sample.
 
-https://koutian.is-a.dev/benchmark-radar/?view=leaderboard
+https://benchmark-radar.org/leaderboard/

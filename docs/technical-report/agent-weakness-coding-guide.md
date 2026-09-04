@@ -6,7 +6,7 @@ This guide defines the issue #455 evidence-coding package for agent weakness ana
 
 Include only public benchmark families for general-purpose computer use, web use, software engineering, tool use, and scientific workflows that were publicly available by 2026-09-01 and that provide direct failure evidence in an authoritative paper or benchmark repository.
 
-For the demonstrated-family analysis, bound the family set to these nine families:
+For the demonstrated-family analysis, bound the family set to these eight families:
 
 - OSWorld 2.0
 - WebArena
@@ -14,9 +14,13 @@ For the demonstrated-family analysis, bound the family set to these nine familie
 - GAIA2
 - SWE-bench Verified
 - SWE-bench Science
-- FrontierChallenge
 - ResearchClawBench
 - PRBench
+
+The pre-registration named FrontierChallenge, but the clean 2026-09-01 Radar
+corpus has neither a durable record nor a lexical query result for that family.
+It is therefore excluded rather than counted through an external paper alone.
+This is a documented scope correction, not a post-hoc negative finding.
 
 Use SciCode only as a measurement-instrument counterexample. It may document benchmark defects that would misstate agent weakness prevalence, but it must not be counted as demonstrated prevalence evidence for agent failure families.
 
@@ -55,6 +59,33 @@ Every coded dataset must contain at least one row for each of the three statuses
 - `state_control`: `environment_grounding_state_tracking`, `loop_stagnation_recovery`, `verification_completion`
 
 The coarse grouping is a sensitivity check, not a replacement for the fine codes.
+
+## Alternative Grouping Sensitivity
+
+The primary grouping puts verification/completion with state control. A post-hoc
+alternative tests that choice by grouping the same fine codes as follows:
+
+- `planning_state`: `goal_plan_drift`, `environment_grounding_state_tracking`,
+  `loop_stagnation_recovery`
+- `execution_delivery`: `tool_selection_execution`, `verification_completion`
+
+Report both groupings. The alternative is explicitly post-hoc and must not be
+described as pre-registered.
+
+## Protocol Effects
+
+Every row labels the relationship between protocol and observed result:
+
+- `observed`: the source reports an ablation, alternate protocol, or instrument
+  audit that changes the result.
+- `plausible`: the protocol could explain part of the result, but the source does
+  not isolate that effect.
+- `not_isolated`: no protocol contrast supports a separate effect claim.
+
+As a sensitivity check, recompute the primary coarse grouping after excluding
+demonstrated families labelled `observed`. This does not erase those families;
+it shows whether the direction of the selected-sample result depends entirely on
+directly observed prompt, latency, guidance, or evaluator effects.
 
 ## Family Deduplication
 

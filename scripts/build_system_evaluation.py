@@ -34,12 +34,16 @@ from build_technical_report import (
 )
 from reportlab.graphics.shapes import Drawing, Line, Polygon, Rect, String
 from reportlab.lib.colors import HexColor
+from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
+from reportlab.lib.utils import ImageReader
 from reportlab.platypus import (
     BaseDocTemplate,
     Frame,
+    Image,
+    KeepTogether,
     PageBreak,
     PageTemplate,
     Spacer,
@@ -55,7 +59,7 @@ AGENT_WEAKNESS_STUDY_PATH = Path("data/agent_weakness_evidence.yml")
 AGENT_WEAKNESS_ISSUE_NUMBER = 455
 AGENT_WEAKNESS_ISSUE_URL = "https://github.com/ktwu01/benchmark-radar/issues/455"
 AGENT_WEAKNESS_CONTRIBUTOR = "Junkai Wang / @JunkaiWang-TheoPhy"
-AGENT_WEAKNESS_SECTION_TITLE = "6.5 Selected benchmark-family signal on agent weaknesses"
+AGENT_WEAKNESS_SECTION_TITLE = "6.6 Selected benchmark-family signal on agent weaknesses"
 
 
 def _load_agent_weakness_analysis_module():
@@ -95,6 +99,9 @@ def load_agent_weakness_report_data(
     agreement = analysis["agreement"]
     disagreement_count = len(agreement["disagreements"])
     agreement_match_count = agreement["completed_row_count"] - disagreement_count
+    sensitivity = analysis["sensitivity_recurrence"]
+    protocol_effects = analysis["protocol_effects"]
+    protocol_recurrence = protocol_effects["coarse_recurrence_without_observed"]
     return {
         "issue_number": AGENT_WEAKNESS_ISSUE_NUMBER,
         "issue_url": AGENT_WEAKNESS_ISSUE_URL,
@@ -105,6 +112,16 @@ def load_agent_weakness_report_data(
         "demonstrated_family_count": analysis["demonstrated_family_count"],
         "state_control_count": analysis["coarse_recurrence"]["state_control"]["family_count"],
         "decision_execution_count": analysis["coarse_recurrence"]["decision_execution"][
+            "family_count"
+        ],
+        "planning_state_count": sensitivity["planning_state"]["family_count"],
+        "execution_delivery_count": sensitivity["execution_delivery"]["family_count"],
+        "observed_protocol_family_count": protocol_effects["family_counts"]["observed"],
+        "protocol_filtered_denominator": protocol_effects["denominator_without_observed"],
+        "protocol_filtered_state_control_count": protocol_recurrence["state_control"][
+            "family_count"
+        ],
+        "protocol_filtered_decision_execution_count": protocol_recurrence["decision_execution"][
             "family_count"
         ],
         "agreement_match_count": agreement_match_count,
@@ -203,6 +220,19 @@ def agent_weakness_section_paragraphs(report_data: dict[str, Any]) -> list[str]:
             f"evidence and the SciCode audit are cited in {citation_range}. The sample is benchmark-family "
             "selected, not exhaustive, and limited by what current public benchmarks measure."
         ),
+        (
+            "Robustness checks: the explicitly post-hoc alternative grouping yields "
+            f"{report_data['planning_state_count']}/{demonstrated} planning-state versus "
+            f"{report_data['execution_delivery_count']}/{demonstrated} execution-delivery "
+            "families. Excluding the "
+            f"{report_data['observed_protocol_family_count']} families with directly observed "
+            "protocol effects leaves "
+            f"{report_data['protocol_filtered_state_control_count']}/"
+            f"{report_data['protocol_filtered_denominator']} state-control versus "
+            f"{report_data['protocol_filtered_decision_execution_count']}/"
+            f"{report_data['protocol_filtered_denominator']} decision-execution. The direction "
+            "persists, but its magnitude depends on taxonomy and protocol choices."
+        ),
     ]
 
 
@@ -226,15 +256,17 @@ def agent_weakness_reference_entries(report_data: dict[str, Any]) -> list[str]:
 
 FROZEN_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf")
 FROZEN_AUTHORS = ("Koutian Wu",)
-NEXT_DRAFT_AUTHORS = ("Koutian Wu", "Junjie Zhou")
+NEXT_DRAFT_AUTHORS = ("Koutian Wu", "Junjie Zhou", "Jiayu Wang")
 NEXT_DRAFT_BYLINE = (
     "Koutian Wu<super>1,2,*</super>",
     "Junjie Zhou<super>3</super>",
+    "Jiayu Wang<super>4</super>",
 )
 NEXT_DRAFT_AFFILIATIONS = (
     "<super>1</super> Independent researcher",
     "<super>2</super> Tacite AI",
     "<super>3</super> Hangzhou Dianzi University",
+    "<super>4</super> Xi'an Jiaotong University",
 )
 NEXT_DRAFT_CORRESPONDING_AUTHOR = "Koutian Wu, k@tacite.ai"
 
@@ -259,6 +291,26 @@ def table(rows: list[list], widths: list[float], *, tiny: bool = False) -> Table
             ]
         ),
     )
+
+
+def figure(path: str, caption: str, st) -> list:
+    """Scale a screenshot into the text column and return it with a caption."""
+    reader = ImageReader(str(path))
+    width_px, height_px = reader.getSize()
+    scale = min((6.30 * inch) / width_px, (4.00 * inch) / height_px)
+    image = Image(str(path), width=width_px * scale, height=height_px * scale)
+    image.hAlign = "CENTER"
+    style = ParagraphStyle(
+        "FigCaption",
+        parent=st["meta"],
+        fontSize=6.4,
+        leading=8.0,
+        alignment=TA_CENTER,
+        textColor=MUTED,
+        spaceBefore=2,
+        spaceAfter=12,
+    )
+    return [image, p(caption, style)]
 
 
 def metric_strip(st) -> Table:
@@ -481,6 +533,13 @@ def story(
 ) -> list:
     st = styles()
     tiny = ParagraphStyle("Tiny", parent=st["small"], fontSize=6.45, leading=8.0)
+    compact_reference = ParagraphStyle(
+        "CompactReference",
+        parent=st["reference"],
+        fontSize=6.7,
+        leading=8.4,
+        spaceAfter=2,
+    )
     agent_weakness_data = load_agent_weakness_report_data()
     agent_weakness_paragraphs = agent_weakness_section_paragraphs(agent_weakness_data)
     story: list = []
@@ -1144,6 +1203,77 @@ def story(
                 ],
                 [0.55 * inch, 3.35 * inch, 2.70 * inch],
             ),
+            KeepTogether(
+                [
+                    p(
+                        "6.5 Worked real use case: prior-art check for a new evaluation",
+                        st["subsection"],
+                    ),
+                    p(
+                        "Jiayu Wang, a researcher working on agent evaluation, used Benchmark Radar to decide whether a proposed new evaluation would duplicate existing work. The check decides whether the design is still novel, and it used to be slow: comparing a candidate against the field required long manual searches, and completeness was hard to guarantee. The case ran during August 2026 with a concrete task: survey recent work on credit assignment in agentic training, keeping small Qwen-series baselines as a reproducibility constraint.",
+                        st["body"],
+                    ),
+                ]
+            ),
+            p(
+                "The author gave the task to a coding agent together with the public consumer prompt for Benchmark Radar. The agent installed the CLI and the benchmark-radar Skill, initialized the local corpus with benchmark-radar init, and queried candidate records with benchmark-radar search.",
+                st["body"],
+            ),
+            *figure(
+                "assets/use-case-492/agent-session.png",
+                "<b>Figure 1.</b> A coding agent follows the consumer setup prompt, installs the Benchmark Radar CLI and Skill, and runs local queries.",
+                st,
+            ),
+            p(
+                "Radar links one artifact across papers, code, releases, and datasets. The agent could therefore see at a glance whether a candidate was announced as a paper with no released code, or shipped code without its dataset.",
+                st["body"],
+            ),
+            *figure(
+                "assets/use-case-492/artifact-status-paper.png",
+                "<b>Figure 2.</b> Radar consolidates the sources and status of one artifact.",
+                st,
+            ),
+            *figure(
+                "assets/use-case-492/artifact-status-code.png",
+                "<b>Figure 3.</b> A companion record in which code is public but the dataset is not yet released.",
+                st,
+            ),
+            p(
+                "Radar search is deterministic lexical matching, so the agent also ran its own web search and cross-checked the two candidate sets before accepting a record. This double pass keeps a differently worded version of the same idea from being missed.",
+                st["body"],
+            ),
+            *figure(
+                "assets/use-case-492/cross-validation.png",
+                "<b>Figure 4.</b> Cross-checking Radar candidates against the agent's own web search before accepting a record.",
+                st,
+            ),
+            p(
+                "The session ended with a focused summary table of related work that the author judged complete enough to act on.",
+                st["body"],
+            ),
+            *figure(
+                "assets/use-case-492/survey-table.png",
+                "<b>Figure 5.</b> Summary table of recent work on credit assignment in agentic training assembled during the session.",
+                st,
+            ),
+            p(
+                "The savings are easiest to measure against the author's earlier benchmark, AARRI-Bench, whose equivalent prior-art comparison consumed effort second only to producing the benchmark data itself, for a table of just 12 rows and 7 columns.",
+                st["body"],
+            ),
+            *figure(
+                "assets/use-case-492/aarri-bench-manual-table.png",
+                "<b>Figure 6.</b> The manually built 12-by-7 prior-art table for AARRI-Bench, the workflow that Radar now shortens.",
+                st,
+            ),
+            p(
+                "Limits: Radar search is deterministic lexical matching rather than semantic retrieval, so a differently worded query can change the candidate set. The session used the Radar CLI together with the agent's general web search, so it does not isolate Radar alone. Repository and dataset availability is a snapshot, not a permanent label. The case documents one contributor's workflow; it is not a measured user study. Full evidence, including the summary table and session screenshots, is public in issue #492.",
+                st["body"],
+            ),
+            p(
+                "<b>Contributor.</b> Jiayu Wang, Xi'an Jiaotong University. Case and evidence: github.com/ktwu01/benchmark-radar/issues/492",
+                st["body"],
+            ),
+            PageBreak(),
             p(AGENT_WEAKNESS_SECTION_TITLE, st["subsection"]),
             table(
                 [
@@ -1164,6 +1294,8 @@ def story(
             ),
             p(agent_weakness_paragraphs[0], st["body"]),
             p(agent_weakness_paragraphs[1], st["small"]),
+            p(agent_weakness_paragraphs[2], st["small"]),
+            Spacer(1, 10),
             Table(
                 [
                     [
@@ -1285,7 +1417,7 @@ def story(
                 st["reference"],
             ),
             *[
-                p(entry, st["reference"])
+                p(entry, compact_reference)
                 for entry in agent_weakness_reference_entries(agent_weakness_data)
             ],
             Spacer(1, 9),

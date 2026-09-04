@@ -33,7 +33,8 @@ uv run --with reportlab python scripts/build_system_evaluation.py \
 The draft builder must write
 `output/pdf/benchmark-radar-technical-report-next-draft.pdf` and leave the frozen
 `output/pdf/benchmark-radar-technical-report-v0.9.0.pdf` artifact untouched. The
-reserved DOI appears in the PDF itself. Upload only the reviewed release PDF to
+next-draft PDF is a generated local review artifact and must remain untracked.
+The reserved DOI appears in the PDF itself. Upload only the reviewed release PDF to
 the Zenodo record described by `zenodo-metadata.json`, then publish the record.
 
 The published v0.9.0 PDF is frozen. Do not overwrite it when preparing a new

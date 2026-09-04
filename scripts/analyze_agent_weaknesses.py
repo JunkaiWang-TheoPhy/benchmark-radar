@@ -27,6 +27,7 @@ _REQUIRED_STUDY_FIELDS = (
     "statuses",
     "fine_taxonomy",
     "coarse_grouping",
+    "sensitivity_grouping",
     "demonstrated_family_scope",
     "excluded_families",
     "measurement_counterexample_only",
@@ -37,6 +38,7 @@ _REQUIRED_ROW_FIELDS = (
     "benchmark_family_name",
     "radar_query",
     "task_or_protocol",
+    "protocol_effect",
     "status",
     "primary_code",
     "authoritative_source_kind",
@@ -51,6 +53,7 @@ _REQUIRED_ROW_FIELDS = (
     "review",
 )
 _EXPECTED_STATUSES = ("demonstrated", "design_implied", "unmeasured")
+_EXPECTED_PROTOCOL_EFFECTS = ("observed", "plausible", "not_isolated")
 _REPLAYABLE_EVIDENCE_TOKENS = (
     "table",
     "figure",
@@ -129,6 +132,37 @@ def _coarse_lookup(grouping: dict[str, list[str]]) -> dict[str, str]:
     return lookup
 
 
+def _normalize_grouping(
+    value: Any,
+    *,
+    label: str,
+    fine_taxonomy: set[str],
+) -> tuple[dict[str, list[str]], dict[str, str]]:
+    grouping_raw = _require_mapping(value, label=label)
+    grouping: dict[str, list[str]] = {}
+    for group, codes in grouping_raw.items():
+        group_name = _require_nonempty_string(group, label=f"{label} key")
+        if not isinstance(codes, list) or not codes:
+            raise ValueError(f"{label}[{group_name!r}] must be a non-empty list")
+        normalized_codes = [
+            _require_nonempty_string(code, label=f"{label}[{group_name!r}] code") for code in codes
+        ]
+        unknown = sorted(set(normalized_codes) - fine_taxonomy)
+        if unknown:
+            raise ValueError(
+                f"{label}[{group_name!r}] references unknown fine codes: {', '.join(unknown)}"
+            )
+        grouping[group_name] = normalized_codes
+    lookup = _coarse_lookup(grouping)
+    missing = sorted(fine_taxonomy - set(lookup))
+    if missing:
+        raise ValueError(
+            f"{label} must cover every fine_taxonomy code exactly once; "
+            f"missing {', '.join(missing)}"
+        )
+    return grouping, lookup
+
+
 def _require_string_list(value: Any, *, label: str) -> list[str]:
     if not isinstance(value, list) or not value:
         raise ValueError(f"{label} must be a non-empty list")
@@ -205,32 +239,16 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
     if len(fine_taxonomy_set) != len(normalized_taxonomy):
         raise ValueError(f"{path}: fine_taxonomy must not contain duplicates")
 
-    coarse_grouping_raw = _require_mapping(
-        study.get("coarse_grouping"), label=f"{path}: coarse_grouping"
+    coarse_grouping, coarse_lookup = _normalize_grouping(
+        study.get("coarse_grouping"),
+        label=f"{path}: coarse_grouping",
+        fine_taxonomy=fine_taxonomy_set,
     )
-    coarse_grouping: dict[str, list[str]] = {}
-    for coarse_group, codes in coarse_grouping_raw.items():
-        coarse_name = _require_nonempty_string(coarse_group, label=f"{path}: coarse_grouping key")
-        if not isinstance(codes, list) or not codes:
-            raise ValueError(f"{path}: coarse_grouping[{coarse_name!r}] must be a non-empty list")
-        normalized_codes = [
-            _require_nonempty_string(code, label=f"{path}: coarse_grouping[{coarse_name!r}] code")
-            for code in codes
-        ]
-        unknown = sorted(set(normalized_codes) - fine_taxonomy_set)
-        if unknown:
-            raise ValueError(
-                f"{path}: coarse_grouping[{coarse_name!r}] references unknown fine codes: "
-                f"{', '.join(unknown)}"
-            )
-        coarse_grouping[coarse_name] = normalized_codes
-    coarse_lookup = _coarse_lookup(coarse_grouping)
-    missing_fine_codes = sorted(fine_taxonomy_set - set(coarse_lookup))
-    if missing_fine_codes:
-        raise ValueError(
-            f"{path}: coarse_grouping must cover every fine_taxonomy code exactly once; "
-            f"missing {', '.join(missing_fine_codes)}"
-        )
+    sensitivity_grouping, sensitivity_lookup = _normalize_grouping(
+        study.get("sensitivity_grouping"),
+        label=f"{path}: sensitivity_grouping",
+        fine_taxonomy=fine_taxonomy_set,
+    )
 
     snapshot_date = _require_date(study.get("snapshot_date"), label=f"{path}: snapshot_date")
     evidence_cutoff = _require_date(study.get("evidence_cutoff"), label=f"{path}: evidence_cutoff")
@@ -272,6 +290,15 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
         if status not in declared_statuses:
             raise ValueError(f"{path}: row {row_id} status must be one of the declared statuses")
         seen_statuses.add(status)
+
+        protocol_effect = _require_nonempty_string(
+            row.get("protocol_effect"), label=f"{path}: row {row_id} protocol_effect"
+        )
+        if protocol_effect not in _EXPECTED_PROTOCOL_EFFECTS:
+            raise ValueError(
+                f"{path}: row {row_id} protocol_effect must be one of "
+                f"{', '.join(_EXPECTED_PROTOCOL_EFFECTS)}"
+            )
 
         primary_code = _require_nonempty_string(
             row.get("primary_code"), label=f"{path}: row {row_id} primary_code"
@@ -342,9 +369,11 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
                 "task_or_protocol": _require_nonempty_string(
                     row.get("task_or_protocol"), label=f"{path}: row {row_id} task_or_protocol"
                 ),
+                "protocol_effect": protocol_effect,
                 "status": status,
                 "primary_code": primary_code,
                 "coarse_group": coarse_lookup[primary_code],
+                "sensitivity_group": sensitivity_lookup[primary_code],
                 "authoritative_source_kind": _require_nonempty_string(
                     row.get("authoritative_source_kind"),
                     label=f"{path}: row {row_id} authoritative_source_kind",
@@ -418,6 +447,18 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
             f"{', '.join(counterexample_demonstrated)}"
         )
 
+    unmeasured_family_names = {
+        row["benchmark_family_name"] for row in normalized_rows if row["status"] == "unmeasured"
+    }
+    missing_counterexample_families = sorted(
+        set(measurement_counterexample_only) - unmeasured_family_names
+    )
+    if missing_counterexample_families:
+        raise ValueError(
+            f"{path}: measurement counterexample families require an unmeasured row: "
+            f"{', '.join(missing_counterexample_families)}"
+        )
+
     normalized_study = {
         **study,
         "snapshot_date": snapshot_date,
@@ -432,6 +473,7 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
         "statuses": normalized_statuses,
         "fine_taxonomy": normalized_taxonomy,
         "coarse_grouping": coarse_grouping,
+        "sensitivity_grouping": sensitivity_grouping,
         "demonstrated_family_scope": demonstrated_family_scope,
         "excluded_families": excluded_families,
         "measurement_counterexample_only": measurement_counterexample_only,
@@ -457,11 +499,30 @@ def _cohens_kappa(primary: list[str], secondary: list[str], categories: list[str
     return (observed - expected) / (1.0 - expected)
 
 
+def _group_recurrence(
+    rows: list[dict[str, Any]],
+    grouping: dict[str, list[str]],
+    denominator_family_ids: set[str],
+) -> dict[str, dict[str, Any]]:
+    recurrence: dict[str, dict[str, Any]] = {}
+    for group, codes in grouping.items():
+        family_ids = {row["benchmark_family_id"] for row in rows if row["primary_code"] in codes}
+        recurrence[group] = {
+            "family_count": len(family_ids),
+            "family_share": (
+                len(family_ids) / len(denominator_family_ids) if denominator_family_ids else 0.0
+            ),
+            "family_ids": sorted(family_ids),
+        }
+    return recurrence
+
+
 def analyze_study(study: dict[str, Any]) -> dict[str, Any]:
     meta = study["study"]
     rows = study["rows"]
     fine_taxonomy = meta["fine_taxonomy"]
     coarse_grouping = meta["coarse_grouping"]
+    sensitivity_grouping = meta["sensitivity_grouping"]
 
     demonstrated_rows = [row for row in rows if row["status"] == "demonstrated"]
     demonstrated_family_ids = {row["benchmark_family_id"] for row in demonstrated_rows}
@@ -479,18 +540,27 @@ def analyze_study(study: dict[str, Any]) -> dict[str, Any]:
             "family_ids": sorted(family_ids),
         }
 
-    coarse_recurrence: dict[str, dict[str, Any]] = {}
-    for coarse_group, codes in coarse_grouping.items():
-        family_ids = {
-            row["benchmark_family_id"] for row in demonstrated_rows if row["primary_code"] in codes
+    coarse_recurrence = _group_recurrence(
+        demonstrated_rows, coarse_grouping, demonstrated_family_ids
+    )
+    sensitivity_recurrence = _group_recurrence(
+        demonstrated_rows, sensitivity_grouping, demonstrated_family_ids
+    )
+
+    protocol_effect_family_ids = {
+        effect: {
+            row["benchmark_family_id"]
+            for row in demonstrated_rows
+            if row["protocol_effect"] == effect
         }
-        coarse_recurrence[coarse_group] = {
-            "family_count": len(family_ids),
-            "family_share": (
-                len(family_ids) / len(demonstrated_family_ids) if demonstrated_family_ids else 0.0
-            ),
-            "family_ids": sorted(family_ids),
-        }
+        for effect in _EXPECTED_PROTOCOL_EFFECTS
+    }
+    rows_without_observed_protocol_effect = [
+        row for row in demonstrated_rows if row["protocol_effect"] != "observed"
+    ]
+    families_without_observed_protocol_effect = {
+        row["benchmark_family_id"] for row in rows_without_observed_protocol_effect
+    }
 
     sampled_rows = [row for row in rows if row["review"]["sampled_for_secondary_review"]]
     completed_rows = [row for row in sampled_rows if row["review"]["secondary_code"]]
@@ -552,6 +622,22 @@ def analyze_study(study: dict[str, Any]) -> dict[str, Any]:
         ),
         "fine_recurrence": fine_recurrence,
         "coarse_recurrence": coarse_recurrence,
+        "sensitivity_recurrence": sensitivity_recurrence,
+        "protocol_effects": {
+            "family_counts": {
+                effect: len(family_ids) for effect, family_ids in protocol_effect_family_ids.items()
+            },
+            "family_ids": {
+                effect: sorted(family_ids)
+                for effect, family_ids in protocol_effect_family_ids.items()
+            },
+            "coarse_recurrence_without_observed": _group_recurrence(
+                rows_without_observed_protocol_effect,
+                coarse_grouping,
+                families_without_observed_protocol_effect,
+            ),
+            "denominator_without_observed": len(families_without_observed_protocol_effect),
+        },
         "agreement": agreement,
         "design_implied_rows": [
             {
@@ -603,9 +689,11 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         "radar_query",
         "radar_record_id",
         "task_or_protocol",
+        "protocol_effect",
         "status",
         "primary_code",
         "coarse_group",
+        "sensitivity_group",
         "authoritative_source_kind",
         "source_url",
         "evidence_location",

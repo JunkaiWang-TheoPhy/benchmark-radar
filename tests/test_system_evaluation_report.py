@@ -62,6 +62,15 @@ class _FakeShape:
         self.kwargs = kwargs
 
 
+class _FakeImageReader:
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+    def getSize(self):
+        return (100, 100)
+
+
 class _FakeTTFont:
     def __init__(self, *args, **kwargs):
         self.args = args
@@ -161,6 +170,8 @@ def _install_report_builder_stubs():
     }
     units = types.ModuleType("reportlab.lib.units")
     units.inch = 72
+    utils = types.ModuleType("reportlab.lib.utils")
+    utils.ImageReader = _FakeImageReader
     pdfbase = types.ModuleType("reportlab.pdfbase")
     pdfmetrics = types.ModuleType("reportlab.pdfbase.pdfmetrics")
     pdfmetrics.registerFont = lambda font: None
@@ -169,6 +180,8 @@ def _install_report_builder_stubs():
     platypus = types.ModuleType("reportlab.platypus")
     platypus.BaseDocTemplate = _FakeBaseDocTemplate
     platypus.Frame = _FakeFrame
+    platypus.Image = _FakeShape
+    platypus.KeepTogether = lambda items: items
     platypus.PageBreak = _FakePageBreak
     platypus.PageTemplate = _FakePageTemplate
     platypus.Paragraph = _FakeParagraph
@@ -185,6 +198,7 @@ def _install_report_builder_stubs():
     sys.modules["reportlab.lib.pagesizes"] = pagesizes
     sys.modules["reportlab.lib.styles"] = styles
     sys.modules["reportlab.lib.units"] = units
+    sys.modules["reportlab.lib.utils"] = utils
     sys.modules["reportlab.pdfbase"] = pdfbase
     sys.modules["reportlab.pdfbase.pdfmetrics"] = pdfmetrics
     sys.modules["reportlab.pdfbase.ttfonts"] = ttfonts
@@ -204,6 +218,9 @@ def _load_module():
 def _load_legacy_module():
     assert LEGACY_SCRIPT_PATH.exists(), f"missing legacy report builder: {LEGACY_SCRIPT_PATH}"
     _install_report_builder_stubs()
+    scripts_path = str(SCRIPT_PATH.parent.resolve())
+    if scripts_path not in sys.path:
+        sys.path.insert(0, scripts_path)
     spec = importlib.util.spec_from_file_location(
         "legacy_build_technical_report", LEGACY_SCRIPT_PATH
     )
@@ -243,7 +260,7 @@ def _agent_section_flowables(story) -> list[object]:
     end = None
     for index, item in enumerate(story):
         if isinstance(item, _FakeParagraph) and item.text == (
-            "6.5 Selected benchmark-family signal on agent weaknesses"
+            "6.6 Selected benchmark-family signal on agent weaknesses"
         ):
             start = index + 1
             continue
@@ -291,6 +308,18 @@ def test_agent_weakness_reference_citation_range_tracks_generated_references(tmp
             "coarse_recurrence": {
                 "state_control": {"family_count": 1},
                 "decision_execution": {"family_count": 0},
+            },
+            "sensitivity_recurrence": {
+                "planning_state": {"family_count": 1},
+                "execution_delivery": {"family_count": 0},
+            },
+            "protocol_effects": {
+                "family_counts": {"observed": 0, "plausible": 1, "not_isolated": 0},
+                "denominator_without_observed": 1,
+                "coarse_recurrence_without_observed": {
+                    "state_control": {"family_count": 1},
+                    "decision_execution": {"family_count": 0},
+                },
             },
             "status_counts": {
                 "demonstrated": 1,
@@ -388,9 +417,15 @@ def test_agent_weakness_section_reports_bounded_result_and_method():
     assert report_data["snapshot_date"] == "2026-09-01"
     assert report_data["evidence_cutoff"] == "2026-09-01"
     assert report_data["repository_commit_input"] == "98c8cf6fb5d1d69c66d438ea9f92242b2205c9ae"
-    assert report_data["demonstrated_family_count"] == 9
-    assert report_data["state_control_count"] == 7
+    assert report_data["demonstrated_family_count"] == 8
+    assert report_data["state_control_count"] == 6
     assert report_data["decision_execution_count"] == 2
+    assert report_data["planning_state_count"] == 5
+    assert report_data["execution_delivery_count"] == 3
+    assert report_data["observed_protocol_family_count"] == 3
+    assert report_data["protocol_filtered_denominator"] == 5
+    assert report_data["protocol_filtered_state_control_count"] == 4
+    assert report_data["protocol_filtered_decision_execution_count"] == 1
     assert report_data["agreement_match_count"] == 4
     assert report_data["completed_secondary_review_count"] == 4
     assert report_data["sampled_secondary_review_count"] == 4
@@ -399,11 +434,11 @@ def test_agent_weakness_section_reports_bounded_result_and_method():
     assert report_data["unmeasured_count"] == 1
     assert report_data["measurement_counterexample_only"] == ["SciCode"]
 
-    assert paragraphs[0].startswith("Across 9 demonstrated benchmark families")
+    assert paragraphs[0].startswith("Across 8 demonstrated benchmark families")
     assert "family-deduplicated denominator" in section_text
-    assert "7/9" in section_text
+    assert "6/8" in section_text
     assert "state-control" in section_text
-    assert "2/9" in section_text
+    assert "2/8" in section_text
     assert "decision-execution" in section_text
     assert "selected sample" in section_text
     assert "not a field-wide prevalence estimate" in section_text
@@ -420,7 +455,12 @@ def test_agent_weakness_section_reports_bounded_result_and_method():
     assert "SciCode" in section_text
     assert "instrument counterexample" in section_text
     assert "not exhaustive" in section_text
-    assert len(paragraphs) == 2
+    assert "5/8 planning-state" in section_text
+    assert "3/8 execution-delivery" in section_text
+    assert "4/5 state-control" in section_text
+    assert "1/5 decision-execution" in section_text
+    assert "magnitude depends on taxonomy and protocol choices" in section_text
+    assert len(paragraphs) == 3
 
 
 def test_disagreement_fixture_uses_agreement_match_count_not_completed_count(tmp_path):
@@ -628,7 +668,8 @@ def test_story_places_agent_weakness_subsection_before_use_it_and_adds_primary_s
     story = module.story("10.5281/zenodo.22167102")
     texts = _collect_text(story)
 
-    subsection_index = texts.index("6.5 Selected benchmark-family signal on agent weaknesses")
+    use_case_index = texts.index("6.5 Worked real use case: prior-art check for a new evaluation")
+    subsection_index = texts.index("6.6 Selected benchmark-family signal on agent weaknesses")
     use_it_index = texts.index("Use it")
     refs_index = texts.index(
         "[9] Primary-source evidence for OSWorld 2.0. "
@@ -638,22 +679,25 @@ def test_story_places_agent_weakness_subsection_before_use_it_and_adds_primary_s
         "caption at figure id S3.F8"
     )
 
-    assert subsection_index < use_it_index
+    assert use_case_index < subsection_index < use_it_index
     assert refs_index > texts.index("References")
     assert (
-        "[18] Primary-source evidence for SciCode. https://arxiv.org/abs/2608.04975. "
+        "[17] Primary-source evidence for SciCode. https://arxiv.org/abs/2608.04975. "
         "Evidence anchor: arXiv abs abstract paragraph on 263 defects, 192 "
         "score-suppressing defects across 91% of main problems, and recovery "
         "to 84-98% / 69-92%"
     ) in texts
 
     section_flowables = _agent_section_flowables(story)
-    assert len(section_flowables) == 3
+    assert len(section_flowables) == 5
     assert isinstance(section_flowables[0], _FakeTable)
     assert isinstance(section_flowables[1], _FakeParagraph)
     assert section_flowables[1].style == "body"
     assert isinstance(section_flowables[2], _FakeParagraph)
     assert section_flowables[2].style == "small"
+    assert isinstance(section_flowables[3], _FakeParagraph)
+    assert section_flowables[3].style == "small"
+    assert isinstance(section_flowables[4], _FakeSpacer)
 
 
 def test_agent_weakness_reference_entries_include_exact_evidence_anchors():

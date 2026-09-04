@@ -97,6 +97,7 @@ def _row(
     benchmark_family_name: str = "Family A",
     radar_query: str = "Family A",
     radar_record_id: str | None = "family-a",
+    protocol_effect: str = "not_isolated",
     source_url: str = "https://example.com/paper",
     source_kind: str = "paper",
     evidence_location: str = "Table 1; paragraph p1.1",
@@ -112,6 +113,7 @@ def _row(
         "radar_query": radar_query,
         "radar_record_id": radar_record_id,
         "task_or_protocol": "Representative task family",
+        "protocol_effect": protocol_effect,
         "status": status,
         "primary_code": primary_code,
         "authoritative_source_kind": source_kind,
@@ -146,6 +148,11 @@ def _study_payload(
         demonstrated_scope = sorted(
             {row["benchmark_family_name"] for row in rows if row["status"] == "demonstrated"}
         )
+    counterexample_families = measurement_counterexample_only
+    if counterexample_families is None:
+        counterexample_families = sorted(
+            {row["benchmark_family_name"] for row in rows if row["status"] == "unmeasured"}
+        )
     return {
         "schema_version": 1,
         "study": {
@@ -167,9 +174,20 @@ def _study_payload(
                     "verification_completion",
                 ],
             },
+            "sensitivity_grouping": {
+                "planning_state": [
+                    "goal_plan_drift",
+                    "environment_grounding_state_tracking",
+                    "loop_stagnation_recovery",
+                ],
+                "execution_delivery": [
+                    "tool_selection_execution",
+                    "verification_completion",
+                ],
+            },
             "demonstrated_family_scope": demonstrated_scope,
             "excluded_families": excluded_families or ["General AgentBench", "ToolFailBench"],
-            "measurement_counterexample_only": measurement_counterexample_only or ["SciCode"],
+            "measurement_counterexample_only": counterexample_families,
         },
         "rows": rows,
     }
@@ -197,6 +215,16 @@ def test_repository_task1_artifacts_exist_and_load():
     assert analysis["status_counts"]["demonstrated"] >= 1
     assert analysis["status_counts"]["design_implied"] >= 1
     assert analysis["status_counts"]["unmeasured"] >= 1
+    assert analysis["demonstrated_family_count"] == 8
+    assert analysis["coarse_recurrence"]["state_control"]["family_count"] == 6
+    assert analysis["coarse_recurrence"]["decision_execution"]["family_count"] == 2
+    assert analysis["sensitivity_recurrence"]["planning_state"]["family_count"] == 5
+    assert analysis["sensitivity_recurrence"]["execution_delivery"]["family_count"] == 3
+    assert analysis["protocol_effects"]["family_counts"]["observed"] == 3
+    assert analysis["protocol_effects"]["denominator_without_observed"] == 5
+    filtered = analysis["protocol_effects"]["coarse_recurrence_without_observed"]
+    assert filtered["state_control"]["family_count"] == 4
+    assert filtered["decision_execution"]["family_count"] == 1
     agreement = analysis["agreement"]
     assert agreement["sampled_row_count"] >= 1
     assert (
@@ -642,7 +670,9 @@ def test_load_study_requires_all_three_statuses_and_benchmark_family_ids(tmp_pat
         ),
     ]
 
-    with pytest.raises(ValueError, match="benchmark_family_id|statuses"):
+    with pytest.raises(
+        ValueError, match="benchmark_family_id|statuses|measurement_counterexample_only"
+    ):
         module.load_study(_write_study(tmp_path, rows))
 
 
@@ -921,6 +951,32 @@ def test_load_study_rejects_measurement_counterexample_as_demonstrated(tmp_path)
                 measurement_counterexample_only=["SciCode"],
             )
         )
+
+
+def test_load_study_requires_counterexample_family_to_have_unmeasured_row(tmp_path):
+    module = _load_module()
+    rows = [
+        _row("demo-a", status="demonstrated", primary_code="goal_plan_drift"),
+        _row(
+            "design-b",
+            status="design_implied",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="scicode",
+            benchmark_family_name="SciCode",
+            radar_query="SciCode",
+        ),
+        _row(
+            "unmeasured-c",
+            status="unmeasured",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+    ]
+
+    with pytest.raises(ValueError, match="require an unmeasured row.*SciCode"):
+        module.load_study(_write_study(tmp_path, rows, measurement_counterexample_only=["SciCode"]))
 
 
 @pytest.mark.parametrize("status", ["demonstrated", "design_implied", "unmeasured"])
@@ -1401,3 +1457,5 @@ def test_cli_writes_json_and_csv_outputs(tmp_path):
         rows = list(csv.DictReader(handle))
     assert [row["id"] for row in rows] == ["demo-a", "design-b", "unmeasured-c"]
     assert rows[0]["coarse_group"] == "decision_execution"
+    assert rows[0]["sensitivity_group"] == "planning_state"
+    assert rows[0]["protocol_effect"] == "not_isolated"
