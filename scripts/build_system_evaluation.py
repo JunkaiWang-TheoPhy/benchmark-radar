@@ -1020,7 +1020,7 @@ def story(
             ),
             *figure(
                 "assets/use-case-492/artifact-status-paper.png",
-                "<b>Figure 2.</b> Radar consolidates the sources and status of one artifact, here a paper with no released code.",
+                "<b>Figure 2.</b> Radar consolidates the sources and status of one artifact.",
                 st,
             ),
             *figure(
@@ -1047,12 +1047,12 @@ def story(
                 st,
             ),
             p(
-                "The savings are easiest to measure against the author's earlier benchmark, AARR-Bench, whose equivalent prior-art comparison consumed effort second only to producing the benchmark data itself, for a table of just 12 rows and 7 columns.",
+                "The savings are easiest to measure against the author's earlier benchmark, AARRI-Bench, whose equivalent prior-art comparison consumed effort second only to producing the benchmark data itself, for a table of just 12 rows and 7 columns.",
                 st["body"],
             ),
             *figure(
                 "assets/use-case-492/aarrbench-manual-table.png",
-                "<b>Figure 6.</b> The manually built 12-by-7 prior-art table for AARR-Bench, the workflow that Radar now shortens.",
+                "<b>Figure 6.</b> The manually built 12-by-7 prior-art table for AARRI-Bench, the workflow that Radar now shortens.",
                 st,
             ),
             p(
