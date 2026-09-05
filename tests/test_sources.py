@@ -13,9 +13,11 @@ from benchmark_radar.sources import (
     ConnectorPayloadError,
     collection_method,
     fetch_arxiv,
+    fetch_arxiv_exact,
     fetch_brave,
     fetch_first_party_feeds,
     fetch_github,
+    fetch_github_exact,
     fetch_github_organizations,
     fetch_github_releases,
     fetch_huggingface,
@@ -233,6 +235,35 @@ def test_arxiv_uses_overlap_and_updated_timestamp(monkeypatch):
     assert items[0].published_at == datetime(2026, 7, 23, 18, tzinfo=UTC)
     assert items[0].updated_at == datetime(2026, 7, 26, 18, tzinfo=UTC)
     assert items[0].event_kind == "updated"
+
+
+def test_exact_arxiv_repair_ignores_daily_lookback(monkeypatch):
+    xml = ARXIV_XML.replace("2607.12345", "2608.23564")
+    monkeypatch.setattr("benchmark_radar.sources.get_text", lambda url, params: xml)
+    item = fetch_arxiv_exact("2608.23564", {})
+    assert item.source_id == "2608.23564"
+    assert item.event_kind == "backfilled"
+    assert item.raw["repair"] is True
+
+
+def test_exact_github_repair_uses_stable_repository_id(monkeypatch):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, headers=None: {
+            "full_name": "aiming-lab/RSI-Exam",
+            "html_url": "https://github.com/aiming-lab/RSI-Exam",
+            "created_at": "2026-08-26T06:58:55Z",
+            "pushed_at": "2026-08-29T05:24:25Z",
+            "description": "Recursive self-improvement benchmark",
+            "owner": {"login": "aiming-lab"},
+            "stargazers_count": 75,
+            "forks_count": 3,
+        },
+    )
+    item = fetch_github_exact("aiming-lab/RSI-Exam")
+    assert item.source_id == "aiming-lab/RSI-Exam"
+    assert item.event_kind == "backfilled"
+    assert item.published_at.year == 2026
 
 
 def test_arxiv_falls_back_to_official_rss_when_atom_is_rate_limited(monkeypatch):

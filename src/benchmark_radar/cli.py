@@ -19,7 +19,8 @@ from .http import RequestError
 from .kw_bench_store import STORE_FILENAME as KW_BENCH_STORE_FILENAME
 from .kw_bench_tracks import DEFAULT_BATCH_SIZE
 from .kw_bench_tracks import backfill as backfill_classifications
-from .pipeline import _failure_streak_key, run_pipeline, simulate_backfill
+from .models import RadarRun, SourceHealth
+from .pipeline import _failure_streak_key, _score_and_select, run_pipeline, simulate_backfill
 from .query_cli import QUERY_COMMANDS, run_query_cli
 from .questions import QA_SCHEMA_VERSION, generate_daily_questions
 from .report import render_markdown
@@ -39,6 +40,7 @@ from .social import (
     render_social_section,
     summarize_repo_changes,
 )
+from .sources import fetch_arxiv_exact, fetch_github_exact
 
 DEFAULT_DASHBOARD_OUTPUT = Path("site/data/radar.json")
 DEFAULT_FEED_OUTPUT = Path("site/feed.xml")
@@ -103,6 +105,7 @@ def main() -> None:
             "migrate",
             "rescore",
             "simulate-history",
+            "repair-source",
             "export",
             "classify",
             "authors",
@@ -300,6 +303,8 @@ def main() -> None:
             "means fetching the source; this is how those are picked up."
         ),
     )
+    parser.add_argument("--source-type", choices=("arxiv", "github"))
+    parser.add_argument("--source-id", help="Exact stable source identifier for repair-source")
     args = parser.parse_args()
     feed_output = args.feed_output
     if feed_output is None and args.dashboard_output == DEFAULT_DASHBOARD_OUTPUT:
@@ -660,6 +665,42 @@ def main() -> None:
             f"({skipped} of {len(runs)} candidate days had no reachable records and were "
             "skipped rather than published empty; arXiv excluded from simulation, see issue "
             f"#35 known limitations); {dashboard['snapshot_count']} total daily snapshots"
+        )
+        return
+    if args.command == "repair-source":
+        if not args.source_type or not args.source_id:
+            parser.error("repair-source requires --source-type and --source-id")
+        item = (
+            fetch_arxiv_exact(args.source_id, config["sources"]["arxiv"])
+            if args.source_type == "arxiv"
+            else fetch_github_exact(args.source_id)
+        )
+        now = datetime.now(UTC)
+        item.discovered_at = now
+        item.retrieved_at = now
+        published, selection = _score_and_select(
+            [item], config, now=now, fetched_count=1, suppressed_count=0
+        )
+        run = RadarRun(
+            generated_at=now,
+            since=item.published_at,
+            items=published,
+            health=[SourceHealth(source=item.source, ok=True, item_count=1, method="exact API")],
+            selection={**selection, "backfilled": True, "repair_source_id": item.source_id},
+            discovery_state={},
+        )
+        path = write_snapshot(run, args.snapshot_dir)
+        dashboard = rebuild_dashboard(
+            args.snapshot_dir,
+            args.dashboard_output,
+            feed_output=feed_output,
+            registry_path=args.model_cards,
+            scores_path=args.benchmark_scores,
+            kw_bench_store_path=args.kw_bench_store,
+        )
+        print(
+            f"Repaired {item.source}:{item.source_id} into {path}; "
+            f"rebuilt {dashboard['snapshot_count']} snapshots"
         )
         return
     if args.command == "rescore":

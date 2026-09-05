@@ -426,6 +426,39 @@ def fetch_arxiv(config: dict[str, Any], since: datetime, limit: int) -> list[Rad
     )[:limit]
 
 
+def fetch_arxiv_exact(source_id: str, config: dict[str, Any]) -> RadarItem:
+    """Fetch one arXiv record by stable identifier for historical repair."""
+    normalized = source_id.rsplit("/", 1)[-1].removesuffix(".pdf")
+    xml = get_text(
+        "https://export.arxiv.org/api/query",
+        params={"search_query": f"id:{normalized}", "start": 0, "max_results": 1},
+    )
+    namespace = {"atom": "http://www.w3.org/2005/Atom"}
+    root = ET.fromstring(xml)
+    entry = root.find("atom:entry", namespace)
+    if entry is None:
+        raise ConnectorPayloadError(f"arXiv record not found: {source_id}")
+    url = (entry.findtext("atom:id", namespaces=namespace) or "").replace("http:", "https:")
+    title = " ".join((entry.findtext("atom:title", namespaces=namespace) or "").split())
+    published = _optional_date(entry.findtext("atom:published", namespaces=namespace))
+    updated = _optional_date(entry.findtext("atom:updated", namespaces=namespace))
+    if not url or not title or published is None or updated is None:
+        raise ConnectorPayloadError(f"arXiv record is incomplete: {source_id}")
+    return RadarItem(
+        source="arXiv",
+        source_id=normalized,
+        title=title,
+        url=url,
+        published_at=published,
+        updated_at=updated,
+        summary=" ".join((entry.findtext("atom:summary", namespaces=namespace) or "").split()),
+        event_kind="backfilled",
+        authors=[n.text or "" for n in entry.findall("atom:author/atom:name", namespace) if n.text],
+        raw={"xml": ET.tostring(entry, encoding="unicode"), "repair": True},
+        parser_version="arxiv-exact/1",
+    )
+
+
 def fetch_huggingface(config: dict[str, Any], since: datetime, limit: int) -> list[RadarItem]:
     found: dict[str, RadarItem] = {}
     for kind in config.get("kinds", ["datasets"]):
@@ -577,6 +610,37 @@ def fetch_github(config: dict[str, Any], since: datetime, limit: int) -> list[Ra
     return sorted(
         found.values(), key=lambda item: item.updated_at or item.published_at, reverse=True
     )[:limit]
+
+
+def fetch_github_exact(source_id: str) -> RadarItem:
+    """Fetch one GitHub repository by owner/repo, ignoring daily lookback."""
+    token = os.getenv("GITHUB_TOKEN")
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    row = _payload_dict(
+        get_json(f"https://api.github.com/repos/{source_id}", headers=headers),
+        "GitHub repository",
+    )
+    created = _optional_date(row.get("created_at"))
+    changed = _optional_date(row.get("pushed_at")) or _optional_date(row.get("updated_at"))
+    if not row.get("full_name") or not row.get("html_url") or created is None or changed is None:
+        raise ConnectorPayloadError(f"GitHub repository is incomplete: {source_id}")
+    return RadarItem(
+        source="GitHub",
+        source_id=str(row["full_name"]),
+        title=str(row["full_name"]),
+        url=str(row["html_url"]),
+        published_at=created,
+        updated_at=changed,
+        summary=github_summary(row),
+        event_kind="backfilled",
+        organizations=[str(row.get("owner", {}).get("login") or "")],
+        metrics={
+            "stars": float(row.get("stargazers_count") or 0),
+            "forks": float(row.get("forks_count") or 0),
+        },
+        raw={**row, "repair": True},
+        parser_version="github-exact/1",
+    )
 
 
 GITHUB_ORGANIZATIONS_PARSER_VERSION = "github-organizations/1"
