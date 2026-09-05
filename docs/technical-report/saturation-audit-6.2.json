@@ -252,7 +252,7 @@
       "raw_headroom": 0.8,
       "recommendation": "replace",
       "recommendation_reason": "The raw best is isolated and the closest repeated setup falls outside the five-point threshold.",
-      "recommended_wording": "AIME's 99.2 raw best leaves 0.8 points under aime / AIME 2026, temp 1.0, top_p 0.95, max gen 163840 tokens, GPT-5.5 (medium) judge, but that setup appears on one date. The closest repeated setup leaves 20.2 points, so the archive does not support a benchmark-wide near-ceiling claim.",
+      "recommended_wording": "AIME's 99.2 raw best leaves 0.8 points of headroom under the AIME 2026, temp 1.0, top_p 0.95, max gen 163840 tokens, GPT-5.5 (medium) judge setup, but that setup appears on one date. The closest repeated setup leaves 20.2 points, outside the five-point threshold.",
       "repeat_controlled_headroom": 20.2,
       "score_ids": [
         "curated\u0000aime\u0000deepseek_v3_report\u0000aime_2024\u0000Pass@1\u0000DeepSeek-V3",
@@ -443,7 +443,7 @@
       "raw_headroom": 4.4,
       "recommendation": "replace",
       "recommendation_reason": "The raw best is isolated and the closest repeated setup falls outside the five-point threshold.",
-      "recommended_wording": "Arena-Hard's 95.6 raw best leaves 4.4 points under arena_hard / thinking mode, but that setup appears on one date. The closest repeated setup leaves 7.7 points, so the archive does not support a benchmark-wide near-ceiling claim.",
+      "recommended_wording": "Arena-Hard's 95.6 raw best leaves 4.4 points of headroom under the thinking mode setup, but that setup appears on one date. The closest repeated setup leaves 7.7 points, outside the five-point threshold.",
       "repeat_controlled_headroom": 7.7,
       "score_ids": [
         "curated\u0000arena_hard\u0000deepseek_v3_report\u0000arena_hard\u0000GPT-4-1106 judge\u0000DeepSeek-V3",
@@ -572,7 +572,7 @@
       "raw_headroom": 5.0,
       "recommendation": "qualify",
       "recommendation_reason": "The near-ceiling raw best is an isolated setup and no instrument+protocol stratum spans two dates.",
-      "recommended_wording": "DeepSearchQA's 95 result leaves 5 points under deepsearchqa / F1, reasoning=max, but no setup spans two dates; treat it as one protocol-specific reading, not evidence that the benchmark is saturated.",
+      "recommended_wording": "DeepSearchQA's 95 result leaves 5 points of headroom under the F1, reasoning=max setup. No setup spans two dates, so the archive supports only this protocol-specific reading.",
       "repeat_controlled_headroom": null,
       "score_ids": [
         "curated\u0000deepsearchqa\u0000moonshot_kimi_k3_model_card\u0000deepsearchqa\u0000F1, reasoning=max\u0000Kimi K3"
@@ -796,7 +796,7 @@
       "raw_headroom": 3.1,
       "recommendation": "qualify",
       "recommendation_reason": "The raw best is isolated, but a different repeated setup is also within the five-point threshold.",
-      "recommended_wording": "HMMT's raw best is an isolated 96.9 result. A separate 2-date, 1-organization think max, pass@1 setup leaves 4.8 points; this is protocol-specific paired evidence, not a field-wide trend.",
+      "recommended_wording": "HMMT's raw best is an isolated 96.9 result. A separate think max, pass@1 setup spans 2 dates from 1 organization and leaves 4.8 points of headroom. This supports a protocol-specific paired comparison.",
       "repeat_controlled_headroom": 4.8,
       "score_ids": [
         "curated\u0000hmmt\u0000zai_glm_5_model_card\u0000hmmt\u0000HMMT Nov. 2025, temp 1.0, top_p 0.95, GPT-5.2 (medium) judge\u0000GLM-5",
@@ -1012,7 +1012,7 @@
       "raw_headroom": 2.0,
       "recommendation": "qualify",
       "recommendation_reason": "The near-ceiling raw best is an isolated setup and no instrument+protocol stratum spans two dates.",
-      "recommended_wording": "MATH-500's 98 result leaves 2 points under math_500 / thinking mode, but no setup spans two dates; treat it as one protocol-specific reading, not evidence that the benchmark is saturated.",
+      "recommended_wording": "MATH-500's 98 result leaves 2 points of headroom under the thinking mode setup. No setup spans two dates, so the archive supports only this protocol-specific reading.",
       "repeat_controlled_headroom": null,
       "score_ids": [
         "curated\u0000math_500\u0000deepseek_v3_report\u0000math_500\u0000EM, 8K output limit\u0000DeepSeek-V3",
@@ -1210,7 +1210,7 @@
       "raw_headroom": 2.2,
       "recommendation": "qualify",
       "recommendation_reason": "The near-ceiling raw best is an isolated setup and no instrument+protocol stratum spans two dates.",
-      "recommended_wording": "MathVision's 97.8 result leaves 2.2 points under mathvision / reasoning=max, with Python, but no setup spans two dates; treat it as one protocol-specific reading, not evidence that the benchmark is saturated.",
+      "recommended_wording": "MathVision's 97.8 result leaves 2.2 points of headroom under the reasoning=max, with Python setup. No setup spans two dates, so the archive supports only this protocol-specific reading.",
       "repeat_controlled_headroom": null,
       "score_ids": [
         "curated\u0000mathvision\u0000qwen3_5_model_card\u0000mathvision\u0000thinking (temp 0.6, top_p 0.95, top_k 20), fixed boxed prompt\u0000Qwen3.5-397B-A17B",
@@ -1606,7 +1606,7 @@
       "raw_headroom": 4.0,
       "recommendation": "replace",
       "recommendation_reason": "The raw best is isolated and the closest repeated setup falls outside the five-point threshold.",
-      "recommended_wording": "SWE-bench Verified's 96 raw best leaves 4 points under swe_bench_verified / adaptive thinking, max effort, averaged over 5 trials, but that setup appears on one date. The closest repeated setup leaves 19.4 points, so the archive does not support a benchmark-wide near-ceiling claim.",
+      "recommended_wording": "SWE-bench Verified's 96 raw best leaves 4 points of headroom under the adaptive thinking, max effort, averaged over 5 trials setup, but that setup appears on one date. The closest repeated setup leaves 19.4 points, outside the five-point threshold.",
       "repeat_controlled_headroom": 19.4,
       "score_ids": [
         "curated\u0000swe_bench_verified\u0000deepseek_v3_report\u0000swe_bench_verified\u0000Resolved, vendor harness\u0000DeepSeek-V3",
@@ -1903,7 +1903,7 @@
       "raw_headroom": 0.7,
       "recommendation": "qualify",
       "recommendation_reason": "The near-ceiling raw best is an isolated setup and no instrument+protocol stratum spans two dates.",
-      "recommended_wording": "tau2-bench's 99.3 result leaves 0.7 points under tau2_bench / Thinking (High), Telecom, but no setup spans two dates; treat it as one protocol-specific reading, not evidence that the benchmark is saturated.",
+      "recommended_wording": "tau2-bench's 99.3 result leaves 0.7 points of headroom under the Thinking (High), Telecom setup. No setup spans two dates, so the archive supports only this protocol-specific reading.",
       "repeat_controlled_headroom": null,
       "score_ids": [
         "curated\u0000tau2_bench\u0000zai_glm_5_model_card\u0000tau2_bench\u0000Retail and Telecom prompt adjustment; Airline domain fixes per Claude Opus 4.5 system card\u0000GLM-5",

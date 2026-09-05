@@ -67,11 +67,11 @@ changes.
 
 ## Independent section 6.2 reproduction
 
-An independent Codex-assisted maintainer review on 2026-09-05 regenerated the
-audit from the two canonical YAML files and reproduced its main counts: eight
-raw near-ceiling readings, zero raw-best setups spanning two dates, four
-benchmarks with another repeated setup, and one of those four within five
-points. The review also checked the HMMT sample against Table 7 of the
+On 2026-09-05, a Codex-assisted maintainer review regenerated the audit from the
+two canonical YAML files. It reproduced four counts: eight raw near-ceiling
+readings; no raw-best setup spanning two dates; four benchmarks with a different
+repeated setup; and one of those four within five points. The review also checked
+the HMMT sample against Table 7 of the
 [DeepSeek-V4 primary report](https://arxiv.org/html/2606.19348): HMMT 2026 Feb,
 Pass@1, Think Max is 94.8 for DeepSeek-V4-Flash and 95.2 for
 DeepSeek-V4-Pro. Those values match the `deepseek_v4_technical_report` and

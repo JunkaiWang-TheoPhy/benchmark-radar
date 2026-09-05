@@ -130,12 +130,12 @@ def _recommendation_text(
     repeated_series: dict[str, Any] | None,
     recommendation: str,
 ) -> tuple[str, str]:
-    raw_setup = f"{raw_best['instrument']} / {raw_best['protocol']}"
+    raw_setup = f"the {raw_best['protocol']} setup"
     if recommendation == "retain":
         reason = "The near-ceiling raw best is repeated under the same instrument and protocol."
         wording = (
             f"{name}'s best recorded result is {raw_best['value']:g}, leaving "
-            f"{raw_headroom:g} points under {raw_setup}; that setup spans "
+            f"{raw_headroom:g} points of headroom under {raw_setup}; that setup spans "
             f"{raw_best_series['dated_points']} dates."
         )
     elif repeated_series is None:
@@ -144,21 +144,24 @@ def _recommendation_text(
             "stratum spans two dates."
         )
         wording = (
-            f"{name}'s {raw_best['value']:g} result leaves {raw_headroom:g} points under "
-            f"{raw_setup}, but no setup spans two dates; treat it as one protocol-specific "
-            "reading, not evidence that the benchmark is saturated."
+            f"{name}'s {raw_best['value']:g} result leaves {raw_headroom:g} points of "
+            "headroom under "
+            f"{raw_setup}. No setup spans two dates, so the archive supports only this "
+            "protocol-specific reading."
         )
     elif repeated_series["headroom"] <= _NEAR_CEILING_THRESHOLD:
         reason = (
             "The raw best is isolated, but a different repeated setup is also within the "
             "five-point threshold."
         )
+        organization_count = repeated_series["organization_count"]
+        organization_label = "organization" if organization_count == 1 else "organizations"
         wording = (
             f"{name}'s raw best is an isolated {raw_best['value']:g} result. A separate "
-            f"{repeated_series['dated_points']}-date, "
-            f"{repeated_series['organization_count']}-organization "
-            f"{repeated_series['protocol']} setup leaves {repeated_series['headroom']:g} "
-            "points; this is protocol-specific paired evidence, not a field-wide trend."
+            f"{repeated_series['protocol']} setup spans {repeated_series['dated_points']} "
+            f"dates from {organization_count} {organization_label} and leaves "
+            f"{repeated_series['headroom']:g} points of headroom. This supports a "
+            "protocol-specific paired comparison."
         )
     else:
         reason = (
@@ -166,10 +169,10 @@ def _recommendation_text(
             "five-point threshold."
         )
         wording = (
-            f"{name}'s {raw_best['value']:g} raw best leaves {raw_headroom:g} points under "
+            f"{name}'s {raw_best['value']:g} raw best leaves {raw_headroom:g} points of "
+            "headroom under "
             f"{raw_setup}, but that setup appears on one date. The closest repeated setup "
-            f"leaves {repeated_series['headroom']:g} points, so the archive does not support "
-            "a benchmark-wide near-ceiling claim."
+            f"leaves {repeated_series['headroom']:g} points, outside the five-point threshold."
         )
     return reason, wording
 

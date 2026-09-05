@@ -420,18 +420,18 @@ def story(
     saturation_section = (
         [
             p(
-                "6.2 Eight raw near-ceiling readings do not establish eight saturated benchmarks",
+                "6.2 All eight raw near-ceiling readings come from one-date setups",
                 st["subsection"],
             ),
             p(
-                "All eight raw best readings leave five points of headroom or less, but every exact raw-best instrument+protocol setup appears on only one date. Four benchmarks have some other setup repeated across dates; only HMMT's closest repeated setup is also within five points, and all four repeated setups are two-date, single-organization pairs. The other four benchmarks remain unknown under the repeat control. Near-ceiling readings are real protocol-specific facts; they are not, by themselves, benchmark-wide saturation verdicts.",
+                "All eight raw best readings leave five points of headroom or less, and every exact raw-best instrument+protocol setup appears on only one date. Four benchmarks have a different setup repeated across dates. Only HMMT's closest repeated setup is also within five points, and all four repeated setups are two-date, single-organization pairs. The remaining four benchmarks have no repeated setup. The evidence supports protocol-specific headroom claims only.",
                 st["body"],
             ),
             saturation_audit_table(st, audit),
             Spacer(1, 7),
             saturation_threshold_table(st, audit),
             p(
-                "The denominator matters: repeated-setup sensitivity is 1 of 4 assessable benchmarks at five points, with 4 unknown; it is not 1 of 8. None of the eight raw-best setups repeats, so none can be called repeat-controlled. The machine-readable audit below the report source records every protocol stratum, score ID, exclusion, counterexample, and exact decision wording.",
+                "Repeated-setup sensitivity is 1 of 4 assessable benchmarks at five points; using 8 as the denominator would count four unknowns as negatives. No raw-best setup qualifies as repeat-controlled. The machine-readable audit beside the report source records every protocol stratum, score ID, exclusion, counterexample, and exact decision wording.",
                 st["body"],
             ),
             p("Per-benchmark claim wording", st["subsection"]),
@@ -1204,7 +1204,7 @@ def story(
         [
             p("7.1 Methods and limitations", st["subsection"]),
             p(
-                "The 6.2 audit uses the curated score archive and model-card registry. Raw headroom is the distance from one reported value to the metric bound; it does not require a trend. Repeat-controlled evidence is a separate test: instrument and protocol must both match across at least two dates. Two dates support only a paired comparison, and a single-organization pair says nothing about a field-wide trend. Sensitivity tables report eligible and unknown denominators instead of treating missing repeated evidence as a negative result.",
+                "The 6.2 audit uses the curated score archive and model-card registry. Raw headroom is the distance from one reported value to the metric bound. Repeat-controlled evidence requires the same instrument and protocol across at least two dates. Two dates support only a paired comparison. Because each repeated setup comes from one organization, the audit cannot estimate a field-wide trend. Sensitivity tables keep unknowns out of the eligible denominator.",
                 st["body"],
             ),
             p("7.2 Contributor credit", st["subsection"]),
