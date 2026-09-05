@@ -682,6 +682,13 @@ def main() -> None:
         item.discovered_at = now
         item.retrieved_at = now
         existing = load_snapshots(args.snapshot_dir)
+        if any(
+            evidence.get("source") == item.source and evidence.get("source_id") == item.source_id
+            for snapshot in existing
+            for evidence in snapshot.get("evidence_items", [])
+        ):
+            print(f"Already repaired {item.source}:{item.source_id}; no snapshot written")
+            return
         target = existing[-1] if existing else None
         generated_at = (
             datetime.fromisoformat(target["generated_at"].replace("Z", "+00:00")) if target else now
@@ -715,6 +722,11 @@ def main() -> None:
         published, selection = _score_and_select(
             [item], config, now=now, fetched_count=1, suppressed_count=0
         )
+        if not published:
+            parser.error(
+                f"repair-source fetched {item.source}:{item.source_id}, but scoring "
+                "rejected it; add a matching taxonomy category or watchlist entry before retrying"
+            )
         run = RadarRun(
             generated_at=generated_at,
             since=since,
@@ -723,7 +735,7 @@ def main() -> None:
             or [SourceHealth(source=item.source, ok=True, item_count=1, method="exact API")],
             producer_health=producer_health,
             selection={
-                **((target or {}).get("selection") or {}),
+                **selection,
                 "backfilled": True,
                 "repair_source_id": item.source_id,
                 "repair_retrieved_at": now.isoformat(),
