@@ -7,7 +7,7 @@ import yaml
 
 from benchmark_radar.http import RequestError
 from benchmark_radar.models import RadarItem
-from benchmark_radar.pipeline import score_item
+from benchmark_radar.pipeline import _score_and_select, score_item
 from benchmark_radar.sources import (
     GITHUB_RELEASE_PARSER_VERSION,
     ConnectorPayloadError,
@@ -15,6 +15,7 @@ from benchmark_radar.sources import (
     fetch_arxiv,
     fetch_arxiv_exact,
     fetch_brave,
+    fetch_crossref,
     fetch_doi_exact,
     fetch_first_party_feeds,
     fetch_github,
@@ -271,7 +272,7 @@ def test_exact_github_repair_uses_stable_repository_id(monkeypatch):
 def test_exact_huggingface_repair_accepts_kind_prefixed_id(monkeypatch):
     monkeypatch.setattr(
         "benchmark_radar.sources.get_json",
-        lambda url, params=None: {
+        lambda url, **kwargs: {
             "id": "org/forge-artifacts",
             "createdAt": "2025-06-20T00:00:00Z",
             "lastModified": "2026-08-29T00:00:00Z",
@@ -671,6 +672,63 @@ def test_github_preserves_creation_and_update_times(monkeypatch):
     assert items[0].event_kind == "updated"
 
 
+def test_github_config_discovers_and_routes_rsi_exam(monkeypatch):
+    """Issue #408: the named benchmark matched no configured GitHub query."""
+    config = yaml.safe_load(Path("config.yml").read_text(encoding="utf-8"))
+    github_config = {**config["sources"]["github"], "request_delay_seconds": 0}
+    queries = []
+
+    def fake_get_json(url, params=None, headers=None):
+        query = params["q"].split(" pushed:", 1)[0]
+        queries.append(query)
+        if query != '"RSI-Exam" in:name,description,readme':
+            return {"items": []}
+        return {
+            "items": [
+                {
+                    "full_name": "aiming-lab/RSI-Exam",
+                    "html_url": "https://github.com/aiming-lab/RSI-Exam",
+                    "created_at": "2026-08-26T06:58:55Z",
+                    "pushed_at": "2026-08-29T05:24:25Z",
+                    "description": (
+                        "RSI-Exam: Measuring Recursive Self-Improvement on Long-Horizon, "
+                        "Executable Research Tasks"
+                    ),
+                    "stargazers_count": 75,
+                    "forks_count": 3,
+                },
+                {
+                    "full_name": "example/AgentQuant",
+                    "html_url": "https://github.com/example/AgentQuant",
+                    "created_at": "2026-08-26T06:58:55Z",
+                    "pushed_at": "2026-08-29T05:24:25Z",
+                    "description": "A quantitative trading platform",
+                    "stargazers_count": 75,
+                    "forks_count": 3,
+                },
+            ]
+        }
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+
+    items = fetch_github(github_config, datetime(2026, 8, 27, tzinfo=UTC), 300)
+    published, _selection = _score_and_select(
+        items,
+        config,
+        now=datetime(2026, 8, 29, 12, tzinfo=UTC),
+        fetched_count=len(items),
+        suppressed_count=0,
+    )
+
+    assert '"RSI-Exam" in:name,description,readme' in queries
+    assert [item.source_id for item in items] == [
+        "aiming-lab/RSI-Exam",
+        "example/AgentQuant",
+    ]
+    assert [item.source_id for item in published] == ["aiming-lab/RSI-Exam"]
+    assert published[0].watchlist == "RSI-Exam"
+
+
 def _github_organization_row(index, *, created="2026-07-27T12:00:00Z"):
     return {
         "id": index,
@@ -834,6 +892,85 @@ def test_zenodo_records_preserve_doi_and_upstream_metadata(monkeypatch):
     assert items[0].authors == ["Zenodo Author"]
     assert items[0].artifact_urls == ["https://doi.org/10.5281/zenodo.12345"]
     assert items[0].metrics == {"downloads": 13.0, "views": 21.0}
+
+
+def test_crossref_preserves_doi_metadata_and_bounds_the_query(monkeypatch):
+    calls = []
+    payload = {
+        "message": {
+            "items": [
+                {
+                    "DOI": "10.1000/Radar",
+                    "title": ["A Publisher Benchmark"],
+                    "abstract": "<jats:p>The upstream abstract.</jats:p>",
+                    "published": {"date-parts": [[2026, 7, 27]]},
+                    "URL": "https://doi.org/10.1000/Radar",
+                    "author": [
+                        {
+                            "given": "Grace",
+                            "family": "Evidence",
+                            "affiliation": [{"name": "Radar Lab"}],
+                        }
+                    ],
+                    "is-referenced-by-count": 3,
+                }
+            ]
+        }
+    }
+
+    def fake_get_json(url, **kwargs):
+        calls.append((url, kwargs))
+        return payload
+
+    monkeypatch.setattr("benchmark_radar.sources.get_json", fake_get_json)
+    items = fetch_crossref(
+        {
+            "searches": ["agent benchmark"],
+            "max_requests": 1,
+            "_collection_now": datetime(2026, 7, 28, tzinfo=UTC),
+        },
+        datetime(2026, 7, 26, 12, tzinfo=UTC),
+        10,
+    )
+
+    assert [item.source_id for item in items] == ["10.1000/radar"]
+    assert items[0].source == "Crossref"
+    assert items[0].url == "https://doi.org/10.1000/radar"
+    assert items[0].summary == "The upstream abstract."
+    assert items[0].authors == ["Grace Evidence"]
+    assert items[0].organizations == ["Radar Lab"]
+    assert items[0].artifact_urls == ["https://doi.org/10.1000/radar"]
+    assert items[0].metrics == {"citations": 3.0}
+    assert items[0].parser_version == "crossref-works/1"
+    assert calls[0][0] == "https://api.crossref.org/works"
+    assert calls[0][1]["params"]["query.title"] == "agent benchmark"
+    assert calls[0][1]["params"]["filter"] == ("from-pub-date:2026-07-26,until-pub-date:2026-07-28")
+
+
+def test_crossref_skips_dates_without_day_precision(monkeypatch):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, **kwargs: {
+            "message": {
+                "items": [
+                    {
+                        "DOI": "10.1000/year-only",
+                        "title": ["An imprecisely dated benchmark"],
+                        "published": {"date-parts": [[2026]]},
+                    }
+                ]
+            }
+        },
+    )
+
+    assert (
+        fetch_crossref(
+            {"searches": ["benchmark"]},
+            datetime(2026, 7, 26, tzinfo=UTC),
+            10,
+        )
+        == []
+    )
 
 
 def test_openreview_success_uses_only_upstream_abstract(monkeypatch):
@@ -1267,6 +1404,7 @@ def test_release_replacement_budget_preserves_later_repository_coverage(monkeypa
         (fetch_openreview, {"venues": ["venue"]}, []),
         (fetch_semantic_scholar, {"searches": ["benchmark"]}, {"data": []}),
         (fetch_github_releases, {"repositories": ["example/benchmark"]}, []),
+        (fetch_crossref, {"searches": ["benchmark"]}, {"message": {"items": []}}),
     ],
 )
 def test_new_connectors_accept_empty_upstream_results(monkeypatch, fetcher, config, empty_payload):
@@ -1295,6 +1433,7 @@ def test_new_connectors_accept_empty_upstream_results(monkeypatch, fetcher, conf
         (fetch_openreview, {"venues": ["venue"]}, "wrong"),
         (fetch_semantic_scholar, {"searches": ["benchmark"]}, {"data": "wrong"}),
         (fetch_github_releases, {"repositories": ["example/benchmark"]}, {}),
+        (fetch_crossref, {"searches": ["benchmark"]}, {"message": {}}),
     ],
 )
 def test_new_connectors_reject_malformed_payloads(monkeypatch, fetcher, config, malformed_payload):
@@ -1328,6 +1467,7 @@ def test_new_connectors_reject_malformed_payloads(monkeypatch, fetcher, config, 
         (fetch_openreview, {"venues": ["venue"]}),
         (fetch_semantic_scholar, {"searches": ["benchmark"]}),
         (fetch_github_releases, {"repositories": ["example/benchmark"]}),
+        (fetch_crossref, {"searches": ["benchmark"]}),
     ],
 )
 def test_new_connectors_surface_http_failures(monkeypatch, fetcher, config):
@@ -1396,6 +1536,21 @@ def test_new_connectors_surface_http_failures(monkeypatch, fetcher, config):
                     "assets": [],
                 }
             ],
+        ),
+        (
+            fetch_crossref,
+            {"searches": ["benchmark"]},
+            {
+                "message": {
+                    "items": [
+                        {
+                            "DOI": "10.1000/no-abstract",
+                            "title": ["No abstract"],
+                            "published": {"date-parts": [[2026, 7, 27]]},
+                        }
+                    ]
+                }
+            },
         ),
     ],
 )
