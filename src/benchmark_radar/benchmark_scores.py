@@ -105,6 +105,7 @@ _REQUIRED_RESULT_FIELDS = (
 # a row claiming some other provenance is a data error, not a new category to
 # be accepted silently, because the UI grades evidence on this field.
 _READ_FROM = ("pdf_text", "html_text", "table_image")
+_MEASUREMENT_KINDS = ("reported_self_score", "benchmark_publisher_run")
 
 # Below this many distinct dates a run cannot express a direction over time at
 # all: two points define one segment, which is a comparison, not a trend.
@@ -273,6 +274,7 @@ def load_scores(path: Path = DEFAULT_SCORES_PATH) -> dict[str, Any]:
             "reported_at": reported_at,
             "value": value,
             "read_from": read_from,
+            "measurement_kind": str(result.get("measurement_kind") or "reported_self_score"),
             "source_title": score_source["title"] if score_source else None,
             "source_url": score_source["url"] if score_source else None,
             "source_document_type": score_source["document_type"] if score_source else None,
@@ -281,6 +283,10 @@ def load_scores(path: Path = DEFAULT_SCORES_PATH) -> dict[str, Any]:
             # marks it rather than mixing it in.
             "reported_by": str(result["reported_by"]) if result.get("reported_by") else None,
         }
+        if row["measurement_kind"] not in _MEASUREMENT_KINDS:
+            raise BenchmarkScoreError(
+                f"{label} measurement_kind must be one of {', '.join(_MEASUREMENT_KINDS)}"
+            )
         # The same model measured twice on one instrument under one protocol in
         # one document is a contradiction: the chart would draw two points at
         # one x with no way to say which is the reading.
@@ -317,8 +323,8 @@ def _cross_check_sources(scores: dict[str, Any], registry: dict[str, Any]) -> No
     }
     reported.update(
         {
-            source_id: {str(ref) for ref in source["benchmarks"]}
-            for source_id, source in scores.get("sources", {}).items()
+            str(source["id"]): {str(ref) for ref in source["benchmarks"]}
+            for source in registry.get("source_documents", [])
         }
     )
     unknown = sorted({row["source_id"] for row in scores["results"]} - reported.keys())

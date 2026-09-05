@@ -453,6 +453,7 @@ def test_cross_check_accepts_a_score_cited_to_an_external_benchmark_source(tmp_p
     registry = {
         "benchmarks": [{"id": "alpha"}],
         "model_cards": [],
+        "source_documents": [external_source()],
     }
 
     observation = score_progression(load_scores(path), registry)["benchmarks"]["alpha"][
@@ -475,6 +476,7 @@ def test_cross_check_rejects_an_external_source_that_does_not_cover_the_score(tm
     registry = {
         "benchmarks": [{"id": "alpha"}],
         "model_cards": [],
+        "source_documents": [external_source(benchmarks=["beta"])],
     }
 
     with pytest.raises(BenchmarkScoreError, match="does not report alpha"):
@@ -501,10 +503,16 @@ def test_the_shipped_score_file_is_valid_and_cites_only_known_documents():
 
     assert progression["observation_count"] > 0
     card_ids = {str(card["id"]) for card in registry["model_cards"]}
-    source_ids = set(load_scores(DEFAULT_SCORES_PATH)["sources"])
+    source_ids = {str(source["id"]) for source in registry.get("source_documents", [])}
     for record in progression["benchmarks"].values():
         for observation in record["observations"]:
             assert observation["source_id"] in card_ids | source_ids
+
+    frontier = progression["benchmarks"]["frontier_challenge"]
+    assert all(
+        row["measurement_kind"] == "benchmark_publisher_run" for row in frontier["observations"]
+    )
+    assert all(row["reported_by"] is None for row in frontier["observations"])
 
 
 def test_the_shipped_file_never_claims_a_trend_it_cannot_support():
