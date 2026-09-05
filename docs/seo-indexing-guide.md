@@ -2,12 +2,12 @@
 
 Benchmark Radar now has one reliable public address:
 `https://benchmark-radar.org/`. HTTPS, redirects, crawler files, and canonical
-metadata passed the August 29 checks below, so search-engine setup can proceed
+metadata passed the September 3 checks below, so search-engine setup can proceed
 without sending conflicting domain signals.
 
 ## Live status
 
-Last checked: **August 29, 2026**.
+Last checked: **September 3, 2026**.
 
 | Check | Live result | What to do |
 | --- | --- | --- |
@@ -17,7 +17,7 @@ Last checked: **August 29, 2026**.
 | HTTP redirect | **Passing:** apex HTTP redirects to the HTTPS apex | Keep it |
 | `www` redirect | **Passing:** HTTPS `www` redirects to the HTTPS apex | Keep it |
 | `robots.txt` | **Current:** sitemap uses `benchmark-radar.org` | Keep it |
-| `sitemap.xml` | **Current:** all four URLs use `benchmark-radar.org` | Keep it |
+| `sitemap.xml` | **Current:** all 1,225 URLs use `benchmark-radar.org` | Keep it |
 | Page metadata | **Current:** canonical and `og:url` use the HTTPS apex | Keep it |
 
 Re-run the checks below after any DNS or Pages change. The table is a dated
@@ -77,8 +77,8 @@ curl -fsS https://benchmark-radar.org/ | grep -E 'canonical|og:url'
 
 Every indexable URL should use `https://benchmark-radar.org`. There should be
 no remaining `koutian.is-a.dev/benchmark-radar` or
-`ktwu01.github.io/benchmark-radar` URLs in the live HTML, sitemap, feed, blog
-posts, or internal links.
+`ktwu01.github.io/benchmark-radar` URLs in the live HTML, sitemap, feed,
+generated pages, or internal links.
 
 Use permanent redirects from both legacy hosts. Redirects are a stronger
 canonical signal than a sitemap; combining redirects, `rel="canonical"`, and
@@ -129,38 +129,29 @@ JSON-LD. Validate the live HTML with Google's
 [Rich Results Test](https://search.google.com/test/rich-results) after every
 metadata change.
 
-The next improvement is architectural. Today the dashboard views are query
-URLs in a JavaScript application:
+Each dashboard view and public utility is a real page at its own path:
 
 ```text
-/?view=leaderboard
-/?view=trends
-/?view=map
+/leaderboard/
+/trends/
+/explore/
+/cli/
+/cite/
+/rubric/
 ```
 
-They initially return the same HTML and homepage canonical, then JavaScript
-changes the title, description, and canonical. Google can render JavaScript,
-but its guidance recommends putting a stable canonical in the original HTML
-and not changing it to a different value during rendering. This makes separate
-indexing of the current query views less dependable.
+These are the dashboard, not summaries of it. Each one is written from
+`site/index.html`, so it carries the same design and the same controls, and it
+arrives with its own title, summary, canonical, breadcrumb, and a first screen
+of real rows before any script runs. The script then takes over and the page
+behaves like the rest of the dashboard.
 
-Choose one clear policy:
-
-- **One indexed landing page now:** keep only the homepage in the sitemap and
-  canonicalize dashboard state and filters to it.
-- **Distinct search pages later:** publish crawlable paths such as
-  `/leaderboard/`, `/trends/`, and `/explore/`. Each should return useful text,
-  one descriptive heading, its own title and summary, and its own canonical in
-  the initial HTML—not only after JavaScript runs.
-
-Distinct pages are the better route if searches such as “AI benchmark
-leaderboard” and “benchmark trends” should land directly on those experiences.
-Do not index every filter combination; that creates many thin duplicate URLs.
-
-The heavy dashboard views should also stop depending on a roughly 45 MB JSON
-download for their first useful content. Ship a small summary payload or render
-the explanatory text before loading the full interactive data. That improves
-the reader's first screen and makes rendering cheaper for crawlers.
+The old `/?view=leaderboard` style of link still works and is rewritten to the
+matching path in the browser, keeping any filters the reader arrived with. Those
+query URLs are not listed in the sitemap, and neither are filter permutations:
+a second URL for a page that already has one is a duplicate, not a second page.
+The old `/#cli`, `/#cite`, and `/#rubric` links migrate the same way;
+rubric versions use `/rubric/?version=<number>`.
 
 Google references:
 
@@ -185,12 +176,14 @@ is a quick spot check, not a complete or authoritative index count.
 
 ## Launch checklist
 
-- [ ] Valid TLS certificate for the apex and `www`
-- [ ] **Enforce HTTPS** enabled in GitHub Pages
-- [ ] HTTP and legacy URLs permanently redirect to the HTTPS custom domain
-- [ ] Live `robots.txt`, sitemap, feed, canonicals, and internal links use only
+- [x] Valid TLS certificate for the apex and `www`
+- [x] **Enforce HTTPS** enabled in GitHub Pages
+- [x] HTTP and legacy URLs permanently redirect to the HTTPS custom domain
+- [x] Live `robots.txt`, sitemap, feed, canonicals, and internal links use only
       `https://benchmark-radar.org`
-- [ ] Google Search Console Domain property verified
-- [ ] Sitemap submitted successfully in Google and Bing
-- [ ] Homepage passes live URL inspection and structured-data validation
+- [x] Google Search Console Domain property verified
+- [x] Sitemap submitted successfully in Google and Bing
+- [x] Homepage passes live URL inspection and structured-data validation
+- [x] Dashboard view pages, utility pages, and one benchmark page return useful
+      HTML with JavaScript disabled
 - [ ] Indexing and performance reviewed after Google recrawls the site

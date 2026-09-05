@@ -1,13 +1,12 @@
 """Static per-benchmark pages: one crawlable URL per benchmark (issue #424).
 
-The dashboard is one HTML document whose four views share a single path, so a
-catalog of 1,100+ benchmarks exposes four indexable URLs to a search engine.
-Each per-benchmark shard already answers the reader's questions about one
-benchmark, but only as JSON consumed by JavaScript. This module renders that
-same evidence as plain HTML, one page per slug, readable with JavaScript
-disabled. It turns the catalog's data advantage into a search advantage: every
-benchmark gets its own title, description, canonical URL, and structured data,
-and the sitemap publishes all of them.
+The dashboard provides collection-level views, while each catalog benchmark
+still needs its own crawlable URL. Each per-benchmark shard already answers the
+reader's questions about one benchmark, but only as JSON consumed by
+JavaScript. This module renders that same evidence as plain HTML, one page per
+slug, readable with JavaScript disabled. Every benchmark gets its own title,
+description, canonical URL, and structured data, and the sitemap publishes all
+of them.
 
 The pages derive from the shards exactly as the shards derive from the crawl
 CSVs, so they are generated and gitignored, never committed. The build calls
@@ -257,7 +256,7 @@ def _page_html(slug: str, shard: dict[str, Any]) -> str:
         scores_html = (
             '<p class="caveat">No reported scores are on record for this benchmark yet.</p>'
         )
-    interactive = f"{SITE_URL}/?view=leaderboard&lfrontier={slug}"
+    interactive = f"{SITE_URL}/leaderboard/?lfrontier={slug}"
     nav = _benchmark_nav(interactive)
     return f"""<!doctype html>
 <html lang="en">
@@ -346,7 +345,7 @@ def _directory_html(entries: list[tuple[str, str]]) -> str:
   <h1>Benchmark directory</h1>
   <p class="lede">Every benchmark in the catalog, each with its own page covering
     what it tests, who published it, and which scores are on record. The
-    interactive dashboard is <a href="{SITE_URL}/?view=leaderboard">here</a>.</p>
+    interactive dashboard is <a href="{SITE_URL}/leaderboard/">here</a>.</p>
   <p class="count">{count}</p>
   <ul>{links}</ul>
 </main>

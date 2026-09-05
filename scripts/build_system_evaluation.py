@@ -32,12 +32,16 @@ from build_technical_report import (
 )
 from reportlab.graphics.shapes import Drawing, Line, Polygon, Rect, String
 from reportlab.lib.colors import HexColor
+from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
+from reportlab.lib.utils import ImageReader
 from reportlab.platypus import (
     BaseDocTemplate,
     Frame,
+    Image,
+    KeepTogether,
     PageBreak,
     PageTemplate,
     Spacer,
@@ -48,6 +52,22 @@ from reportlab.platypus import (
 GREEN = HexColor("#16794A")
 PALE_GREEN = HexColor("#EAF7F0")
 PURPLE = HexColor("#6D4AFF")
+FROZEN_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf")
+NEXT_DRAFT_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-next-draft.pdf")
+FROZEN_AUTHORS = ("Koutian Wu",)
+NEXT_DRAFT_AUTHORS = ("Koutian Wu", "Junjie Zhou", "Jiayu Wang")
+NEXT_DRAFT_BYLINE = (
+    "Koutian Wu<super>1,2,*</super>",
+    "Junjie Zhou<super>3</super>",
+    "Jiayu Wang<super>4</super>",
+)
+NEXT_DRAFT_AFFILIATIONS = (
+    "<super>1</super> Independent researcher",
+    "<super>2</super> Tacite AI",
+    "<super>3</super> Hangzhou Dianzi University",
+    "<super>4</super> Xi'an Jiaotong University",
+)
+NEXT_DRAFT_CORRESPONDING_AUTHOR = "Koutian Wu, k@tacite.ai"
 
 
 def table(rows: list[list], widths: list[float], *, tiny: bool = False) -> Table:
@@ -70,6 +90,26 @@ def table(rows: list[list], widths: list[float], *, tiny: bool = False) -> Table
             ]
         ),
     )
+
+
+def figure(path: str, caption: str, st) -> list:
+    """Scale a screenshot into the text column and return it with a caption."""
+    reader = ImageReader(str(path))
+    width_px, height_px = reader.getSize()
+    scale = min((6.30 * inch) / width_px, (4.00 * inch) / height_px)
+    image = Image(str(path), width=width_px * scale, height=height_px * scale)
+    image.hAlign = "CENTER"
+    style = ParagraphStyle(
+        "FigCaption",
+        parent=st["meta"],
+        fontSize=6.4,
+        leading=8.0,
+        alignment=TA_CENTER,
+        textColor=MUTED,
+        spaceBefore=2,
+        spaceAfter=12,
+    )
+    return [image, p(caption, style)]
 
 
 def metric_strip(st) -> Table:
@@ -238,7 +278,7 @@ def source_bars() -> Drawing:
 
 
 class EvaluationDoc(BaseDocTemplate):
-    def __init__(self, filename: str, *, doi: str):
+    def __init__(self, filename: str, *, doi: str, authors: tuple[str, ...] = FROZEN_AUTHORS):
         super().__init__(
             filename,
             pagesize=letter,
@@ -247,7 +287,7 @@ class EvaluationDoc(BaseDocTemplate):
             topMargin=0.58 * inch,
             bottomMargin=0.58 * inch,
             title="Benchmark Radar v0.9.0: Technical Report",
-            author="Koutian Wu",
+            author="; ".join(authors),
             subject="Benchmark Radar technical report, version 0.9.0",
             keywords="AI benchmarks, evaluation, research software, data provenance, model cards",
         )
@@ -281,7 +321,15 @@ class EvaluationDoc(BaseDocTemplate):
         canvas.restoreState()
 
 
-def story(doi: str) -> list:
+def story(
+    doi: str,
+    *,
+    authors: tuple[str, ...] = FROZEN_AUTHORS,
+    byline: tuple[str, ...] | None = None,
+    affiliations: tuple[str, ...] = (),
+    corresponding_author: str | None = None,
+    draft: bool = False,
+) -> list:
     st = styles()
     tiny = ParagraphStyle("Tiny", parent=st["small"], fontSize=6.45, leading=8.0)
     story: list = []
@@ -305,12 +353,21 @@ def story(doi: str) -> list:
                 "From daily collection to benchmark search and score history",
                 st["subtitle"],
             ),
-            p("Koutian Wu", st["author"]),
+            p(" · ".join(byline or authors), st["author"]),
+            *[p(affiliation, st["meta"]) for affiliation in affiliations],
+            *(
+                [p(f"Corresponding author: {corresponding_author}", st["meta"])]
+                if corresponding_author
+                else []
+            ),
             p(
                 "29 August 2026  |  Software v0.9.0  |  Data cutoff 2026-08-29  |  Git 98c7de3",
                 st["meta"],
             ),
-            p(f"Reserved DOI: {doi}", st["meta"]),
+            p(
+                (f"Reference DOI (frozen v0.9.0): {doi}" if draft else f"Reserved DOI: {doi}"),
+                st["meta"],
+            ),
             Spacer(1, 0.20 * inch),
             metric_strip(st),
             Spacer(1, 0.20 * inch),
@@ -936,6 +993,76 @@ def story(doi: str) -> list:
                 ],
                 [0.55 * inch, 3.35 * inch, 2.70 * inch],
             ),
+            KeepTogether(
+                [
+                    p(
+                        "6.5 Worked real use case: prior-art check for a new evaluation",
+                        st["subsection"],
+                    ),
+                    p(
+                        "Jiayu Wang, a researcher working on agent evaluation, used Benchmark Radar to decide whether a proposed new evaluation would duplicate existing work. The check decides whether the design is still novel, and it used to be slow: comparing a candidate against the field required long manual searches, and completeness was hard to guarantee. The case ran during August 2026 with a concrete task: survey recent work on credit assignment in agentic training, keeping small Qwen-series baselines as a reproducibility constraint.",
+                        st["body"],
+                    ),
+                ]
+            ),
+            p(
+                "The author gave the task to a coding agent together with the public consumer prompt for Benchmark Radar. The agent installed the CLI and the benchmark-radar Skill, initialized the local corpus with benchmark-radar init, and queried candidate records with benchmark-radar search.",
+                st["body"],
+            ),
+            *figure(
+                "assets/use-case-492/agent-session.png",
+                "<b>Figure 1.</b> A coding agent follows the consumer setup prompt, installs the Benchmark Radar CLI and Skill, and runs local queries.",
+                st,
+            ),
+            p(
+                "Radar links one artifact across papers, code, releases, and datasets. The agent could therefore see at a glance whether a candidate was announced as a paper with no released code, or shipped code without its dataset.",
+                st["body"],
+            ),
+            *figure(
+                "assets/use-case-492/artifact-status-paper.png",
+                "<b>Figure 2.</b> Radar consolidates the sources and status of one artifact.",
+                st,
+            ),
+            *figure(
+                "assets/use-case-492/artifact-status-code.png",
+                "<b>Figure 3.</b> A companion record in which code is public but the dataset is not yet released.",
+                st,
+            ),
+            p(
+                "Radar search is deterministic lexical matching, so the agent also ran its own web search and cross-checked the two candidate sets before accepting a record. This double pass keeps a differently worded version of the same idea from being missed.",
+                st["body"],
+            ),
+            *figure(
+                "assets/use-case-492/cross-validation.png",
+                "<b>Figure 4.</b> Cross-checking Radar candidates against the agent's own web search before accepting a record.",
+                st,
+            ),
+            p(
+                "The session ended with a focused summary table of related work that the author judged complete enough to act on.",
+                st["body"],
+            ),
+            *figure(
+                "assets/use-case-492/survey-table.png",
+                "<b>Figure 5.</b> Summary table of recent work on credit assignment in agentic training assembled during the session.",
+                st,
+            ),
+            p(
+                "The savings are easiest to measure against the author's earlier benchmark, AARRI-Bench, whose equivalent prior-art comparison consumed effort second only to producing the benchmark data itself, for a table of just 12 rows and 7 columns.",
+                st["body"],
+            ),
+            *figure(
+                "assets/use-case-492/aarri-bench-manual-table.png",
+                "<b>Figure 6.</b> The manually built 12-by-7 prior-art table for AARRI-Bench, the workflow that Radar now shortens.",
+                st,
+            ),
+            p(
+                "Limits: Radar search is deterministic lexical matching rather than semantic retrieval, so a differently worded query can change the candidate set. The session used the Radar CLI together with the agent's general web search, so it does not isolate Radar alone. Repository and dataset availability is a snapshot, not a permanent label. The case documents one contributor's workflow; it is not a measured user study. Full evidence, including the summary table and session screenshots, is public in issue #492.",
+                st["body"],
+            ),
+            p(
+                "<b>Contributor.</b> Jiayu Wang, Xi'an Jiaotong University. Case and evidence: github.com/ktwu01/benchmark-radar/issues/492",
+                st["body"],
+            ),
             Spacer(1, 10),
             Table(
                 [
@@ -1011,7 +1138,10 @@ def story(doi: str) -> list:
                 ],
                 [1.55 * inch, 5.05 * inch],
             ),
-            p("Suggested citation", st["subsection"]),
+            p(
+                "Published v0.9.0 citation" if draft else "Suggested citation",
+                st["subsection"],
+            ),
             p(
                 f"Wu, K. (2026). <i>Benchmark Radar v0.9.0: Technical Report</i>. Zenodo. https://doi.org/{doi}",
                 st["body"],
@@ -1091,13 +1221,34 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf"),
+        default=None,
     )
     parser.add_argument("--doi", default="10.5281/zenodo.22167102")
+    parser.add_argument(
+        "--next-draft",
+        action="store_true",
+        help="build the working next-draft artifact with the current contributor byline",
+    )
     args = parser.parse_args()
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    EvaluationDoc(str(args.output), doi=args.doi).build(story(args.doi))
-    print(args.output)
+    output = args.output or (NEXT_DRAFT_OUTPUT if args.next_draft else FROZEN_OUTPUT)
+    if args.next_draft and output.resolve() == FROZEN_OUTPUT.resolve():
+        parser.error("--next-draft cannot overwrite the frozen v0.9.0 PDF")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    authors = NEXT_DRAFT_AUTHORS if args.next_draft else FROZEN_AUTHORS
+    byline = NEXT_DRAFT_BYLINE if args.next_draft else None
+    affiliations = NEXT_DRAFT_AFFILIATIONS if args.next_draft else ()
+    corresponding_author = NEXT_DRAFT_CORRESPONDING_AUTHOR if args.next_draft else None
+    EvaluationDoc(str(output), doi=args.doi, authors=authors).build(
+        story(
+            args.doi,
+            authors=authors,
+            byline=byline,
+            affiliations=affiliations,
+            corresponding_author=corresponding_author,
+            draft=args.next_draft,
+        )
+    )
+    print(output)
 
 
 if __name__ == "__main__":

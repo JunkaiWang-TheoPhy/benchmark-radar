@@ -6,10 +6,11 @@ import argparse
 import json
 import logging
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
+from .citation import cite_reminder
 from .data_store import DEFAULT_MANIFEST_URL, DataStore
 from .query import (
     SEARCH_SCOPES,
@@ -110,6 +111,24 @@ def _print_json(payload: dict[str, Any]) -> None:
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
 
 
+def _print_cite_reminder(args: argparse.Namespace) -> None:
+    """Issue #483: end every command round with the citation ask.
+
+    Human output gets a blank separator line before the ask so it reads as
+    a footer, not a continuation of the payload; JSON output keeps stdout
+    parseable because the CLI/HTTP contract tests compare that stream
+    byte-for-byte with the API payload, so the reminder rides stderr there,
+    like the error contract already does. Either way an agent capturing
+    both streams sees it last.
+    """
+    reminder = cite_reminder()
+    if getattr(args, "json", False):
+        print(reminder, file=sys.stderr)
+    else:
+        print()
+        print(reminder)
+
+
 def _print_search(payload: dict[str, Any]) -> None:
     if payload["search_status"] == "no_lexical_candidates":
         print(f"No lexical candidates found (scope={payload['scope']}).")
@@ -171,59 +190,64 @@ def run_query_cli(argv: Sequence[str] | None = None) -> int:
 
     args = _parser().parse_args(argv)
     try:
+        # Every payload command collects (payload, printer) and falls through
+        # to one shared tail that prints both, so a new command cannot forget
+        # the citation reminder (issue #483 review); `serve` is the lone
+        # long-lived exception and prints it once at startup.
+        printer: Callable[[dict[str, Any]], None] | None = None
+        payload: dict[str, Any]
         if args.command == "init":
             payload = DataStore(root=args.data_dir, manifest_url=args.manifest_url).initialize()
-            _print_json(payload) if args.json else _print_sync(payload)
-            return 0
-        if args.command == "sync":
+            printer = _print_json if args.json else _print_sync
+        elif args.command == "sync":
             payload = DataStore(root=args.data_dir).sync()
-            _print_json(payload) if args.json else _print_sync(payload)
-            return 0
-
-        service = _service(args)
-        if args.command == "search":
-            payload = service.search(
-                args.query,
-                scope=args.scope,
-                limit=args.limit,
-                has_paper=args.has_paper,
-                has_repo=args.has_repo,
-                has_dataset=args.has_dataset,
-                openness=args.openness,
-                modality=args.modality,
-                source=args.source,
-            )
-            _print_json(payload) if args.json else _print_search(payload)
-            return 0
-        if args.command == "show":
-            payload = service.show(args.identifier)
-            _print_json(payload) if args.json else _print_show(payload)
-            return 0
-        if args.command == "recent":
-            payload = service.recent(
-                limit=args.limit,
-                category=args.category,
-                source=args.source,
-                recommended=args.recommended,
-            )
-            _print_json(payload) if args.json else _print_recent(payload)
-            return 0
-        if args.command == "status":
-            payload = service.status()
-            _print_json(payload) if args.json else _print_status(payload)
-            return 0
-        if args.command == "serve":
-            logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-            status = service.status()
-            if not status["catalog"]["complete"]:
-                raise QueryError(
-                    "catalog detail shards are incomplete; run `benchmark-radar sync`",
-                    code="data_unavailable",
-                    status=503,
+            printer = _print_json if args.json else _print_sync
+        else:
+            service = _service(args)
+            if args.command == "search":
+                payload = service.search(
+                    args.query,
+                    scope=args.scope,
+                    limit=args.limit,
+                    has_paper=args.has_paper,
+                    has_repo=args.has_repo,
+                    has_dataset=args.has_dataset,
+                    openness=args.openness,
+                    modality=args.modality,
+                    source=args.source,
                 )
-            print(f"Serving Benchmark Radar at http://{args.host}:{args.port}", file=sys.stderr)
-            serve_query_api(service, host=args.host, port=args.port)
-            return 0
+                printer = _print_json if args.json else _print_search
+            elif args.command == "show":
+                payload = service.show(args.identifier)
+                printer = _print_json if args.json else _print_show
+            elif args.command == "recent":
+                payload = service.recent(
+                    limit=args.limit,
+                    category=args.category,
+                    source=args.source,
+                    recommended=args.recommended,
+                )
+                printer = _print_json if args.json else _print_recent
+            elif args.command == "status":
+                payload = service.status()
+                printer = _print_json if args.json else _print_status
+            elif args.command == "serve":
+                logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+                status = service.status()
+                if not status["catalog"]["complete"]:
+                    raise QueryError(
+                        "catalog detail shards are incomplete; run `benchmark-radar sync`",
+                        code="data_unavailable",
+                        status=503,
+                    )
+                print(f"Serving Benchmark Radar at http://{args.host}:{args.port}", file=sys.stderr)
+                print(cite_reminder(), file=sys.stderr)
+                serve_query_api(service, host=args.host, port=args.port)
+                return 0
+        assert printer is not None  # every non-serve command above sets it
+        printer(payload)
+        _print_cite_reminder(args)
+        return 0
     except QueryError as error:
         print(json.dumps(error_payload(error), ensure_ascii=False, sort_keys=True), file=sys.stderr)
         return 2 if 400 <= error.status < 500 else 1

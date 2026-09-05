@@ -29,6 +29,7 @@ const LEGACY_SOURCE_COLLECTION_METHODS = {
   huggingface_papers: "API",
   kaggle_datasets: "API",
   zenodo: "API",
+  crossref: "API",
   openreview: "API",
   semantic_scholar: "API",
   github_releases: "API",
@@ -50,6 +51,7 @@ const SOURCE_DISPLAY_NAMES = {
   huggingface_papers: "Hugging Face Papers",
   kaggle_datasets: "Kaggle Dataset",
   zenodo: "Zenodo",
+  crossref: "Crossref",
   openreview: "OpenReview",
   semantic_scholar: "Semantic Scholar",
   github_releases: "GitHub Release",
@@ -351,6 +353,8 @@ function rerenderCurrentView() {
 function toggleLang() {
   setLang(getLang() === "zh" ? "en" : "zh");
   applyStaticI18n();
+  // The title and canonical belong to the page, not to the language toggle.
+  applyCurrentSeo();
   syncLangToggle();
   rerenderCurrentView();
 }
@@ -369,18 +373,14 @@ const I18N = {
     Data: "数据",
     Contact: "联系",
     "Privacy notice": "隐私声明",
-    "Support this repository": "支持这个仓库",
     "Open the repository and star it": "打开仓库并给个 Star",
     Star: "Star",
-    "Fork this repository": "Fork 这个仓库",
-    Fork: "Fork",
-    "Open a new issue": "新建 Issue",
-    Issues: "Issues",
     "Dashboard views": "仪表盘视图",
     Today: "今日",
     Leaderboard: "排行榜",
     Trends: "趋势",
     Explore: "探索",
+    Blog: "博客",
     Rubric: "评分标准",
     "Daily briefing": "每日简报",
     "Questions for today": "今日问答",
@@ -845,9 +845,7 @@ const I18N = {
     "More than 10 results.": "结果超过 10 条。",
     "Use the CLI version to export all data.": "使用我们的命令行版本导出全部数据。",
     "Query it locally (CLI version)": "在本地查询（命令行版本）",
-    "This website is the hosted view. The CLI version runs on your own computer: it installs the command-line tool, downloads the searchable data, and answers from those local files.":
-      "本网站是在线版本。命令行版本在你自己的电脑上运行：它会安装命令行工具、下载可搜索的数据，并从这些本地文件中给出答案。",
-    "Give this prompt to your coding agent": "把这段提示词交给你的编程助手",
+    Install: "安装",
     "Read the setup guide": "查看安装指南",
     "Share Benchmark Radar": "分享 Benchmark Radar",
     Share: "分享",
@@ -1031,8 +1029,6 @@ const I18N = {
       " · 最近 18 个月窗口内发布的 {count} 项已经出现在三家及以上有明确日期的机构中。在解读原始排名之前，先看它们的轨迹变化。",
     "Show all {count} benchmarks": "显示全部 {count} 个benchmark",
     "Star this repository on GitHub. {count} stars": "在 GitHub 上给这个仓库点 Star。{count} 个 star",
-    "Fork this repository on GitHub. {count} forks": "在 GitHub 上 fork 这个仓库。{count} 个 fork",
-    "Open a new issue on GitHub. {count} issues open": "在 GitHub 上提交新 issue。当前有 {count} 个 open issue",
   },
 };
 
@@ -1075,6 +1071,26 @@ const state = {
   fullDataLoaded: false,
   fullDataPromise: null,
 };
+
+// A Trends or Explore click can wait on the full corpus. A newer route choice
+// must win even if that older request settles later.
+let viewNavigationSequence = 0;
+let successfulDataRefreshSequence = 0;
+let nextDashboardRequestSequence = 0;
+let latestAppliedDashboardRequestSequence = 0;
+
+function applyDashboardData(data, requestSequence, fullPayload) {
+  // Responses race, especially when a reader presses Refresh while the
+  // bootstrap is still in flight. Request start order decides which successful
+  // response is newer; a failed newer request does not discard an older useful
+  // response, while an older late success cannot overwrite fresher data.
+  if (requestSequence < latestAppliedDashboardRequestSequence) return false;
+  latestAppliedDashboardRequestSequence = requestSequence;
+  state.data = data;
+  state.fullDataLoaded = fullPayload || !data.bootstrap;
+  state.observations = null;
+  return true;
+}
 
 function element(tag, options = {}, children = []) {
   const node = document.createElement(tag);
@@ -1177,10 +1193,43 @@ function option(value, label, selected = false) {
 }
 
 function readUrl() {
-  const params = new URLSearchParams(window.location.search);
+  const currentParams = new URLSearchParams(window.location.search);
+  const pathUtility = utilityFromPath(window.location.pathname);
+  const utilityHistory = window.history?.state?.benchmarkRadarUtility;
+  let backgroundLocation = null;
+  if (utilityHistory?.utility === pathUtility && utilityHistory.backgroundUrl) {
+    try {
+      backgroundLocation = new URL(utilityHistory.backgroundUrl, window.location.origin);
+    } catch {
+      backgroundLocation = null;
+    }
+  }
+  // A utility's clean URL deliberately carries no dashboard filters. Its own
+  // history entry keeps the background URL so Forward can restore the same
+  // filtered view behind the sheet instead of resetting it to an empty Today.
+  const params = backgroundLocation?.searchParams || currentParams;
   const requestedView = params.get("view");
   // Legacy Explorer permalinks resolve to the filterable Today list.
-  state.view = ["trends", "map", "leaderboard"].includes(requestedView) ? requestedView : "today";
+  const legacyView = ["trends", "map", "leaderboard"].includes(requestedView)
+    ? requestedView
+    : "";
+  // The path is the view, and that is what keeps Back and Forward honest: the
+  // address bar is the only record of which view the reader is on, so restoring
+  // an entry restores the view it describes. Reading a marker written into the
+  // page at build time instead would hand back the generated view every time,
+  // whichever entry the reader went back to.
+  //
+  // At the root, ?view= is the old permalink shape and still decides; boot
+  // rewrites it onto the matching path so it stops existing as a second URL
+  // for the same page.
+  const pathView = viewFromPath(backgroundLocation?.pathname || window.location.pathname);
+  const backgroundView = utilityHistory?.utility === pathUtility
+    && VIEW_SEO[utilityHistory.backgroundView]
+    ? utilityHistory.backgroundView
+    : "";
+  state.view = pathUtility
+    ? backgroundView || "today"
+    : (pathView && pathView !== "today" ? pathView : legacyView) || "today";
   state.q = params.get("q") || "";
   // A bare search permalink has archive-wide intent. An explicit date remains
   // a deliberate narrow search, including the "today" link in the scope banner.
@@ -1200,12 +1249,21 @@ function readUrl() {
   state.lfrontierExplicit = Boolean(state.lfrontier);
   const rawHash = window.location.hash.slice(1);
   const hashParams = new URLSearchParams(rawHash);
-  state.contact = rawHash === "contact" || hashParams.has("contact");
-  state.cite = rawHash === "cite" || hashParams.has("cite");
-  state.cli = rawHash === "cli" || hashParams.has("cli");
-  state.rubric = rawHash === "rubric"
-    ? "current"
-    : hashParams.get("rubric") || "";
+  // A first-class utility path wins over every legacy fragment. This keeps a
+  // malformed URL such as /cite/#rubric from opening two sheets, while the old
+  // root fragments still migrate to their clean paths during initialize().
+  state.contact = !pathUtility && (rawHash === "contact" || hashParams.has("contact"));
+  state.cite = pathUtility === "cite"
+    || (!pathUtility && (rawHash === "cite" || hashParams.has("cite")));
+  state.cli = pathUtility === "cli"
+    || (!pathUtility && (rawHash === "cli" || hashParams.has("cli")));
+  state.rubric = pathUtility === "rubric"
+    ? currentParams.get("version") || "current"
+    : !pathUtility && rawHash === "rubric"
+      ? "current"
+      : !pathUtility
+        ? hashParams.get("rubric") || ""
+        : "";
 }
 
 // `push` adds a history entry; `replace` overwrites the current one.
@@ -1224,14 +1282,14 @@ function readUrl() {
 //   replace continuous refinement of the view they are already on -- typing in
 //           a filter, moving the date, toggling a facet, closing a dialog
 function writeUrl(mode = "replace") {
+  const utility = activeUtility();
   const params = new URLSearchParams();
-  if (state.view !== "today") params.set("view", state.view);
   // Every filter below belongs to exactly one view, so only that view may write
   // it. Serializing all of them unconditionally is what leaked `lfrontier` onto
   // Today/Trends/Map links and `date` onto Leaderboard links (issue #123): the
   // reader would click "2026-07-31" and land on a URL carrying a leaderboard
   // selection that nothing on the page reads back.
-  if (state.view === "today") {
+  if (!utility && state.view === "today") {
     if (state.todayDate === "all") {
       params.set("date", "all");
     } else if (
@@ -1251,8 +1309,8 @@ function writeUrl(mode = "replace") {
     if (state.event) params.set("event", state.event);
     if (state.todayPage > 1) params.set("page", state.todayPage);
   }
-  if (state.view === "map" && state.entity) params.set("entity", state.entity);
-  if (state.view === "leaderboard") {
+  if (!utility && state.view === "map" && state.entity) params.set("entity", state.entity);
+  if (!utility && state.view === "leaderboard") {
     if (state.lq) params.set("lq", state.lq);
     if (state.ldomain) params.set("ldomain", state.ldomain);
     if (state.lorg) params.set("lorg", state.lorg);
@@ -1263,26 +1321,42 @@ function writeUrl(mode = "replace") {
       params.set("lfrontier", state.lfrontier);
     }
   }
+  if (utility === "rubric" && state.rubric && state.rubric !== "current") {
+    params.set("version", state.rubric);
+  }
   const query = params.toString();
-  // The rubric dialog is a hashtag, not a query param, so a shared link like
-  // #rubric=2 reads as "jump to this section" rather than another filter.
+  // Contact remains an in-page utility. Cite, CLI, and Rubric have first-class
+  // paths, so they never write a second fragment URL for the same content.
   let hash = "";
-  if (state.contact) hash = "contact";
-  else if (state.cite) hash = "cite";
-  else if (state.cli) hash = "cli";
-  else if (state.rubric === "current") hash = "rubric";
-  else if (state.rubric) hash = `rubric=${encodeURIComponent(state.rubric)}`;
-  const url = `${window.location.pathname}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
+  if (!utility && state.contact) hash = "contact";
+  // The view decides the path. Reusing window.location.pathname kept whichever
+  // page loaded first, so switching to Trends from /leaderboard/ wrote
+  // /leaderboard/ back and the address bar disagreed with the screen.
+  const path = utility
+    ? UTILITY_SEO[utility].canonical
+    : VIEW_PATHS[state.view] || "/";
+  const url = `${path}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   // Pushing a URL identical to the current one would make Back a no-op that
   // looks broken: the reader presses it, the address bar does not change, and
   // they press it again. Re-selecting the benchmark already shown is the
   // common way to hit this.
   const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  const previousUtility = window.history?.state?.benchmarkRadarUtility;
+  const historyState = utility
+    ? {
+        benchmarkRadarUtility: {
+          utility,
+          backgroundView: previousUtility?.backgroundView || state.view,
+          backgroundUrl: previousUtility?.backgroundUrl || current,
+          returnOnClose: mode === "push" || Boolean(previousUtility?.returnOnClose),
+        },
+      }
+    : null;
   if (mode === "push" && url !== current) {
-    window.history.pushState(null, "", url);
+    window.history.pushState(historyState, "", url);
     return;
   }
-  window.history.replaceState(null, "", url);
+  window.history.replaceState(historyState, "", url);
 }
 
 // A pushed entry changes the URL on Back without re-rendering anything, so the
@@ -1290,6 +1364,7 @@ function writeUrl(mode = "replace") {
 // pushes above safe: the restored URL is read back into state and the view it
 // describes is drawn (issue #286).
 async function onPopState() {
+  viewNavigationSequence += 1;
   // Before the payload lands, state is not yet drawable. Read the URL anyway:
   // initialize() renders from state once the fetch settles, and skipping the
   // read here would leave it rendering whatever the reader navigated away
@@ -1310,27 +1385,55 @@ async function onPopState() {
   } else if (cliDialog?.open) {
     cliDialog.close();
   }
+  const rubricDialog = byId("rubric-dialog");
+  if (state.rubric) {
+    if (!rubricDialog?.open && state.data) {
+      openRubric(null, state.rubric === "current" ? null : state.rubric, false);
+    }
+  } else if (rubricDialog?.open) {
+    rubricDialog.close();
+  }
+  applyCurrentSeo();
+  syncNavState();
   if (!state.data) return;
-  await ensureDataForState();
+  try {
+    await ensureDataForState();
+  } catch (error) {
+    // A restored history entry may require the full corpus even though the
+    // current document only loaded the bootstrap. Reloading its real path lets
+    // the generated page keep its seeded content visible when that fetch is
+    // unavailable, instead of leaving the previous view under the new URL.
+    console.error(error);
+    window.location.assign(window.location.href);
+    return;
+  }
+  // readUrl() restores a bare Today URL as an empty date, which only
+  // initialize() and refreshData() then default to the latest scan. A history
+  // restore skipped that step, so closing a utility sheet or pressing Back
+  // filtered every observation against snapshot_date === "" and Today rendered
+  // its empty state (issue #503). Normalize the restored date the same way.
+  if (
+    state.todayDate !== "all"
+    && !state.data.facets.dates.includes(state.todayDate)
+  ) {
+    state.todayDate = state.data.latest_date;
+  }
   // A leaderboard permalink on a build with no curated registry has nothing to
   // show, same fallback initialize() applies. Without it, Back into such an
   // entry opens an empty section behind a hidden nav button.
   if (state.view === "leaderboard" && !state.data.model_card_leaderboard) {
+    // Replace rather than restore: the entry being restored says /leaderboard/,
+    // and leaving it there would publish Today under the leaderboard's URL and
+    // canonical.
     state.view = "today";
+    setView("today", true, "replace");
+  } else {
+    setView(state.view, false);
   }
-  setView(state.view, false);
   // The renderers read their own controls back from state (the date picker at
   // renderToday, the leaderboard search at renderLeaderboardFilters), so this
   // restores the form values as well as the content.
   rerenderCurrentView();
-  // The rubric lives in the hash rather than the query, so it is restored
-  // separately: Back out of an open dialog should close it.
-  const dialog = byId("rubric-dialog");
-  if (state.rubric) {
-    if (!dialog?.open) openRubric(null, state.rubric === "current" ? null : state.rubric);
-  } else if (dialog?.open) {
-    dialog.close();
-  }
   const contactDialog = byId("contact-dialog");
   if (state.contact) {
     if (!contactDialog?.open) openContact(false);
@@ -1339,43 +1442,98 @@ async function onPopState() {
   }
 }
 
-// Issue #236. Crawlers see one document; these four states are still four
-// different pages a reader can land on and link to, so each one restates its
-// own title, description, and canonical URL when it becomes active. The
-// canonicals carry only the view parameter: filter permutations (q, date,
-// lq, lfrontier, ...) consolidate into the clean view URL instead of
-// fragmenting ranking signals across every state of the same page. These
-// strings are English on purpose: they describe the site to a search engine,
-// while the visible interface translates through data-i18n.
+// The query-string views are application states, while the path-based static
+// pages are the indexable search entries. Every state restates the matching
+// title and description for readers, but its canonical consolidates onto the
+// server-delivered page. Filter permutations therefore cannot fragment search
+// signals. These strings are English on purpose: the visible interface still
+// translates through data-i18n.
 const VIEW_SEO = {
   today: {
     title: "Benchmark Radar: AI Benchmark Tracker & Dataset",
     description:
       "A daily evidence-first map of new AI benchmarks, evaluations, and datasets, collected every day from arXiv, GitHub, Hugging Face, OpenReview, Semantic Scholar, Hacker News, and first-party lab feeds.",
-    query: "",
+    canonical: "/",
   },
   leaderboard: {
     title: "Most reported AI benchmarks in frontier model cards | Benchmark Radar",
     description:
       "Which benchmarks frontier labs actually report: a live Model Card Adoption Rank computed from curated model cards and system cards, plus reported score progression over time.",
-    query: "view=leaderboard",
+    canonical: "/leaderboard/",
   },
   trends: {
     title: "AI benchmark discovery trends over time | Benchmark Radar",
     description:
       "Daily volume of new AI benchmark evidence by category, source, and event, with a ledger of every collection day in the corpus.",
-    query: "view=trends",
+    canonical: "/trends/",
   },
   map: {
     title: "Explore connections across AI benchmarks | Benchmark Radar",
     description:
       "See how benchmarks, datasets, evaluations, sources, and organizations connect across the Benchmark Radar corpus, and jump from any topic into the filtered daily list.",
-    query: "view=map",
+    canonical: "/explore/",
   },
 };
 
-function applyViewSeo(view) {
-  const seo = VIEW_SEO[view] || VIEW_SEO.today;
+// These sheets are also indexable pages. The dashboard view stays mounted
+// behind an open sheet, but the address, head metadata, and canonical all
+// describe the utility the reader is actually looking at.
+const UTILITY_SEO = {
+  cli: {
+    title: "Search AI benchmarks locally with the CLI | Benchmark Radar",
+    description:
+      "Install Benchmark Radar's offline CLI and consumer Skill, download the searchable data, and query AI benchmark evidence from local files.",
+    canonical: "/cli/",
+  },
+  cite: {
+    title: "Cite Benchmark Radar | DOI, APA, and BibTeX",
+    description:
+      "Copy the Benchmark Radar technical report citation in APA or BibTeX format, or open the repository's citation file and permanent DOI.",
+    canonical: "/cite/",
+  },
+  rubric: {
+    title: "How Benchmark Radar scores benchmark evidence | Rubric",
+    description:
+      "Read the versioned scoring rubric Benchmark Radar uses to prioritize benchmark evidence, including component weights, score bands, and limits.",
+    canonical: "/rubric/",
+  },
+};
+
+// One list, not two: a view whose canonical says /trends/ is reachable at
+// /trends/ and nowhere else, so the URL a reader shares and the URL a crawler
+// indexes cannot drift apart.
+const VIEW_PATHS = Object.fromEntries(
+  Object.entries(VIEW_SEO).map(([view, seo]) => [view, seo.canonical]),
+);
+const PATH_VIEWS = Object.fromEntries(
+  Object.entries(VIEW_PATHS).map(([view, path]) => [path, view]),
+);
+const PATH_UTILITIES = Object.fromEntries(
+  Object.entries(UTILITY_SEO).map(([utility, seo]) => [seo.canonical, utility]),
+);
+
+// "/leaderboard", "/leaderboard/" and "/leaderboard/index.html" are one page. A
+// reader who trims the trailing slash should not silently land on Today.
+function viewFromPath(pathname) {
+  const trimmed = pathname.replace(/index\.html$/, "");
+  const path = trimmed.endsWith("/") ? trimmed : `${trimmed}/`;
+  return PATH_VIEWS[path] || "";
+}
+
+function utilityFromPath(pathname) {
+  const trimmed = pathname.replace(/index\.html$/, "");
+  const path = trimmed.endsWith("/") ? trimmed : `${trimmed}/`;
+  return PATH_UTILITIES[path] || "";
+}
+
+function activeUtility() {
+  if (state.cli) return "cli";
+  if (state.cite) return "cite";
+  if (state.rubric) return "rubric";
+  return "";
+}
+
+function applySeo(seo) {
   document.title = seo.title;
   const description = document.querySelector('meta[name="description"]');
   if (description) description.setAttribute("content", seo.description);
@@ -1383,21 +1541,27 @@ function applyViewSeo(view) {
   if (canonical) {
     // Keep every entry point, including the former Pages URL, consolidated
     // onto the custom domain instead of reflecting whichever origin served it.
-    const url = new URL("/", "https://benchmark-radar.org");
-    if (seo.query) url.search = seo.query;
-    else url.search = "";
+    const url = new URL(seo.canonical, "https://benchmark-radar.org");
     canonical.setAttribute("href", url.href);
   }
 }
 
-// Every navigation item uses one visual active state, even though the four
-// views use aria-current while Rubric is a dialog trigger with aria-expanded.
-// Keeping that distinction in ARIA and normalizing it here prevents element
-// type (button versus anchor) from deciding which item looks selected.
+function applyViewSeo(view) {
+  applySeo(VIEW_SEO[view] || VIEW_SEO.today);
+}
+
+function applyCurrentSeo() {
+  const utility = activeUtility();
+  applySeo(utility ? UTILITY_SEO[utility] : VIEW_SEO[state.view] || VIEW_SEO.today);
+}
+
+// Every visible navigation item uses one visual active state. Explore and
+// Rubric remain direct routes, so opening either leaves the global nav without
+// a false current item.
 function syncNavState() {
-  const rubricActive = Boolean(state.rubric);
+  const utility = activeUtility();
   document.querySelectorAll("[data-view]").forEach((item) => {
-    const active = !rubricActive && !state.cli && item.dataset.view === state.view;
+    const active = !utility && item.dataset.view === state.view;
     item.classList.toggle("nav-active", active);
     if (active) {
       item.setAttribute("aria-current", "page");
@@ -1405,23 +1569,28 @@ function syncNavState() {
       item.removeAttribute("aria-current");
     }
   });
-  const rubricNav = byId("rubric-nav");
-  rubricNav.classList.toggle("nav-active", rubricActive);
-  rubricNav.setAttribute("aria-expanded", String(rubricActive));
   const cliNav = byId("cli-nav");
-  cliNav.classList.toggle("nav-active", state.cli);
-  cliNav.setAttribute("aria-expanded", String(state.cli));
+  if (cliNav?.classList) {
+    cliNav.classList.toggle("nav-active", utility === "cli");
+    cliNav.setAttribute("aria-expanded", String(utility === "cli"));
+    if (utility === "cli") cliNav.setAttribute("aria-current", "page");
+    else cliNav.removeAttribute("aria-current");
+  }
+  const citeOpen = byId("cite-open");
+  citeOpen?.setAttribute("aria-expanded", String(utility === "cite"));
+  if (utility === "cite") citeOpen?.setAttribute("aria-current", "page");
+  else citeOpen?.removeAttribute("aria-current");
 }
 
 // `update` false is for restoring a view that is already in the URL (boot and
 // popstate), where writing history again would either duplicate the entry or
 // fight the entry being restored.
 function setView(view, update = true, mode = "push") {
-  applyViewSeo(view);
   if (view !== "leaderboard" && selectedFrontierPoint) {
     clearFrontierPointSelection();
   }
   state.view = view;
+  applyCurrentSeo();
   document.querySelectorAll(".view").forEach((section) => {
     section.hidden = section.id !== `${view}-view`;
   });
@@ -1722,18 +1891,18 @@ function briefingParts(line) {
   // Lift the trailing "Evidence: E001, E002." clause out of the prose in both
   // the split and the fallback shapes, so the IDs never stay in the running
   // sentences a scan of the findings has to wade through.
-  const sources = (text.match(/\bE\d{3}\b/g) || []).length;
+  const evidenceIds = [...new Set(text.match(/\bE\d{3}\b/g) || [])];
   text = text.replace(/\s*\.?\s*Evidence:\s*((?:E\d{3}\s*,\s*)*E\d{3})\.?\s*/i, "").trim();
   const whyIndex = text.search(/\bWhy it matters:\s*/i);
-  if (whyIndex === -1) return { head: text, body: "", confidence, sources };
+  if (whyIndex === -1) return { head: text, body: "", confidence, evidenceIds };
   const head = text.slice(0, whyIndex).trim();
   const body = text
     .slice(whyIndex + "Why it matters:".length)
     .trim();
-  return { head, body, confidence, sources };
+  return { head, body, confidence, evidenceIds };
 }
 
-function briefingMeta(parts) {
+function briefingMeta(parts, citations) {
   const chips = [];
   if (parts.confidence) {
     chips.push(element("span", {
@@ -1741,11 +1910,31 @@ function briefingMeta(parts) {
       text: `${parts.confidence} ${t("confidence")}`,
     }));
   }
-  if (parts.sources > 0) {
-    chips.push(element("span", {
-      className: "briefing-chip briefing-chip-sources",
-      text: `${parts.sources} ${parts.sources === 1 ? t("source") : t("sources")}`,
-    }));
+  const citedSources = parts.evidenceIds.flatMap((id) => {
+    const citation = citations.find((entry) => entry.id === id);
+    return citation ? [citation] : [];
+  });
+  if (citedSources.length > 0) {
+    const sourceText = `${citedSources.length} ${
+      citedSources.length === 1 ? t("source") : t("sources")
+    }`;
+    const citation = citedSources.length === 1 ? citedSources[0] : null;
+    chips.push(citation
+      ? element("a", {
+          className: "briefing-chip briefing-chip-sources",
+          text: sourceText,
+          attrs: {
+            href: citation.href,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            title: `Open evidence: ${citation.title}`,
+            "aria-label": `${sourceText}: ${citation.title}`,
+          },
+        })
+      : element("span", {
+          className: "briefing-chip briefing-chip-sources",
+          text: sourceText,
+        }));
   }
   if (!chips.length) return null;
   return element("p", { className: "briefing-insight-meta" }, chips);
@@ -1760,7 +1949,11 @@ function briefingInsight(line, citations) {
   const body = parts.body
     ? element("p", { className: "briefing-insight-body" }, briefingContent(parts.body, citations))
     : null;
-  return element("article", { className: "briefing-insight" }, [head, body, briefingMeta(parts)]);
+  return element("article", { className: "briefing-insight" }, [
+    head,
+    body,
+    briefingMeta(parts, citations),
+  ]);
 }
 
 function briefingProvenance(briefing) {
@@ -1812,7 +2005,9 @@ function briefingDetails(briefing, citations) {
   if (!provenance && !caveat && !evidence) return null;
 
   const label = citations.length
-    ? `${t("Evidence & briefing details")} · ${citations.length.toLocaleString()} ${t("sources")}`
+    ? `${t("Evidence & briefing details")} · ${citations.length.toLocaleString()} ${
+        citations.length === 1 ? t("source") : t("sources")
+      }`
     : t("Briefing details");
   return element("details", { className: "daily-briefing-details" }, [
     element("summary", { text: label }),
@@ -2208,7 +2403,7 @@ function todaySearchUrl() {
   if (state.source) params.set("source", state.source);
   if (state.organization) params.set("organization", state.organization);
   if (state.event) params.set("event", state.event);
-  return `${window.location.pathname}?${params.toString()}`;
+  return `/?${params.toString()}`;
 }
 
 function renderSearchScopeBanner(observationCount, benchmarkMatches) {
@@ -2242,13 +2437,18 @@ function renderSearchScopeBanner(observationCount, benchmarkMatches) {
 
   const knownBenchmarkMatches = Number.isFinite(benchmarkMatches) ? benchmarkMatches : 0;
   const totalResults = observationCount + knownBenchmarkMatches;
+  const cliLink = element("a", {
+    text: t("Use the CLI version to export all data."),
+    attrs: { href: "/cli/" },
+  });
+  cliLink.addEventListener("click", (event) => {
+    event.preventDefault();
+    openCli();
+  });
   const cliMessage = totalResults > 10
     ? element("p", { className: "search-scope-export" }, [
         document.createTextNode(`${t("More than 10 results.")}${sentenceGap}`),
-        element("a", {
-          text: t("Use the CLI version to export all data."),
-          attrs: { href: "https://benchmark-radar.org/#cli" },
-        }),
+        cliLink,
       ])
     : null;
 
@@ -2681,7 +2881,7 @@ function renderTrends() {
   replaceChildren(
     byId("trend-table"),
     [...state.data.days].reverse().map((day) => {
-      const link = element("a", { text: day.date, attrs: { href: `?date=${day.date}` } });
+      const link = element("a", { text: day.date, attrs: { href: `/?date=${day.date}` } });
       link.addEventListener("click", (event) => {
         event.preventDefault();
         state.todayDate = day.date;
@@ -3243,12 +3443,32 @@ function filteredObservations() {
   return state.todayDate === "all" ? latestObservationsByRecord(matches) : matches;
 }
 
+// Generated utility pages ship their sheet already open so it is useful before
+// JavaScript or data arrives. An `open` dialog is non-modal; calling showModal()
+// on it throws InvalidStateError. Remove only the generated marker, promote the
+// same dialog synchronously, and leave its seeded children untouched until the
+// normal renderer is ready to replace them.
+function promoteSeededDialog(dialog) {
+  if (!dialog?.open || !dialog.hasAttribute("data-seed")) return;
+  dialog.removeAttribute("open");
+  dialog.removeAttribute("data-seed");
+  dialog.showModal();
+}
+
+function showModalDialog(dialog) {
+  promoteSeededDialog(dialog);
+  if (!dialog.open) dialog.showModal();
+}
+
+let rubricOwnsHistoryEntry = false;
+
 // When a record is supplied, the rubric is rendered with that record's own
 // component scores beside each weight, so the reader can see the arithmetic
 // that produced the total rather than a generic description of it.
-// versionOverride opens a specific rubric version (e.g. from a #rubric=1
+// versionOverride opens a specific rubric version (e.g. from /rubric/?version=1
 // deep link) without implying a record's own scores are being shown.
-function openRubric(item = null, versionOverride = null) {
+function openRubric(item = null, versionOverride = null, updateUrl = true) {
+  if (updateUrl) viewNavigationSequence += 1;
   const data = versionOverride
     ? state.data?.rubrics?.[String(versionOverride)] || rubricFor(item)
     : rubricFor(item);
@@ -3272,8 +3492,10 @@ function openRubric(item = null, versionOverride = null) {
   state.cite = false;
   state.cli = false;
   state.rubric = isLegacy ? String(version) : "current";
+  rubricOwnsHistoryEntry = updateUrl;
   syncNavState();
-  writeUrl();
+  applyCurrentSeo();
+  if (updateUrl) writeUrl("push");
   const header = [
     element("p", {
       className: "detail-source",
@@ -3413,7 +3635,7 @@ function openRubric(item = null, versionOverride = null) {
       }),
     ]),
   ]);
-  dialog.showModal();
+  showModalDialog(dialog);
 }
 
 function expandedRecord(item, teaser) {
@@ -4038,7 +4260,7 @@ let benchmarkIndexPromise = null;
 
 function loadBenchmarkIndex() {
   if (!benchmarkIndexPromise) {
-    benchmarkIndexPromise = fetch("data/benchmark-index.json")
+    benchmarkIndexPromise = fetch("/data/benchmark-index.json")
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
@@ -4408,7 +4630,7 @@ function loadBenchmarkShard(slug) {
   if (!benchmarkShardCache.has(slug)) {
     benchmarkShardCache.set(
       slug,
-      fetch(`data/benchmarks/${slug}.json`)
+      fetch(`/data/benchmarks/${slug}.json`)
         .then((response) => {
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           return response.json();
@@ -7021,12 +7243,16 @@ function renderLeaderboardTop(board) {
   // ranking. They are one (i) beside the heading now: a reader who wants the
   // caveat opens it, and a reader who wants the ranking sees the ranking.
   const infoHost = byId("leaderboard-top-info");
-  if (infoHost && !infoHost.firstChild) {
+  if (infoHost) {
     // `board.measures` is published data, not a string restated here. A reader
     // who takes this order as a quality ranking draws the opposite of the
     // intended conclusion, and the correction has to travel with the payload
     // that produced the order rather than drift from it in the browser.
-    infoHost.append(
+    //
+    // Rebuilt rather than appended once: the published page ships this
+    // disclosure in its first response, and a seed that survived the render
+    // would stay in English after a switch to Chinese.
+    replaceChildren(infoHost, [
       infoDisclosure(
         [
           board.measures,
@@ -7037,7 +7263,7 @@ function renderLeaderboardTop(board) {
           .filter(Boolean)
           .join(" "),
       ),
-    );
+    ]);
   }
   const ranked = (board.entries || []).filter((entry) => entry.card_count > 0);
   const entries = state.leaderboardTopExpanded ? ranked : ranked.slice(0, LEADERBOARD_TOP_LIMIT);
@@ -7082,23 +7308,30 @@ function renderLeaderboardTop(board) {
   );
   if (more) {
     more.hidden = ranked.length <= LEADERBOARD_TOP_LIMIT;
-    more.textContent = state.leaderboardTopExpanded
+    const label = state.leaderboardTopExpanded
       ? `${t("Show top {n}").replace("{n}", String(LEADERBOARD_TOP_LIMIT))} ↑`
       : `${t("Show all {n} benchmarks").replace("{n}", String(ranked.length))} ↓`;
+    more.textContent = label;
+    more.setAttribute("aria-label", label);
   }
+}
+
+// A checkout without the curated registry publishes no ranking. Hiding the nav
+// entry is the honest response: offering a tab that opens an empty page reads
+// as a broken feature rather than as absent data. This runs on every boot, not
+// only when the leaderboard is the view being rendered: renderLeaderboard()
+// runs for the active view alone, so from Today the entry would stay clickable
+// on a build with no ranking and the click would push /leaderboard/ over an
+// empty section.
+function syncLeaderboardNav() {
+  const navButton = document.querySelector('[data-view="leaderboard"]');
+  if (navButton) navButton.hidden = !state.data?.model_card_leaderboard;
 }
 
 function renderLeaderboard() {
   const board = state.data?.model_card_leaderboard;
-  const navButton = document.querySelector('[data-view="leaderboard"]');
-  // A checkout without the curated registry publishes no ranking. Hiding the
-  // nav entry is the honest response: offering a tab that opens an empty page
-  // reads as a broken feature rather than as absent data.
-  if (!board) {
-    if (navButton) navButton.hidden = true;
-    return;
-  }
-  if (navButton) navButton.hidden = false;
+  syncLeaderboardNav();
+  if (!board) return;
 
   byId("leaderboard-measures").textContent = board.measures || "";
   renderLeaderboardTop(board);
@@ -7295,9 +7528,11 @@ function renderLeaderboard() {
   );
   const showAllButton = byId("leaderboard-show-all");
   showAllButton.hidden = filtersActive || entries.length <= 18;
-  showAllButton.textContent = state.leaderboardShowAll
+  const showAllLabel = state.leaderboardShowAll
     ? t("Show the first 18 benchmarks")
     : t("Show all {count} benchmarks", { count: entries.length });
+  showAllButton.textContent = showAllLabel;
+  showAllButton.setAttribute("aria-label", showAllLabel);
 
   const cards = board.model_cards || [];
   byId("leaderboard-cards-count").textContent = metricLabel(cards.length, "document");
@@ -7684,6 +7919,7 @@ function brandIcon(name) {
 // collaboration, while the sheet still gives a reader direct routes to the
 // dataset and the repository.
 function openContact(updateUrl = true) {
+  if (updateUrl) viewNavigationSequence += 1;
   const dialog = byId("contact-dialog");
   closeOtherSheets("contact-dialog");
   state.rubric = "";
@@ -7737,7 +7973,7 @@ function openContact(updateUrl = true) {
       element("a", {
         className: "primary-link",
         text: t("Download"),
-        attrs: { href: "data/radar.json" },
+        attrs: { href: "/data/radar.json" },
       }),
       element("a", {
         className: "secondary-link",
@@ -7753,16 +7989,15 @@ function openContact(updateUrl = true) {
   if (!dialog.open) dialog.showModal();
 }
 
-// The published technical report. These strings are the citation itself, so
-// they are held verbatim rather than assembled from parts: a citation the page
-// rebuilds on the fly is a citation that can drift from CITATION.cff.
+// The published technical report. Contract tests keep these copyable strings
+// aligned with CITATION.cff and the server-rendered citation route.
 const CITE_DOI_URL = "https://doi.org/10.5281/zenodo.22167102";
 const CITE_CFF_URL = "https://github.com/ktwu01/benchmark-radar/blob/main/CITATION.cff";
 const CITE_APA =
-  "Wu, K. (2026). Benchmark Radar v0.9.0: Technical Report (Version 0.9.0). " + CITE_DOI_URL;
+  "Wu, K., & Zhou, J. (2026). Benchmark Radar v0.9.0: Technical Report (Version 0.9.0). " + CITE_DOI_URL;
 const CITE_BIBTEX = [
   "@techreport{Wu_Benchmark_Radar_v0_9_0_2026,",
-  "author = {Wu, Koutian},",
+  "author = {Wu, Koutian and Zhou, Junjie},",
   "doi = {10.5281/zenodo.22167102},",
   "month = aug,",
   "title = {{Benchmark Radar v0.9.0: Technical Report}},",
@@ -7775,7 +8010,7 @@ const CITE_BIBTEX = [
 // sheet. The block itself is the button: a reader who came for a citation or a
 // setup prompt wants it on the clipboard, so clicking the text copies it rather
 // than making them select eight wrapped lines by hand.
-function copyBlock(label, value, hint) {
+function copyBlock(label, value, hint, hideLabel = false) {
   const status = element("span", { className: "copy-status", text: t(hint) });
   const text = element("code", { className: "copy-text", text: value });
   const copy = element(
@@ -7808,15 +8043,19 @@ function copyBlock(label, value, hint) {
     }
   });
   return element("section", { className: "copy-block" }, [
-    element("h3", { className: "copy-label", text: t(label) }),
+    element("h3", {
+      className: hideLabel ? "copy-label visually-hidden" : "copy-label",
+      text: t(label),
+    }),
     copy,
   ]);
 }
 
 // True only while the open card owns a history entry this page pushed. A
-// reader who landed on /#cite directly does not have one, so closing must not
+// reader who landed on /cite/ directly does not have one, so closing must not
 // step back: the entry behind them belongs to whatever site sent them here.
 let citeOwnsHistoryEntry = false;
+let replacingUtilitySheet = false;
 
 // One sheet at a time. showModal() stacks a dialog on top of an open one rather
 // than replacing it, so opening the rubric over the CLI card would leave the CLI
@@ -7824,18 +8063,61 @@ let citeOwnsHistoryEntry = false;
 // dropped first: the sheet being replaced must not step history back, because
 // the entry it pushed is the one the reader came through.
 function closeOtherSheets(keep) {
+  replacingUtilitySheet = true;
+  rubricOwnsHistoryEntry = false;
   citeOwnsHistoryEntry = false;
   cliOwnsHistoryEntry = false;
-  for (const id of ["rubric-dialog", "contact-dialog", "cite-dialog", "cli-dialog"]) {
-    if (id === keep) continue;
-    const other = byId(id);
-    if (other?.open) other.close();
+  try {
+    for (const id of ["rubric-dialog", "contact-dialog", "cite-dialog", "cli-dialog"]) {
+      if (id === keep) continue;
+      const other = byId(id);
+      if (other?.open) other.close();
+    }
+  } finally {
+    replacingUtilitySheet = false;
   }
 }
 
-// Reachable at /#cite, so the card has a short link that can be pasted into a
+function utilityEntryReturnsOnClose(utility) {
+  const entry = window.history?.state?.benchmarkRadarUtility;
+  return entry?.utility === utility && Boolean(entry.returnOnClose);
+}
+
+function finishUtilityClose(utility, ownsHistoryEntry) {
+  const currentUtility = utilityFromPath(window.location.pathname);
+  if (
+    !replacingUtilitySheet
+    && currentUtility === utility
+    && (ownsHistoryEntry || utilityEntryReturnsOnClose(utility))
+  ) {
+    syncNavState();
+    applyCurrentSeo();
+    window.history.back();
+    return;
+  }
+  // A directly opened utility owns no previous same-site entry. Closing it
+  // replaces the utility URL with the homepage instead of sending the reader
+  // back to whichever external page referred them.
+  if (!replacingUtilitySheet && currentUtility === utility) {
+    state.view = "today";
+    state.todayDate = "";
+    state.q = "";
+    state.kind = "";
+    state.category = "";
+    state.source = "";
+    state.organization = "";
+    state.event = "";
+    state.todayPage = 1;
+  }
+  syncNavState();
+  applyCurrentSeo();
+  writeUrl("replace");
+}
+
+// Reachable at /cite/, so the card has a short link that can be pasted into a
 // paper, a README or a message instead of a reader hunting the footer for it.
 function openCite(updateUrl = true) {
+  if (updateUrl) viewNavigationSequence += 1;
   const dialog = byId("cite-dialog");
   closeOtherSheets("cite-dialog");
   state.rubric = "";
@@ -7843,6 +8125,8 @@ function openCite(updateUrl = true) {
   state.cli = false;
   state.cite = true;
   citeOwnsHistoryEntry = updateUrl;
+  syncNavState();
+  applyCurrentSeo();
   if (updateUrl) writeUrl("push");
   replaceChildren(byId("cite-content"), [
     element("p", { className: "detail-source", text: "Benchmark Radar" }),
@@ -7866,7 +8150,7 @@ function openCite(updateUrl = true) {
       attrs: { href: CITE_CFF_URL, target: "_blank", rel: "noopener noreferrer" },
     }),
   ]);
-  if (!dialog.open) dialog.showModal();
+  showModalDialog(dialog);
 }
 
 // The setup route published in the README under "Query it locally (CLI
@@ -7875,24 +8159,19 @@ function openCite(updateUrl = true) {
 // drift from the instructions it points at.
 const CLI_SKILL_URL =
   "https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md";
+const CLI_SKILL_INSTALL = "npx skills add ktwu01/benchmark-radar";
 // The README wraps its last sentence across two lines at 80 columns; the card
 // is narrower than that, so keeping the break would re-wrap into ragged text.
 // Only the URL needs a line of its own, and it keeps one.
-const CLI_AGENT_PROMPT = [
-  "Set up Benchmark Radar for local benchmark search. Follow",
-  CLI_SKILL_URL,
-  "to install the CLI and consumer Skill, initialize the local data, and verify the" +
-    " setup. Use only consumer commands.",
-].join("\n");
-
 // True only while the open card owns a history entry this page pushed, for the
-// same reason the citation card tracks it: closing a directly-opened /#cli must
+// same reason the citation card tracks it: closing a directly-opened /cli/ must
 // not step a reader back off the site.
 let cliOwnsHistoryEntry = false;
 
-// Reachable at /#cli from the view bar, so the offline route is one click from
+// Reachable at /cli/ from the view bar, so the offline route is one click from
 // every view rather than a section of the README a reader has to scroll to.
 function openCli(updateUrl = true) {
+  if (updateUrl) viewNavigationSequence += 1;
   const dialog = byId("cli-dialog");
   closeOtherSheets("cli-dialog");
   state.rubric = "";
@@ -7901,6 +8180,7 @@ function openCli(updateUrl = true) {
   state.cli = true;
   cliOwnsHistoryEntry = updateUrl;
   syncNavState();
+  applyCurrentSeo();
   if (updateUrl) writeUrl("push");
   replaceChildren(byId("cli-content"), [
     element("p", { className: "detail-source", text: "Benchmark Radar" }),
@@ -7909,20 +8189,8 @@ function openCli(updateUrl = true) {
       text: t("Query it locally (CLI version)"),
       attrs: { id: "cli-title" },
     }),
-    element("p", {
-      className: "detail-summary",
-      text: t(
-        "This website is the hosted view. The CLI version runs on your own computer: " +
-          "it installs the command-line tool, downloads the searchable data, and answers " +
-          "from those local files.",
-      ),
-    }),
     element("div", { className: "copy-blocks" }, [
-      copyBlock(
-        "Give this prompt to your coding agent",
-        CLI_AGENT_PROMPT,
-        "Click to copy",
-      ),
+      copyBlock("Install", CLI_SKILL_INSTALL, "Click to copy", true),
     ]),
     element("a", {
       className: "secondary-link dialog-link",
@@ -7930,7 +8198,7 @@ function openCli(updateUrl = true) {
       attrs: { href: CLI_SKILL_URL, target: "_blank", rel: "noopener noreferrer" },
     }),
   ]);
-  if (!dialog.open) dialog.showModal();
+  showModalDialog(dialog);
 }
 
 // Filter keystrokes only rebuild the bounded result list. Briefing, questions,
@@ -7951,18 +8219,33 @@ function bindEvents() {
   window.addEventListener("popstate", onPopState);
   const langToggle = byId("lang-toggle");
   if (langToggle) langToggle.addEventListener("click", toggleLang);
-  document.querySelectorAll("[data-view]").forEach((button) => {
-    button.addEventListener("click", async (event) => {
+  document.querySelectorAll("[data-view]").forEach((item) => {
+    item.addEventListener("click", async (event) => {
       // View nav entries are anchors so crawlers can follow them; keep the
-      // navigation client-side instead of a full page reload.
-      if (event.target.closest("a")) event.preventDefault();
-      const view = button.dataset.view;
+      // navigation client-side once a compatible payload is available. Before
+      // then, fall through to their real href so a generated route can show its
+      // seeded content even when the data request failed.
+      const anchor = item.matches("a") ? item : null;
+      if (anchor && (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) {
+        return;
+      }
+      const navigationSequence = ++viewNavigationSequence;
+      const view = item.dataset.view;
+      if (!compatibleDashboard(state.data)) {
+        if (anchor) return;
+        window.location.assign(VIEW_PATHS[view] || "/");
+        return;
+      }
+      if (anchor) event.preventDefault();
       try {
         if (["trends", "map"].includes(view)) await ensureFullData();
       } catch (error) {
         console.error(error);
+        if (navigationSequence !== viewNavigationSequence) return;
+        window.location.assign(anchor?.href || VIEW_PATHS[view] || "/");
         return;
       }
+      if (navigationSequence !== viewNavigationSequence) return;
       setView(view);
       if (view === "today") renderToday();
       if (view === "leaderboard") renderLeaderboard();
@@ -8139,16 +8422,14 @@ function bindEvents() {
   byId("rubric-dialog").addEventListener("click", (event) => {
     if (event.target === byId("rubric-dialog")) byId("rubric-dialog").close();
   });
-  // Fires for every close path (button, backdrop click, Esc), so #rubric is
+  // Fires for every close path (button, backdrop click, Esc), so /rubric/ is
   // cleared from the URL no matter how the reader dismisses the dialog.
   byId("rubric-dialog").addEventListener("close", () => {
     state.rubric = "";
-    syncNavState();
-    writeUrl();
+    const owned = rubricOwnsHistoryEntry;
+    rubricOwnsHistoryEntry = false;
+    finishUtilityClose("rubric", owned);
   });
-  // Reachable without a record in hand, for a reader who wants the method
-  // before they trust any single row.
-  byId("rubric-nav").addEventListener("click", () => openRubric());
   byId("badge-contact").addEventListener("click", openContact);
   byId("contact-close").addEventListener("click", () => byId("contact-dialog").close());
   byId("contact-dialog").addEventListener("click", (event) => {
@@ -8162,6 +8443,7 @@ function bindEvents() {
   // a link to a crawler and to a reader copying it out of the context menu;
   // the handler keeps the click itself on the page.
   byId("cite-open").addEventListener("click", (event) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     openCite();
   });
@@ -8173,21 +8455,13 @@ function bindEvents() {
     state.cite = false;
     const owned = citeOwnsHistoryEntry;
     citeOwnsHistoryEntry = false;
-    // Replacing an entry this page pushed would leave two identical entries
-    // stacked, so the reader's next Back would look broken: same URL, same
-    // page, nothing visibly happening. Stepping back consumes it instead.
-    // When Back is what closed the card the hash is already gone, and this
-    // falls through to the ordinary rewrite.
-    if (owned && window.location.hash === "#cite") {
-      window.history.back();
-      return;
-    }
-    writeUrl();
+    finishUtilityClose("cite", owned);
   });
-  // The view bar entry is an anchor to the same short link, so /#cli reads as a
+  // The view bar entry is an anchor to the same short link, so /cli/ reads as a
   // link to a crawler and can be copied out of the context menu; the handler
   // keeps the click itself on the page.
   byId("cli-nav").addEventListener("click", (event) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     openCli();
   });
@@ -8197,14 +8471,9 @@ function bindEvents() {
   });
   byId("cli-dialog").addEventListener("close", () => {
     state.cli = false;
-    syncNavState();
     const owned = cliOwnsHistoryEntry;
     cliOwnsHistoryEntry = false;
-    if (owned && window.location.hash === "#cli") {
-      window.history.back();
-      return;
-    }
-    writeUrl();
+    finishUtilityClose("cli", owned);
   });
   byId("share-radar").addEventListener("click", async (event) => {
     const button = event.currentTarget;
@@ -8229,23 +8498,17 @@ const REPO_SLUG = "ktwu01/benchmark-radar";
 // The visible badge reads "★ Star 12", which a screen reader would announce as
 // a bare statistic. The accessible name states the action and keeps the count
 // as context, so the control sounds like the invitation it is.
-const BADGE_ACTIONS = {
-  "badge-stars": (count) => t("Star this repository on GitHub. {count} stars", { count }),
-  "badge-forks": (count) => t("Fork this repository on GitHub. {count} forks", { count }),
-  "badge-issues": (count) => t("Open a new issue on GitHub. {count} issues open", { count }),
-};
-
-function setBadgeCount(id, value) {
-  const badge = byId(id);
+function setStarCount(value) {
+  const badge = byId("badge-stars");
   const node = badge?.querySelector("[data-count]");
   if (!node) return;
   const count = Number(value || 0).toLocaleString();
   node.textContent = count;
-  badge.setAttribute("aria-label", BADGE_ACTIONS[id](count));
+  badge.setAttribute("aria-label", t("Star this repository on GitHub. {count} stars", { count }));
 }
 
-async function renderRepoBadges() {
-  // Counts are decoration: the badges link out and stay usable if this fails,
+async function renderStarCount() {
+  // The count is decoration: the badge links out and stays usable if this fails,
   // so a rate-limited API must never surface as an error state.
   try {
     const response = await fetch(`https://api.github.com/repos/${REPO_SLUG}`, {
@@ -8253,23 +8516,9 @@ async function renderRepoBadges() {
     });
     if (!response.ok) return;
     const repo = await response.json();
-    setBadgeCount("badge-stars", repo.stargazers_count);
-    setBadgeCount("badge-forks", repo.forks_count);
-    // open_issues_count includes pull requests, so building the count from it
-    // overstates how many issues are actually open. Ask search for issues only,
-    // and leave the badge blank if that fails rather than showing the inflated
-    // number.
-    const issues = await fetch(
-      `https://api.github.com/search/issues?q=${encodeURIComponent(
-        `repo:${REPO_SLUG} is:issue is:open`,
-      )}&per_page=1`,
-      { headers: { Accept: "application/vnd.github+json" } },
-    );
-    if (issues.ok) {
-      setBadgeCount("badge-issues", (await issues.json()).total_count);
-    }
+    setStarCount(repo.stargazers_count);
   } catch (error) {
-    console.debug("Repository badge counts unavailable", error);
+    console.debug("Repository star count unavailable", error);
   }
 }
 
@@ -8388,16 +8637,22 @@ function stateNeedsFullData() {
 async function ensureFullData(cache = "default") {
   if (state.fullDataLoaded) return state.data;
   if (state.fullDataPromise) return state.fullDataPromise;
+  const requestSequence = ++nextDashboardRequestSequence;
   state.fullDataPromise = (async () => {
-    const response = await fetch("data/radar.json", { cache });
+    const response = await fetch("/data/radar.json", { cache });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     if (!compatibleDashboard(data)) throw new Error("No compatible snapshots");
-    state.data = data;
-    state.fullDataLoaded = true;
-    state.observations = null;
-    renderTodayDateOptions();
-    return data;
+    const applied = applyDashboardData(data, requestSequence, true);
+    if (!applied && !state.fullDataLoaded) {
+      // A later bootstrap refresh won the response race. It cannot satisfy the
+      // caller that requested history, so fail visibly and let route navigation
+      // load the generated page instead of rendering a full-data view from one
+      // bootstrap day.
+      throw new Error("Full data request was superseded by a bootstrap response");
+    }
+    if (applied) renderTodayDateOptions();
+    return state.data;
   })();
   try {
     return await state.fullDataPromise;
@@ -8410,23 +8665,38 @@ async function ensureDataForState() {
   if (stateNeedsFullData()) await ensureFullData();
 }
 
-// The refresh control revalidates whichever payload the reader has paid for.
-// A latest-day visitor refreshes the small bootstrap; history-heavy views that
-// already upgraded refresh the full public corpus.
+// The refresh control revalidates the payload the current route requires. A
+// failed first attempt at Trends, Explore, or a historical Today URL must retry
+// the full corpus; accepting a fresh bootstrap there would clear the warning
+// while leaving the route incomplete.
 async function refreshData() {
+  const requestSequence = ++nextDashboardRequestSequence;
   try {
-    const path = state.fullDataLoaded ? "data/radar.json" : "data/radar-bootstrap.json";
+    const needsFullPayload = state.fullDataLoaded || stateNeedsFullData();
+    const path = needsFullPayload ? "/data/radar.json" : "/data/radar-bootstrap.json";
     const response = await fetch(path, { cache: "reload" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     if (!compatibleDashboard(data)) throw new Error("No compatible snapshots");
-    state.data = data;
-    state.observations = null;
+    if (!applyDashboardData(data, requestSequence, path === "/data/radar.json")) return;
     if (state.todayDate !== "all" && !state.data.facets.dates.includes(state.todayDate)) {
       state.todayDate = state.data.latest_date;
     }
+    // Re-evaluate against the payload just received. This is normally a no-op,
+    // but guarantees the error is not retired if a future bootstrap shape lacks
+    // data a URL-backed state needs.
+    if (stateNeedsFullData()) await ensureFullData("reload");
     closeFiltersDrawer();
+    syncLeaderboardNav();
+    setView(state.view, false);
     rerenderCurrentView();
+    // The banner tells the reader to try refreshing. This is that refresh
+    // working, so the warning it printed is no longer true. It is the only
+    // path that retires the banner: navigating after a failed boot only moves
+    // between views built from the payload that failed, and a boot that threw
+    // never settled the date filter, so a view can come up empty and look fine.
+    successfulDataRefreshSequence += 1;
+    byId("error-state").hidden = true;
   } catch (error) {
     console.error(error);
   }
@@ -8437,9 +8707,32 @@ async function initialize() {
   applyStaticI18n();
   syncLangToggle();
   readUrl();
+  applyCurrentSeo();
+  if (document.querySelector("[data-view]")) syncNavState();
+  // Old query-view and fragment permalinks still work, but immediately become
+  // the one clean URL for their content. replaceState costs no history entry,
+  // so a directly opened legacy link still closes to the homepage rather than
+  // sending the reader back off-site.
+  const initialParams = new URLSearchParams(window.location.search);
+  const initialHash = window.location.hash.slice(1);
+  const initialHashParams = new URLSearchParams(initialHash);
+  const legacyUtilityHash = ["cli", "cite", "rubric"].some(
+    (utility) => initialHash === utility || initialHashParams.has(utility),
+  );
+  if (initialParams.has("view") || legacyUtilityHash) writeUrl("replace");
   bindEvents();
+  const initializationNavigationSequence = viewNavigationSequence;
+  const initializationRefreshSequence = successfulDataRefreshSequence;
+  // Utility pages ship useful dialog content in their first HTML response.
+  // Upgrade that native non-modal `open` state synchronously, without touching
+  // its children; the ordinary open function hydrates it when its data is ready.
+  const seededUtility = activeUtility();
+  if (seededUtility) {
+    promoteSeededDialog(byId(`${seededUtility}-dialog`));
+    syncNavState();
+  }
   // Independent of the data file, so badges still render on an error state.
-  renderRepoBadges();
+  renderStarCount();
   // The citation and the CLI setup route are fixed text, not readings of the
   // corpus. Someone arriving from a paper's reference link or looking for the
   // offline route should still get them on a build whose data file is broken,
@@ -8450,23 +8743,29 @@ async function initialize() {
     // The default payload carries the latest day, aggregate counts, and the
     // leaderboard. Trends, Explore, All dates, and historical permalinks lazily
     // upgrade to the full public corpus only when the reader asks for them.
-    const response = await fetch("data/radar-bootstrap.json");
+    const requestSequence = ++nextDashboardRequestSequence;
+    const response = await fetch("/data/radar-bootstrap.json");
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    state.data = await response.json();
-    if (!compatibleDashboard(state.data)) throw new Error("No compatible snapshots");
-    state.fullDataLoaded = !state.data.bootstrap;
+    const data = await response.json();
+    if (!compatibleDashboard(data)) throw new Error("No compatible snapshots");
+    if (!applyDashboardData(data, requestSequence, false)) return;
     await ensureDataForState();
     if (state.todayDate !== "all" && !state.data.facets.dates.includes(state.todayDate)) {
       state.todayDate = state.data.latest_date;
     }
     renderTodayDateOptions();
-    // A permalink to ?view=leaderboard on a build without the curated registry
-    // has nothing to show, so fall back to Today rather than opening a blank
-    // section behind a navigation entry that has no data.
+    syncLeaderboardNav();
+    // A link to the leaderboard on a build without the curated registry has
+    // nothing to show, so fall back to Today rather than opening a blank
+    // section behind a navigation entry that has no data. The URL has to follow
+    // the content: /leaderboard/ carries the leaderboard's title and canonical,
+    // and Today under that URL would describe a page nobody is looking at.
     if (state.view === "leaderboard" && !state.data.model_card_leaderboard) {
       state.view = "today";
+      setView("today", true, "replace");
+    } else {
+      setView(state.view, false);
     }
-    setView(state.view, false);
 
     // Rendering all four views up front made the reader wait for charts and
     // thousands of hidden nodes. Build only the requested view; the navigation
@@ -8478,13 +8777,50 @@ async function initialize() {
 
     renderBuildMeta();
     renderStaleBanner();
-    if (state.rubric) openRubric(null, state.rubric === "current" ? null : state.rubric);
+    if (state.rubric) {
+      openRubric(null, state.rubric === "current" ? null : state.rubric, false);
+    }
     if (state.contact) openContact(false);
   } catch (error) {
+    // A route can change while the original page is waiting for the full
+    // corpus. If the newer route is already satisfied by the compatible
+    // payload in state, the older request's failure is stale: keep and finish
+    // the newer screen instead of hiding it behind the failure UI. A successful
+    // Refresh during initial loading reaches the same recovery path.
+    const initializationWasSuperseded =
+      initializationNavigationSequence !== viewNavigationSequence
+      || initializationRefreshSequence !== successfulDataRefreshSequence;
+    if (
+      initializationWasSuperseded
+      && compatibleDashboard(state.data)
+      && !stateNeedsFullData()
+    ) {
+      syncLeaderboardNav();
+      setView(state.view, false);
+      rerenderCurrentView();
+      renderBuildMeta();
+      renderStaleBanner();
+      return;
+    }
+    // /leaderboard/, /trends/ and /explore/ ship real content in their first
+    // response, before any script runs. Hiding every view here would throw that
+    // away and leave an empty shell behind a URL that promises a ranking, which
+    // reads as a broken page to a reader and as a missing page to a crawler.
+    // A view that was seeded stays on screen; a view with nothing seeded has
+    // nothing worth keeping.
+    let survivor = null;
     document.querySelectorAll(".view").forEach((section) => {
-      section.hidden = true;
+      const seeded = section.id === `${state.view}-view` && section.querySelector("[data-seed]");
+      section.hidden = !seeded;
+      if (seeded) survivor = section;
     });
-    byId("error-state").hidden = false;
+    const banner = byId("error-state");
+    banner.hidden = false;
+    // The banner sits last in the document, which is the right place when it is
+    // all that is left. When content survives, the reader has to be told the
+    // numbers are the ones the page shipped with before they read them, and
+    // that stays true for whichever view they open next.
+    if (survivor) banner.parentElement.prepend(banner);
     console.error(error);
   }
 }
