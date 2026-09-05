@@ -9,16 +9,24 @@ Build the PDF after installing ReportLab:
 
 ```bash
 python3 scripts/build_system_evaluation.py \
+  --next-draft \
   --doi 10.5281/zenodo.22167102
 ```
 
-The builder writes
-`output/pdf/benchmark-radar-technical-report-v0.9.0.pdf`. The reserved DOI appears
-in the PDF itself. Upload that PDF to the Zenodo record described by
-`zenodo-metadata.json`, then publish the record.
+The builder writes the working
+`output/pdf/benchmark-radar-technical-report-next-draft.pdf`. The reserved DOI
+appears in the PDF itself. Review the draft before any deposit.
 
 The published v0.9.0 PDF is frozen. Do not overwrite it when preparing a new
-manuscript or adding a contributor. Build the working next draft explicitly:
+manuscript or adding a contributor. Replacing it requires an explicit opt-in:
+
+```bash
+python3 scripts/build_system_evaluation.py \
+  --overwrite-frozen \
+  --doi 10.5281/zenodo.22167102
+```
+
+Build the working next draft explicitly:
 
 ```bash
 python3 scripts/build_system_evaluation.py \

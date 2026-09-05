@@ -1173,6 +1173,9 @@ def story(
         ]
     )
 
+    if not draft:
+        return story
+
     story.extend(
         [
             PageBreak(),
@@ -1327,10 +1330,17 @@ def main() -> None:
         action="store_true",
         help="build the working next-draft artifact with the current contributor byline",
     )
+    parser.add_argument(
+        "--overwrite-frozen",
+        action="store_true",
+        help="explicitly allow replacing the deposited v0.9.0 PDF",
+    )
     args = parser.parse_args()
     output = args.output or (NEXT_DRAFT_OUTPUT if args.next_draft else FROZEN_OUTPUT)
-    if output.resolve() == FROZEN_OUTPUT.resolve():
-        parser.error("cannot overwrite the frozen v0.9.0 PDF; use --next-draft")
+    if output.resolve() == FROZEN_OUTPUT.resolve() and not args.overwrite_frozen:
+        parser.error(
+            "cannot overwrite the frozen v0.9.0 PDF; use --next-draft or --overwrite-frozen"
+        )
     output.parent.mkdir(parents=True, exist_ok=True)
     authors = NEXT_DRAFT_AUTHORS if args.next_draft else FROZEN_AUTHORS
     byline = NEXT_DRAFT_BYLINE if args.next_draft else None
