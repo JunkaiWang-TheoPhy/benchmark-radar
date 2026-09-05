@@ -168,7 +168,9 @@ def build_saturation_audit(
                     "organization": row["organization"],
                     "reported_at": str(row["reported_at"]),
                     "value": row["value"],
-                    "reason": "no connectable protocol-stratified series with at least two dated points",
+                    "reason": (
+                        "no connectable protocol-stratified series with at least two dated points"
+                    ),
                 }
                 for row in record["observations"]
             ]
