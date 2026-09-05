@@ -330,7 +330,8 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
         )
         if secondary_code is not None and not str(review.get("secondary_note") or "").strip():
             raise ValueError(
-                f"{path}: row {row_id} review.secondary_note is required when secondary_code is present"
+                f"{path}: row {row_id} review.secondary_note is required when "
+                "secondary_code is present"
             )
 
         normalized_rows.append(

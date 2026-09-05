@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import importlib.util
 import argparse
+import importlib.util
 import re
 import sys
 import types
@@ -121,6 +121,7 @@ def _install_report_builder_stubs():
     fake_build.WHITE = "#WHITE"
     fake_build.bullet = lambda text, style: _FakeParagraph(text, style)
     fake_build.p = lambda text, style: _FakeParagraph(text, style)
+
     def _legacy_parser():
         parser = argparse.ArgumentParser()
         parser.add_argument(

@@ -176,9 +176,7 @@ def _study_payload(
                 measurement_counterexample_only
                 if measurement_counterexample_only is not None
                 else [
-                    row["benchmark_family_name"]
-                    for row in rows
-                    if row["status"] == "unmeasured"
+                    row["benchmark_family_name"] for row in rows if row["status"] == "unmeasured"
                 ][:1]
             ),
         },
