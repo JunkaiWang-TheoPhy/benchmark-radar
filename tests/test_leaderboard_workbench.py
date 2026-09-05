@@ -627,7 +627,7 @@ def test_shard_fetch_failure_keeps_the_selection_and_the_row():
     # panel and does not clear the selection or throw into the router.
     script = source("site/assets/app.js")
 
-    assert "fetch(`data/benchmarks/${slug}.json`)" in script
+    assert "fetch(`/data/benchmarks/${slug}.json`)" in script
     handler = script.split("loadBenchmarkShard(record.slug).then((shard) =>", 1)[1]
     assert "state.lfrontier !== record.slug" in handler
     assert "Could not load details for this benchmark." in handler

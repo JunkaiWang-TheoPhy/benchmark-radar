@@ -110,7 +110,8 @@ Run these from the repository root, in this order:
 2. `benchmark-radar classify` reads the dated snapshots plus the external
    shards and curated YAML files. It regenerates
    `data/kw_bench_classifications.jsonl`, `site/data/radar.json`,
-   `site/data/models.json`, and `site/feed.xml`. The classifier currently uses
+   `site/data/models.json`, `site/feed.xml`, the daily brief blog under
+   `site/blog/`, and `site/blog/feed.xml`. The classifier currently uses
    the deterministic null extractor in CI; it makes no external model call.
 3. `benchmark-radar build-data-release` validates the local corpus through
    `QueryService` and writes `site/data/cli/manifest.json` plus the checksummed
@@ -142,6 +143,8 @@ outputs under `data/external/`, is still not an independent source of truth.
   crawled layers.
 - `data/snapshots/*.json`: committed historical evidence used for local radar
   search and for rebuilding `radar.json`.
+- `site/blog/`: daily brief blog pages and full archive built from committed
+  snapshots, with an independent feed at `site/blog/feed.xml`.
 - `site/data/cli/`: distributable copy of the index, shards, and snapshots for
   installed offline clients.
 
