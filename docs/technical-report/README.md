@@ -26,18 +26,17 @@ python3 scripts/build_system_evaluation.py \
   --doi 10.5281/zenodo.22167102
 ```
 
-Build the working next draft explicitly:
+The next-draft build uses the draft byline and contributor affiliations. Its
+section 6.2 table is reproduced from
+`docs/technical-report/saturation-audit-6.2.json`, which is generated from the
+curated score archive and model-card registry with:
 
 ```bash
-python3 scripts/build_system_evaluation.py \
-  --next-draft \
-  --doi 10.5281/zenodo.22167102
+python3 -m benchmark_radar.saturation_audit
 ```
 
-This writes `output/pdf/benchmark-radar-technical-report-next-draft.pdf` and
-uses the draft byline and contributor affiliations. Do not change the frozen
-`zenodo-metadata.json` for draft work; prepare release metadata only when the
-next report version is approved for deposit.
+Do not change the frozen `zenodo-metadata.json` for draft work; prepare release
+metadata only when the next report version is approved for deposit.
 
 The draft byline is provisional until the contributor has reviewed and approved
 the integrated manuscript, supplied a contribution statement, and accepted
@@ -65,3 +64,15 @@ the current README and report documentation:
 
 Regenerate and review the report when any of those inputs or the report text
 changes.
+
+## Independent section 6.2 reproduction
+
+An independent Codex-assisted maintainer review on 2026-09-05 regenerated the
+audit from the two canonical YAML files and reproduced its main counts: eight
+raw near-ceiling readings, zero raw-best setups spanning two dates, four
+benchmarks with another repeated setup, and one of those four within five
+points. The review also checked the HMMT sample against Table 7 of the
+[DeepSeek-V4 primary report](https://arxiv.org/html/2606.19348): HMMT 2026 Feb,
+Pass@1, Think Max is 94.8 for DeepSeek-V4-Flash and 95.2 for
+DeepSeek-V4-Pro. Those values match the `deepseek_v4_technical_report` and
+`deepseek_v4_model_card` rows in `data/benchmark_scores.yml`.

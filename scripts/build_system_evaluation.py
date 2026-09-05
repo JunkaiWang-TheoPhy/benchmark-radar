@@ -285,58 +285,80 @@ def source_bars() -> Drawing:
 
 
 def _render_headroom(value: float | None) -> str:
-    return "—" if value is None else f"{value:g}"
+    return "n/a" if value is None else f"{value:g}"
 
 
 def saturation_audit_table(st, audit: dict) -> Table:
     rows = [
         [
             p("Benchmark", st["table_header"]),
-            p("Raw", st["table_header"]),
-            p("Protocol", st["table_header"]),
+            p("Raw gap", st["table_header"]),
+            p("Same setup", st["table_header"]),
+            p("Repeat gap", st["table_header"]),
             p("Claim decision", st["table_header"]),
             p("Note", st["table_header"]),
         ]
     ]
     for row in audit["benchmarks"]:
-        if row["protocol_best"] is None:
-            note = "single reading only" if len(row["score_ids"]) == 1 else "no connectable series"
+        repeated = row["selected_repeated_series"]
+        if repeated is None:
+            note = "no repeated setup"
         else:
-            note = (
-                f"{row['protocol_best']['protocol']} · "
-                f"{_render_headroom(row['protocol_headroom'])} point headroom"
-            )
+            note = f"{repeated['dated_points']} dates · {repeated['organization_count']} org"
         rows.append(
             [
                 p(row["name"], st["small_bold"]),
                 p(_render_headroom(row["raw_headroom"]), st["small"]),
-                p(_render_headroom(row["protocol_headroom"]), st["small"]),
+                p(f"{row['raw_best_stratum']['dated_points']} date", st["small"]),
+                p(_render_headroom(row["repeat_controlled_headroom"]), st["small"]),
                 p(row["recommendation"], st["small_bold"]),
                 p(note, st["small"]),
             ]
         )
-    return table(rows, [1.45 * inch, 0.7 * inch, 0.92 * inch, 0.72 * inch, 2.81 * inch], tiny=True)
+    return table(
+        rows,
+        [1.3 * inch, 0.65 * inch, 0.78 * inch, 0.78 * inch, 0.84 * inch, 2.25 * inch],
+        tiny=True,
+    )
 
 
 def saturation_threshold_table(st, audit: dict) -> Table:
     rows = [
         [
             p("Threshold", st["table_header"]),
-            p("Raw hits", st["table_header"]),
-            p("Protocol-stratified hits", st["table_header"]),
+            p("Raw readings", st["table_header"]),
+            p("Repeated setups", st["table_header"]),
         ]
     ]
     raw = audit["threshold_sensitivity"]["raw"]
-    stratified = audit["threshold_sensitivity"]["protocol_stratified"]
+    repeated = audit["threshold_sensitivity"]["repeated_protocol_series"]
     for threshold in ("<=5", "<=3", "<=2"):
         rows.append(
             [
                 p(threshold, st["small_bold"]),
-                p(str(raw[threshold]), st["small"]),
-                p(str(stratified[threshold]), st["small"]),
+                p(f"{raw['hits'][threshold]} / {raw['eligible']}", st["small"]),
+                p(
+                    f"{repeated['hits'][threshold]} / {repeated['eligible']} "
+                    f"({repeated['unknown']} unknown)",
+                    st["small"],
+                ),
             ]
         )
     return table(rows, [1.25 * inch, 1.55 * inch, 3.8 * inch], tiny=True)
+
+
+def saturation_wording_table(st, audit: dict) -> Table:
+    rows = [
+        [
+            p("Benchmark", st["table_header"]),
+            p("Exact report wording", st["table_header"]),
+        ]
+    ]
+    rows.extend(
+        [p(row["name"], st["small_bold"]), p(row["recommended_wording"], st["small"])]
+        for row in audit["benchmarks"]
+    )
+    return table(rows, [1.25 * inch, 5.35 * inch], tiny=True)
 
 
 class EvaluationDoc(BaseDocTemplate):
@@ -397,18 +419,23 @@ def story(
     audit = build_saturation_audit() if draft else None
     saturation_section = (
         [
-            p("6.2 Several bounded metrics are near their ceiling", st["subsection"]),
             p(
-                "Raw headroom is the metric bound minus the best published value. Protocol-stratified headroom keeps only connectable instrument+protocol series with at least two dates. Isolated readings remain facts, but they are not trend evidence. The checked-in audit table records the score IDs, source documents, conflicts, exclusions, and counterexamples for each row.",
+                "6.2 Eight raw near-ceiling readings do not establish eight saturated benchmarks",
+                st["subsection"],
+            ),
+            p(
+                "All eight raw best readings leave five points of headroom or less, but every exact raw-best instrument+protocol setup appears on only one date. Four benchmarks have some other setup repeated across dates; only HMMT's closest repeated setup is also within five points, and all four repeated setups are two-date, single-organization pairs. The other four benchmarks remain unknown under the repeat control. Near-ceiling readings are real protocol-specific facts; they are not, by themselves, benchmark-wide saturation verdicts.",
                 st["body"],
             ),
             saturation_audit_table(st, audit),
             Spacer(1, 7),
             saturation_threshold_table(st, audit),
             p(
-                "At the five-point threshold, the raw archive still places all eight benchmarks in scope. After protocol stratification, only HMMT remains within five points and none remain within three. The machine-readable audit lives in docs/technical-report/saturation-audit-6.2.json.",
+                "The denominator matters: repeated-setup sensitivity is 1 of 4 assessable benchmarks at five points, with 4 unknown; it is not 1 of 8. None of the eight raw-best setups repeats, so none can be called repeat-controlled. The machine-readable audit below the report source records every protocol stratum, score ID, exclusion, counterexample, and exact decision wording.",
                 st["body"],
             ),
+            p("Per-benchmark claim wording", st["subsection"]),
+            saturation_wording_table(st, audit),
         ]
         if draft
         else [
@@ -1177,7 +1204,7 @@ def story(
         [
             p("7.1 Methods and limitations", st["subsection"]),
             p(
-                "The 6.2 audit uses the same curated score archive and model-card registry as the rest of the report. A score is comparable only when instrument and protocol both match; a protocol-stratified headroom is reported only when a connectable series has at least two dated points. When no such series exists, the archive keeps the raw reading and records each isolated observation with its exclusion reason.",
+                "The 6.2 audit uses the curated score archive and model-card registry. Raw headroom is the distance from one reported value to the metric bound; it does not require a trend. Repeat-controlled evidence is a separate test: instrument and protocol must both match across at least two dates. Two dates support only a paired comparison, and a single-organization pair says nothing about a field-wide trend. Sensitivity tables report eligible and unknown denominators instead of treating missing repeated evidence as a negative result.",
                 st["body"],
             ),
             p("7.2 Contributor credit", st["subsection"]),
