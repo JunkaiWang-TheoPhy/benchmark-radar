@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import argparse
 import re
 import sys
 import types
@@ -68,6 +69,14 @@ class _FakeTTFont:
         self.kwargs = kwargs
 
 
+class _FakeImageReader:
+    def __init__(self, value):
+        self.value = value
+
+    def getSize(self):
+        return (640, 480)
+
+
 class _FakeBaseDocTemplate:
     def __init__(self, *args, **kwargs):
         self.args = args
@@ -112,6 +121,16 @@ def _install_report_builder_stubs():
     fake_build.WHITE = "#WHITE"
     fake_build.bullet = lambda text, style: _FakeParagraph(text, style)
     fake_build.p = lambda text, style: _FakeParagraph(text, style)
+    def _legacy_parser():
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "--output",
+            type=Path,
+            default=Path("output/pdf/benchmark-radar-technical-report-next-draft.pdf"),
+        )
+        return parser
+
+    fake_build.build_parser = _legacy_parser
     fake_build.styles = lambda: {
         key: key
         for key in (
@@ -161,6 +180,8 @@ def _install_report_builder_stubs():
     }
     units = types.ModuleType("reportlab.lib.units")
     units.inch = 72
+    utils = types.ModuleType("reportlab.lib.utils")
+    utils.ImageReader = _FakeImageReader
     pdfbase = types.ModuleType("reportlab.pdfbase")
     pdfmetrics = types.ModuleType("reportlab.pdfbase.pdfmetrics")
     pdfmetrics.registerFont = lambda font: None
@@ -172,6 +193,8 @@ def _install_report_builder_stubs():
     platypus.PageBreak = _FakePageBreak
     platypus.PageTemplate = _FakePageTemplate
     platypus.Paragraph = _FakeParagraph
+    platypus.Image = _FakeShape
+    platypus.KeepTogether = lambda rows: rows
     platypus.Spacer = _FakeSpacer
     platypus.Table = _FakeTable
     platypus.TableStyle = _FakeTableStyle
@@ -185,6 +208,7 @@ def _install_report_builder_stubs():
     sys.modules["reportlab.lib.pagesizes"] = pagesizes
     sys.modules["reportlab.lib.styles"] = styles
     sys.modules["reportlab.lib.units"] = units
+    sys.modules["reportlab.lib.utils"] = utils
     sys.modules["reportlab.pdfbase"] = pdfbase
     sys.modules["reportlab.pdfbase.pdfmetrics"] = pdfmetrics
     sys.modules["reportlab.pdfbase.ttfonts"] = ttfonts
@@ -204,6 +228,9 @@ def _load_module():
 def _load_legacy_module():
     assert LEGACY_SCRIPT_PATH.exists(), f"missing legacy report builder: {LEGACY_SCRIPT_PATH}"
     _install_report_builder_stubs()
+    canonical = types.ModuleType("build_system_evaluation")
+    canonical.build_parser = sys.modules["build_technical_report"].build_parser
+    sys.modules["build_system_evaluation"] = canonical
     spec = importlib.util.spec_from_file_location(
         "legacy_build_technical_report", LEGACY_SCRIPT_PATH
     )
@@ -247,6 +274,11 @@ def _agent_section_flowables(story) -> list[object]:
         ):
             start = index + 1
             continue
+        if start is not None and isinstance(item, list):
+            nested_text = _collect_text(item)
+            if "6.6 Worked real use case: prior-art check for a new evaluation" in nested_text:
+                end = index
+                break
         if start is not None and isinstance(item, _FakeTable) and "Use it" in _collect_text(item):
             end = index
             break
@@ -388,8 +420,8 @@ def test_agent_weakness_section_reports_bounded_result_and_method():
     assert report_data["snapshot_date"] == "2026-09-01"
     assert report_data["evidence_cutoff"] == "2026-09-01"
     assert report_data["repository_commit_input"] == "98c8cf6fb5d1d69c66d438ea9f92242b2205c9ae"
-    assert report_data["demonstrated_family_count"] == 9
-    assert report_data["state_control_count"] == 7
+    assert report_data["demonstrated_family_count"] == 8
+    assert report_data["state_control_count"] == 6
     assert report_data["decision_execution_count"] == 2
     assert report_data["agreement_match_count"] == 4
     assert report_data["completed_secondary_review_count"] == 4
@@ -399,11 +431,11 @@ def test_agent_weakness_section_reports_bounded_result_and_method():
     assert report_data["unmeasured_count"] == 1
     assert report_data["measurement_counterexample_only"] == ["SciCode"]
 
-    assert paragraphs[0].startswith("Across 9 demonstrated benchmark families")
+    assert paragraphs[0].startswith("Across 8 demonstrated benchmark families")
     assert "family-deduplicated denominator" in section_text
-    assert "7/9" in section_text
+    assert "6/8" in section_text
     assert "state-control" in section_text
-    assert "2/9" in section_text
+    assert "2/8" in section_text
     assert "decision-execution" in section_text
     assert "selected sample" in section_text
     assert "not a field-wide prevalence estimate" in section_text
@@ -641,7 +673,7 @@ def test_story_places_agent_weakness_subsection_before_use_it_and_adds_primary_s
     assert subsection_index < use_it_index
     assert refs_index > texts.index("References")
     assert (
-        "[18] Primary-source evidence for SciCode. https://arxiv.org/abs/2608.04975. "
+        "[17] Primary-source evidence for SciCode. https://arxiv.org/abs/2608.04975. "
         "Evidence anchor: arXiv abs abstract paragraph on 263 defects, 192 "
         "score-suppressing defects across 91% of main problems, and recovery "
         "to 84-98% / 69-92%"

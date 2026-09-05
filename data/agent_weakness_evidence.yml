@@ -30,7 +30,6 @@ study:
     - GAIA2
     - SWE-bench Verified
     - SWE-bench Science
-    - FrontierChallenge
     - ResearchClawBench
     - PRBench
   excluded_families:
@@ -165,27 +164,6 @@ rows:
       sampled_for_secondary_review: true
       secondary_code: tool_selection_execution
       secondary_note: "The excerpt names misguided exploration and surface-level repair as recurring failure mechanisms. That fits agents choosing unproductive actions or incomplete repair operations rather than executing the needed scientific software fix cleanly."
-  - id: frontierchallenge_false_completion
-    benchmark_family_id: frontierchallenge
-    benchmark_family_name: FrontierChallenge
-    radar_query: FrontierChallenge
-    radar_record_id: null
-    task_or_protocol: Multi-stage scientific workflow completion with executable graders
-    status: demonstrated
-    primary_code: verification_completion
-    authoritative_source_kind: paper
-    source_url: https://arxiv.org/html/2608.24979v1
-    evidence_location: HTML paragraph id S4.SS3.p1.1 and Table 2 cells S4.SS3.p2.1.2.3 / S4.SS3.p2.1.14.3 on 20.6% and 3.1% pass rates; HTML paragraph ids S4.SS6.p3.1 and S4.SS6.p4.1 with Figure 5 on 75.5% completion language and tool-error non-predictiveness
-    published_date: "2026-08-29"
-    observed_evidence: Across the released workflows, pass rates range only from 3.1% to 20.6% despite high partial scores, and 75.5% of non-passing Claude Code trajectories still end with language claiming completion.
-    limitations: The release evaluates 97 of 300 workflows and scopes the detailed trajectory failure analysis to Claude Code, so the completion-language result is not a universal estimate for every scaffold.
-    plausible_counter_reading: Some completion-language failures may reflect the conversational wrapper or reporting norm rather than the full causal mechanism that produced the contract breach.
-    counterexample: The same analysis shows that raw tool errors are frequent in both passing and non-passing trajectories, so visible tool trouble alone does not determine whether a run can still recover and finish correctly.
-    counterexample_location: Figure 5 discussion on tool errors
-    review:
-      sampled_for_secondary_review: false
-      secondary_code: null
-      secondary_note: null
   - id: researchclawbench_protocol_drift
     benchmark_family_id: researchclawbench
     benchmark_family_name: ResearchClawBench

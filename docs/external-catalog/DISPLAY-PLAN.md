@@ -121,7 +121,7 @@ hold a slug, and resolve in this order: exact slug, then canonical id (so existi
 links keep working), then nothing.
 
 This is what makes "unmatched benchmarks are addressable, not merely counted" true. Today
-594 llm-stats benchmarks have no URL at all. After this, `?view=leaderboard&lfrontier=llm-stats-vending-bench-2`
+594 llm-stats benchmarks have no URL at all. After this, `/leaderboard/?lfrontier=llm-stats-vending-bench-2`
 resolves.
 
 Keep the existing `lfrontierExplicit` behaviour: an auto-picked default stays out of the

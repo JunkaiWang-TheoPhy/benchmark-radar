@@ -104,7 +104,10 @@ def _row(
     observed_evidence: str | None = None,
     sampled: bool = False,
     secondary_code: str | None = None,
+    secondary_note: str | None = None,
 ) -> dict:
+    if secondary_note is None and secondary_code is not None:
+        secondary_note = "Synthetic review rationale."
     return {
         "id": row_id,
         "benchmark_family_id": benchmark_family_id,
@@ -129,7 +132,7 @@ def _row(
         "review": {
             "sampled_for_secondary_review": sampled,
             "secondary_code": secondary_code,
-            "secondary_note": None,
+            "secondary_note": secondary_note,
         },
     }
 
@@ -169,7 +172,15 @@ def _study_payload(
             },
             "demonstrated_family_scope": demonstrated_scope,
             "excluded_families": excluded_families or ["General AgentBench", "ToolFailBench"],
-            "measurement_counterexample_only": measurement_counterexample_only or ["SciCode"],
+            "measurement_counterexample_only": (
+                measurement_counterexample_only
+                if measurement_counterexample_only is not None
+                else [
+                    row["benchmark_family_name"]
+                    for row in rows
+                    if row["status"] == "unmeasured"
+                ][:1]
+            ),
         },
         "rows": rows,
     }
@@ -484,6 +495,67 @@ def test_load_study_rejects_secondary_code_on_unsampled_row(tmp_path):
 
     with pytest.raises(ValueError, match="secondary_code|sampled_for_secondary_review"):
         module.load_study(_write_study(tmp_path, rows))
+
+
+def test_load_study_rejects_completed_secondary_code_without_a_rationale(tmp_path):
+    module = _load_module()
+    rows = [
+        _row(
+            "demo-a",
+            status="demonstrated",
+            primary_code="goal_plan_drift",
+            sampled=True,
+            secondary_code="goal_plan_drift",
+            secondary_note="",
+        ),
+        _row(
+            "design-a",
+            status="design_implied",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+        ),
+        _row(
+            "unmeasured-a",
+            status="unmeasured",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+    ]
+
+    with pytest.raises(ValueError, match="secondary_note"):
+        module.load_study(_write_study(tmp_path, rows))
+
+
+def test_load_study_requires_declared_counterexamples_to_have_unmeasured_rows(tmp_path):
+    module = _load_module()
+    rows = [
+        _row("demo-a", status="demonstrated", primary_code="goal_plan_drift"),
+        _row(
+            "design-b",
+            status="design_implied",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+        ),
+        _row(
+            "unmeasured-c",
+            status="unmeasured",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+    ]
+
+    with pytest.raises(ValueError, match="require unmeasured rows"):
+        module.load_study(
+            _write_study(tmp_path, rows, measurement_counterexample_only=["Family B"])
+        )
 
 
 @pytest.mark.parametrize("status", ["demonstrated", "design_implied", "unmeasured"])

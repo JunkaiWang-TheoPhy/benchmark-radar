@@ -6,7 +6,7 @@ This guide defines the issue #455 evidence-coding package for agent weakness ana
 
 Include only public benchmark families for general-purpose computer use, web use, software engineering, tool use, and scientific workflows that were publicly available by 2026-09-01 and that provide direct failure evidence in an authoritative paper or benchmark repository.
 
-For the demonstrated-family analysis, bound the family set to these nine families:
+For the demonstrated-family analysis, bound the family set to these eight families:
 
 - OSWorld 2.0
 - WebArena
@@ -14,7 +14,6 @@ For the demonstrated-family analysis, bound the family set to these nine familie
 - GAIA2
 - SWE-bench Verified
 - SWE-bench Science
-- FrontierChallenge
 - ResearchClawBench
 - PRBench
 

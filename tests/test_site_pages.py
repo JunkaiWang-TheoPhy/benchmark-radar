@@ -120,12 +120,10 @@ def test_page_has_unique_title_and_canonical(tmp_path):
 def test_interactive_view_link_lands_on_the_leaderboard_with_the_slug(tmp_path):
     output = _generated_pages(tmp_path, _shard("alpha-bench", "Alpha Bench"))
     page = _page_text(output, "alpha-bench")
-    # The permalink needs the leaderboard view, not a bare lfrontier query that
-    # opens the default Today view and cannot resolve the slug.
-    assert 'href="https://benchmark-radar.org/?view=leaderboard&lfrontier=alpha-bench"' in page
-    assert "?lfrontier=alpha-bench" not in page.replace(
-        "?view=leaderboard&lfrontier=alpha-bench", ""
-    )
+    # The permalink needs the leaderboard page, not a bare lfrontier query on
+    # the root, which opens the default Today view and cannot resolve the slug.
+    assert 'href="https://benchmark-radar.org/leaderboard/?lfrontier=alpha-bench"' in page
+    assert "?lfrontier=alpha-bench" not in page.replace("/leaderboard/?lfrontier=alpha-bench", "")
 
 
 def test_description_is_present_and_derived_from_the_shard(tmp_path):
@@ -258,9 +256,13 @@ def test_sitemap_includes_benchmark_pages_when_slugs_passed(tmp_path):
     ]
     assert urls == [
         f"{SITE_URL}/",
-        f"{SITE_URL}/?view=leaderboard",
-        f"{SITE_URL}/?view=trends",
-        f"{SITE_URL}/?view=map",
+        f"{SITE_URL}/leaderboard/",
+        f"{SITE_URL}/trends/",
+        f"{SITE_URL}/explore/",
+        f"{SITE_URL}/cli/",
+        f"{SITE_URL}/cite/",
+        f"{SITE_URL}/rubric/",
+        f"{SITE_URL}/benchmarks/",
         f"{SITE_URL}/benchmarks/alpha-bench/",
         f"{SITE_URL}/benchmarks/zeta-bench/",
     ]
@@ -270,7 +272,7 @@ def test_sitemap_includes_benchmark_pages_when_slugs_passed(tmp_path):
             "sm:url/sm:lastmod", {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
         )
     ]
-    assert lastmods == ["2026-08-21"] * 6
+    assert lastmods == ["2026-08-21"] * 10
 
 
 def test_write_benchmark_pages_fails_loudly_without_shards(tmp_path):

@@ -10,16 +10,21 @@ single cross-source ranking, because the sources measure different things and
 say so. Where a value is missing, the site says it is missing rather than
 showing a zero.
 
-The dashboard is one page with four views; the benchmark directory is a set of
-plain static pages, one per benchmark, that need no JavaScript to read.
+The interactive dashboard has four views. Each heavy view also arrives with a
+server-delivered first screen in the same visual language. The benchmark
+directory and the daily brief are plain pages that need no JavaScript to read.
 
 ## Start here
 
 - [Benchmark Radar home](https://benchmark-radar.org/): today's newly collected benchmarks, evaluations, and datasets, with the evidence behind each one.
 - [Benchmark directory](https://benchmark-radar.org/benchmarks/): every benchmark in the catalog, each with its own page covering what it tests, who published it, and which scores are on record.
-- [Model card adoption leaderboard](https://benchmark-radar.org/?view=leaderboard): which benchmarks frontier labs report in their own model and system cards, plus reported scores over time.
-- [Discovery trends](https://benchmark-radar.org/?view=trends): how many new benchmarks arrive by category, source, and day.
-- [Explore the connections](https://benchmark-radar.org/?view=map): how benchmarks, datasets, organizations, and sources link to each other.
+- [Model card adoption leaderboard](https://benchmark-radar.org/leaderboard/): which benchmarks frontier labs report in their own model and system cards, plus reported scores over time.
+- [Discovery trends](https://benchmark-radar.org/trends/): how many new benchmarks arrive by category, source, and day.
+- [Explore the connections](https://benchmark-radar.org/explore/): how benchmarks, datasets, organizations, and sources link to each other.
+- [Command-line access](https://benchmark-radar.org/cli/): how to install and use the offline benchmark search CLI.
+- [Citation information](https://benchmark-radar.org/cite/): the preferred project citation and machine-readable citation metadata.
+- [Scoring rubric](https://benchmark-radar.org/rubric/): how evidence is collected and scored.
+- [Daily brief](https://benchmark-radar.org/blog/): one page per collection day covering what appeared, how strong the evidence was, and what the record does not support. The [archive](https://benchmark-radar.org/blog/archive/) lists every day.
 
 ## Data
 
@@ -29,6 +34,7 @@ plain static pages, one per benchmark, that need no JavaScript to read.
 - [leaderboard.json](https://benchmark-radar.org/data/leaderboard.json): the model card adoption ranking as standalone data. Also published as [leaderboard.csv](https://benchmark-radar.org/data/leaderboard.csv) and [leaderboard.md](https://benchmark-radar.org/data/leaderboard.md).
 - [records-badge.json](https://benchmark-radar.org/data/records-badge.json): the current number of collected records.
 - [RSS feed](https://benchmark-radar.org/feed.xml): one entry per collection day.
+- [Daily brief RSS feed](https://benchmark-radar.org/blog/feed.xml): one entry per published brief.
 - [sitemap.xml](https://benchmark-radar.org/sitemap.xml): every indexable page on the site.
 
 Per-benchmark data is served one file per benchmark under
@@ -43,5 +49,4 @@ same slug used in that benchmark's page URL.
 
 ## Optional
 
-- [How the evidence is scored](https://benchmark-radar.org/#rubric): the rubric that decides what gets collected and how strong the evidence behind a record is.
 - [Report a problem or suggest a source](https://github.com/ktwu01/benchmark-radar/issues): corrections are welcome, especially wrong attributions.

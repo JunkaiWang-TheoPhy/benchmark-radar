@@ -129,9 +129,10 @@ def _coarse_lookup(grouping: dict[str, list[str]]) -> dict[str, str]:
     return lookup
 
 
-def _require_string_list(value: Any, *, label: str) -> list[str]:
-    if not isinstance(value, list) or not value:
-        raise ValueError(f"{label} must be a non-empty list")
+def _require_string_list(value: Any, *, label: str, allow_empty: bool = False) -> list[str]:
+    if not isinstance(value, list) or (not allow_empty and not value):
+        expected = "a list" if allow_empty else "a non-empty list"
+        raise ValueError(f"{label} must be {expected}")
     normalized = [_require_nonempty_string(item, label=f"{label} entry") for item in value]
     if len(set(normalized)) != len(normalized):
         raise ValueError(f"{label} must not contain duplicates")
@@ -247,6 +248,7 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
     measurement_counterexample_only = _require_string_list(
         study.get("measurement_counterexample_only"),
         label=f"{path}: measurement_counterexample_only",
+        allow_empty=True,
     )
 
     rows = document.get("rows")
@@ -326,6 +328,10 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
             fine_taxonomy_set,
             label=f"{path}: row {row_id} review.secondary_code",
         )
+        if secondary_code is not None and not str(review.get("secondary_note") or "").strip():
+            raise ValueError(
+                f"{path}: row {row_id} review.secondary_note is required when secondary_code is present"
+            )
 
         normalized_rows.append(
             {
@@ -416,6 +422,17 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
         raise ValueError(
             f"{path}: measurement counterexample families cannot be demonstrated: "
             f"{', '.join(counterexample_demonstrated)}"
+        )
+    unmeasured_family_names = {
+        row["benchmark_family_name"] for row in normalized_rows if row["status"] == "unmeasured"
+    }
+    missing_counterexample_rows = sorted(
+        set(measurement_counterexample_only) - unmeasured_family_names
+    )
+    if missing_counterexample_rows:
+        raise ValueError(
+            f"{path}: measurement counterexample families require unmeasured rows: "
+            f"{', '.join(missing_counterexample_rows)}"
         )
 
     normalized_study = {

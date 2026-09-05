@@ -23,7 +23,7 @@ github.com/ktwu01/benchmark-radar，每天更新，并支持一键导出数据
 **几秒找到一个 benchmark，再看模型成绩如何随时间变化。点击下面的动图，查看
 SWE-bench Verified 的 saturation 过程。**
 
-<a href="https://benchmark-radar.org/?view=leaderboard&lfrontier=swe_bench_verified">
+<a href="https://benchmark-radar.org/leaderboard/?lfrontier=swe_bench_verified">
   <img src="assets/swe-bench-verified.gif" alt="搜索 SWE-bench Verified 并查看模型成绩随时间变化的动画演示" width="720" />
 </a>
 
@@ -39,13 +39,14 @@ SWE-bench Verified 的 saturation 过程。**
 **Leaderboard：各家模型卡到底最常报告哪些 benchmark，以及每个 benchmark 的成绩
 如何一路上涨，直到几乎没有提升空间。**
 
-<a href="https://benchmark-radar.org/?view=leaderboard">
+<a href="https://benchmark-radar.org/leaderboard/">
   <img src="assets/intro-leaderboard-page.gif" alt="Leaderboard 页面动画演示：按模型卡采用度排序的 benchmark、成绩随时间变化的图表，以及剩余提升空间卡片" width="720" />
 </a>
 
 ## 使用方法
 
 - **[打开 dashboard](https://benchmark-radar.org/)** — 每日洞察、趋势、热门 benchmark、模型卡采用排名等
+- **[在本地查询](https://benchmark-radar.org/cli/)** — 安装并使用离线 CLI
 - **[通过 RSS 订阅](https://benchmark-radar.org/feed.xml)** — 每天获取最新的 benchmark 情报
 - **[下载完整数据集](https://benchmark-radar.org/data/radar.json)** — 免费、公开、机器可读的 JSON，无需爬虫或联系作者
 - **[参与贡献](CONTRIBUTING.md)** — 添加 benchmark、模型卡、信源或修复
@@ -54,21 +55,21 @@ SWE-bench Verified 的 saturation 过程。**
 
 ## 在本地查询（CLI 版本）
 
-网页版 dashboard 是托管视图。需要离线查询时，请使用 **CLI 版本**：它会安装
-CLI、下载本地可搜索的数据，并从本地文件回答。把下面这段直接发给你的 coding agent：
-
-```text
-请帮我配置 Benchmark Radar 的本地 benchmark 搜索。请遵循
-https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md，
-安装 CLI 和 consumer Skill，初始化本地数据并确认配置成功。只使用面向用户的命令。
+```bash
+npx skills add ktwu01/benchmark-radar
 ```
+
+之后直接问你的 coding agent benchmark 就行。第一次问的时候，它会安装命令行工具，
+并把数据下载到你的电脑。它具体做了什么，写在
+[安装与使用指南](https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md)。
 
 ## 更多
 
-- [评分规则](src/benchmark_radar/rubric.py)
+- [设计原则](design.md)
+- [评分规则](https://benchmark-radar.org/rubric/)
 - [模型卡采用数据](data/model_cards.yml)
 - [公开语料 schema](docs/cumulative-corpus.schema.json)
-- [引用信息](CITATION.cff)
+- [引用信息](https://benchmark-radar.org/cite/)
 - [技术报告](https://doi.org/10.5281/zenodo.22167102)
 - [配置](config.yml)
 - **开发环境：** `python -m pip install -e '.[dev]' && benchmark-radar normalize-external`
@@ -96,7 +97,7 @@ https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL
 
 ```bibtex
 @misc{wu_2026_22167102,
-  author       = {Wu, Koutian},
+  author       = {Wu, Koutian and Zhou, Junjie},
   title        = {Benchmark Radar v0.9.0: Technical Report},
   month        = aug,
   year         = {2026},
@@ -121,6 +122,8 @@ https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL
 ## 感谢
 
 每日信息流基于以下公开来源：[arXiv](https://arxiv.org)、[GitHub Search](https://github.com/search)、[GitHub organizations](https://github.com)、[GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)、[Hugging Face datasets and Spaces](https://huggingface.co)、[Hugging Face Papers](https://huggingface.co/papers)、[OpenAlex](https://openalex.org)、[OpenReview](https://openreview.net)、[Kaggle datasets](https://www.kaggle.com/datasets)、[Zenodo](https://zenodo.org)、[Semantic Scholar](https://www.semanticscholar.org)、[Brave Search](https://search.brave.com)、[Hacker News](https://news.ycombinator.com)，以及各家 first-party lab feed：[OpenAI](https://openai.com/news)、[Google AI](https://blog.google/technology/ai/)、[Google DeepMind](https://deepmind.google/blog/)、[Google Research](https://research.google/blog/)、[Meta Research](https://research.facebook.com)、[Microsoft Research](https://www.microsoft.com/en-us/research/)、[AWS Machine Learning](https://aws.amazon.com/blogs/machine-learning/)、[Apple Machine Learning Research](https://machinelearning.apple.com)、[NVIDIA AI Blog](https://blogs.nvidia.com)、[NVIDIA Developer](https://developer.nvidia.com/blog/)、[Hugging Face Blog](https://huggingface.co/blog)、[Ai2](https://allenai.org)、[Mistral AI](https://mistral.ai/news)、[Together AI](https://www.together.ai/blog)、[Sakana AI](https://sakana.ai)、[Qwen](https://qwenlm.github.io/blog/)、[Ollama](https://ollama.com/blog)、[Stability AI](https://stability.ai)、[Nomic AI](https://www.nomic.ai)、[Replicate](https://replicate.com/blog)、[IBM Research](https://research.ibm.com)、[Databricks](https://www.databricks.com)、[LangChain](https://www.langchain.com/blog)、[Meituan Engineering](https://tech.meituan.com)。
+
+每日信息流也接入了 [Crossref](https://www.crossref.org) 的公开 DOI 元数据。
 
 前沿模型分数层（包括上方的 SWE-bench Verified 时间线）基于 [LLM Stats](https://llm-stats.com) 采集的 benchmark 数据构建，感谢他们把这些数据公开出来。
 
