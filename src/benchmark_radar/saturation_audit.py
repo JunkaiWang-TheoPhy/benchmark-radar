@@ -179,6 +179,11 @@ def build_saturation_audit(
                 }
                 for row in record["observations"]
             ]
+        counterexamples = sorted(
+            exclusions,
+            key=lambda row: (row["value"], row["reported_at"], row["organization"], row["model"]),
+            reverse=record["direction"] == "higher_is_better",
+        )[:3]
 
         benchmark_rows.append(
             {
@@ -225,7 +230,7 @@ def build_saturation_audit(
                     ]
                 ),
                 "exclusions": exclusions,
-                "counterexamples": exclusions[:3],
+                "counterexamples": counterexamples,
             }
         )
 

@@ -34,6 +34,7 @@ def test_unjoinable_observations_are_explicitly_excluded() -> None:
         assert row["protocol_best"] is None
         assert len(row["exclusions"]) == len(row["score_ids"])
         assert all("no connectable" in item["reason"] for item in row["exclusions"])
+    assert rows["swe_bench_verified"]["counterexamples"][0]["value"] == 96.0
 
 
 def test_lower_is_better_selects_the_lowest_series_best() -> None:

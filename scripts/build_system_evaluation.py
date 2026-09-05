@@ -294,7 +294,7 @@ def saturation_audit_table(st, audit: dict) -> Table:
             p("Benchmark", st["table_header"]),
             p("Raw", st["table_header"]),
             p("Protocol", st["table_header"]),
-            p("Action", st["table_header"]),
+            p("Claim decision", st["table_header"]),
             p("Note", st["table_header"]),
         ]
     ]
