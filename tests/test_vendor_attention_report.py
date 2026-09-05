@@ -34,7 +34,7 @@ def test_report_replaces_the_unreproducible_eight_benchmark_claim():
     assert "explicit families" in source
     assert "singleton canonical IDs" in source
     assert "blob/98c8cf6fb5d1d69c66d438ea9f92242b2205c9ae/data/model_cards.yml" in source
-    assert "blob/631a08a/docs/technical-report/vendor-attention-audit/claim-audit.json" in source
+    assert "blob/d620afc/docs/technical-report/vendor-attention-audit/claim-audit.json" in source
     assert "blob/main/data/model_cards.yml" not in source
 
 
