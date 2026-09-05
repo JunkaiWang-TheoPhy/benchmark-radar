@@ -373,6 +373,40 @@ def test_repository_non_null_radar_record_ids_match_catalog_keys_when_generated(
         assert exact_name_keys.get(row["benchmark_family_name"].casefold(), []) == []
 
 
+def test_demonstrated_null_radar_id_requires_a_searchable_query(tmp_path):
+    module = _load_module()
+    index = tmp_path / "benchmark-index.json"
+    index.write_text(json.dumps({"benchmarks": [{"name": "Known benchmark", "key": "known"}]}))
+    module.DEFAULT_BENCHMARK_INDEX = index
+    rows = [
+        _row(
+            "demo-a",
+            status="demonstrated",
+            primary_code="goal_plan_drift",
+            radar_record_id=None,
+            radar_query="Unknown benchmark",
+        ),
+        _row(
+            "design-a",
+            status="design_implied",
+            primary_code="tool_selection_execution",
+            benchmark_family_id="family-b",
+            benchmark_family_name="Family B",
+            radar_query="Family B",
+        ),
+        _row(
+            "unmeasured-a",
+            status="unmeasured",
+            primary_code="verification_completion",
+            benchmark_family_id="family-c",
+            benchmark_family_name="Family C",
+            radar_query="Family C",
+        ),
+    ]
+    with pytest.raises(ValueError, match="no Radar search result"):
+        module.load_study(_write_study(tmp_path, rows, measurement_counterexample_only=[]))
+
+
 def test_load_study_rejects_missing_evidence_location(tmp_path):
     module = _load_module()
     rows = [

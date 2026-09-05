@@ -64,6 +64,7 @@ _REPLAYABLE_EVIDENCE_TOKENS = (
     "row",
     "page",
 )
+DEFAULT_BENCHMARK_INDEX = Path("site/data/benchmark-index.json")
 
 
 def _require_mapping(value: Any, *, label: str) -> dict[str, Any]:
@@ -166,6 +167,35 @@ def _validate_benchmark_family_identity(rows: list[dict[str, Any]], *, path: Pat
             raise ValueError(
                 f"{path}: benchmark family identity mismatch: name {family_name!r} maps to both "
                 f"{prior_id!r} and {family_id!r}"
+            )
+
+
+def _validate_null_radar_queries(rows: list[dict[str, Any]], *, path: Path) -> None:
+    """Require demonstrated rows without IDs to resolve through local search."""
+    if not DEFAULT_BENCHMARK_INDEX.exists():
+        return
+    try:
+        payload = json.loads(DEFAULT_BENCHMARK_INDEX.read_text(encoding="utf-8"))
+        records = payload.get("benchmarks", [])
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"{path}: cannot read generated benchmark index") from error
+    for row in rows:
+        if row["status"] != "demonstrated" or row["radar_record_id"] is not None:
+            continue
+        query = row["radar_query"].casefold()
+        matches = [
+            record
+            for record in records
+            if query
+            and query
+            in " ".join(
+                str(record.get(field) or "") for field in ("name", "description", "key")
+            ).casefold()
+        ]
+        if not matches:
+            raise ValueError(
+                f"{path}: demonstrated row {row['id']} has no Radar search result for "
+                f"radar_query {row['radar_query']!r}; supply a resolvable query or record id"
             )
 
 
@@ -392,6 +422,7 @@ def load_study(path: Path = DEFAULT_SOURCE) -> dict[str, Any]:
         raise ValueError(f"{path}: rows must cover all declared statuses")
 
     _validate_benchmark_family_identity(normalized_rows, path=path)
+    _validate_null_radar_queries(normalized_rows, path=path)
 
     excluded_family_overlap = sorted(
         set(excluded_families) & {row["benchmark_family_name"] for row in normalized_rows}

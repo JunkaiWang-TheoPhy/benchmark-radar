@@ -146,7 +146,7 @@ rows:
   - id: swe_science_misguided_exploration
     benchmark_family_id: swe_bench_science
     benchmark_family_name: SWE-bench Science
-    radar_query: SWE-bench Science
+    radar_query: SWE-bench
     radar_record_id: null
     task_or_protocol: Repository-level scientific software engineering tasks across issue, exploratory, and integration paradigms
     status: demonstrated
