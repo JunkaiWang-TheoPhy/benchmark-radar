@@ -510,6 +510,19 @@ def _evidence_grade(series: list[dict[str, Any]], rows: list[dict[str, Any]]) ->
             ),
         }
     dates = {row["reported_at"] for row in rows}
+    if len(dates) == 1 and len(rows) >= 2:
+        return {
+            "id": "same_day_comparison",
+            "label": "Same-day comparison",
+            "supports": (
+                "Multiple values are readable from documents on one date, so the table "
+                "supports a cross-system snapshot comparison."
+            ),
+            "does_not_support": (
+                "Any movement over time. All observations share one date, so this is a "
+                "leaderboard snapshot rather than a longitudinal series."
+            ),
+        }
     if len(dates) >= 2:
         return {
             "id": "unjoinable",

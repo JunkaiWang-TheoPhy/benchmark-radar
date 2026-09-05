@@ -393,7 +393,28 @@ def test_evidence_grade_refuses_the_word_trend_for_a_two_point_pair(tmp_path):
     )
     record = score_progression(load_scores(path))["benchmarks"]["alpha"]
     assert record["evidence"]["id"] == "paired_comparison"
-    assert "Two points define one segment" in record["evidence"]["does_not_support"]
+
+
+def test_evidence_grade_labels_same_day_multi_value_leaderboards(tmp_path):
+    path = write_scores(
+        tmp_path,
+        minimal_scores(
+            results=[
+                result(source_id="card_one", model="Model One", reported_at="2026-08-25"),
+                result(source_id="card_two", model="Model Two", reported_at="2026-08-25"),
+            ]
+        ),
+    )
+    registry = {
+        "benchmarks": [{"id": "alpha"}],
+        "model_cards": [
+            {"id": "card_one", "benchmarks": ["alpha"]},
+            {"id": "card_two", "benchmarks": ["alpha"]},
+        ],
+    }
+    record = score_progression(load_scores(path), registry)["benchmarks"]["alpha"]
+    assert record["evidence"]["id"] == "same_day_comparison"
+    assert "leaderboard snapshot" in record["evidence"]["does_not_support"]
 
 
 def test_a_gain_is_only_attributed_to_a_vendor_when_the_run_has_one(tmp_path):

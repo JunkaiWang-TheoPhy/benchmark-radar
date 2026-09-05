@@ -4105,9 +4105,7 @@ function frontierAdvances(entry) {
 }
 
 function frontierDefaultEntry(board) {
-  const scored = (board.entries || []).filter(
-    (entry) => entry.card_count > 0 && scoreRecord(entry.benchmark_id),
-  );
+  const scored = (board.entries || []).filter((entry) => scoreRecord(entry.benchmark_id));
   const datedCount = (entry) => scoreRecord(entry.benchmark_id)?.dated_observation_count || 0;
   // The page opens on the benchmark it ranks first, so the figure answers the
   // question the ranking above it just raised. It used to open on the NEWEST
@@ -6832,13 +6830,11 @@ function clearAdoptionFrontier(message) {
 }
 
 function renderAdoptionFrontier(board) {
-  const adopted = (board.entries || []).filter((entry) => entry.card_count > 0);
   // The panel is the saturation curve now, so a benchmark enters the picker
-  // only when a score could be read verbatim from a cited document. 20 of the
-  // 79 adopted benchmarks carry card mentions without a single readable score;
-  // with the adoption staircase retired they would render an empty panel, so
-  // they are absent here and a permalink to one falls back to the default.
-  const scored = adopted.filter((entry) => scoreRecord(entry.benchmark_id));
+  // only when a score could be read verbatim from a cited document. This set is
+  // independent of adoption count: a benchmark-publisher leaderboard can have
+  // zero model-card adopters and still expose a valid score track.
+  const scored = (board.entries || []).filter((entry) => scoreRecord(entry.benchmark_id));
   const defaultEntry = frontierDefaultEntry(board);
   if (!scored.length || !defaultEntry) {
     clearAdoptionFrontier(t("No benchmark in this registry has a score read from a document yet."));
