@@ -20,7 +20,13 @@ from .kw_bench_store import STORE_FILENAME as KW_BENCH_STORE_FILENAME
 from .kw_bench_tracks import DEFAULT_BATCH_SIZE
 from .kw_bench_tracks import backfill as backfill_classifications
 from .models import ProducerHealth, RadarRun, SourceHealth
-from .pipeline import _failure_streak_key, _score_and_select, run_pipeline, simulate_backfill
+from .pipeline import (
+    _drop_future_dated_items,
+    _failure_streak_key,
+    _score_and_select,
+    run_pipeline,
+    simulate_backfill,
+)
 from .query_cli import QUERY_COMMANDS, run_query_cli
 from .questions import QA_SCHEMA_VERSION, generate_daily_questions
 from .report import render_markdown
@@ -679,6 +685,13 @@ def main() -> None:
         else:
             item = fetch_doi_exact(args.source_id)
         now = datetime.now(UTC)
+        valid_items, rejected_future = _drop_future_dated_items([item], now=now)
+        if rejected_future:
+            parser.error(
+                f"repair-source rejected {item.source}:{item.source_id} because its source "
+                "published/updated date is in the future"
+            )
+        item = valid_items[0]
         item.discovered_at = now
         item.retrieved_at = now
         existing = load_snapshots(args.snapshot_dir)

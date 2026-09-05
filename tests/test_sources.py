@@ -249,6 +249,13 @@ def test_exact_arxiv_repair_ignores_daily_lookback(monkeypatch):
     assert item.raw["repair"] is True
 
 
+def test_exact_arxiv_repair_strips_version_suffix(monkeypatch):
+    xml = ARXIV_XML.replace("2607.12345", "2608.23564")
+    monkeypatch.setattr("benchmark_radar.sources.get_text", lambda url, **kwargs: xml)
+    item = fetch_arxiv_exact("2608.23564v1", {})
+    assert item.source_id == "2608.23564"
+
+
 def test_exact_github_repair_uses_stable_repository_id(monkeypatch):
     monkeypatch.setattr(
         "benchmark_radar.sources.get_json",
@@ -285,6 +292,20 @@ def test_exact_huggingface_repair_accepts_kind_prefixed_id(monkeypatch):
     assert item.source_id == "org/forge-artifacts"
     assert item.url == "https://huggingface.co/datasets/org/forge-artifacts"
     assert item.event_kind == "backfilled"
+
+
+def test_exact_huggingface_model_repair_uses_model_repo_url(monkeypatch):
+    monkeypatch.setattr(
+        "benchmark_radar.sources.get_json",
+        lambda url, **kwargs: {
+            "id": "org/model",
+            "createdAt": "2025-06-20T00:00:00Z",
+            "lastModified": "2026-08-29T00:00:00Z",
+            "description": "Benchmark model",
+        },
+    )
+    item = fetch_huggingface_exact("models:org/model")
+    assert item.url == "https://huggingface.co/org/model"
 
 
 def test_exact_doi_repair_reads_crossref_metadata(monkeypatch):

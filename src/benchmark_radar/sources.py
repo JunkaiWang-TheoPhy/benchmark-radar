@@ -429,6 +429,7 @@ def fetch_arxiv(config: dict[str, Any], since: datetime, limit: int) -> list[Rad
 def fetch_arxiv_exact(source_id: str, config: dict[str, Any]) -> RadarItem:
     """Fetch one arXiv record by stable identifier for historical repair."""
     normalized = source_id.rsplit("/", 1)[-1].removesuffix(".pdf")
+    normalized = re.sub(r"v\d+$", "", normalized, flags=re.IGNORECASE)
     try:
         xml = get_text(
             "https://export.arxiv.org/api/query",
@@ -577,7 +578,11 @@ def fetch_huggingface_exact(source_id: str, kind: str = "datasets") -> RadarItem
         source="Hugging Face",
         source_id=str(row["id"]),
         title=str(row["id"]),
-        url=f"https://huggingface.co/{kind}/{item_id}",
+        url=(
+            f"https://huggingface.co/{item_id}"
+            if kind == "models"
+            else f"https://huggingface.co/{kind}/{item_id}"
+        ),
         published_at=created or changed,
         updated_at=changed,
         summary=huggingface_summary(row, str(row["id"])),
