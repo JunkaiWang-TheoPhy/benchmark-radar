@@ -10,13 +10,28 @@ selection criteria, and desired output open unless they specify them.
 
 ## Prepare the data
 
+Carry this out yourself, without handing the user a checklist. Installing this Skill
+is the request to use the CLI, so an install or repair the steps below call for is
+part of that request: say you are installing the CLI from the official repository, then run it and report what you ran. Ask first only when the user
+told you not to install anything.
+
 1. Check availability with `benchmark-radar status --json`.
-2. If the command is missing, report that the CLI is required. Offer installation,
-   but do not install it without permission:
+2. If the command is missing or exits before returning a JSON status response, the CLI
+   is missing or broken. Install it:
 
    ```bash
    python -m pip install 'git+https://github.com/ktwu01/benchmark-radar.git'
    ```
+
+   If an existing installation cannot import `benchmark_radar`, repair it cleanly:
+
+   ```bash
+   python -m pip install --force-reinstall 'git+https://github.com/ktwu01/benchmark-radar.git'
+   ```
+
+   Install into the Python environment whose `pip` the user's shell resolves. If that
+   environment is externally managed and refuses the install, say which environment
+   failed and what would fix it rather than forcing the package in.
 
 3. If the CLI reports `not_initialized`, run `benchmark-radar init --json`; that
    successful init is already current, so do not immediately sync again.
@@ -24,6 +39,15 @@ selection criteria, and desired output open unless they specify them.
    `benchmark-radar sync --json` once before querying. Skip sync when the user asks
    to stay offline or retain a fixed local version. If sync fails, report it instead
    of silently presenting stale data as current.
+
+When the user asks only to set up Benchmark Radar (or after installing without a
+specific benchmark query), finish the steps above and report the data version. Then
+provide an immediate starter use case so the user can see it in action right away
+without having to formulate a query: automatically search for recent or popular agent
+benchmarks (for example, `benchmark-radar search "agent" --scope catalog --json` or
+recent Radar evidence), present a concise summary of top results as an example showcase,
+and show how the user can query further (e.g., searching by specific task domain,
+inspecting details with `show`, or tracking recent evidence).
 
 ## Choose the smallest command
 

@@ -105,14 +105,15 @@ def test_published_head_and_robots_match_the_generated_sitemap():
     for _, path in INDEXABLE_VIEWS:
         assert f'canonical: "{path}"' in script
 
-    # Root-relative in the dashboard: the same document is served at each of
-    # these paths, so the links must resolve identically from all of them.
+    # Global navigation and contextual utilities use root-relative links. The
+    # generated Explore and Rubric routes remain indexable without global tabs.
     assert 'href="/leaderboard/"' in html
     assert 'href="/trends/"' in html
-    assert 'href="/explore/"' in html
     assert 'href="/cli/"' in html
-    assert 'href="/rubric/"' in html
     assert 'href="/cite/"' in html
+    nav = html.split('<nav class="view-nav"', 1)[1].split("</nav>", 1)[0]
+    assert 'href="/explore/"' not in nav
+    assert 'href="/rubric/"' not in nav
 
     # robots.txt points at the sitemap URL the build actually writes.
     sitemap_url = f"{SITE_URL}/sitemap.xml"
@@ -144,3 +145,29 @@ def test_structured_data_describes_a_searchable_site_and_a_dataset():
     distributions = [entry["contentUrl"] for entry in dataset["distribution"]]
     assert dataset["url"] in distributions
     assert dataset["license"].endswith("/MIT")
+
+
+def test_sitemap_lists_the_blog_with_a_per_brief_lastmod():
+    """A brief from three weeks ago did not change when today's snapshot landed."""
+    root = sitemap_tree(
+        [{"generated_at": "2026-09-01T02:17:00+00:00"}],
+        view_paths=[],
+        blog_entries=[
+            ("/blog/", "2026-09-01"),
+            ("/blog/archive/", "2026-09-01"),
+            ("/blog/2026-09-01/", "2026-09-01"),
+            ("/blog/2026-08-10/", "2026-08-10"),
+        ],
+    ).getroot()
+    entries = {
+        node.find("sm:loc", NS).text: getattr(node.find("sm:lastmod", NS), "text", None)
+        for node in root.findall("sm:url", NS)
+    }
+    assert entries[f"{SITE_URL}/blog/"] == "2026-09-01"
+    assert entries[f"{SITE_URL}/blog/archive/"] == "2026-09-01"
+    assert entries[f"{SITE_URL}/blog/2026-08-10/"] == "2026-08-10"
+
+
+def test_a_build_that_writes_no_blog_lists_no_blog_urls():
+    root = sitemap_tree([{"generated_at": "2026-09-01T02:17:00+00:00"}]).getroot()
+    assert not [node.text for node in root.findall("sm:url/sm:loc", NS) if "/blog/" in node.text]

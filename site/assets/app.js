@@ -29,6 +29,7 @@ const LEGACY_SOURCE_COLLECTION_METHODS = {
   huggingface_papers: "API",
   kaggle_datasets: "API",
   zenodo: "API",
+  crossref: "API",
   openreview: "API",
   semantic_scholar: "API",
   github_releases: "API",
@@ -50,6 +51,7 @@ const SOURCE_DISPLAY_NAMES = {
   huggingface_papers: "Hugging Face Papers",
   kaggle_datasets: "Kaggle Dataset",
   zenodo: "Zenodo",
+  crossref: "Crossref",
   openreview: "OpenReview",
   semantic_scholar: "Semantic Scholar",
   github_releases: "GitHub Release",
@@ -371,18 +373,14 @@ const I18N = {
     Data: "数据",
     Contact: "联系",
     "Privacy notice": "隐私声明",
-    "Support this repository": "支持这个仓库",
     "Open the repository and star it": "打开仓库并给个 Star",
     Star: "Star",
-    "Fork this repository": "Fork 这个仓库",
-    Fork: "Fork",
-    "Open a new issue": "新建 Issue",
-    Issues: "Issues",
     "Dashboard views": "仪表盘视图",
     Today: "今日",
     Leaderboard: "排行榜",
     Trends: "趋势",
     Explore: "探索",
+    Blog: "博客",
     Rubric: "评分标准",
     "Daily briefing": "每日简报",
     "Questions for today": "今日问答",
@@ -847,9 +845,7 @@ const I18N = {
     "More than 10 results.": "结果超过 10 条。",
     "Use the CLI version to export all data.": "使用我们的命令行版本导出全部数据。",
     "Query it locally (CLI version)": "在本地查询（命令行版本）",
-    "This website is the hosted view. The CLI version runs on your own computer: it installs the command-line tool, downloads the searchable data, and answers from those local files.":
-      "本网站是在线版本。命令行版本在你自己的电脑上运行：它会安装命令行工具、下载可搜索的数据，并从这些本地文件中给出答案。",
-    "Give this prompt to your coding agent": "把这段提示词交给你的编程助手",
+    Install: "安装",
     "Read the setup guide": "查看安装指南",
     "Share Benchmark Radar": "分享 Benchmark Radar",
     Share: "分享",
@@ -1033,8 +1029,6 @@ const I18N = {
       " · 最近 18 个月窗口内发布的 {count} 项已经出现在三家及以上有明确日期的机构中。在解读原始排名之前，先看它们的轨迹变化。",
     "Show all {count} benchmarks": "显示全部 {count} 个benchmark",
     "Star this repository on GitHub. {count} stars": "在 GitHub 上给这个仓库点 Star。{count} 个 star",
-    "Fork this repository on GitHub. {count} forks": "在 GitHub 上 fork 这个仓库。{count} 个 fork",
-    "Open a new issue on GitHub. {count} issues open": "在 GitHub 上提交新 issue。当前有 {count} 个 open issue",
   },
 };
 
@@ -1413,6 +1407,17 @@ async function onPopState() {
     window.location.assign(window.location.href);
     return;
   }
+  // readUrl() restores a bare Today URL as an empty date, which only
+  // initialize() and refreshData() then default to the latest scan. A history
+  // restore skipped that step, so closing a utility sheet or pressing Back
+  // filtered every observation against snapshot_date === "" and Today rendered
+  // its empty state (issue #503). Normalize the restored date the same way.
+  if (
+    state.todayDate !== "all"
+    && !state.data.facets.dates.includes(state.todayDate)
+  ) {
+    state.todayDate = state.data.latest_date;
+  }
   // A leaderboard permalink on a build with no curated registry has nothing to
   // show, same fallback initialize() applies. Without it, Back into such an
   // entry opens an empty section behind a hidden nav button.
@@ -1550,13 +1555,11 @@ function applyCurrentSeo() {
   applySeo(utility ? UTILITY_SEO[utility] : VIEW_SEO[state.view] || VIEW_SEO.today);
 }
 
-// Every navigation item uses one visual active state, even though the four
-// views use aria-current while Rubric is a dialog trigger with aria-expanded.
-// Keeping that distinction in ARIA and normalizing it here prevents element
-// type (button versus anchor) from deciding which item looks selected.
+// Every visible navigation item uses one visual active state. Explore and
+// Rubric remain direct routes, so opening either leaves the global nav without
+// a false current item.
 function syncNavState() {
   const utility = activeUtility();
-  const rubricActive = utility === "rubric";
   document.querySelectorAll("[data-view]").forEach((item) => {
     const active = !utility && item.dataset.view === state.view;
     item.classList.toggle("nav-active", active);
@@ -1566,13 +1569,6 @@ function syncNavState() {
       item.removeAttribute("aria-current");
     }
   });
-  const rubricNav = byId("rubric-nav");
-  if (rubricNav?.classList) {
-    rubricNav.classList.toggle("nav-active", rubricActive);
-    rubricNav.setAttribute("aria-expanded", String(rubricActive));
-    if (rubricActive) rubricNav.setAttribute("aria-current", "page");
-    else rubricNav.removeAttribute("aria-current");
-  }
   const cliNav = byId("cli-nav");
   if (cliNav?.classList) {
     cliNav.classList.toggle("nav-active", utility === "cli");
@@ -7989,16 +7985,15 @@ function openContact(updateUrl = true) {
   if (!dialog.open) dialog.showModal();
 }
 
-// The published technical report. These strings are the citation itself, so
-// they are held verbatim rather than assembled from parts: a citation the page
-// rebuilds on the fly is a citation that can drift from CITATION.cff.
+// The published technical report. Contract tests keep these copyable strings
+// aligned with CITATION.cff and the server-rendered citation route.
 const CITE_DOI_URL = "https://doi.org/10.5281/zenodo.22167102";
 const CITE_CFF_URL = "https://github.com/ktwu01/benchmark-radar/blob/main/CITATION.cff";
 const CITE_APA =
-  "Wu, K. (2026). Benchmark Radar v0.9.0: Technical Report (Version 0.9.0). " + CITE_DOI_URL;
+  "Wu, K., & Zhou, J. (2026). Benchmark Radar v0.9.0: Technical Report (Version 0.9.0). " + CITE_DOI_URL;
 const CITE_BIBTEX = [
   "@techreport{Wu_Benchmark_Radar_v0_9_0_2026,",
-  "author = {Wu, Koutian},",
+  "author = {Wu, Koutian and Zhou, Junjie},",
   "doi = {10.5281/zenodo.22167102},",
   "month = aug,",
   "title = {{Benchmark Radar v0.9.0: Technical Report}},",
@@ -8011,7 +8006,7 @@ const CITE_BIBTEX = [
 // sheet. The block itself is the button: a reader who came for a citation or a
 // setup prompt wants it on the clipboard, so clicking the text copies it rather
 // than making them select eight wrapped lines by hand.
-function copyBlock(label, value, hint) {
+function copyBlock(label, value, hint, hideLabel = false) {
   const status = element("span", { className: "copy-status", text: t(hint) });
   const text = element("code", { className: "copy-text", text: value });
   const copy = element(
@@ -8044,7 +8039,10 @@ function copyBlock(label, value, hint) {
     }
   });
   return element("section", { className: "copy-block" }, [
-    element("h3", { className: "copy-label", text: t(label) }),
+    element("h3", {
+      className: hideLabel ? "copy-label visually-hidden" : "copy-label",
+      text: t(label),
+    }),
     copy,
   ]);
 }
@@ -8157,16 +8155,10 @@ function openCite(updateUrl = true) {
 // drift from the instructions it points at.
 const CLI_SKILL_URL =
   "https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md";
+const CLI_SKILL_INSTALL = "npx skills add ktwu01/benchmark-radar";
 // The README wraps its last sentence across two lines at 80 columns; the card
 // is narrower than that, so keeping the break would re-wrap into ragged text.
 // Only the URL needs a line of its own, and it keeps one.
-const CLI_AGENT_PROMPT = [
-  "Set up Benchmark Radar for local benchmark search. Follow",
-  CLI_SKILL_URL,
-  "to install the CLI and consumer Skill, initialize the local data, and verify the" +
-    " setup. Use only consumer commands.",
-].join("\n");
-
 // True only while the open card owns a history entry this page pushed, for the
 // same reason the citation card tracks it: closing a directly-opened /cli/ must
 // not step a reader back off the site.
@@ -8193,20 +8185,8 @@ function openCli(updateUrl = true) {
       text: t("Query it locally (CLI version)"),
       attrs: { id: "cli-title" },
     }),
-    element("p", {
-      className: "detail-summary",
-      text: t(
-        "This website is the hosted view. The CLI version runs on your own computer: " +
-          "it installs the command-line tool, downloads the searchable data, and answers " +
-          "from those local files.",
-      ),
-    }),
     element("div", { className: "copy-blocks" }, [
-      copyBlock(
-        "Give this prompt to your coding agent",
-        CLI_AGENT_PROMPT,
-        "Click to copy",
-      ),
+      copyBlock("Install", CLI_SKILL_INSTALL, "Click to copy", true),
     ]),
     element("a", {
       className: "secondary-link dialog-link",
@@ -8446,29 +8426,6 @@ function bindEvents() {
     rubricOwnsHistoryEntry = false;
     finishUtilityClose("rubric", owned);
   });
-  // Reachable without a record in hand, for a reader who wants the method
-  // before they trust any single row.
-  byId("rubric-nav").addEventListener("click", (event) => {
-    if (
-      event.currentTarget.matches("a")
-      && (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
-    ) return;
-    if (!compatibleDashboard(state.data)) {
-      // Push the clean path with its dashboard background recorded, then load
-      // the generated page. Its seeded rubric survives the data failure, and
-      // closing it can return to the view that opened it.
-      event.preventDefault();
-      state.contact = false;
-      state.cite = false;
-      state.cli = false;
-      state.rubric = "current";
-      writeUrl("push");
-      window.location.reload();
-      return;
-    }
-    event.preventDefault();
-    openRubric();
-  });
   byId("badge-contact").addEventListener("click", openContact);
   byId("contact-close").addEventListener("click", () => byId("contact-dialog").close());
   byId("contact-dialog").addEventListener("click", (event) => {
@@ -8537,23 +8494,17 @@ const REPO_SLUG = "ktwu01/benchmark-radar";
 // The visible badge reads "★ Star 12", which a screen reader would announce as
 // a bare statistic. The accessible name states the action and keeps the count
 // as context, so the control sounds like the invitation it is.
-const BADGE_ACTIONS = {
-  "badge-stars": (count) => t("Star this repository on GitHub. {count} stars", { count }),
-  "badge-forks": (count) => t("Fork this repository on GitHub. {count} forks", { count }),
-  "badge-issues": (count) => t("Open a new issue on GitHub. {count} issues open", { count }),
-};
-
-function setBadgeCount(id, value) {
-  const badge = byId(id);
+function setStarCount(value) {
+  const badge = byId("badge-stars");
   const node = badge?.querySelector("[data-count]");
   if (!node) return;
   const count = Number(value || 0).toLocaleString();
   node.textContent = count;
-  badge.setAttribute("aria-label", BADGE_ACTIONS[id](count));
+  badge.setAttribute("aria-label", t("Star this repository on GitHub. {count} stars", { count }));
 }
 
-async function renderRepoBadges() {
-  // Counts are decoration: the badges link out and stay usable if this fails,
+async function renderStarCount() {
+  // The count is decoration: the badge links out and stays usable if this fails,
   // so a rate-limited API must never surface as an error state.
   try {
     const response = await fetch(`https://api.github.com/repos/${REPO_SLUG}`, {
@@ -8561,23 +8512,9 @@ async function renderRepoBadges() {
     });
     if (!response.ok) return;
     const repo = await response.json();
-    setBadgeCount("badge-stars", repo.stargazers_count);
-    setBadgeCount("badge-forks", repo.forks_count);
-    // open_issues_count includes pull requests, so building the count from it
-    // overstates how many issues are actually open. Ask search for issues only,
-    // and leave the badge blank if that fails rather than showing the inflated
-    // number.
-    const issues = await fetch(
-      `https://api.github.com/search/issues?q=${encodeURIComponent(
-        `repo:${REPO_SLUG} is:issue is:open`,
-      )}&per_page=1`,
-      { headers: { Accept: "application/vnd.github+json" } },
-    );
-    if (issues.ok) {
-      setBadgeCount("badge-issues", (await issues.json()).total_count);
-    }
+    setStarCount(repo.stargazers_count);
   } catch (error) {
-    console.debug("Repository badge counts unavailable", error);
+    console.debug("Repository star count unavailable", error);
   }
 }
 
@@ -8791,7 +8728,7 @@ async function initialize() {
     syncNavState();
   }
   // Independent of the data file, so badges still render on an error state.
-  renderRepoBadges();
+  renderStarCount();
   // The citation and the CLI setup route are fixed text, not readings of the
   // corpus. Someone arriving from a paper's reference link or looking for the
   // offline route should still get them on a build whose data file is broken,

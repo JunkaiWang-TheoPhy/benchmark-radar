@@ -38,12 +38,16 @@ from build_technical_report import (
 )
 from reportlab.graphics.shapes import Drawing, Line, Polygon, Rect, String
 from reportlab.lib.colors import HexColor
+from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
+from reportlab.lib.utils import ImageReader
 from reportlab.platypus import (
     BaseDocTemplate,
     Frame,
+    Image,
+    KeepTogether,
     PageBreak,
     PageTemplate,
     Spacer,
@@ -58,15 +62,17 @@ PURPLE = HexColor("#6D4AFF")
 FROZEN_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-v0.9.0.pdf")
 NEXT_DRAFT_OUTPUT = Path("output/pdf/benchmark-radar-technical-report-next-draft.pdf")
 FROZEN_AUTHORS = ("Koutian Wu",)
-NEXT_DRAFT_AUTHORS = ("Koutian Wu", "Junjie Zhou")
+NEXT_DRAFT_AUTHORS = ("Koutian Wu", "Junjie Zhou", "Jiayu Wang")
 NEXT_DRAFT_BYLINE = (
     "Koutian Wu<super>1,2,*</super>",
     "Junjie Zhou<super>3</super>",
+    "Jiayu Wang<super>4</super>",
 )
 NEXT_DRAFT_AFFILIATIONS = (
     "<super>1</super> Independent researcher",
     "<super>2</super> Tacite AI",
     "<super>3</super> Hangzhou Dianzi University",
+    "<super>4</super> Xi'an Jiaotong University",
 )
 NEXT_DRAFT_CORRESPONDING_AUTHOR = "Koutian Wu, k@tacite.ai"
 
@@ -91,6 +97,26 @@ def table(rows: list[list], widths: list[float], *, tiny: bool = False) -> Table
             ]
         ),
     )
+
+
+def figure(path: str, caption: str, st) -> list:
+    """Scale a screenshot into the text column and return it with a caption."""
+    reader = ImageReader(str(path))
+    width_px, height_px = reader.getSize()
+    scale = min((6.30 * inch) / width_px, (4.00 * inch) / height_px)
+    image = Image(str(path), width=width_px * scale, height=height_px * scale)
+    image.hAlign = "CENTER"
+    style = ParagraphStyle(
+        "FigCaption",
+        parent=st["meta"],
+        fontSize=6.4,
+        leading=8.0,
+        alignment=TA_CENTER,
+        textColor=MUTED,
+        spaceBefore=2,
+        spaceAfter=12,
+    )
+    return [image, p(caption, style)]
 
 
 def metric_strip(st) -> Table:
@@ -368,7 +394,31 @@ def story(
 ) -> list:
     st = styles()
     tiny = ParagraphStyle("Tiny", parent=st["small"], fontSize=6.45, leading=8.0)
-    audit = build_saturation_audit()
+    audit = build_saturation_audit() if draft else None
+    saturation_section = (
+        [
+            p("6.2 Several bounded metrics are near their ceiling", st["subsection"]),
+            p(
+                "Raw headroom is the metric bound minus the best published value. Protocol-stratified headroom keeps only connectable instrument+protocol series with at least two dates. Isolated readings remain facts, but they are not trend evidence. The checked-in audit table records the score IDs, source documents, conflicts, exclusions, and counterexamples for each row.",
+                st["body"],
+            ),
+            saturation_audit_table(st, audit),
+            Spacer(1, 7),
+            saturation_threshold_table(st, audit),
+            p(
+                "At the five-point threshold, the raw archive still places all eight benchmarks in scope. After protocol stratification, only HMMT remains within five points and none remain within three. The machine-readable audit lives in docs/technical-report/saturation-audit-6.2.json.",
+                st["body"],
+            ),
+        ]
+        if draft
+        else [
+            p("6.2 Several bounded metrics are near their ceiling", st["subsection"]),
+            p(
+                "The curated layer records five points of headroom or less for AIME, Arena-Hard, DeepSearchQA, HMMT, MATH-500, MathVision, SWE-bench Verified, and tau2-bench. Read each value with its reasoning budget, tools, attempts, and evaluator. Those settings often explain score movement between model reports.",
+                st["body"],
+            ),
+        ]
+    )
     story: list = []
 
     story.extend(
@@ -978,18 +1028,7 @@ def story(
                 "Eight benchmarks appear in documents from at least six organizations: GPQA Diamond, Humanity's Last Exam, SWE-bench Verified, Terminal-Bench, AIME, LiveCodeBench, MMLU-Pro, and BrowseComp. Teams comparing new model reports will encounter this group most often. The score archive shows where these familiar tests have little headroom left.",
                 st["body"],
             ),
-            p("6.2 Several bounded metrics are near their ceiling", st["subsection"]),
-            p(
-                "Raw headroom is the metric bound minus the best published value. Protocol-stratified headroom keeps only connectable instrument+protocol series with at least two dates. Single readings remain facts, but they are not trend evidence. The checked-in audit table records the score IDs, source documents, conflicts, exclusions, and counterexamples for each row.",
-                st["body"],
-            ),
-            saturation_audit_table(st, audit),
-            Spacer(1, 7),
-            saturation_threshold_table(st, audit),
-            p(
-                "At the five-point threshold, the raw archive still places all eight benchmarks in scope. After protocol stratification, only HMMT remains within five points and none remain within three. The machine-readable audit lives in docs/technical-report/saturation-audit-6.2.json.",
-                st["body"],
-            ),
+            *saturation_section,
             p("6.3 Broad search, deeper curation", st["subsection"]),
             p(
                 "The external catalog holds 1,173 rows, more than twelve times the 94-benchmark adoption registry. Use catalog search to find candidates. The curated registry adds the model reports, organizations, instruments, and protocols needed for comparison.",
@@ -1037,6 +1076,76 @@ def story(
                 ],
                 [0.55 * inch, 3.35 * inch, 2.70 * inch],
             ),
+            KeepTogether(
+                [
+                    p(
+                        "6.5 Worked real use case: prior-art check for a new evaluation",
+                        st["subsection"],
+                    ),
+                    p(
+                        "Jiayu Wang, a researcher working on agent evaluation, used Benchmark Radar to decide whether a proposed new evaluation would duplicate existing work. The check decides whether the design is still novel, and it used to be slow: comparing a candidate against the field required long manual searches, and completeness was hard to guarantee. The case ran during August 2026 with a concrete task: survey recent work on credit assignment in agentic training, keeping small Qwen-series baselines as a reproducibility constraint.",
+                        st["body"],
+                    ),
+                ]
+            ),
+            p(
+                "The author gave the task to a coding agent together with the public consumer prompt for Benchmark Radar. The agent installed the CLI and the benchmark-radar Skill, initialized the local corpus with benchmark-radar init, and queried candidate records with benchmark-radar search.",
+                st["body"],
+            ),
+            *figure(
+                "assets/use-case-492/agent-session.png",
+                "<b>Figure 1.</b> A coding agent follows the consumer setup prompt, installs the Benchmark Radar CLI and Skill, and runs local queries.",
+                st,
+            ),
+            p(
+                "Radar links one artifact across papers, code, releases, and datasets. The agent could therefore see at a glance whether a candidate was announced as a paper with no released code, or shipped code without its dataset.",
+                st["body"],
+            ),
+            *figure(
+                "assets/use-case-492/artifact-status-paper.png",
+                "<b>Figure 2.</b> Radar consolidates the sources and status of one artifact.",
+                st,
+            ),
+            *figure(
+                "assets/use-case-492/artifact-status-code.png",
+                "<b>Figure 3.</b> A companion record in which code is public but the dataset is not yet released.",
+                st,
+            ),
+            p(
+                "Radar search is deterministic lexical matching, so the agent also ran its own web search and cross-checked the two candidate sets before accepting a record. This double pass keeps a differently worded version of the same idea from being missed.",
+                st["body"],
+            ),
+            *figure(
+                "assets/use-case-492/cross-validation.png",
+                "<b>Figure 4.</b> Cross-checking Radar candidates against the agent's own web search before accepting a record.",
+                st,
+            ),
+            p(
+                "The session ended with a focused summary table of related work that the author judged complete enough to act on.",
+                st["body"],
+            ),
+            *figure(
+                "assets/use-case-492/survey-table.png",
+                "<b>Figure 5.</b> Summary table of recent work on credit assignment in agentic training assembled during the session.",
+                st,
+            ),
+            p(
+                "The savings are easiest to measure against the author's earlier benchmark, AARRI-Bench, whose equivalent prior-art comparison consumed effort second only to producing the benchmark data itself, for a table of just 12 rows and 7 columns.",
+                st["body"],
+            ),
+            *figure(
+                "assets/use-case-492/aarri-bench-manual-table.png",
+                "<b>Figure 6.</b> The manually built 12-by-7 prior-art table for AARRI-Bench, the workflow that Radar now shortens.",
+                st,
+            ),
+            p(
+                "Limits: Radar search is deterministic lexical matching rather than semantic retrieval, so a differently worded query can change the candidate set. The session used the Radar CLI together with the agent's general web search, so it does not isolate Radar alone. Repository and dataset availability is a snapshot, not a permanent label. The case documents one contributor's workflow; it is not a measured user study. Full evidence, including the summary table and session screenshots, is public in issue #492.",
+                st["body"],
+            ),
+            p(
+                "<b>Contributor.</b> Jiayu Wang, Xi'an Jiaotong University. Case and evidence: github.com/ktwu01/benchmark-radar/issues/492",
+                st["body"],
+            ),
             Spacer(1, 10),
             Table(
                 [
@@ -1074,7 +1183,7 @@ def story(
             ),
             p("7.1 Methods and limitations", st["subsection"]),
             p(
-                "The 6.2 audit uses the same curated score archive and model-card registry as the rest of the report. A score is comparable only when instrument and protocol both match; a protocol-stratified headroom is reported only when a connectable series has at least two dated points. When no such series exists, the archive keeps the raw reading but labels it as a single observation rather than trend evidence.",
+                "The 6.2 audit uses the same curated score archive and model-card registry as the rest of the report. A score is comparable only when instrument and protocol both match; a protocol-stratified headroom is reported only when a connectable series has at least two dated points. When no such series exists, the archive keeps the raw reading and records each isolated observation with its exclusion reason.",
                 st["body"],
             ),
             p("7.2 Contributor credit", st["subsection"]),
@@ -1084,7 +1193,7 @@ def story(
             ),
             p("7.3 Issue link", st["subsection"]),
             p(
-                "[#457](https://github.com/ktwu01/benchmark-radar/issues/457) Near-ceiling metrics under protocol controls.",
+                '<link href="https://github.com/ktwu01/benchmark-radar/issues/457">Issue #457</link> Near-ceiling metrics under protocol controls.',
                 st["body"],
             ),
             table(
@@ -1220,8 +1329,8 @@ def main() -> None:
     )
     args = parser.parse_args()
     output = args.output or (NEXT_DRAFT_OUTPUT if args.next_draft else FROZEN_OUTPUT)
-    if args.next_draft and output.resolve() == FROZEN_OUTPUT.resolve():
-        parser.error("--next-draft cannot overwrite the frozen v0.9.0 PDF")
+    if output.resolve() == FROZEN_OUTPUT.resolve():
+        parser.error("cannot overwrite the frozen v0.9.0 PDF; use --next-draft")
     output.parent.mkdir(parents=True, exist_ok=True)
     authors = NEXT_DRAFT_AUTHORS if args.next_draft else FROZEN_AUTHORS
     byline = NEXT_DRAFT_BYLINE if args.next_draft else None

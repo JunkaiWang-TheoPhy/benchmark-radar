@@ -113,16 +113,23 @@ def test_citation_metadata_prefers_the_technical_report():
     assert f'url: "{TECHNICAL_REPORT}"' in text
 
 
+def test_public_bibtex_names_both_report_authors():
+    author = "author       = {Wu, Koutian and Zhou, Junjie}"
+    for readme in (README, README_ZH):
+        assert author in readme.read_text(encoding="utf-8")
+
+
 def test_readmes_offer_a_short_agent_setup_prompt():
-    # Regression: local-query setup should be one copy-paste prompt, not a second
+    # Regression: local-query setup should be one copy-paste command, not a second
     # maintainer manual (issue #436).
     english = README.read_text(encoding="utf-8")
     chinese = README_ZH.read_text(encoding="utf-8")
-    assert "Give this prompt to your coding agent:" in english
-    assert "把下面这段直接发给你的 coding agent：" in chinese
+    assert "Then ask your coding agent about benchmarks." in english
+    assert "之后直接问你的 coding agent benchmark 就行。" in chinese
     english_section = english.split("## Query it locally", 1)[1].split("## More", 1)[0]
     chinese_section = chinese.split("## 在本地查询", 1)[1].split("## 更多", 1)[0]
     for section in (english_section, chinese_section):
+        assert "npx skills add ktwu01/benchmark-radar" in section
         assert "skills/benchmark-radar/SKILL.md" in section
         assert "normalize-external" not in section
         assert "build-data-release" not in section
@@ -134,6 +141,25 @@ def test_readmes_expose_the_consumer_skill():
     skill_path = "skills/benchmark-radar/SKILL.md"
     assert skill_path in README.read_text(encoding="utf-8")
     assert skill_path in README_ZH.read_text(encoding="utf-8")
+
+
+def test_consumer_skill_recovers_a_broken_cli() -> None:
+    # Setup is the Skill's job, not a checklist the reader has to run: the two
+    # published lines only work if the Skill installs and repairs on its own.
+    text = SKILL.read_text(encoding="utf-8")
+    assert "missing or broken" in text
+    assert "--force-reinstall" in text
+    assert "say you are installing the CLI from the official repository" in text
+    assert "report what you ran" in text
+
+
+def test_consumer_skill_offers_starter_example_on_setup() -> None:
+    # When setup completes without a specific query, the Skill showcases a starter
+    # example (e.g. popular agent benchmarks) so the user sees immediate results.
+    text = SKILL.read_text(encoding="utf-8")
+    assert "starter use case" in text
+    assert "agent" in text
+    assert "present a concise summary" in text
 
 
 def test_consumer_skill_keeps_acceptance_with_the_agent() -> None:

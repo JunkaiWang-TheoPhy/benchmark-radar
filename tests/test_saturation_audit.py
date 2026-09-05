@@ -24,3 +24,13 @@ def test_section_6_2_audit_separates_raw_and_protocol_stratified_headroom() -> N
 def test_section_6_2_json_artifact_matches_the_helper() -> None:
     path = Path("docs/technical-report/saturation-audit-6.2.json")
     assert json.loads(path.read_text(encoding="utf-8")) == build_saturation_audit()
+
+
+def test_unjoinable_observations_are_explicitly_excluded() -> None:
+    audit = build_saturation_audit()
+    rows = {row["benchmark_id"]: row for row in audit["benchmarks"]}
+    for benchmark_id in ("math_500", "mathvision", "tau2_bench"):
+        row = rows[benchmark_id]
+        assert row["protocol_best"] is None
+        assert len(row["exclusions"]) == len(row["score_ids"])
+        assert all("no connectable" in item["reason"] for item in row["exclusions"])

@@ -60,19 +60,18 @@ If Benchmark Radar saves you research time, **[star the repository](https://gith
 
 ## Query it locally (CLI version)
 
-The web dashboard is the hosted view. For offline querying, use **the CLI
-version**: it installs the CLI, downloads the local searchable data, and
-answers from local files. Give this prompt to your coding agent:
-
-```text
-Set up Benchmark Radar for local benchmark search. Follow
-https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md
-to install the CLI and consumer Skill, initialize the local data, and verify the
-setup. Use only consumer commands.
+```bash
+npx skills add ktwu01/benchmark-radar
 ```
+
+Then ask your coding agent about benchmarks. It installs the command-line tool
+and downloads the data to your computer the first time you ask. What it does is
+written in the
+[setup and usage guide](https://github.com/ktwu01/benchmark-radar/blob/main/skills/benchmark-radar/SKILL.md).
 
 ## More
 
+- [Design principles](design.md)
 - [Scoring rubric](https://benchmark-radar.org/rubric/)
 - [Model-card adoption data](data/model_cards.yml)
 - [Public corpus schema](docs/cumulative-corpus.schema.json)
@@ -113,7 +112,7 @@ technical report:
 
 ```bibtex
 @misc{wu_2026_22167102,
-  author       = {Wu, Koutian},
+  author       = {Wu, Koutian and Zhou, Junjie},
   title        = {Benchmark Radar v0.9.0: Technical Report},
   month        = aug,
   year         = {2026},
@@ -141,7 +140,7 @@ The daily evidence feed is built on public data from [arXiv](https://arxiv.org),
 [GitHub Search](https://github.com/search), [GitHub organizations](https://github.com),
 [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases),
 [Hugging Face datasets and Spaces](https://huggingface.co), [Hugging Face Papers](https://huggingface.co/papers),
-[OpenAlex](https://openalex.org), [OpenReview](https://openreview.net),
+[Crossref](https://www.crossref.org), [OpenAlex](https://openalex.org), [OpenReview](https://openreview.net),
 [Kaggle datasets](https://www.kaggle.com/datasets), [Zenodo](https://zenodo.org),
 [Semantic Scholar](https://www.semanticscholar.org), [Brave Search](https://search.brave.com),
 and [Hacker News](https://news.ycombinator.com), plus first-party lab feeds from

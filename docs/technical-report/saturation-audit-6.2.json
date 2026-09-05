@@ -324,9 +324,31 @@
       "conflicts": [
         "Live-web deep research; F1 grading depends on the reference answer set."
       ],
-      "counterexamples": [],
+      "counterexamples": [
+        {
+          "instrument": "deepsearchqa",
+          "model": "Kimi K3",
+          "observation_id": "curated\u0000deepsearchqa\u0000moonshot_kimi_k3_model_card\u0000deepsearchqa\u0000F1, reasoning=max\u0000Kimi K3",
+          "organization": "Moonshot AI",
+          "protocol": "F1, reasoning=max",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-06-13",
+          "value": 95.0
+        }
+      ],
       "direction": "higher_is_better",
-      "exclusions": [],
+      "exclusions": [
+        {
+          "instrument": "deepsearchqa",
+          "model": "Kimi K3",
+          "observation_id": "curated\u0000deepsearchqa\u0000moonshot_kimi_k3_model_card\u0000deepsearchqa\u0000F1, reasoning=max\u0000Kimi K3",
+          "organization": "Moonshot AI",
+          "protocol": "F1, reasoning=max",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-06-13",
+          "value": 95.0
+        }
+      ],
       "metric": "f1",
       "name": "DeepSearchQA",
       "protocol_best": null,
@@ -542,9 +564,71 @@
         "protocols: EM, 8K output limit, Pass@1, thinking mode",
         "Largely saturated at the frontier."
       ],
-      "counterexamples": [],
+      "counterexamples": [
+        {
+          "instrument": "math_500",
+          "model": "DeepSeek-V3",
+          "observation_id": "curated\u0000math_500\u0000deepseek_v3_report\u0000math_500\u0000EM, 8K output limit\u0000DeepSeek-V3",
+          "organization": "DeepSeek",
+          "protocol": "EM, 8K output limit",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2024-12-27",
+          "value": 90.2
+        },
+        {
+          "instrument": "math_500",
+          "model": "DeepSeek-R1",
+          "observation_id": "curated\u0000math_500\u0000deepseek_r1_report\u0000math_500\u0000Pass@1\u0000DeepSeek-R1",
+          "organization": "DeepSeek",
+          "protocol": "Pass@1",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2025-01-22",
+          "value": 97.3
+        },
+        {
+          "instrument": "math_500",
+          "model": "Qwen3-235B-A22B (Thinking)",
+          "observation_id": "curated\u0000math_500\u0000qwen3_technical_report\u0000math_500\u0000thinking mode\u0000Qwen3-235B-A22B (Thinking)",
+          "organization": "Qwen",
+          "protocol": "thinking mode",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2025-05-14",
+          "value": 98.0
+        }
+      ],
       "direction": "higher_is_better",
-      "exclusions": [],
+      "exclusions": [
+        {
+          "instrument": "math_500",
+          "model": "DeepSeek-V3",
+          "observation_id": "curated\u0000math_500\u0000deepseek_v3_report\u0000math_500\u0000EM, 8K output limit\u0000DeepSeek-V3",
+          "organization": "DeepSeek",
+          "protocol": "EM, 8K output limit",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2024-12-27",
+          "value": 90.2
+        },
+        {
+          "instrument": "math_500",
+          "model": "DeepSeek-R1",
+          "observation_id": "curated\u0000math_500\u0000deepseek_r1_report\u0000math_500\u0000Pass@1\u0000DeepSeek-R1",
+          "organization": "DeepSeek",
+          "protocol": "Pass@1",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2025-01-22",
+          "value": 97.3
+        },
+        {
+          "instrument": "math_500",
+          "model": "Qwen3-235B-A22B (Thinking)",
+          "observation_id": "curated\u0000math_500\u0000qwen3_technical_report\u0000math_500\u0000thinking mode\u0000Qwen3-235B-A22B (Thinking)",
+          "organization": "Qwen",
+          "protocol": "thinking mode",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2025-05-14",
+          "value": 98.0
+        }
+      ],
       "metric": "accuracy",
       "name": "MATH-500",
       "protocol_best": null,
@@ -599,9 +683,81 @@
         "protocols: as reported, reasoning=max, with Python, reasoning=max, without tools, thinking (temp 0.6, top_p 0.95, top_k 20), fixed boxed prompt",
         "Prompt-format sensitive: vendors report boxed and unboxed variants and sometimes take the higher of the two."
       ],
-      "counterexamples": [],
+      "counterexamples": [
+        {
+          "instrument": "mathvision",
+          "model": "Qwen3.5-397B-A17B",
+          "observation_id": "curated\u0000mathvision\u0000qwen3_5_model_card\u0000mathvision\u0000thinking (temp 0.6, top_p 0.95, top_k 20), fixed boxed prompt\u0000Qwen3.5-397B-A17B",
+          "organization": "Qwen",
+          "protocol": "thinking (temp 0.6, top_p 0.95, top_k 20), fixed boxed prompt",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-02-16",
+          "value": 88.6
+        },
+        {
+          "instrument": "mathvision",
+          "model": "Gemma 4 (31B)",
+          "observation_id": "curated\u0000mathvision\u0000google_gemma_4_model_card\u0000mathvision\u0000as reported\u0000Gemma 4 (31B)",
+          "organization": "Google",
+          "protocol": "as reported",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-03-11",
+          "value": 85.6
+        },
+        {
+          "instrument": "mathvision",
+          "model": "Kimi K3",
+          "observation_id": "curated\u0000mathvision\u0000moonshot_kimi_k3_model_card\u0000mathvision\u0000reasoning=max, without tools\u0000Kimi K3",
+          "organization": "Moonshot AI",
+          "protocol": "reasoning=max, without tools",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-06-13",
+          "value": 94.3
+        }
+      ],
       "direction": "higher_is_better",
-      "exclusions": [],
+      "exclusions": [
+        {
+          "instrument": "mathvision",
+          "model": "Qwen3.5-397B-A17B",
+          "observation_id": "curated\u0000mathvision\u0000qwen3_5_model_card\u0000mathvision\u0000thinking (temp 0.6, top_p 0.95, top_k 20), fixed boxed prompt\u0000Qwen3.5-397B-A17B",
+          "organization": "Qwen",
+          "protocol": "thinking (temp 0.6, top_p 0.95, top_k 20), fixed boxed prompt",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-02-16",
+          "value": 88.6
+        },
+        {
+          "instrument": "mathvision",
+          "model": "Gemma 4 (31B)",
+          "observation_id": "curated\u0000mathvision\u0000google_gemma_4_model_card\u0000mathvision\u0000as reported\u0000Gemma 4 (31B)",
+          "organization": "Google",
+          "protocol": "as reported",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-03-11",
+          "value": 85.6
+        },
+        {
+          "instrument": "mathvision",
+          "model": "Kimi K3",
+          "observation_id": "curated\u0000mathvision\u0000moonshot_kimi_k3_model_card\u0000mathvision\u0000reasoning=max, without tools\u0000Kimi K3",
+          "organization": "Moonshot AI",
+          "protocol": "reasoning=max, without tools",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-06-13",
+          "value": 94.3
+        },
+        {
+          "instrument": "mathvision",
+          "model": "Kimi K3",
+          "observation_id": "curated\u0000mathvision\u0000moonshot_kimi_k3_model_card\u0000mathvision\u0000reasoning=max, with Python\u0000Kimi K3",
+          "organization": "Moonshot AI",
+          "protocol": "reasoning=max, with Python",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-06-13",
+          "value": 97.8
+        }
+      ],
       "metric": "accuracy",
       "name": "MathVision",
       "protocol_best": null,
@@ -961,9 +1117,91 @@
         "protocols: Retail and Telecom prompt adjustment; Airline domain fixes per Claude Opus 4.5 system card, Thinking (High), Retail, Thinking (High), Telecom, average over 3, thinking (temp 0.6, top_p 0.95, top_k 20)",
         "Per-domain scores (Retail, Telecom, Airline) diverge sharply and several cards apply the Airline domain fixes from the Claude Opus 4.5 system card, so an average conceals both the domain mix and the patch level."
       ],
-      "counterexamples": [],
+      "counterexamples": [
+        {
+          "instrument": "tau2_bench",
+          "model": "GLM-5",
+          "observation_id": "curated\u0000tau2_bench\u0000zai_glm_5_model_card\u0000tau2_bench\u0000Retail and Telecom prompt adjustment; Airline domain fixes per Claude Opus 4.5 system card\u0000GLM-5",
+          "organization": "Z.ai",
+          "protocol": "Retail and Telecom prompt adjustment; Airline domain fixes per Claude Opus 4.5 system card",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-02-11",
+          "value": 89.7
+        },
+        {
+          "instrument": "tau2_bench",
+          "model": "Qwen3.5-397B-A17B",
+          "observation_id": "curated\u0000tau2_bench\u0000qwen3_5_model_card\u0000tau2_bench\u0000thinking (temp 0.6, top_p 0.95, top_k 20)\u0000Qwen3.5-397B-A17B",
+          "organization": "Qwen",
+          "protocol": "thinking (temp 0.6, top_p 0.95, top_k 20)",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-02-16",
+          "value": 86.7
+        },
+        {
+          "instrument": "tau2_bench",
+          "model": "Gemini 3.1 Pro",
+          "observation_id": "curated\u0000tau2_bench\u0000google_gemini_3_1_pro_model_card\u0000tau2_bench\u0000Thinking (High), Retail\u0000Gemini 3.1 Pro",
+          "organization": "Google",
+          "protocol": "Thinking (High), Retail",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-02-19",
+          "value": 90.8
+        }
+      ],
       "direction": "higher_is_better",
-      "exclusions": [],
+      "exclusions": [
+        {
+          "instrument": "tau2_bench",
+          "model": "GLM-5",
+          "observation_id": "curated\u0000tau2_bench\u0000zai_glm_5_model_card\u0000tau2_bench\u0000Retail and Telecom prompt adjustment; Airline domain fixes per Claude Opus 4.5 system card\u0000GLM-5",
+          "organization": "Z.ai",
+          "protocol": "Retail and Telecom prompt adjustment; Airline domain fixes per Claude Opus 4.5 system card",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-02-11",
+          "value": 89.7
+        },
+        {
+          "instrument": "tau2_bench",
+          "model": "Qwen3.5-397B-A17B",
+          "observation_id": "curated\u0000tau2_bench\u0000qwen3_5_model_card\u0000tau2_bench\u0000thinking (temp 0.6, top_p 0.95, top_k 20)\u0000Qwen3.5-397B-A17B",
+          "organization": "Qwen",
+          "protocol": "thinking (temp 0.6, top_p 0.95, top_k 20)",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-02-16",
+          "value": 86.7
+        },
+        {
+          "instrument": "tau2_bench",
+          "model": "Gemini 3.1 Pro",
+          "observation_id": "curated\u0000tau2_bench\u0000google_gemini_3_1_pro_model_card\u0000tau2_bench\u0000Thinking (High), Retail\u0000Gemini 3.1 Pro",
+          "organization": "Google",
+          "protocol": "Thinking (High), Retail",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-02-19",
+          "value": 90.8
+        },
+        {
+          "instrument": "tau2_bench",
+          "model": "Gemini 3.1 Pro",
+          "observation_id": "curated\u0000tau2_bench\u0000google_gemini_3_1_pro_model_card\u0000tau2_bench\u0000Thinking (High), Telecom\u0000Gemini 3.1 Pro",
+          "organization": "Google",
+          "protocol": "Thinking (High), Telecom",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-02-19",
+          "value": 99.3
+        },
+        {
+          "instrument": "tau2_bench",
+          "model": "Gemma 4 (31B)",
+          "observation_id": "curated\u0000tau2_bench\u0000google_gemma_4_model_card\u0000tau2_bench\u0000average over 3\u0000Gemma 4 (31B)",
+          "organization": "Google",
+          "protocol": "average over 3",
+          "reason": "no connectable protocol-stratified series with at least two dated points",
+          "reported_at": "2026-03-11",
+          "value": 76.9
+        }
+      ],
       "metric": "accuracy",
       "name": "tau2-bench",
       "protocol_best": null,

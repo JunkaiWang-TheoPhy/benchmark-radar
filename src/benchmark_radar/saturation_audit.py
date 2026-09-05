@@ -158,6 +158,20 @@ def build_saturation_audit(
                 for row in record["observations"]
                 if row["observation_id"] not in selected_ids
             ]
+        else:
+            exclusions = [
+                {
+                    "observation_id": row["observation_id"],
+                    "instrument": row["instrument"],
+                    "protocol": row["protocol"],
+                    "model": row["model"],
+                    "organization": row["organization"],
+                    "reported_at": str(row["reported_at"]),
+                    "value": row["value"],
+                    "reason": "no connectable protocol-stratified series with at least two dated points",
+                }
+                for row in record["observations"]
+            ]
 
         benchmark_rows.append(
             {
