@@ -27,8 +27,9 @@ family projection; and missing-report stress tests. A card's `revised` date is
 used when recorded, otherwise its `published` date. Window boundaries are
 inclusive.
 
-Aliases do not merge records automatically. Four normalized identities are
-ambiguous in the registry, including MMMU-Pro and Toolathlon. The reviewed
+Aliases do not merge records automatically. Five normalized collision keys span
+four distinct ambiguous benchmark-pair groups in the registry, including MMMU-Pro
+and Toolathlon. The reviewed
 family mapping resolves those cases explicitly and records primary project or
 paper URLs. Family aggregation applies only to mention edges. It never averages
 or combines scores, instruments, splits, evaluators, budgets, or protocols.
