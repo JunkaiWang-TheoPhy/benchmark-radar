@@ -115,6 +115,9 @@ watchlist:
   - name: Long-Horizon Bench
     aliases: ["long horizon bench", "long horizon benchmark", longhorizonbench]
     note: Evaluations targeting extended multi-step agent execution.
+  - name: RSI-Exam
+    aliases: [rsi-exam, "rsi exam"]
+    note: Executable long-horizon research benchmark for recursive self-improvement.
 
 sources:
   arxiv:
@@ -204,6 +207,7 @@ sources:
       - '"data contamination" in:name,description,readme'
       - '"agent benchmark" in:name,description,readme'
       - '"agentic benchmark" in:name,description,readme'
+      - '"RSI-Exam" in:name,description,readme'
 
   # Reviewed public organizations are an additional discovery surface for new
   # repositories whose names may not match generic GitHub search phrases. The
