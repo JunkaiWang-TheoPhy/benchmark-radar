@@ -58,6 +58,17 @@ The family-projection row contains 5 explicit families + 8 singleton canonical
 IDs. It does not claim that all 13 resolved identities are multi-benchmark
 families.
 
+| Counting method | Implementation | Identity rule | Selection / threshold | Result output |
+|---|---|---|---|---|
+| Full history, canonical IDs | `scripts/analyze_vendor_attention.py` | Canonical ID | All documents; 6 organizations | `scenario-summary.csv` → `canonical_all_t6` |
+| Time-window, document, and missing-report sensitivities | `scripts/analyze_vendor_attention.py` | Canonical ID | Pre-registered 5/6/7 thresholds, 365/180/90-day windows, latest-per-organization, and drop-newest variants | `scenario-summary.csv`, `sensitivity-membership.csv` |
+| Reviewed-family projection | `scripts/analyze_vendor_attention.py` | Explicit families plus canonical singletons | All documents; 6 organizations | `scenario-summary.csv` → `reviewed_families_t6` |
+| Reader-facing report | `scripts/build_system_evaluation.py` | Uses the audit rows above | Draft report only | `claim-audit.json` and PDF reference [10] |
+
+The robustness median is 0.4688 when the baseline self-comparison is included,
+and 0.3750 when it is excluded; both are below the pre-registered 0.80
+retention requirement. The recommendation is therefore unchanged.
+
 The full-history threshold set contains GPQA Diamond, Humanity's Last Exam,
 Terminal-Bench, SWE-bench Verified, AIME, LiveCodeBench, MMLU-Pro, SWE-bench
 Pro, IFEval, MMLU, BrowseComp, MATH-500, MMMU, HumanEval, GSM8K, and MMMLU.

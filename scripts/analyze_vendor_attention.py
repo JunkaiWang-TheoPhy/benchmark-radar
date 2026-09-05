@@ -712,6 +712,11 @@ def generate_vendor_attention_audit(
     median_jaccard = statistics.median(
         summary_by_id[scenario_id]["jaccard_vs_baseline"] for scenario_id in robustness_ids
     )
+    median_jaccard_excluding_baseline = statistics.median(
+        summary_by_id[scenario_id]["jaccard_vs_baseline"]
+        for scenario_id in robustness_ids
+        if scenario_id != primary_id
+    )
     every_document_survives = all(row["survives_every_document_omission"] for row in loo.values())
     original_ids = set(audit["original_claim"]["listed_benchmark_ids"])
     primary_threshold = int(scenarios[primary_id]["min_organizations"])
@@ -766,6 +771,8 @@ def generate_vendor_attention_audit(
         "robustness": {
             "scenario_ids": robustness_ids,
             "median_jaccard": round(median_jaccard, 4),
+            "baseline_self_comparison_included": primary_id in robustness_ids,
+            "median_jaccard_excluding_baseline": round(median_jaccard_excluding_baseline, 4),
             "required_median_jaccard": audit["decision_rule"]["exact_membership_median_jaccard"],
             "every_baseline_member_survives_single_document_omission": every_document_survives,
             **decision_state,

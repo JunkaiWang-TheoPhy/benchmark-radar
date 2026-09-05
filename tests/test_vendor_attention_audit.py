@@ -104,6 +104,8 @@ def test_shipped_audit_reproduces_primary_counts_and_sensitivity():
         "drop_newest_per_organization_t6",
     ]
     assert audit["robustness"]["median_jaccard"] == 0.4688
+    assert audit["robustness"]["baseline_self_comparison_included"] is True
+    assert audit["robustness"]["median_jaccard_excluding_baseline"] == 0.375
 
     membership_by_scenario = {}
     for row in result["membership_rows"]:
