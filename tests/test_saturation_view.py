@@ -203,7 +203,10 @@ def test_only_a_benchmark_with_a_readable_score_can_be_selected():
     script = source("site/assets/app.js")
     render = script.split("function renderAdoptionFrontier(board)", 1)[1].split("\nfunction ", 1)[0]
 
-    assert "const scored = adopted.filter((entry) => scoreRecord(entry.benchmark_id));" in render
+    assert (
+        "const scored = (board.entries || []).filter((entry) => scoreRecord(entry.benchmark_id));"
+        in render
+    )
     # The <select>, the resolution of a ?lfrontier= permalink, and the empty
     # state all read from `scored`, so none of them can surface an unscored one.
     assert "renderFrontierPicker(scored, state.lfrontier);" in render
