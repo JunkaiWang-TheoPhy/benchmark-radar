@@ -67,7 +67,7 @@ document per organization leaves only Terminal-Bench, GPQA Diamond, and
 Humanity's Last Exam.
 
 The pre-registered exact-membership rule also fails. Median Jaccard similarity
-across the full-scope document and identity alternatives is 0.4062, below the
+across the full-scope document and identity alternatives is 0.4688, below the
 0.80 retention threshold. Six of the 16 baseline members—BrowseComp, GSM8K,
 HumanEval, MATH-500, MMMLU, and MMMU—do not survive every leave-one-organization
 or leave-one-document stress test. MMLU-Pro and SWE-bench Pro survive those

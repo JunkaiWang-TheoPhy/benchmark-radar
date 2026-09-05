@@ -34,15 +34,17 @@ def test_next_draft_records_contributor_name_and_affiliation() -> None:
     draft_affiliations = ast.literal_eval(_assignment("NEXT_DRAFT_AFFILIATIONS").value)
     corresponding_author = ast.literal_eval(_assignment("NEXT_DRAFT_CORRESPONDING_AUTHOR").value)
 
-    assert draft_authors == ("Koutian Wu", "Junjie Zhou")
+    assert draft_authors == ("Koutian Wu", "Junjie Zhou", "Jiayu Wang")
     assert draft_byline == (
         "Koutian Wu<super>1,2,*</super>",
         "Junjie Zhou<super>3</super>",
+        "Jiayu Wang<super>4</super>",
     )
     assert draft_affiliations == (
         "<super>1</super> Independent researcher",
         "<super>2</super> Tacite AI",
         "<super>3</super> Hangzhou Dianzi University",
+        "<super>4</super> Xi'an Jiaotong University",
     )
     assert corresponding_author == "Koutian Wu, k@tacite.ai"
     assert "Corresponding author: {corresponding_author}" in source
