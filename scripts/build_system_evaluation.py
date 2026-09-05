@@ -1173,17 +1173,8 @@ def story(
         ]
     )
 
-    if not draft:
-        return story
-
-    story.extend(
+    draft_sections = (
         [
-            PageBreak(),
-            p("7. Reproducibility, access, and citation", st["section"]),
-            p(
-                "This report evaluates Benchmark Radar v0.9.0 at Git commit 98c7de3 and data cutoff 2026-08-29. The clean worktree ran the CI sequence: lint and formatting checks, external normalization, KW-Bench classification, checksummed data-release construction, and the full test suite. All 1,028 tests passed.",
-                st["body"],
-            ),
             p("7.1 Methods and limitations", st["subsection"]),
             p(
                 "The 6.2 audit uses the same curated score archive and model-card registry as the rest of the report. A score is comparable only when instrument and protocol both match; a protocol-stratified headroom is reported only when a connectable series has at least two dated points. When no such series exists, the archive keeps the raw reading and records each isolated observation with its exclusion reason.",
@@ -1199,6 +1190,19 @@ def story(
                 '<link href="https://github.com/ktwu01/benchmark-radar/issues/457">Issue #457</link> Near-ceiling metrics under protocol controls.',
                 st["body"],
             ),
+        ]
+        if draft
+        else []
+    )
+    story.extend(
+        [
+            PageBreak(),
+            p("7. Reproducibility, access, and citation", st["section"]),
+            p(
+                "This report evaluates Benchmark Radar v0.9.0 at Git commit 98c7de3 and data cutoff 2026-08-29. The clean worktree ran the CI sequence: lint and formatting checks, external normalization, KW-Bench classification, checksummed data-release construction, and the full test suite. All 1,028 tests passed.",
+                st["body"],
+            ),
+            *draft_sections,
             table(
                 [
                     [

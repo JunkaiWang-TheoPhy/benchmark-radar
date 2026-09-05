@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from benchmark_radar.saturation_audit import build_saturation_audit
+from benchmark_radar.saturation_audit import _selected_protocol_series, build_saturation_audit
 
 
 def test_section_6_2_audit_separates_raw_and_protocol_stratified_headroom() -> None:
@@ -34,3 +34,30 @@ def test_unjoinable_observations_are_explicitly_excluded() -> None:
         assert row["protocol_best"] is None
         assert len(row["exclusions"]) == len(row["score_ids"])
         assert all("no connectable" in item["reason"] for item in row["exclusions"])
+
+
+def test_lower_is_better_selects_the_lowest_series_best() -> None:
+    def series(value: float, key: str) -> dict:
+        return {
+            "connectable": True,
+            "dated_points": 2,
+            "point_count": 2,
+            "last_reported_at": "2026-08-01",
+            "instrument": key,
+            "protocol": "p",
+            "points": [
+                {
+                    "value": value,
+                    "reported_at": "2026-08-01",
+                    "observation_id": key,
+                    "organization": key,
+                    "model": key,
+                }
+            ],
+        }
+
+    record = {
+        "direction": "lower_is_better",
+        "series": [series(9.0, "weak"), series(3.0, "strong")],
+    }
+    assert _selected_protocol_series(record)["instrument"] == "strong"

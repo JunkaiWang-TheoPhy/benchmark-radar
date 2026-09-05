@@ -59,10 +59,15 @@ def _selected_protocol_series(record: dict[str, Any]) -> dict[str, Any] | None:
     connectable = [series for series in record["series"] if series["connectable"]]
     if not connectable:
         return None
+    higher_is_better = direction == "higher_is_better"
     return max(
         connectable,
         key=lambda series: (
-            _series_best(series, direction)["value"],
+            (
+                _series_best(series, direction)["value"]
+                if higher_is_better
+                else -_series_best(series, direction)["value"]
+            ),
             series["dated_points"],
             series["point_count"],
             series["last_reported_at"],
