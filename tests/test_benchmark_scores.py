@@ -465,6 +465,31 @@ def test_cross_check_accepts_a_score_cited_to_an_external_benchmark_source(tmp_p
     assert observation["source_document_type"] == "benchmark_leaderboard"
 
 
+def test_cross_check_uses_registry_source_metadata_over_score_file_copy(tmp_path):
+    path = write_scores(
+        tmp_path,
+        minimal_scores(
+            sources=[external_source()],
+            results=[result(source_id="alpha_leaderboard", read_from="html_text")],
+        ),
+    )
+    registry_source = external_source()
+    registry_source["title"] = "Reviewed title"
+    registry_source["url"] = "https://reviewed.example/alpha"
+    registry = {
+        "benchmarks": [{"id": "alpha"}],
+        "model_cards": [],
+        "source_documents": [registry_source],
+    }
+
+    observation = score_progression(load_scores(path), registry)["benchmarks"]["alpha"][
+        "observations"
+    ][0]
+
+    assert observation["source_title"] == "Reviewed title"
+    assert observation["source_url"] == "https://reviewed.example/alpha"
+
+
 def test_cross_check_rejects_an_external_source_that_does_not_cover_the_score(tmp_path):
     path = write_scores(
         tmp_path,

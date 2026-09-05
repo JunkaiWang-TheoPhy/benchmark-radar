@@ -6596,6 +6596,7 @@ function scoreTrackChart(entry, board) {
       ),
     );
 
+    const collisionCounts = new Map();
     for (const observation of record.observations) {
       const source = (board.model_cards || []).find(
         (card) => card.model_card_id === observation.source_id,
@@ -6610,7 +6611,13 @@ function scoreTrackChart(entry, board) {
           ).replaceAll("_", " ")})`
         : observation.source_id.replaceAll("_", " ");
       const pointX = x(observation.reported_at);
-      const pointY = scoreY(observation.value);
+      const collisionKey = `${observation.reported_at}|${observation.value}`;
+      const collisionIndex = collisionCounts.get(collisionKey) || 0;
+      collisionCounts.set(collisionKey, collisionIndex + 1);
+      const collisionOffset = collisionIndex
+        ? (collisionIndex % 2 ? 1 : -1) * Math.ceil(collisionIndex / 2) * 8
+        : 0;
+      const pointY = scoreY(observation.value) + collisionOffset;
       // "其他的点可以淡化" (issue #312): readings that are not part of the
       // historical-best line recede behind it -- but only while there IS a
       // normalized frontier. A chart lacking that payload keeps every point at

@@ -327,12 +327,36 @@ def _cross_check_sources(scores: dict[str, Any], registry: dict[str, Any]) -> No
             for source in registry.get("source_documents", [])
         }
     )
+    source_metadata = {
+        str(card["id"]): {
+            "title": str(card.get("title") or ""),
+            "url": str(card.get("url") or ""),
+            "document_type": str(card.get("document_type") or ""),
+        }
+        for card in registry["model_cards"]
+    }
+    source_metadata.update(
+        {
+            str(source["id"]): {
+                "title": str(source.get("title") or ""),
+                "url": str(source.get("url") or ""),
+                "document_type": str(source.get("document_type") or ""),
+            }
+            for source in registry.get("source_documents", [])
+        }
+    )
     unknown = sorted({row["source_id"] for row in scores["results"]} - reported.keys())
     if unknown:
         raise BenchmarkScoreError(
             "score rows cite source_ids absent from the model card registry and score source "
             f"registry: {', '.join(unknown)}"
         )
+    for row in scores["results"]:
+        metadata = source_metadata[row["source_id"]]
+        if all(metadata.values()):
+            row["source_title"] = metadata["title"]
+            row["source_url"] = metadata["url"]
+            row["source_document_type"] = metadata["document_type"]
     registry_ids = {str(benchmark["id"]) for benchmark in registry["benchmarks"]}
     stray = sorted(set(scores["benchmarks"]) - registry_ids)
     if stray:
